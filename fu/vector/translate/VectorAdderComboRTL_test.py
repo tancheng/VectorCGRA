@@ -109,9 +109,9 @@ def test_vector_adder_combo():
   src_const     = [ DataType(0x3543, 1), DataType(0x1234, 1), DataType(0x3543, 1)  ]
   src_predicate = [ PredicateType(1, 0), PredicateType(1, 0), PredicateType(1, 1 ) ]
   sink_out0     = [ DataType(0x3333, 1), DataType(0xf000, 1), DataType(0xdef, 1) ]
-  src_opt       = [ CtrlType( OPT_VEC_FINE_ADD,   b1( 1 ), pickRegister ),
-                    CtrlType( OPT_VEC_COARSE_ADD, b1( 0 ), pickRegister ),
-                    CtrlType( OPT_VEC_COARSE_SUB_CONST, b1( 1 ), pickRegister ) ]
+  src_opt       = [ CtrlType( OPT_VEC_ADD,       b1( 1 ), pickRegister ),
+                    CtrlType( OPT_VEC_ADD,       b1( 0 ), pickRegister ),
+                    CtrlType( OPT_VEC_SUB_CONST, b1( 1 ), pickRegister ) ]
 
   th = TestHarness( FU, DataType, PredicateType, CtrlType,
                     num_inports, num_outports, data_mem_size,
