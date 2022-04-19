@@ -2,7 +2,7 @@
 ==========================================================================
 VectorMulComboRTL_test.py
 ==========================================================================
-Test case for VectorMulCombo functional unit.
+Test case for VectorMulComboRTL functional unit.
 
 Author : Cheng Tan
   Date : April 17, 2022
@@ -77,7 +77,7 @@ def run_sim( test_harness, max_cycles=10 ):
 def test_vector_adder_combo():
   FU            = VectorMulComboRTL
   DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
+  PredType      = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl()
   num_inports   = 2
   num_outports  = 1
@@ -86,17 +86,16 @@ def test_vector_adder_combo():
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
 
-  src_in0       = [ DataType(0x0002, 1), DataType(0x77, 1), DataType(0x0002, 1)  ]
-  src_in1       = [ DataType(0x00ff, 1), DataType(0x89, 1), DataType(0x0003, 1)  ]
-  src_predicate = [ PredicateType(1, 0), PredicateType(1, 0), PredicateType(1, 1 ) ]
-  sink_out0     = [ DataType(0x01fe, 1), DataType(0x3faf, 1), DataType(0x6, 1) ]
-  src_opt       = [ CtrlType( OPT_VEC_FINE_MUL, b1( 1 ), pickRegister ),
-                    CtrlType( OPT_VEC_FINE_MUL, b1( 0 ), pickRegister ),
-                    CtrlType( OPT_VEC_FINE_MUL, b1( 1 ), pickRegister ) ]
+  src_in0  = [ DataType(0x3402,1), DataType(0x77,1),   DataType(0x0002,1)  ]
+  src_in1  = [ DataType(0x32f3,1), DataType(0x89,1),   DataType(0x0003,1)  ]
+  src_pred = [ PredType(1,0),      PredType(1,0),      PredType(1,1 ) ]
+  sink_out = [ DataType(0x9806,1), DataType(0x3faf,1), DataType(0x6, 1) ]
+  src_opt  = [ CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ),
+               CtrlType( OPT_MUL,     b1( 0 ), pickRegister ),
+               CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ) ]
 
-  th = TestHarness( FU, DataType, PredicateType, CtrlType,
+  th = TestHarness( FU, DataType, PredType, CtrlType,
                     num_inports, num_outports, data_mem_size,
-                    src_in0, src_in1, src_predicate, src_opt,
-                    sink_out0 )
+                    src_in0, src_in1, src_pred, src_opt, sink_out )
   run_sim( th )
 

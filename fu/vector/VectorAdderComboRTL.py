@@ -99,38 +99,32 @@ class VectorAdderComboRTL( Component ):
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.recv_predicate.rdy = b1( 1 )
 
-      if s.recv_opt.msg.ctrl == OPT_VEC_FINE_ADD or\
-         s.recv_opt.msg.ctrl == OPT_VEC_COARSE_ADD or\
+      if s.recv_opt.msg.ctrl == OPT_VEC_ADD or\
          s.recv_opt.msg.ctrl == OPT_ADD:
         for i in range( vector_factor ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_ADD
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and s.recv_in[1].msg.predicate
 
-      elif s.recv_opt.msg.ctrl == OPT_VEC_FINE_SUB or\
-           s.recv_opt.msg.ctrl == OPT_VEC_COARSE_SUB or\
+      elif s.recv_opt.msg.ctrl == OPT_VEC_SUB or\
            s.recv_opt.msg.ctrl == OPT_SUB:
         for i in range( vector_factor ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_SUB
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and s.recv_in[1].msg.predicate
 
-      elif s.recv_opt.msg.ctrl == OPT_VEC_FINE_ADD_CONST or\
-           s.recv_opt.msg.ctrl == OPT_VEC_COARSE_ADD_CONST or\
+      elif s.recv_opt.msg.ctrl == OPT_VEC_ADD_CONST or\
            s.recv_opt.msg.ctrl == OPT_ADD_CONST:
         for i in range( vector_factor ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_ADD_CONST
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate
 
-      elif s.recv_opt.msg.ctrl == OPT_VEC_FINE_SUB_CONST or\
-           s.recv_opt.msg.ctrl == OPT_VEC_COARSE_SUB_CONST or\
+      elif s.recv_opt.msg.ctrl == OPT_VEC_SUB_CONST or\
            s.recv_opt.msg.ctrl == OPT_SUB_CONST:
         for i in range( vector_factor ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_SUB_CONST
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate
 
-      if s.recv_opt.msg.ctrl == OPT_VEC_FINE_ADD_CONST or\
-         s.recv_opt.msg.ctrl == OPT_VEC_FINE_SUB_CONST or\
-         s.recv_opt.msg.ctrl == OPT_VEC_COARSE_ADD_CONST or\
-         s.recv_opt.msg.ctrl == OPT_VEC_COARSE_SUB_CONST or\
+      if s.recv_opt.msg.ctrl == OPT_VEC_ADD_CONST or\
+         s.recv_opt.msg.ctrl == OPT_VEC_SUB_CONST or\
          s.recv_opt.msg.ctrl == OPT_ADD_CONST or\
          s.recv_opt.msg.ctrl == OPT_SUB_CONST:
         s.recv_const.rdy = s.recv_opt.en

@@ -1,11 +1,11 @@
 """
 ==========================================================================
-VectorAdderComboRTL_test.py
+VectorAllReduceRTL_test.py
 ==========================================================================
-Test case for VectorAdderComboRTL functional unit.
+Test case for VectorAllReduceRTL functional unit.
 
 Author : Cheng Tan
-  Date : April 17, 2022
+  Date : April 23, 2022
 
 """
 
@@ -13,7 +13,7 @@ from pymtl3                       import *
 from pymtl3.stdlib.test           import TestSinkCL
 from pymtl3.stdlib.test.test_srcs import TestSrcRTL
 
-from ..VectorAdderComboRTL        import VectorAdderComboRTL
+from ..VectorAllReduceRTL         import VectorAllReduceRTL
 from ....lib.opt_type             import *
 from ....lib.messages             import *
 
@@ -25,12 +25,11 @@ class TestHarness( Component ):
 
   def construct( s, FunctionUnit, DataType, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size,
-                 src0_msgs, src1_msgs, src_const_msgs,
-                 src_predicate, ctrl_msgs, sink_msgs0 ):
+                 src0_msgs, src1_msgs, src_predicate,
+                 ctrl_msgs, sink_msgs0 ):
 
     s.src_in0       = TestSrcRTL( DataType,      src0_msgs      )
     s.src_in1       = TestSrcRTL( DataType,      src1_msgs      )
-    s.src_const     = TestSrcRTL( DataType,      src_const_msgs )
     s.src_predicate = TestSrcRTL( PredicateType, src_predicate  )
     s.src_opt       = TestSrcRTL( CtrlType,      ctrl_msgs      )
     s.sink_out0     = TestSinkCL( DataType,      sink_msgs0     )
@@ -43,14 +42,12 @@ class TestHarness( Component ):
 
     connect( s.src_in0.send,       s.dut.recv_in[0]     )
     connect( s.src_in1.send,       s.dut.recv_in[1]     )
-    connect( s.src_const.send,     s.dut.recv_const     )
     connect( s.src_predicate.send, s.dut.recv_predicate )
     connect( s.src_opt.send,       s.dut.recv_opt       )
     connect( s.dut.send_out[0],    s.sink_out0.recv     )
 
   def done( s ):
-    return s.src_in0.done()  and s.src_in1.done()   and\
-           s.src_opt.done()  and s.sink_out0.done()
+    return s.src_in0.done() and s.src_opt.done() and s.sink_out0.done()
 
   def line_trace( s ):
     return s.dut.line_trace()
@@ -76,30 +73,28 @@ def run_sim( test_harness, max_cycles=10 ):
   test_harness.tick()
   test_harness.tick()
 
-def test_vector_adder_combo():
-  FU            = VectorAdderComboRTL
+def test_vector_all_reduce():
+  FU            = VectorAllReduceRTL
   DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
+  PredType      = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl()
-  num_inports   = 4
+  num_inports   = 2
   num_outports  = 1
   data_mem_size = 8
 
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
 
-  src_in0       = [ DataType(0x1111, 1), DataType(0x7777, 1), DataType(0x4332, 1)  ]
-  src_in1       = [ DataType(0x2222, 1), DataType(0x7889, 1), DataType(0x3333, 1)  ]
-  src_const     = [ DataType(0x3543, 1), DataType(0x1234, 1), DataType(0x3543, 1)  ]
-  src_predicate = [ PredicateType(1, 0), PredicateType(1, 0), PredicateType(1, 1 ) ]
-  sink_out0     = [ DataType(0x3333, 1), DataType(0xf000, 1), DataType(0xdef, 1) ]
-  src_opt       = [ CtrlType( OPT_VEC_ADD, b1( 1 ), pickRegister ),
-                    CtrlType( OPT_VEC_ADD, b1( 0 ), pickRegister ),
-                    CtrlType( OPT_VEC_SUB_CONST, b1( 1 ), pickRegister ) ]
+  src_in0  = [ DataType(0x3402,1), DataType(0x1177,1),   DataType(0x0002,1)  ]
+  src_in1  = [ DataType(0x32f3,1), DataType(0x89,1),   DataType(0x0003,1)  ]
+  src_pred = [ PredType(1,0),      PredType(1,0),      PredType(1,1 ) ]
+  sink_out = [ DataType(0x9,1),   DataType(0x31,1), DataType(0x0, 1) ]
+  src_opt  = [ CtrlType( OPT_VEC_REDUCE_ADD, b1( 1 ), pickRegister ),
+               CtrlType( OPT_VEC_REDUCE_MUL, b1( 0 ), pickRegister ),
+               CtrlType( OPT_VEC_REDUCE_MUL, b1( 1 ), pickRegister ) ]
 
-  th = TestHarness( FU, DataType, PredicateType, CtrlType,
+  th = TestHarness( FU, DataType, PredType, CtrlType,
                     num_inports, num_outports, data_mem_size,
-                    src_in0, src_in1, src_const, src_predicate,
-                    src_opt, sink_out0 )
+                    src_in0, src_in1, src_pred, src_opt, sink_out )
   run_sim( th )
 
