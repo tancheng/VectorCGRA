@@ -2,20 +2,23 @@
 ==========================================================================
 VectorMulComboRTL_test.py
 ==========================================================================
-Test case for VectorMulComboRTL functional unit.
+Translation harness for VectorMulComboRTL functional unit.
 
 Author : Cheng Tan
-  Date : April 17, 2022
+  Date : April 27, 2022
 
 """
 
-from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
+from pymtl3                         import *
+from pymtl3.stdlib.test             import TestSinkCL
+from pymtl3.stdlib.test.test_srcs   import TestSrcRTL
 
-from ..VectorMulComboRTL          import VectorMulComboRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
+from ..VectorMulComboRTL            import VectorMulComboRTL
+from ....lib.opt_type               import *
+from ....lib.messages               import *
+
+from pymtl3.passes.backends.verilog import TranslationPass, VerilatorImportPass, TranslationImportPass
+from pymtl3.passes.PassGroups       import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -55,6 +58,13 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=10 ):
   test_harness.elaborate()
+
+  test_harness.dut.verilog_translate_import = True
+#  test_harness.apply( TranslationPass() )
+#  test_harness = VerilatorImportPass()( test_harness )
+  test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list = ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
+  test_harness = TranslationImportPass()(test_harness)
+
   test_harness.apply( SimulationPass() )
   test_harness.sim_reset()
 
@@ -80,7 +90,7 @@ def test_vector_mul_combo():
   PredType      = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl()
   num_inports   = 2
-  num_outports  = 1
+  num_outports  = 2
   data_mem_size = 8
 
   FuInType      = mk_bits( clog2( num_inports + 1 ) )

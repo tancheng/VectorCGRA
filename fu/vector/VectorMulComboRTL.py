@@ -34,6 +34,9 @@ class VectorMulComboRTL( Component ):
     # 4, which will be times by 2 to make it 8-bit to compensate
     # the longer output in the subFU.
     sub_bw       = data_bandwidth // num_lanes
+    sub_bw_2     = 2 * data_bandwidth // num_lanes
+    sub_bw_3     = 3 * data_bandwidth // num_lanes
+    sub_bw_4     = 4 * data_bandwidth // num_lanes
 
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
@@ -56,34 +59,45 @@ class VectorMulComboRTL( Component ):
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
+
     @s.update
     def update_input_output():
       if s.recv_opt.msg.ctrl == OPT_VEC_MUL:
+
         s.send_out[0].msg.payload[0:data_bandwidth] = TempDataType( 0 )
+
         # Connection: split into vectorized FUs
+        s.Fu[0].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
+        s.Fu[0].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[1].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[2].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[3].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw_3:sub_bw_4]
+        s.Fu[3].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw_3:sub_bw_4]
+
         for i in range( num_lanes ):
-          s.Fu[i].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
-          s.Fu[i].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
           s.temp_result[i] = TempDataType( 0 )
-          s.temp_result[i][0:sub_bw] = s.Fu[i].send_out[0].msg[0:sub_bw]
+          s.temp_result[i][0:sub_bw_2] = s.Fu[i].send_out[0].msg[0:sub_bw_2]
   
-          s.send_out[0].msg.payload[0:data_bandwidth] += s.temp_result[i] << (sub_bw * i);
+          s.send_out[0].msg.payload[0:data_bandwidth] = s.send_out[0].msg.payload[0:data_bandwidth] + (s.temp_result[i] << (sub_bw * i));
+          # s.send_out[0].msg.payload[sub_bw*i:sub_bw*(i+1)] = s.Fu[i].send_out[0].msg[0:sub_bw];
 
       elif s.recv_opt.msg.ctrl == OPT_MUL: # with highest precision
 
         s.Fu[0].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
         s.Fu[0].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
         s.Fu[1].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw*2] 
-        s.Fu[2].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw*2] 
+        s.Fu[1].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2] 
+        s.Fu[2].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2] 
         s.Fu[2].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[3].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw*2] 
-        s.Fu[3].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw*2] 
+        s.Fu[3].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2] 
+        s.Fu[3].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2] 
     
         for i in range( num_lanes ):
           s.temp_result[i] = TempDataType( 0 )
-          s.temp_result[i][0:sub_bw*2] = s.Fu[i].send_out[0].msg[0:sub_bw*2]
+          s.temp_result[i][0:sub_bw_2] = s.Fu[i].send_out[0].msg[0:sub_bw_2]
   
         s.send_out[0].msg.payload[0:data_bandwidth] = s.temp_result[0] + (s.temp_result[1] << sub_bw) + (s.temp_result[2] << sub_bw) + (s.temp_result[3] << (sub_bw*2))
 

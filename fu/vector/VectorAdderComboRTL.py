@@ -50,12 +50,13 @@ class VectorAdderComboRTL( Component ):
       s.Fu[i].carry_in //= s.Fu[i-1].carry_out
     s.initial_carry_out //= s.Fu[vector_factor-1].carry_out
 
-    # Connection: split into vectorized FUs
     for i in range( vector_factor ):
+      # Connection: split into vectorized FUs
       s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[0].msg[0:sub_bw]
       s.recv_in[1].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[1].msg[0:sub_bw]
       s.recv_const.msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_const.msg[0:sub_bw]
 
+      # Connection: aggregate into combo out
       s.Fu[i].send_out[0].msg[0:sub_bw] //= s.send_out[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
     # Redundant interfaces for MemUnit
