@@ -96,8 +96,8 @@ def test_vector_adder_combo():
   FU            = VectorAdderComboRTL
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
-  num_inports   = 2
+  num_inports   = 4
+  CtrlType      = mk_ctrl( num_fu_in = num_inports )
   num_outports  = 2
   data_mem_size = 8
 

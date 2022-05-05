@@ -42,7 +42,7 @@ class VectorAdderComboRTL( Component ):
     s.initial_carry_out = OutPort( b1 )
 
     # Components
-    s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
+    s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, num_inports, num_outports, data_mem_size )
              for _ in range( vector_factor ) ]
 
     # Connection: for carry-in/out

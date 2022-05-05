@@ -88,8 +88,8 @@ def test_vector_mul_combo():
   FU            = VectorMulComboRTL
   DataType      = mk_data( 16, 1 )
   PredType      = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
-  num_inports   = 2
+  num_inports   = 4
+  CtrlType      = mk_ctrl( num_inports )
   num_outports  = 2
   data_mem_size = 8
 
