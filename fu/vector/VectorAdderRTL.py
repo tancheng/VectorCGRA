@@ -23,7 +23,7 @@ class VectorAdderRTL( Component ):
 
     # DataType should be 1-bit more due to the carry-out
     DataType    = mk_bits( bw+1 )
-    num_entries = 4
+    num_entries = 2
     FuInType    = mk_bits( clog2( num_inports + 1 ) )
     CountType   = mk_bits( clog2( num_entries + 1 ) )
     FuInType    = mk_bits( clog2( num_inports + 1 ) )

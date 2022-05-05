@@ -40,9 +40,9 @@ class ThreeCombo( Component ):
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
     # Components
-    s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
-    s.Fu1 = Fu1( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
-    s.Fu2 = Fu2( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
+    s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 4, 2, data_mem_size )
+    s.Fu1 = Fu1( DataType, PredicateType, CtrlType, 4, 2, data_mem_size )
+    s.Fu2 = Fu2( DataType, PredicateType, CtrlType, 4, 2, data_mem_size )
 
     # Connections
     s.recv_in[0].msg      //= s.Fu0.recv_in[0].msg

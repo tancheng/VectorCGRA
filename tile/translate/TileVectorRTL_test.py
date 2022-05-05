@@ -1,11 +1,11 @@
 """
 ==========================================================================
-TileRTL_test.py
+TileVectorRTL_test.py
 ==========================================================================
-Test cases for Tile.
+Test cases for Tile with support of vectorized FUs.
 
 Author : Cheng Tan
-  Date : Mar 2, 2019
+  Date : May 4, 2022
 
 """
 
@@ -18,6 +18,8 @@ from ...lib.opt_type                      import *
 from ...lib.messages                      import *
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
+from ...fu.vector.VectorMulComboRTL       import VectorMulComboRTL
+from ...fu.vector.VectorAdderComboRTL     import VectorAdderComboRTL
 from ...fu.single.AdderRTL                import AdderRTL
 from ...fu.single.MemUnitRTL              import MemUnitRTL
 from ...fu.single.MulRTL                  import MulRTL
@@ -127,7 +129,7 @@ def test_tile_alu():
   AddrType      = mk_bits( clog2( ctrl_mem_size ) )
   DUT           = TileRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL ] #, ThreeMulAdderShifterRTL ]
+  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL ]
 #  FuList       = [AdderRTL]
 #  FuList      = [ThreeMulAdderShifterRTL]
   DataType      = mk_data( 32, 1 )
@@ -156,25 +158,6 @@ def test_tile_alu():
                     [],
                     [DataType(9, 1), DataType( 5, 1)]]
 
-  """
-  src_opt       = [ CtrlType( OPT_NAH, [
-                    RouteType(4), RouteType(3), RouteType(2), RouteType(1),
-                    RouteType(4), RouteType(3), RouteType(2), RouteType(1)] ),
-                    CtrlType( OPT_ADD, [
-                    RouteType(3), RouteType(3), RouteType(3), RouteType(5),
-                    RouteType(4), RouteType(1), RouteType(1), RouteType(1)] ),
-                    CtrlType( OPT_SUB, [
-                    RouteType(5), RouteType(5), RouteType(2), RouteType(2),
-                    RouteType(1), RouteType(1), RouteType(1), RouteType(1)] ) ]
-  src_data      = [ [DataType(2, 1), DataType( 3, 1)],
-                    [DataType(3, 1), DataType( 4, 1)],
-                    [DataType(4, 1), DataType( 5, 1)],
-                    [DataType(5, 1), DataType( 6, 1)] ]
-  sink_out      = [ [DataType(5, 1), DataType( 5, 1), DataType( 3, 1)],
-                    [DataType(4, 1), DataType( 5, 1), DataType( 3, 1)],
-                    [DataType(3, 1), DataType( 5, 1)],
-                    [DataType(2, 1), DataType( 9, 1)] ]
-  """
   th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
                     CtrlType, ctrl_mem_size, data_mem_size,
                     num_fu_inports, num_fu_outports, src_data,

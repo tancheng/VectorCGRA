@@ -26,8 +26,9 @@ class VectorAdderComboRTL( Component ):
 
     # Constants
     assert(data_bandwidth % vector_factor == 0)
+    s.const_zero = DataType(0, 0)
     sub_bw       = data_bandwidth // vector_factor
-    num_entries  = 4
+    num_entries  = 2
     CountType    = mk_bits( clog2( num_entries + 1 ) )
 
     # Interface
@@ -41,7 +42,7 @@ class VectorAdderComboRTL( Component ):
     s.initial_carry_out = OutPort( b1 )
 
     # Components
-    s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, 2, 1, data_mem_size )
+    s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
              for _ in range( vector_factor ) ]
 
     # Connection: for carry-in/out
@@ -84,13 +85,14 @@ class VectorAdderComboRTL( Component ):
 
       s.recv_opt.rdy    = s.send_out[0].rdy
 
-      s.send_out[0].en  = s.recv_in[0].en   and s.recv_in[1].en   and\
-                          s.recv_opt.en
-
     FuInType = mk_bits( clog2( num_inports + 1 ) )
 
     @s.update
     def update_opt():
+
+      s.send_out[0].en = s.recv_in[0].en and\
+                         s.recv_in[1].en and\
+                         s.recv_opt.en
 
       for i in range( vector_factor ):
         s.Fu[i].recv_opt.msg.fu_in[0] = FuInType(1)
@@ -124,11 +126,25 @@ class VectorAdderComboRTL( Component ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_SUB_CONST
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate
 
+      else:
+        for j in range( num_outports ):
+          s.send_out[j].en = b1( 0 )
+
       if s.recv_opt.msg.ctrl == OPT_VEC_ADD_CONST or\
          s.recv_opt.msg.ctrl == OPT_VEC_SUB_CONST or\
          s.recv_opt.msg.ctrl == OPT_ADD_CONST or\
          s.recv_opt.msg.ctrl == OPT_SUB_CONST:
         s.recv_const.rdy = s.recv_opt.en
+
+    @s.update
+    def update_mem():
+      s.to_mem_waddr.en    = b1( 0 )
+      s.to_mem_wdata.en    = b1( 0 )
+      s.to_mem_wdata.msg   = s.const_zero
+      s.to_mem_waddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.en    = b1( 0 )
+      s.from_mem_rdata.rdy = b1( 0 )
 
   def line_trace( s ):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)

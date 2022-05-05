@@ -26,7 +26,8 @@ class VectorMulComboRTL( Component ):
     assert(data_bandwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic
     assert(num_lanes % 4 == 0)
-    num_entries  = 4
+    s.const_zero = DataType(0, 0)
+    num_entries  = 2
     CountType    = mk_bits( clog2( num_entries + 1 ) )
     # By default 16-bit indicates both input and output. For a Mul,
     # if output is no longer than 16-bit, it means the
@@ -49,7 +50,7 @@ class VectorMulComboRTL( Component ):
     s.temp_result    = [ Wire( TempDataType ) for _ in range( num_lanes ) ]
 
     # Components
-    s.Fu = [ VectorMulRTL( sub_bw, CtrlType, 2, 1, data_mem_size )
+    s.Fu = [ VectorMulRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
              for _ in range( num_lanes ) ]
 
     # Redundant interfaces for MemUnit
@@ -62,6 +63,11 @@ class VectorMulComboRTL( Component ):
 
     @s.update
     def update_input_output():
+
+      s.send_out[0].en = s.recv_in[0].en and\
+                         s.recv_in[1].en and\
+                         s.recv_opt.en
+
       if s.recv_opt.msg.ctrl == OPT_VEC_MUL:
 
         s.send_out[0].msg.payload[0:data_bandwidth] = TempDataType( 0 )
@@ -101,6 +107,11 @@ class VectorMulComboRTL( Component ):
   
         s.send_out[0].msg.payload[0:data_bandwidth] = s.temp_result[0] + (s.temp_result[1] << sub_bw) + (s.temp_result[2] << sub_bw) + (s.temp_result[3] << (sub_bw*2))
 
+      else:
+        for j in range( num_outports ):
+          s.send_out[j].en = b1( 0 )
+
+
     @s.update
     def update_signal():
       s.recv_in[0].rdy  = s.send_out[0].rdy
@@ -118,9 +129,6 @@ class VectorMulComboRTL( Component ):
         s.Fu[i].recv_in_count[1] = s.recv_in_count[1]
 
       s.recv_opt.rdy    = s.send_out[0].rdy
-
-      s.send_out[0].en  = s.recv_in[0].en   and s.recv_in[1].en   and\
-                          s.recv_opt.en
 
     FuInType = mk_bits( clog2( num_inports + 1 ) )
 
@@ -140,6 +148,16 @@ class VectorMulComboRTL( Component ):
         for i in range( num_lanes ):
           s.Fu[i].recv_opt.msg.ctrl = OPT_MUL
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and s.recv_in[1].msg.predicate
+
+    @s.update
+    def update_mem():
+      s.to_mem_waddr.en    = b1( 0 )
+      s.to_mem_wdata.en    = b1( 0 )
+      s.to_mem_wdata.msg   = s.const_zero
+      s.to_mem_waddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.en    = b1( 0 )
+      s.from_mem_rdata.rdy = b1( 0 )
 
   def line_trace( s ):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)

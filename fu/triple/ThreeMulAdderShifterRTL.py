@@ -38,12 +38,12 @@ class ThreeMulAdderShifterRTL( ThreeCombo ):
                           s.recv_in[2].en  and s.recv_in[3].en  and\
                           s.recv_opt.en
 
-      s.Fu0.recv_opt.msg.fu_in[0] = Bits2(1)
-      s.Fu0.recv_opt.msg.fu_in[1] = Bits2(2)
-      s.Fu1.recv_opt.msg.fu_in[0] = Bits2(1)
-      s.Fu1.recv_opt.msg.fu_in[1] = Bits2(2)
-      s.Fu2.recv_opt.msg.fu_in[0] = Bits2(1)
-      s.Fu2.recv_opt.msg.fu_in[1] = Bits2(2)
+      s.Fu0.recv_opt.msg.fu_in[0] = Bits3(1)
+      s.Fu0.recv_opt.msg.fu_in[1] = Bits3(2)
+      s.Fu1.recv_opt.msg.fu_in[0] = Bits3(1)
+      s.Fu1.recv_opt.msg.fu_in[1] = Bits3(2)
+      s.Fu2.recv_opt.msg.fu_in[0] = Bits3(1)
+      s.Fu2.recv_opt.msg.fu_in[1] = Bits3(2)
 
       if s.recv_opt.msg.ctrl == OPT_MUL_ADD_LLS:
         s.Fu0.recv_opt.msg.ctrl = OPT_MUL
