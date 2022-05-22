@@ -19,6 +19,7 @@ class TwoPrlCombo( Component ):
                  num_inports, num_outports, data_mem_size ):
 
     # Constants
+    AddrType      = mk_bits( clog2( data_mem_size ) )
     num_entries   = 2
     CountType     = mk_bits( clog2( num_entries + 1 ) )
 
