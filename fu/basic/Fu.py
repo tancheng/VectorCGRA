@@ -37,6 +37,8 @@ class Fu( Component ):
     s.from_mem_rdata = RecvIfcRTL( DataType )
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
+    s.initial_carry_in  = InPort( b1 )
+    s.initial_carry_out = OutPort( b1 )
 
     @s.update
     def update_signal():

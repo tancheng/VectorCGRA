@@ -29,6 +29,14 @@ class TwoPrlCombo( Component ):
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
 
+    # Redundant interfaces for MemUnit
+    s.to_mem_raddr   = SendIfcRTL( AddrType )
+    s.from_mem_rdata = RecvIfcRTL( DataType )
+    s.to_mem_waddr   = SendIfcRTL( AddrType )
+    s.to_mem_wdata   = SendIfcRTL( DataType )
+    s.initial_carry_in  = InPort( b1 )
+    s.initial_carry_out = OutPort( b1 )
+
     # Components
     s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
     s.Fu1 = Fu1( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )

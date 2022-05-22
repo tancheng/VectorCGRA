@@ -129,7 +129,7 @@ def test_tile_alu():
   AddrType      = mk_bits( clog2( ctrl_mem_size ) )
   DUT           = TileRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL ]
+  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL, VectorAdderComboRTL ]
 #  FuList       = [AdderRTL]
 #  FuList      = [ThreeMulAdderShifterRTL]
   DataType      = mk_data( 32, 1 )
