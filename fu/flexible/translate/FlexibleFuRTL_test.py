@@ -112,7 +112,7 @@ import pytest
 def test_flexible_mul():
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL]
-  DataType      = mk_data( 32, 1 )
+  DataType      = mk_data( 64, 1 )
   PredicateType = mk_predicate( 1, 1 )
   data_mem_size = 8
   num_inports   = 4

@@ -86,7 +86,7 @@ def run_sim( test_harness, max_cycles=10 ):
 
 def test_vector_mul_combo():
   FU            = VectorMulComboRTL
-  DataType      = mk_data( 16, 1 )
+  DataType      = mk_data( 64, 1 )
   PredType      = mk_predicate( 1, 1 )
   num_inports   = 4
   CtrlType      = mk_ctrl( num_inports )
@@ -99,7 +99,8 @@ def test_vector_mul_combo():
   src_in0  = [ DataType(0x3402,1), DataType(0x77,1),   DataType(0x0002,1)  ]
   src_in1  = [ DataType(0x32f3,1), DataType(0x89,1),   DataType(0x0003,1)  ]
   src_pred = [ PredType(1,0),      PredType(1,0),      PredType(1,1 ) ]
-  sink_out = [ DataType(0x9806,1), DataType(0x3faf,1), DataType(0x6, 1) ]
+  sink_out = [ DataType(0xa59c1e6,1), DataType(0x3faf,1), DataType(0x6, 1) ]
+  # sink_out = [ DataType(0x9806,1), DataType(0x3faf,1), DataType(0x6, 1) ]
   src_opt  = [ CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ),
                CtrlType( OPT_MUL,     b1( 0 ), pickRegister ),
                CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ) ]

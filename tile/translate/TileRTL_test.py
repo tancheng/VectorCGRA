@@ -130,7 +130,7 @@ def test_tile_alu():
   FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL ] #, ThreeMulAdderShifterRTL ]
 #  FuList       = [AdderRTL]
 #  FuList      = [ThreeMulAdderShifterRTL]
-  DataType      = mk_data( 32, 1 )
+  DataType      = mk_data( 64, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
   FuInType      = mk_bits( clog2( num_fu_in + 1 ) )
