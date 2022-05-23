@@ -23,7 +23,7 @@ from ....lib.messages             import *
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct( s, FunctionUnit, DataType, bw, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size,
                  src0_msgs, src1_msgs, src_predicate,
                  ctrl_msgs, sink_msgs0 ):
@@ -35,7 +35,7 @@ class TestHarness( Component ):
     s.sink_out0     = TestSinkCL( DataType,      sink_msgs0     )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
-                          num_inports, num_outports, data_mem_size )
+                          num_inports, num_outports, data_mem_size, 4, bw )
 
     s.dut.recv_in_count[0] //= 1
     s.dut.recv_in_count[1] //= 1
@@ -76,7 +76,8 @@ def run_sim( test_harness, max_cycles=10 ):
 
 def test_vector_mul_combo():
   FU            = VectorMulComboRTL
-  DataType      = mk_data( 16, 1 )
+  bw            = 64
+  DataType      = mk_data( bw, 1 )
   PredType      = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl()
   num_inports   = 2
@@ -89,12 +90,12 @@ def test_vector_mul_combo():
   src_in0  = [ DataType(0x3402,1), DataType(0x77,1),   DataType(0x0002,1)  ]
   src_in1  = [ DataType(0x32f3,1), DataType(0x89,1),   DataType(0x0003,1)  ]
   src_pred = [ PredType(1,0),      PredType(1,0),      PredType(1,1 ) ]
-  sink_out = [ DataType(0x9806,1), DataType(0x3faf,1), DataType(0x6, 1) ]
+  sink_out = [ DataType(0xa59c1e6,1), DataType(0x3faf,1), DataType(0x6, 1) ]
   src_opt  = [ CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ),
                CtrlType( OPT_MUL,     b1( 0 ), pickRegister ),
                CtrlType( OPT_VEC_MUL, b1( 1 ), pickRegister ) ]
 
-  th = TestHarness( FU, DataType, PredType, CtrlType,
+  th = TestHarness( FU, DataType, bw, PredType, CtrlType,
                     num_inports, num_outports, data_mem_size,
                     src_in0, src_in1, src_pred, src_opt, sink_out )
   run_sim( th )

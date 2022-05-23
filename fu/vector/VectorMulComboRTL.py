@@ -20,7 +20,7 @@ class VectorMulComboRTL( Component ):
 
   def construct( s, DataType, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size,
-                 num_lanes = 4, data_bandwidth = 16 ):
+                 num_lanes = 4, data_bandwidth = 64 ):
 
     # Constants
     assert(data_bandwidth % num_lanes == 0)

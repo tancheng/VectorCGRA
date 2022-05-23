@@ -23,7 +23,7 @@ from ....lib.messages             import *
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct( s, FunctionUnit, DataType, data_bw, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size,
                  src0_msgs, src1_msgs, src_const_msgs,
                  src_predicate, ctrl_msgs, sink_msgs0 ):
@@ -36,7 +36,7 @@ class TestHarness( Component ):
     s.sink_out0     = TestSinkCL( DataType,      sink_msgs0     )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
-                          num_inports, num_outports, data_mem_size )
+                          num_inports, num_outports, data_mem_size, 4, data_bw )
 
     s.dut.recv_in_count[0] //= 1
     s.dut.recv_in_count[1] //= 1
@@ -78,7 +78,8 @@ def run_sim( test_harness, max_cycles=10 ):
 
 def test_vector_adder_combo():
   FU            = VectorAdderComboRTL
-  DataType      = mk_data( 16, 1 )
+  data_bw       = 64
+  DataType      = mk_data( data_bw, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl()
   num_inports   = 4
@@ -97,7 +98,7 @@ def test_vector_adder_combo():
                     CtrlType( OPT_VEC_ADD, b1( 0 ), pickRegister ),
                     CtrlType( OPT_VEC_SUB_CONST, b1( 1 ), pickRegister ) ]
 
-  th = TestHarness( FU, DataType, PredicateType, CtrlType,
+  th = TestHarness( FU, DataType, data_bw, PredicateType, CtrlType,
                     num_inports, num_outports, data_mem_size,
                     src_in0, src_in1, src_const, src_predicate,
                     src_opt, sink_out0 )
