@@ -49,9 +49,11 @@ jobs:
         pip install wheel
         pip install git+https://github.com/tancheng/pymtl3.git
         pip install hypothesis
+        pip install pytest
         pip list
         
     - name: Test with pytest
       run: |
         mkdir -p build && cd build
+        source ${HOME}/venv/bin/activate
         pytest .. -v --tb=short
