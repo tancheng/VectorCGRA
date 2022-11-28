@@ -27,7 +27,7 @@ jobs:
   
     - name: Install Verilator
       run: |
-        sudo apt-get install git make python-dev libffi-dev autoconf g++ libfl-dev bison
+        sudo apt-get install git make autoconf g++ libfl-dev bison
         wget http://www.veripool.org/ftp/verilator-4.036.tgz
         tar -xzvf verilator-4.036.tgz
         cd verilator-4.036
@@ -42,9 +42,14 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y graphviz
+        sudo apt-get install git python-dev libffi-dev
+        python3 -m venv ${HOME}/venv
+        source ${HOME}/venv/bin/activate
+        pip install py==1.11.0
         pip install git+https://github.com/tancheng/pymtl3.git
         pip install --upgrade pip setuptools twine
         pip install hypothesis
+        pip list
         
     - name: Test with pytest
       run: |
