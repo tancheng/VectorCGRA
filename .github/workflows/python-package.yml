@@ -42,10 +42,9 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y graphviz
-        pip install --upgrade pip setuptools twine
         pip install git+https://github.com/tancheng/pymtl3.git
+        pip install --upgrade pip setuptools twine
         pip install hypothesis
-        pip install .
         
     - name: Test with pytest
       run: |
