@@ -1,0 +1,53 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python package
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+  
+    - name: Install Verilator
+      run: |
+        wget http://www.veripool.org/ftp/verilator-4.036.tgz
+        tar -C ${HOME} -xzf verilator-travis-4.036.tar.gz
+        echo "VERILATOR_ROOT=${HOME}/verilator" >> $GITHUB_ENV
+        echo "PYMTL_VERILATOR_INCLUDE_DIR=${HOME}/verilator/share/verilator/include" >> $GITHUB_ENV
+        echo "${HOME}/verilator/bin" >> $GITHUB_PATH
+        
+    - name: Check Verilator
+      run: |
+        echo ${VERILATOR_ROOT}
+        echo ${PYMTL_VERILATOR_INCLUDE_DIR}
+        verilator --version
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y graphviz
+        pip install --upgrade pip setuptools twine
+        pip install git+https://github.com/tancheng/pymtl3.git
+        pip install hypothesis
+        pip install .
+        
+    - name: Test with pytest
+      run: |
+        mkdir -p build && cd build
+        pytest .. -v --tb=short
