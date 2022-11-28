@@ -29,14 +29,13 @@ jobs:
       run: |
         wget http://www.veripool.org/ftp/verilator-4.036.tgz
         tar -C ${HOME} -xzf verilator-4.036.tgz
-        echo "VERILATOR_ROOT=${HOME}/verilator" >> $GITHUB_ENV
-        echo "PYMTL_VERILATOR_INCLUDE_DIR=${HOME}/verilator/share/verilator/include" >> $GITHUB_ENV
-        echo "${HOME}/verilator/bin" >> $GITHUB_PATH
+        cd verilator-4.036
+        ./configure
+        make
+        sudo make install
         
     - name: Check Verilator
       run: |
-        echo ${VERILATOR_ROOT}
-        echo ${PYMTL_VERILATOR_INCLUDE_DIR}
         verilator --version
         
     - name: Install dependencies
