@@ -8,7 +8,7 @@
                                                                           
 ========================================================
 </pre>
-[![Build Status](https://travis-ci.com/tancheng/VRSA.svg?token=yazoBFLC1ynpzdD4wAEP&branch=master)](https://travis-ci.com/github/tancheng/VRSA)
+[![Github Action](https://github.com/tancheng/VectorCGRA/actions/workflows/python-package.yml/badge.svg)](https://github.com/tancheng/VectorCGRA/actions/workflows/python-package.yml)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 
