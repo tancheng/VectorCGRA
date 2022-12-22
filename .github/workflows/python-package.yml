@@ -42,7 +42,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y graphviz
-        sudo apt-get install git python-dev libffi-dev
+        sudo apt-get install git libffi-dev
         python3 -m venv ${HOME}/venv
         source ${HOME}/venv/bin/activate
         pip install py==1.11.0
