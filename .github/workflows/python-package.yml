@@ -32,7 +32,6 @@ jobs:
         echo "VERILATOR_ROOT=${HOME}/verilator-4.036" >> $GITHUB_ENV
         echo "PYMTL_VERILATOR_INCLUDE_DIR=${HOME}/verilator-4.036/share/verilator/include" >> $GITHUB_ENV
         echo "${HOME}/verilator-4.036/bin" >> $GITHUB_PATH
-        $HOME/verilator-4.036/bin/verilator --version
         
     - name: Check Verilator
       run: |
