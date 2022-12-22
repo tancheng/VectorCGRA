@@ -38,6 +38,8 @@ jobs:
         echo ${VERILATOR_ROOT}
         echo ${PYMTL_VERILATOR_INCLUDE_DIR}
         export PATH="$HOME/verilator/bin:$PATH"
+        echo $PATH
+        echo $GITHUB_PATH
         verilator --version
         
     - name: Install dependencies
