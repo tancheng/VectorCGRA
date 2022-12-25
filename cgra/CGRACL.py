@@ -13,6 +13,7 @@ from ..noc.CrossbarRTL    import CrossbarRTL
 from ..noc.ChannelRTL     import ChannelRTL
 from ..tile.TileCL        import TileCL
 from ..lib.opt_type       import *
+from ..lib.common         import *
 from ..mem.data.DataMemCL import DataMemCL
 
 class CGRACL( Component ):
@@ -21,11 +22,6 @@ class CGRACL( Component ):
                  CtrlType, width, height, ctrl_mem_size, data_mem_size,
                  num_ctrl, preload_ctrl, preload_data, preload_const ):
 
-    # Constant
-    NORTH = 0
-    SOUTH = 1
-    WEST  = 2
-    EAST  = 3
     s.num_tiles = width * height
     s.num_mesh_ports = 4
     AddrType = mk_bits( clog2( ctrl_mem_size ) )

@@ -12,6 +12,7 @@ from ..noc.CrossbarRTL           import CrossbarRTL
 from ..noc.ChannelRTL            import ChannelRTL
 from ..tile.TileRTL              import TileRTL
 from ..lib.opt_type              import *
+from ..lib.common                import *
 from ..mem.data.DataMemRTL       import DataMemRTL
 from ..mem.data.DataMemCL        import DataMemCL
 from ..fu.single.MemUnitRTL      import MemUnitRTL
@@ -23,16 +24,6 @@ class CGRAKingMeshRTL( Component ):
   def construct( s, DataType, PredicateType, CtrlType, width, height,
                  ctrl_mem_size, data_mem_size, num_ctrl, FunctionUnit,
                  FuList, preload_data = None, preload_const = None ):
-
-    # Constant
-    NORTH     = 0
-    SOUTH     = 1
-    WEST      = 2
-    EAST      = 3
-    NORTHWEST = 4
-    NORTHEAST = 5
-    SOUTHEAST = 6
-    SOUTHWEST = 7
 
     s.num_tiles = width * height
     s.num_mesh_ports = 8
