@@ -40,36 +40,36 @@ class CGRACL( Component ):
     for i in range( s.num_tiles):
 
       if i // width > 0:
-        s.tile[i].send_data[SOUTH] //= s.tile[i-width].recv_data[NORTH]
+        s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
 
       if i // width < height - 1:
-        s.tile[i].send_data[NORTH] //= s.tile[i+width].recv_data[SOUTH]
+        s.tile[i].send_data[PORT_NORTH] //= s.tile[i+width].recv_data[PORT_SOUTH]
 
       if i % width > 0:
-        s.tile[i].send_data[WEST] //= s.tile[i-1].recv_data[EAST]
+        s.tile[i].send_data[PORT_WEST] //= s.tile[i-1].recv_data[PORT_EAST]
 
       if i % width < width - 1:
-        s.tile[i].send_data[EAST] //= s.tile[i+1].recv_data[WEST]
+        s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
       if i // width == 0:
-        s.tile[i].send_data[SOUTH].rdy //= 0
-        s.tile[i].recv_data[SOUTH].en  //= 0
-        s.tile[i].recv_data[SOUTH].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTH].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTH].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTH].msg //= DataType( 0, 0 )
 
       if i // width == height - 1:
-        s.tile[i].send_data[NORTH].rdy  //= 0
-        s.tile[i].recv_data[NORTH].en   //= 0
-        s.tile[i].recv_data[NORTH].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTH].rdy  //= 0
+        s.tile[i].recv_data[PORT_NORTH].en   //= 0
+        s.tile[i].recv_data[PORT_NORTH].msg  //= DataType( 0, 0 )
 
       if i % width == 0:
-        s.tile[i].send_data[WEST].rdy  //= 0
-        s.tile[i].recv_data[WEST].en   //= 0
-        s.tile[i].recv_data[WEST].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_WEST].rdy  //= 0
+        s.tile[i].recv_data[PORT_WEST].en   //= 0
+        s.tile[i].recv_data[PORT_WEST].msg  //= DataType( 0, 0 )
 
       if i % width == width - 1:
-        s.tile[i].send_data[EAST].rdy  //= 0
-        s.tile[i].recv_data[EAST].en   //= 0
-        s.tile[i].recv_data[EAST].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_EAST].rdy  //= 0
+        s.tile[i].recv_data[PORT_EAST].en   //= 0
+        s.tile[i].recv_data[PORT_EAST].msg  //= DataType( 0, 0 )
 
       if i % width == 0:
         s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[i // width]

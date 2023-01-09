@@ -50,89 +50,89 @@ class CGRAKingMeshRTL( Component ):
 
       # rows > 0
       if i // width > 0:
-        s.tile[i].send_data[SOUTH] //= s.tile[i-width].recv_data[NORTH]
+        s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
 
       # rows < height - 1
       if i // width < height - 1:
-        s.tile[i].send_data[NORTH] //= s.tile[i+width].recv_data[SOUTH]
+        s.tile[i].send_data[PORT_NORTH] //= s.tile[i+width].recv_data[PORT_SOUTH]
 
       # cols > 0
       if i % width > 0:
-        s.tile[i].send_data[WEST] //= s.tile[i-1].recv_data[EAST]
+        s.tile[i].send_data[PORT_WEST] //= s.tile[i-1].recv_data[PORT_EAST]
 
       # cols < width - 1
       if i % width < width - 1:
-        s.tile[i].send_data[EAST] //= s.tile[i+1].recv_data[WEST]
+        s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
       # cols > 0 and rows < height - 1
       if i % width > 0 and i // width < height - 1:
-        s.tile[i].send_data[NORTHWEST] //= s.tile[i+width-1].recv_data[SOUTHEAST]
-        s.tile[i+width-1].send_data[SOUTHEAST] //= s.tile[i].recv_data[NORTHWEST]
+        s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
+        s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
 
       # cols < width - 1 and rows < height - 1
       if i % width < width - 1 and i // width < height - 1:
-        s.tile[i].send_data[NORTHEAST] //= s.tile[i+width+1].recv_data[SOUTHWEST]
-        s.tile[i+width+1].send_data[SOUTHWEST] //= s.tile[i].recv_data[NORTHEAST]
+        s.tile[i].send_data[PORT_NORTHEAST] //= s.tile[i+width+1].recv_data[PORT_SOUTHWEST]
+        s.tile[i+width+1].send_data[PORT_SOUTHWEST] //= s.tile[i].recv_data[PORT_NORTHEAST]
 
       # rows == 0
       if i // width == 0:
-        s.tile[i].send_data[SOUTH].rdy //= 0
-        s.tile[i].recv_data[SOUTH].en  //= 0
-        s.tile[i].recv_data[SOUTH].msg //= DataType( 0, 0 )
-        s.tile[i].send_data[SOUTHWEST].rdy //= 0
-        s.tile[i].recv_data[SOUTHWEST].en  //= 0
-        s.tile[i].recv_data[SOUTHWEST].msg //= DataType( 0, 0 )
-        s.tile[i].send_data[SOUTHEAST].rdy //= 0
-        s.tile[i].recv_data[SOUTHEAST].en  //= 0
-        s.tile[i].recv_data[SOUTHEAST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTH].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTH].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTH].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTHWEST].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTHEAST].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType( 0, 0 )
 
       # rows < height - 1
       if i // width == height - 1:
-        s.tile[i].send_data[NORTH].rdy  //= 0
-        s.tile[i].recv_data[NORTH].en   //= 0
-        s.tile[i].recv_data[NORTH].msg  //= DataType( 0, 0 )
-        s.tile[i].send_data[NORTHWEST].rdy //= 0
-        s.tile[i].recv_data[NORTHWEST].en  //= 0
-        s.tile[i].recv_data[NORTHWEST].msg //= DataType( 0, 0 )
-        s.tile[i].send_data[NORTHEAST].rdy //= 0
-        s.tile[i].recv_data[NORTHEAST].en  //= 0
-        s.tile[i].recv_data[NORTHEAST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTH].rdy  //= 0
+        s.tile[i].recv_data[PORT_NORTH].en   //= 0
+        s.tile[i].recv_data[PORT_NORTH].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
+        s.tile[i].recv_data[PORT_NORTHWEST].en  //= 0
+        s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
+        s.tile[i].recv_data[PORT_NORTHEAST].en  //= 0
+        s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType( 0, 0 )
 
       # cols == 0 and rows > 0
       if i % width == 0 and i // width > 0:
-        s.tile[i].send_data[SOUTHWEST].rdy //= 0
-        s.tile[i].recv_data[SOUTHWEST].en  //= 0
-        s.tile[i].recv_data[SOUTHWEST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTHWEST].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType( 0, 0 )
 
       # cols == 0 and rows > 0
       if i % width == 0 and i // width < height - 1:
-        s.tile[i].send_data[NORTHWEST].rdy //= 0
-        s.tile[i].recv_data[NORTHWEST].en  //= 0
-        s.tile[i].recv_data[NORTHWEST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
+        s.tile[i].recv_data[PORT_NORTHWEST].en  //= 0
+        s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType( 0, 0 )
 
       # cols == width - 1 and rows > 0
       if i % width == width - 1 and i // width > 0:
-        s.tile[i].send_data[SOUTHEAST].rdy //= 0
-        s.tile[i].recv_data[SOUTHEAST].en  //= 0
-        s.tile[i].recv_data[SOUTHEAST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
+        s.tile[i].recv_data[PORT_SOUTHEAST].en  //= 0
+        s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType( 0, 0 )
 
       # cols == width - 1 and rows > 0
       if i % width == width - 1 and i // width < height - 1:
-        s.tile[i].send_data[NORTHEAST].rdy //= 0
-        s.tile[i].recv_data[NORTHEAST].en  //= 0
-        s.tile[i].recv_data[NORTHEAST].msg //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
+        s.tile[i].recv_data[PORT_NORTHEAST].en  //= 0
+        s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType( 0, 0 )
 
       # cols == 0
       if i % width == 0:
-        s.tile[i].send_data[WEST].rdy  //= 0
-        s.tile[i].recv_data[WEST].en   //= 0
-        s.tile[i].recv_data[WEST].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_WEST].rdy  //= 0
+        s.tile[i].recv_data[PORT_WEST].en   //= 0
+        s.tile[i].recv_data[PORT_WEST].msg  //= DataType( 0, 0 )
 
       # cols == width - 1
       if i % width == width - 1:
-        s.tile[i].send_data[EAST].rdy  //= 0
-        s.tile[i].recv_data[EAST].en   //= 0
-        s.tile[i].recv_data[EAST].msg  //= DataType( 0, 0 )
+        s.tile[i].send_data[PORT_EAST].rdy  //= 0
+        s.tile[i].recv_data[PORT_EAST].en   //= 0
+        s.tile[i].recv_data[PORT_EAST].msg  //= DataType( 0, 0 )
 
       # cols == 0
       if i % width == 0:
