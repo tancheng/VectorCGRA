@@ -12,19 +12,19 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 
-VRSA (vectorizable and reconfigurable spatial accelerator) generator is a parameterizable CGRA (Coarse-Grained Reconfigurable Architecture) generator to generate synthesizable Verilog for different CGRAs based on user-specified configurations (e.g., CGRA size, type of the computing units in each tile, number of lanes for vectorization, communication connection, etc.).
+VectorCGRA (vectorizable Coarse-Grained Reconfigurable Accelerator) generator is a parameterizable CGRA generator to generate synthesizable Verilog for different CGRAs based on user-specified configurations (e.g., CGRA size, type of the computing units in each tile, number of lanes for vectorization, communication connection, etc.).
 
 Installation
 --------------------------------------------------------
 
-VRSA requires Python3.7 and has the following additional prerequisites:
+VectorCGRA requires Python3.7 and has the following additional prerequisites:
 
  - graphviz, verilator
  - git, Python headers, and libffi
  - virtualenv
  - PyMTL3
 
-The steps for installing these prerequisites and VRSA on a fresh Ubuntu
+The steps for installing these prerequisites and VectorCGRA on a fresh Ubuntu
 distribution are shown below. They have been tested with Ubuntu Trusty
 14.04 ~ 18.04. (Ubuntu18.04 is preferred as the older versions are not
 well maintained)
@@ -44,7 +44,7 @@ well maintained)
 ### Install Verilator
 
 [Verilator][4] is an open-source toolchain for compiling Verilog RTL
-models into C++ simulators. VRSA uses Verilator for Verilog import.
+models into C++ simulators. VectorCGRA uses Verilator for Verilog import.
 
 ```
  $ sudo apt-get install git make autoconf g++ libfl-dev bison
@@ -89,25 +89,27 @@ commands will create and activate the virtual environment:
 ### Install PyMTL3 and Python requirements
 
 ```
+ % pip install py==1.11.0
  % pip install git+https://github.com/tancheng/pymtl3.git
  % pip install --upgrade pip setuptools twine
  % pip install hypothesis
  % pip list
 ```
+Take a look at the [workflow](https://github.com/tancheng/VectorCGRA/blob/master/.github/workflows/python-package.yml) if you encounter any problem to run the test in this repo.
 
-### Clone VRSA repo
+### Clone VectorCGRA repo
 
-We can now use git to clone the VRSA repo.
+We can now use git to clone the VectorCGRA repo.
 
 ```
  % mkdir -p ${HOME}/cgra
  % cd ${HOME}/cgra
- % git clone https://github.com/tancheng/VRSA.git
+ % git clone https://github.com/tancheng/VectorCGRA.git
 ```
 
 ### Run an example to generate Verilog
 
-In [folder](https://github.com/tancheng/VRSA/tree/master/cgra/translate), just type:
+In [folder](https://github.com/tancheng/VectorCGRA/tree/master/cgra/translate), just type:
 
 ```
  % pytest --tb=short -sv CGRARTL_test.py

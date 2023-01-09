@@ -28,7 +28,7 @@ class TileRTL( Component ):
                  num_fu_inports, num_fu_outports,
                  num_connect_inports, num_connect_outports,
                  Fu=FlexibleFuRTL,
-                 FuList=[MemUnitRTL,AdderRTL,PhiRTL,CompRTL,MulRTL,BranchRTL],
+                 FuList=[PhiRTL,AdderRTL,CompRTL,MulRTL,BranchRTL,MemUnitRTL],
                  const_list = None ):
 
     # Constant
