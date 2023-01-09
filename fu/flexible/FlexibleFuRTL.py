@@ -23,7 +23,7 @@ class FlexibleFuRTL( Component ):
     # Constant
     s.fu_list_size = len( FuList )
     num_entries = 2
-    CountType     = mk_bits( clog2( num_entries + 1 ) )
+    CountType = mk_bits( clog2( num_entries + 1 ) )
     AddrType = mk_bits( clog2( data_mem_size ) )
 
     # Interface
@@ -54,7 +54,7 @@ class FlexibleFuRTL( Component ):
     def comb_logic():
 
       for j in range( num_outports ):
-        s.send_out[j].en  = b1( 0 )
+        s.send_out[j].en = b1( 0 )
 
       for i in range( s.fu_list_size ):
 
