@@ -14,6 +14,10 @@
 
 VectorCGRA (vectorizable Coarse-Grained Reconfigurable Accelerator) generator is a parameterizable CGRA generator to generate synthesizable Verilog for different CGRAs based on user-specified configurations (e.g., CGRA size, type of the computing units in each tile, number of lanes for vectorization, communication connection, etc.).
 
+Docker
+--------------------------------------------------------
+The docker image is available [here](https://hub.docker.com/layers/cgra/cgra-flow/demo/images/sha256-7ca327d24f555376d91cba6fa30e3fbaa4a4c0d4053a82ac9059c374a3dee5bd?context=repo).
+
 Installation
 --------------------------------------------------------
 
