@@ -20,6 +20,7 @@ from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
 from ...fu.vector.VectorMulComboRTL       import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL     import VectorAdderComboRTL
+from ...fu.vector.VectorAllReduceRTL      import VectorAllReduceRTL
 from ...fu.single.AdderRTL                import AdderRTL
 from ...fu.single.MemUnitRTL              import MemUnitRTL
 from ...fu.single.MulRTL                  import MulRTL
@@ -125,12 +126,13 @@ def test_tile_alu():
   ctrl_mem_size        = 3
   data_mem_size        = 8
   num_fu_in            = 4
+
   RouteType     = mk_bits( clog2( num_xbar_inports + 1 ) )
   AddrType      = mk_bits( clog2( ctrl_mem_size ) )
   DUT           = TileRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [ AdderRTL, BranchRTL, MemUnitRTL, VectorMulComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL ]
-  # FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL ]
+  # FuList        = [ AdderRTL, BranchRTL, MemUnitRTL, VectorMulComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL, VectorAdderComboRTL ]
+  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL, VectorAdderComboRTL ]#, VectorAllReduceRTL ]
 #  FuList       = [AdderRTL]
 #  FuList      = [ThreeMulAdderShifterRTL]
   DataType      = mk_data( 64, 1 )

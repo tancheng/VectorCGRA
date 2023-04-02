@@ -26,6 +26,7 @@ class VectorAllReduceRTL( Component ):
     num_entries  = 4
     CountType    = mk_bits( clog2( num_entries + 1 ) )
     sub_bw       = data_bandwidth // num_lanes
+    s.const_zero = DataType(0, 0)
 
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
@@ -79,6 +80,16 @@ class VectorAllReduceRTL( Component ):
         s.recv_predicate.rdy = b1( 1 )
       if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
         s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate
+
+    @s.update
+    def update_mem():
+      s.to_mem_waddr.en    = b1( 0 )
+      s.to_mem_wdata.en    = b1( 0 )
+      s.to_mem_wdata.msg   = s.const_zero
+      s.to_mem_waddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.msg   = AddrType( 0 )
+      s.to_mem_raddr.en    = b1( 0 )
+      s.from_mem_rdata.rdy = b1( 0 )
 
   def line_trace( s ):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + " -> " + str(s.send_out[0].msg)
