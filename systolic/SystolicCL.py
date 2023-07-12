@@ -8,11 +8,11 @@ Author : Cheng Tan
 """
 
 from pymtl3                   import *
-from pymtl3.stdlib.ifcs       import SendIfcRTL, RecvIfcRTL
 from ..noc.CrossbarRTL        import CrossbarRTL
 from ..noc.ChannelRTL         import ChannelRTL
 from ..tile.TileCL            import TileCL
 from ..lib.opt_type           import *
+from ..lib.ifcs               import SendIfcRTL, RecvIfcRTL
 from ..mem.data.DataMemCL     import DataMemCL
 
 class SystolicCL( Component ):
@@ -96,7 +96,7 @@ class SystolicCL( Component ):
   # Line trace
   def line_trace( s ):
     str = "||\n".join([ (x.line_trace() + x.ctrl_mem.line_trace())
-                      for x in s.tile ]) 
+                      for x in s.tile ])
     str += "\n[data] :: [" + s.data_mem.line_trace() + "]\n"
     return str
 

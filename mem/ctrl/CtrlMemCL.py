@@ -52,7 +52,7 @@ class CtrlMemCL( Component ):
       if s.send_ctrl.rdy:
         if s.times < TimeType( num_ctrl ):
           s.times <<= s.times + TimeType( 1 )
-        if s.cur + AddrType( 1 )  == AddrType( num_ctrl ):
+        if zext(s.cur + 1, TimeType)  == TimeType(num_ctrl):
           s.cur <<= AddrType( 0 )
         else:
           s.cur <<= s.cur + AddrType( 1 )
