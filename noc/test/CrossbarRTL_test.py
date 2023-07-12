@@ -9,13 +9,13 @@ Author : Cheng Tan
 
 """
 
-from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
+from pymtl3            import *
+from ...lib.test_sinks import TestSinkRTL
+from ...lib.test_srcs  import TestSrcRTL
 
-from ..CrossbarRTL                import CrossbarRTL
-from ...lib.opt_type              import *
-from ...lib.messages              import *
+from ..CrossbarRTL   import CrossbarRTL
+from ...lib.opt_type import *
+from ...lib.messages import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -33,7 +33,7 @@ class TestHarness( Component ):
     s.src_opt      = TestSrcRTL( CtrlType, src_routing )
     s.src_data     = [ TestSrcRTL( DataType, src_data[i]  )
                      for i in range( num_inports  ) ]
-    s.sink_out     = [ TestSinkCL( DataType, sink_out[i] )
+    s.sink_out     = [ TestSinkRTL( DataType, sink_out[i] )
                      for i in range( num_outports ) ]
 
     s.dut = CrossbarUnit( DataType, PredicateType, CtrlType, num_inports,
@@ -61,7 +61,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=100 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -69,7 +69,7 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
@@ -77,9 +77,9 @@ def run_sim( test_harness, max_cycles=100 ):
 
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 def test_crossbar():
   FU = CrossbarRTL
