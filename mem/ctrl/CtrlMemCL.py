@@ -9,10 +9,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from pymtl3.stdlib.rtl  import RegisterFile
+from pymtl3                  import *
+from pymtl3.stdlib.primitive import RegisterFile
+
+from ...lib.ifcs     import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
 
 class CtrlMemCL( Component ):
 
@@ -33,20 +34,20 @@ class CtrlMemCL( Component ):
     s.times = Wire( TimeType )
     s.cur  = Wire( AddrType )
 
-    @s.update
+    @update
     def load():
-      s.send_ctrl.msg = s.sram[ s.cur ]
+      s.send_ctrl.msg @= s.sram[ s.cur ]
 
-    @s.update
+    @update
     def update_signal():
       if s.times == TimeType( num_ctrl ) or s.sram[s.cur].ctrl == OPT_START:
-        s.send_ctrl.en = b1( 0 )
+        s.send_ctrl.en @= b1( 0 )
       else:
-        s.send_ctrl.en  = s.send_ctrl.rdy
+        s.send_ctrl.en  @= s.send_ctrl.rdy
       # if s.id == 6:
       #   print("[update] tile[", s.id, "] check ctrl out: ", s.send_ctrl.msg, "; send_ctrl.en: ", s.send_ctrl.en, "; send_ctrl.rdy: ", s.send_ctrl.rdy, "; cur: ", s.cur, "; times: ", s.times)
 
-    @s.update_ff
+    @update_ff
     def update_raddr():
       if s.send_ctrl.rdy:
         if s.times < TimeType( num_ctrl ):

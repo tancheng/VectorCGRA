@@ -9,10 +9,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from pymtl3.stdlib.rtl  import RegisterFile
+from pymtl3 import *
+from pymtl3.stdlib.primitive import RegisterFile
+
+from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
 
 class ConstQueueRTL( Component ):
 
@@ -34,15 +35,15 @@ class ConstQueueRTL( Component ):
       s.const_queue[ i ] = const_list[i]
     s.cur  = Wire( AddrType )
 
-    @s.update
+    @update
     def load():
-      s.send_const.msg = s.const_queue[ s.cur ]
+      s.send_const.msg @= s.const_queue[ s.cur ]
 
-    @s.update
+    @update
     def update_en():
-      s.send_const.en = s.send_const.rdy
+      s.send_const.en @= s.send_const.rdy
 
-    @s.update_ff
+    @update_ff
     def update_raddr():
       if s.send_const.rdy:
         if s.cur + AddrType( 1 )  >= AddrType( num_const ):

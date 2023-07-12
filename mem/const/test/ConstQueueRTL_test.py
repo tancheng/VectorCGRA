@@ -10,8 +10,8 @@ Author : Cheng Tan
 """
 
 from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
+from ....lib.test_sinks           import TestSinkRTL
+from ....lib.test_srcs            import TestSrcRTL
 
 from ....fu.single.AdderRTL       import AdderRTL
 from ....lib.opt_type             import *
@@ -27,9 +27,9 @@ class TestHarness( Component ):
   def construct( s, DataType, PredicateType, ConfigType, src0_msgs,
                  src_const, ctrl_msgs, sink_msgs ):
 
-    s.src_in0     = TestSrcRTL( DataType,   src0_msgs )
-    s.src_opt     = TestSrcRTL( ConfigType, ctrl_msgs )
-    s.sink_out    = TestSinkCL( DataType,   sink_msgs )
+    s.src_in0     = TestSrcRTL ( DataType,   src0_msgs )
+    s.src_opt     = TestSrcRTL ( ConfigType, ctrl_msgs )
+    s.sink_out    = TestSinkRTL( DataType,   sink_msgs )
 
     s.alu         = AdderRTL( DataType, PredicateType, ConfigType,
                               2, 1, 8 )
@@ -51,7 +51,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=10 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -60,7 +60,7 @@ def run_sim( test_harness, max_cycles=10 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
@@ -68,9 +68,9 @@ def run_sim( test_harness, max_cycles=10 ):
 
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 def test_const_queue():
   DataType      = mk_data( 16, 1 )

@@ -9,10 +9,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from pymtl3.stdlib.rtl  import RegisterFile
+from pymtl3                  import *
+from pymtl3.stdlib.primitive import RegisterFile
+
+from ...lib.ifcs     import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
 
 class CtrlMemRTL( Component ):
 
@@ -39,16 +40,16 @@ class CtrlMemRTL( Component ):
     s.reg_file.wdata[0] //= s.recv_ctrl.msg
     s.reg_file.wen[0]   //= s.recv_ctrl.en  and s.recv_waddr.en
 
-    @s.update
+    @update
     def update_signal():
       if s.times == TimeType( num_ctrl ) or s.reg_file.rdata[0].ctrl == OPT_START:
-        s.send_ctrl.en = b1( 0 )
+        s.send_ctrl.en @= b1( 0 )
       else:
-        s.send_ctrl.en  = s.send_ctrl.rdy # s.recv_raddr[i].rdy
-      s.recv_waddr.rdy = b1( 1 )
-      s.recv_ctrl.rdy = b1( 1 )
+        s.send_ctrl.en @= s.send_ctrl.rdy # s.recv_raddr[i].rdy
+      s.recv_waddr.rdy @= b1( 1 )
+      s.recv_ctrl.rdy @= b1( 1 )
 
-    @s.update_ff
+    @update_ff
     def update_raddr():
       if s.reg_file.rdata[0].ctrl != OPT_START:
         if s.times < TimeType( num_ctrl ):
