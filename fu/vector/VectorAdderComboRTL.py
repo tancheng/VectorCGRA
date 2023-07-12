@@ -38,18 +38,19 @@ class VectorAdderComboRTL( Component ):
     s.recv_predicate = RecvIfcRTL( PredicateType )
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
-    s.initial_carry_in  = InPort( b1 )
-    s.initial_carry_out = OutPort( b1 )
+    # s.initial_carry_in  = InPort( b1 )
+    # s.initial_carry_out = OutPort( b1 )
 
     # Components
     s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
              for _ in range( num_lanes ) ]
 
     # Connection: for carry-in/out
-    s.Fu[0].carry_in //= s.initial_carry_in # b1( 0 )
+    # s.Fu[0].carry_in //= s.initial_carry_in # b1( 0 )
+    s.Fu[0].carry_in //= 0
     for i in range( 1, num_lanes ):
       s.Fu[i].carry_in //= s.Fu[i-1].carry_out
-    s.initial_carry_out //= s.Fu[num_lanes-1].carry_out
+    # s.initial_carry_out //= s.Fu[num_lanes-1].carry_out
 
     for i in range( num_lanes ):
       # Connection: split into vectorized FUs

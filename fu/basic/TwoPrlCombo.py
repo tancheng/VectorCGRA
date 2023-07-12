@@ -35,8 +35,8 @@ class TwoPrlCombo( Component ):
     s.from_mem_rdata = RecvIfcRTL( DataType )
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
-    s.initial_carry_in  = InPort( b1 )
-    s.initial_carry_out = OutPort( b1 )
+    # s.initial_carry_in  = InPort( b1 )
+    # s.initial_carry_out = OutPort( b1 )
 
     # Components
     s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )

@@ -54,8 +54,8 @@ class VectorMulComboRTL( Component ):
              for _ in range( num_lanes ) ]
 
     # Redundant interfaces for MemUnit
-    s.initial_carry_in  = InPort( b1 )
-    s.initial_carry_out = OutPort( b1 )
+    # s.initial_carry_in  = InPort( b1 )
+    # s.initial_carry_out = OutPort( b1 )
     AddrType         = mk_bits( clog2( data_mem_size ) )
     s.to_mem_raddr   = SendIfcRTL( AddrType )
     s.from_mem_rdata = RecvIfcRTL( DataType )

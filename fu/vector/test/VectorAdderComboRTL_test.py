@@ -40,7 +40,7 @@ class TestHarness( Component ):
 
     s.dut.recv_in_count[0] //= 1
     s.dut.recv_in_count[1] //= 1
-    s.dut.initial_carry_in //= 0
+    # s.dut.initial_carry_in //= 0
 
     connect( s.src_in0.send,       s.dut.recv_in[0]     )
     connect( s.src_in1.send,       s.dut.recv_in[1]     )
