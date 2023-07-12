@@ -12,7 +12,7 @@ Author : Cheng Tan
 """
 
 from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
 from .VectorMulRTL      import VectorMulRTL
 from ...lib.opt_type    import *
 
@@ -62,104 +62,104 @@ class VectorMulComboRTL( Component ):
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
-
-    @s.update
+    # TODO: use & instead of and
+    @update
     def update_input_output():
 
-      s.send_out[0].en = s.recv_in[0].en and\
-                         s.recv_in[1].en and\
-                         s.recv_opt.en
+      s.send_out[0].en @= s.recv_in[0].en & \
+                          s.recv_in[1].en & \
+                          s.recv_opt.en
 
       if s.recv_opt.msg.ctrl == OPT_VEC_MUL:
 
-        s.send_out[0].msg.payload[0:data_bandwidth] = TempDataType( 0 )
+        s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
 
         # Connection: split into vectorized FUs
-        s.Fu[0].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[0].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[1].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[2].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw_2:sub_bw_3]
-        s.Fu[2].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw_2:sub_bw_3]
-        s.Fu[3].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw_3:sub_bw_4]
-        s.Fu[3].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw_3:sub_bw_4]
+        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
+        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw_3:sub_bw_4]
+        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw_3:sub_bw_4]
 
         for i in range( num_lanes ):
 
-          s.temp_result[i] = TempDataType( 0 )
-          s.temp_result[i][0:sub_bw_2] = s.Fu[i].send_out[0].msg[0:sub_bw_2]
-  
-          s.send_out[0].msg.payload[0:data_bandwidth] = s.send_out[0].msg.payload[0:data_bandwidth] + (s.temp_result[i] << (sub_bw * i));
-          # s.send_out[0].msg.payload[sub_bw*i:sub_bw*(i+1)] = s.Fu[i].send_out[0].msg[0:sub_bw];
+          s.temp_result[i] @= TempDataType( 0 )
+          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
+
+          s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] + (s.temp_result[i] << (sub_bw * i));
+          # s.send_out[0].msg.payload[sub_bw*i:sub_bw*(i+1)] @= s.Fu[i].send_out[0].msg[0:sub_bw];
 
       elif s.recv_opt.msg.ctrl == OPT_MUL: # with highest precision
 
-        s.Fu[0].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[0].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2] 
-        s.Fu[2].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2] 
-        s.Fu[2].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[3].recv_in[0].msg[0:sub_bw] = s.recv_in[0].msg.payload[sub_bw:sub_bw_2] 
-        s.Fu[3].recv_in[1].msg[0:sub_bw] = s.recv_in[1].msg.payload[sub_bw:sub_bw_2] 
-    
+        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
+        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
+        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
+
         for i in range( num_lanes ):
-          s.temp_result[i] = TempDataType( 0 )
-          s.temp_result[i][0:sub_bw_2] = s.Fu[i].send_out[0].msg[0:sub_bw_2]
-  
-        s.send_out[0].msg.payload[0:data_bandwidth] = s.temp_result[0] + (s.temp_result[1] << sub_bw) + (s.temp_result[2] << sub_bw) + (s.temp_result[3] << (sub_bw*2))
+          s.temp_result[i] @= TempDataType( 0 )
+          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
+
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.temp_result[0] + (s.temp_result[1] << sub_bw) + (s.temp_result[2] << sub_bw) + (s.temp_result[3] << (sub_bw*2))
 
       else:
         for j in range( num_outports ):
-          s.send_out[j].en = b1( 0 )
+          s.send_out[j].en @= b1( 0 )
 
 
-    @s.update
+    @update
     def update_signal():
-      s.recv_in[0].rdy  = s.send_out[0].rdy
-      s.recv_in[1].rdy  = s.send_out[0].rdy
+      s.recv_in[0].rdy  @= s.send_out[0].rdy
+      s.recv_in[1].rdy  @= s.send_out[0].rdy
 
       for i in range( num_lanes ):
-        s.Fu[i].recv_opt.en = s.recv_opt.en
+        s.Fu[i].recv_opt.en @= s.recv_opt.en
 
         # Note that the predication for a combined FU should be identical/shareable,
         # which means the computation in different basic block cannot be combined.
         # s.Fu[i].recv_opt.msg.predicate = s.recv_opt.msg.predicate
 
         # Connect count
-        s.Fu[i].recv_in_count[0] = s.recv_in_count[0]
-        s.Fu[i].recv_in_count[1] = s.recv_in_count[1]
+        s.Fu[i].recv_in_count[0] @= s.recv_in_count[0]
+        s.Fu[i].recv_in_count[1] @= s.recv_in_count[1]
 
-      s.recv_opt.rdy    = s.send_out[0].rdy
+      s.recv_opt.rdy    @= s.send_out[0].rdy
 
     FuInType = mk_bits( clog2( num_inports + 1 ) )
 
-    @s.update
+    @update
     def update_opt():
 
       for i in range( num_lanes ):
-        s.Fu[i].recv_opt.msg.fu_in[0] = FuInType(1)
-        s.Fu[i].recv_opt.msg.fu_in[1] = FuInType(2)
+        s.Fu[i].recv_opt.msg.fu_in[0] @= 1
+        s.Fu[i].recv_opt.msg.fu_in[1] @= 2
 
-      s.recv_predicate.rdy = b1( 0 )
+      s.recv_predicate.rdy @= b1( 0 )
       if s.recv_opt.msg.predicate == b1( 1 ):
-        s.recv_predicate.rdy = b1( 1 )
+        s.recv_predicate.rdy @= b1( 1 )
 
-      if s.recv_opt.msg.ctrl == OPT_VEC_MUL or\
-         s.recv_opt.msg.ctrl == OPT_MUL:
+      if (s.recv_opt.msg.ctrl == OPT_VEC_MUL) | \
+         (s.recv_opt.msg.ctrl == OPT_MUL):
         for i in range( num_lanes ):
-          s.Fu[i].recv_opt.msg.ctrl = OPT_MUL
-        s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and s.recv_in[1].msg.predicate
+          s.Fu[i].recv_opt.msg.ctrl @= OPT_MUL
+        s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
-    @s.update
+    @update
     def update_mem():
-      s.to_mem_waddr.en    = b1( 0 )
-      s.to_mem_wdata.en    = b1( 0 )
-      s.to_mem_wdata.msg   = s.const_zero
-      s.to_mem_waddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.en    = b1( 0 )
-      s.from_mem_rdata.rdy = b1( 0 )
+      s.to_mem_waddr.en    @= b1( 0 )
+      s.to_mem_wdata.en    @= b1( 0 )
+      s.to_mem_wdata.msg   @= s.const_zero
+      s.to_mem_waddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.en    @= b1( 0 )
+      s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace( s ):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)

@@ -10,8 +10,8 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
+from ....lib.test_sinks           import TestSinkRTL
+from ....lib.test_srcs            import TestSrcRTL
 
 from ..FlexibleFuRTL              import FlexibleFuRTL
 from ....lib.opt_type             import *
@@ -50,7 +50,7 @@ class TestHarness( Component ):
     s.src_predicate = TestSrcRTL( PredicateType, src_predicate )
     s.src_const     = TestSrcRTL( DataType,      src1_msgs     )
     s.src_opt       = TestSrcRTL( CtrlType,      ctrl_msgs     )
-    s.sink_out0     = TestSinkCL( DataType,      sink0_msgs    )
+    s.sink_out0     = TestSinkRTL( DataType,      sink0_msgs    )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size, FuList )
@@ -66,10 +66,10 @@ class TestHarness( Component ):
     connect( s.dut.send_out[0],    s.sink_out0.recv     )
 
     AddrType = mk_bits( clog2( data_mem_size ) )
-    s.to_mem_raddr   = [ TestSinkCL( AddrType, [] ) for _ in FuList ]
+    s.to_mem_raddr   = [ TestSinkRTL( AddrType, [] ) for _ in FuList ]
     s.from_mem_rdata = [ TestSrcRTL( DataType, [] ) for _ in FuList ]
-    s.to_mem_waddr   = [ TestSinkCL( AddrType, [] ) for _ in FuList ]
-    s.to_mem_wdata   = [ TestSinkCL( DataType, [] ) for _ in FuList ]
+    s.to_mem_waddr   = [ TestSinkRTL( AddrType, [] ) for _ in FuList ]
+    s.to_mem_wdata   = [ TestSinkRTL( DataType, [] ) for _ in FuList ]
 
     for i in range( len( FuList ) ):
       s.to_mem_raddr[i].recv   //= s.dut.to_mem_raddr[i]
@@ -86,7 +86,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=100 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -94,16 +94,16 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   # Check timeout
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 
 func_opt = { AdderRTL : OPT_ADD,

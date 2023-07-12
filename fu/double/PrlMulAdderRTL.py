@@ -10,7 +10,7 @@ Author : Cheng Tan
 """
 
 from pymtl3              import *
-from pymtl3.stdlib.ifcs  import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs  import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type     import *
 from ..basic.TwoPrlCombo import TwoPrlCombo
 from ..single.MulRTL     import MulRTL
@@ -27,7 +27,7 @@ class PrlMulAdderRTL( TwoPrlCombo ):
 
     FuInType = mk_bits( clog2( num_inports + 1 ) )
 
-    @s.update
+    @update
     def update_opt():
 #      if s.recv_opt.msg.ctrl == OPT_MUL_ADD:
 #        s.Fu0.recv_opt.msg = CtrlType( OPT_MUL, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
@@ -36,17 +36,17 @@ class PrlMulAdderRTL( TwoPrlCombo ):
 #        s.Fu0.recv_opt.msg = CtrlType( OPT_MUL, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
 #        s.Fu1.recv_opt.msg = CtrlType( OPT_SUB, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
 
-      s.Fu0.recv_opt.msg.fu_in[0] = FuInType(1)
-      s.Fu0.recv_opt.msg.fu_in[1] = FuInType(2)
-      s.Fu1.recv_opt.msg.fu_in[0] = FuInType(1)
-      s.Fu1.recv_opt.msg.fu_in[1] = FuInType(2)
+      s.Fu0.recv_opt.msg.fu_in[0] @= 1
+      s.Fu0.recv_opt.msg.fu_in[1] @= 2
+      s.Fu1.recv_opt.msg.fu_in[0] @= 1
+      s.Fu1.recv_opt.msg.fu_in[1] @= 2
 
       if s.recv_opt.msg.ctrl == OPT_MUL_ADD:
-        s.Fu0.recv_opt.msg.ctrl = OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl = OPT_ADD
+        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
+        s.Fu1.recv_opt.msg.ctrl @= OPT_ADD
       elif s.recv_opt.msg.ctrl == OPT_MUL_SUB:
-        s.Fu0.recv_opt.msg.ctrl = OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl = OPT_SUB
+        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
+        s.Fu1.recv_opt.msg.ctrl @= OPT_SUB
 
       # TODO: can handle the customized cases if there are.
 

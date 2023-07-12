@@ -10,8 +10,8 @@ Author : Cheng Tan
 """
 
 from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
+from ....lib.test_sinks           import TestSinkRTL
+from ....lib.test_srcs            import TestSrcRTL
 
 from ..BranchRTL                  import BranchRTL
 from ....lib.opt_type             import *
@@ -30,8 +30,8 @@ class TestHarness( Component ):
     s.src_comp      = TestSrcRTL( DataType,      src_comp      )
     s.src_predicate = TestSrcRTL( PredicateType, src_predicate )
     s.src_opt       = TestSrcRTL( CtrlType,      src_opt       )
-    s.sink_if       = TestSinkCL( DataType,      sink_if       )
-    s.sink_else     = TestSinkCL( DataType,      sink_else     )
+    s.sink_if       = TestSinkRTL( DataType,      sink_if       )
+    s.sink_else     = TestSinkRTL( DataType,      sink_else     )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size )
@@ -46,14 +46,14 @@ class TestHarness( Component ):
     connect( s.dut.send_out[1],    s.sink_else.recv     )
 
   def done( s ):
-    return s.src_opt.done() and s.sink_if.done()  and s.sink_else.done() 
+    return s.src_opt.done() and s.sink_if.done()  and s.sink_else.done()
 
   def line_trace( s ):
     return s.dut.line_trace()
 
 def run_sim( test_harness, max_cycles=100 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -62,7 +62,7 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
@@ -70,9 +70,9 @@ def run_sim( test_harness, max_cycles=100 ):
 
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 def test_Branch():
   FU            = BranchRTL
