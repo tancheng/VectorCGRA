@@ -38,11 +38,11 @@ class CtrlMemRTL( Component ):
     s.send_ctrl.msg //= s.reg_file.rdata[0]
     s.reg_file.waddr[0] //= s.recv_waddr.msg
     s.reg_file.wdata[0] //= s.recv_ctrl.msg
-    s.reg_file.wen[0]   //= s.recv_ctrl.en  and s.recv_waddr.en
+    s.reg_file.wen[0]   //= lambda: s.recv_ctrl.en & s.recv_waddr.en
 
     @update
     def update_signal():
-      if s.times == TimeType( num_ctrl ) or s.reg_file.rdata[0].ctrl == OPT_START:
+      if (s.times == TimeType( num_ctrl )) | (s.reg_file.rdata[0].ctrl == OPT_START):
         s.send_ctrl.en @= b1( 0 )
       else:
         s.send_ctrl.en @= s.send_ctrl.rdy # s.recv_raddr[i].rdy

@@ -30,9 +30,10 @@ class ConstQueueRTL( Component ):
 
     # Component
 
-    s.const_queue = [ DataType( 0 ) for _ in range( num_const ) ]
-    for i in range( len( const_list ) ):
-      s.const_queue[ i ] = const_list[i]
+    s.const_queue = [ Wire( DataType ) for _ in range( num_const ) ]
+    for i, const_value in enumerate( const_list ):
+      s.const_queue[ i ] //= const_value
+
     s.cur  = Wire( AddrType )
 
     @update
