@@ -7,12 +7,13 @@
 #   Date : Dec 11, 2019
 
 import pytest
-from pymtl3                        import *
-from pymtl3.stdlib.test.test_srcs  import TestSrcRTL
-from pymtl3.stdlib.test.test_sinks import TestSinkRTL, TestSinkCL
-from pymtl3.stdlib.test            import TestVectorSimulator
-from ..RegisterRTL                 import RegisterRTL
-from ...lib.messages               import *
+from pymtl3 import *
+from pymtl3.stdlib.test_utils import TestVectorSimulator
+
+from ...lib.test_sinks import TestSinkRTL
+from ...lib.test_srcs  import TestSrcRTL
+from ...lib.messages   import *
+from ..RegisterRTL     import RegisterRTL
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -45,7 +46,7 @@ def run_sim( test_harness, max_cycles=100 ):
 
   # Create a simulator
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -53,16 +54,16 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   # Check timeout
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 #-------------------------------------------------------------------------
 # Test cases

@@ -10,12 +10,12 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
 
-from ..RegFile                    import RegFile
-from ...lib.opt_type             import *
-from ...lib.messages             import *
+from ...lib.test_sinks import TestSinkRTL
+from ...lib.test_srcs  import TestSrcRTL
+from ...lib.opt_type   import *
+from ...lib.messages   import *
+from ..RegFile         import RegFile
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -26,12 +26,12 @@ class TestHarness( Component ):
   def construct( s, FunctionUnit, DataType, nregs,
                  src_waddr, src_wdata, src_raddr, sink_rdata ):
 
-    AddrType = mk_bits( clog2( nregs ) )
+    AddrType = mk_bits( max(clog2( nregs ), 1) )
 
-    s.src_waddr  = TestSrcRTL( AddrType, src_waddr  )
-    s.src_wdata  = TestSrcRTL( DataType, src_wdata  )
-    s.src_raddr  = TestSrcRTL( AddrType, src_raddr  )
-    s.sink_rdata = TestSinkCL( DataType, sink_rdata )
+    s.src_waddr  = TestSrcRTL ( AddrType, src_waddr  )
+    s.src_wdata  = TestSrcRTL ( DataType, src_wdata  )
+    s.src_raddr  = TestSrcRTL ( AddrType, src_raddr  )
+    s.sink_rdata = TestSinkRTL( DataType, sink_rdata )
 
     s.dut = FunctionUnit( DataType, nregs )
 
@@ -48,7 +48,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=100 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -57,26 +57,26 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   # Check timeout
 
   assert ncycles < max_cycles
-  
+
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 def test_RegFile():
   FU = RegFile
 #  DataType  = mk_data( 16, 1 )
   nregs      = 1
   DataType   = Bits32
-  AddrType   = mk_bits( clog2( nregs ) )
+  AddrType   = mk_bits( max(clog2( nregs ), 1) )
   src_waddr  = [ AddrType(0), AddrType(0), AddrType(0) ]
   src_wdata  = [ DataType(1), DataType(3), DataType(2) ]
   src_raddr  = [ AddrType(0), AddrType(0), AddrType(0) ]
