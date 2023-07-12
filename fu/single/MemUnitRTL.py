@@ -64,11 +64,11 @@ class MemUnitRTL( Component ):
       s.recv_predicate.rdy @= b1( 0 )
 
       if s.recv_opt.en:
-        if s.recv_opt.msg.fu_in[0] != FuInType( 0 ):
-          s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType( 1 )
+        if s.recv_opt.msg.fu_in[0] != 0:
+          s.in0 @= zext( s.recv_opt.msg.fu_in[0] - 1, FuInType )
           s.recv_in[s.in0_idx].rdy @= b1( 1 )
-        if s.recv_opt.msg.fu_in[1] != FuInType( 0 ):
-          s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType( 1 )
+        if s.recv_opt.msg.fu_in[1] != 0:
+          s.in1 @= zext( s.recv_opt.msg.fu_in[1] - 1, FuInType )
           s.recv_in[s.in1_idx].rdy @= b1( 1 )
         if s.recv_opt.msg.predicate == b1( 1 ):
           s.recv_predicate.rdy @= b1( 1 )

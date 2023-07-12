@@ -74,7 +74,7 @@ module NormalQueueCtrlRTL__num_entries_2
 
   // PyMTL Update Block Source
   // At /home/ct535/project/venv_latest_pymtl3/src/pymtl3/pymtl3/stdlib/rtl/queues.py:91
-  // @s.update_ff
+  // @update_ff
   // def up_reg():
   // 
   //   if s.reset:
@@ -143,7 +143,7 @@ module RegisterFile__5e83938a33bc07e5
 
   // PyMTL Update Block Source
   // At /home/ct535/project/venv_latest_pymtl3/src/pymtl3/pymtl3/stdlib/rtl/RegisterFile.py:20
-  // @s.update
+  // @update
   // def up_rf_read():
   //   for i in range( rd_ports ):
   //     s.rdata[i] = s.regs[ s.raddr[i] ]
@@ -155,7 +155,7 @@ module RegisterFile__5e83938a33bc07e5
 
   // PyMTL Update Block Source
   // At /home/ct535/project/venv_latest_pymtl3/src/pymtl3/pymtl3/stdlib/rtl/RegisterFile.py:32
-  // @s.update_ff
+  // @update_ff
   // def up_rf_write():
   //   for i in range( wr_ports ):
   //     if s.wen[i]:
@@ -363,7 +363,7 @@ module Channel__DataType_CGRAData_32_1__latency_1
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/noc/Channel.py:36
-  // @s.update
+  // @update
   // def process():
   //   s.queues[0].enq.msg = s.recv.msg
   //   s.queues[0].enq.en  = s.recv.en and s.queues[0].enq.rdy
@@ -421,7 +421,7 @@ module Crossbar__85a8b278d9b91463
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/noc/Crossbar.py:32
-  // @s.update
+  // @update
   // def update_signal():
   //   out_rdy = b1( 0 )
   //   if s.recv_opt.msg.ctrl != OPT_START:
@@ -481,7 +481,7 @@ module RegisterFile__c03acdb717cf6fb7
 
   // PyMTL Update Block Source
   // At /home/ct535/project/venv_latest_pymtl3/src/pymtl3/pymtl3/stdlib/rtl/RegisterFile.py:20
-  // @s.update
+  // @update
   // def up_rf_read():
   //   for i in range( rd_ports ):
   //     s.rdata[i] = s.regs[ s.raddr[i] ]
@@ -493,7 +493,7 @@ module RegisterFile__c03acdb717cf6fb7
 
   // PyMTL Update Block Source
   // At /home/ct535/project/venv_latest_pymtl3/src/pymtl3/pymtl3/stdlib/rtl/RegisterFile.py:32
-  // @s.update_ff
+  // @update_ff
   // def up_rf_write():
   //   for i in range( wr_ports ):
   //     if s.wen[i]:
@@ -560,7 +560,7 @@ module CtrlMem__CtrlType_CGRAConfig_5_6_6__ctrl_mem_size_3__num_ctrl_3
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/mem/ctrl/CtrlMem.py:45
-  // @s.update
+  // @update
   // def update_signal():
   //   if s.times == TimeType( num_ctrl ) or s.reg_file.rdata[0].ctrl == OPT_START:
   //     s.send_ctrl.en = b1( 0 )
@@ -581,7 +581,7 @@ module CtrlMem__CtrlType_CGRAConfig_5_6_6__ctrl_mem_size_3__num_ctrl_3
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/mem/ctrl/CtrlMem.py:54
-  // @s.update_ff
+  // @update_ff
   // def update_raddr():
   //   if s.reg_file.rdata[0].ctrl != OPT_START:
   //     if s.times < TimeType( num_ctrl ):
@@ -659,7 +659,7 @@ module Alu__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Alu.py:27
-  // @s.update
+  // @update
   // def comb_logic():
   //   s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and\
   //                                 s.recv_in[1].msg.predicate
@@ -700,7 +700,7 @@ module Alu__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -722,7 +722,7 @@ module Alu__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -787,7 +787,7 @@ module Mul__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Mul.py:24
-  // @s.update
+  // @update
   // def comb_logic():
   //   s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and\
   //                              s.recv_in[1].msg.predicate
@@ -819,7 +819,7 @@ module Mul__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -841,7 +841,7 @@ module Mul__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -908,7 +908,7 @@ module Logic__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Logic.py:25
-  // @s.update
+  // @update
   // def comb_logic():
   //   s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and\
   //                                 s.recv_in[1].msg.predicate
@@ -949,7 +949,7 @@ module Logic__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -971,7 +971,7 @@ module Logic__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -1036,7 +1036,7 @@ module Shifter__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Shifter.py:25
-  // @s.update
+  // @update
   // def comb_logic():
   //   s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate and\
   //                              s.recv_in[1].msg.predicate
@@ -1067,7 +1067,7 @@ module Shifter__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1089,7 +1089,7 @@ module Shifter__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -1153,7 +1153,7 @@ module Phi__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Phi.py:25
-  // @s.update
+  // @update
   // def comb_logic():
   //   for j in range( num_outports ):
   //     s.send_out[j].en = s.recv_opt.en# and s.send_out[j].rdy and s.recv_in[0].en
@@ -1191,7 +1191,7 @@ module Phi__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1213,7 +1213,7 @@ module Phi__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -1280,7 +1280,7 @@ module Comp__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Comp.py:31
-  //     @s.update
+  //     @update
   //     def comb_logic():
   //       predicate = s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
   //       s.send_out[0].msg = s.const_one
@@ -1340,7 +1340,7 @@ module Comp__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1362,7 +1362,7 @@ module Comp__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -1426,7 +1426,7 @@ module Branch__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/Branch.py:25
-  // @s.update
+  // @update
   // def comb_logic():
   //   for j in range( num_outports ):
   //     s.send_out[j].en = s.recv_opt.en# and s.send_out[j].rdy and s.recv_in[0].en and s.recv_in[1].en
@@ -1465,7 +1465,7 @@ module Branch__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:46
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1487,7 +1487,7 @@ module Branch__34a50faaa9280c3b
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/basic/Fu.py:36
-  // @s.update
+  // @update
   // def update_signal():
   //   for i in range( num_inports ):
   //     for j in range( num_outports ):
@@ -1550,7 +1550,7 @@ module MemUnit__c9c2b65b4e6eebc2
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/single/MemUnit.py:40
-  //     @s.update
+  //     @update
   //     def comb_logic():
   //       for i in range( 2, num_inports ):
   //         for j in range( num_outports ):
@@ -1951,7 +1951,7 @@ module FlexibleFu__6facd5c1a8db4414
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/fu/flexible/FlexibleFu.py:64
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   for j in range( num_outports ):
@@ -2382,7 +2382,7 @@ module Tile__dd9bb0c19d8adc84
 
   // PyMTL Update Block Source
   // At /home/ct535/project/PyCGRA/tile/Tile.py:106
-  // @s.update
+  // @update
   // def update_opt():
   //   s.element.recv_opt.msg  = s.ctrl_mem.send_ctrl.msg
   //   s.crossbar.recv_opt.msg = s.ctrl_mem.send_ctrl.msg

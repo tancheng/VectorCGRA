@@ -92,7 +92,7 @@ def run_sim( test_harness, max_cycles=100 ):
   test_harness.dut.verilog_translate_import = True
   test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list =         ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
   test_harness = TranslationImportPass()(test_harness)
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -100,16 +100,16 @@ def run_sim( test_harness, max_cycles=100 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   # Check timeout
   assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 import platform
 import pytest

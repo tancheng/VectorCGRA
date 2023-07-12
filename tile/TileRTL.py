@@ -6,20 +6,21 @@ Author : Cheng Tan
   Date : Dec 11, 2019
 """
 
-from pymtl3                      import *
-from pymtl3.stdlib.ifcs          import SendIfcRTL, RecvIfcRTL
-from ..noc.CrossbarRTL           import CrossbarRTL
-from ..noc.ChannelRTL            import ChannelRTL
-from ..rf.RegisterRTL            import RegisterRTL
-from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
+from pymtl3 import *
+
 from ..fu.single.MemUnitRTL      import MemUnitRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..mem.const.ConstQueueRTL   import ConstQueueRTL
 from ..fu.single.AdderRTL        import AdderRTL
 from ..fu.single.PhiRTL          import PhiRTL
 from ..fu.single.CompRTL         import CompRTL
 from ..fu.single.MulRTL          import MulRTL
 from ..fu.single.BranchRTL       import BranchRTL
+from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
+from ..mem.const.ConstQueueRTL   import ConstQueueRTL
+from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
+from ..noc.CrossbarRTL           import CrossbarRTL
+from ..noc.ChannelRTL            import ChannelRTL
+from ..rf.RegisterRTL            import RegisterRTL
 
 class TileRTL( Component ):
 
@@ -109,13 +110,13 @@ class TileRTL( Component ):
     for i in range( num_fu_outports ):
       s.element.send_out[i] //= s.crossbar.recv_data[num_connect_outports+i]
 
-    @s.update
+    @update
     def update_opt():
-      s.element.recv_opt.msg  = s.ctrl_mem.send_ctrl.msg
-      s.crossbar.recv_opt.msg = s.ctrl_mem.send_ctrl.msg
-      s.element.recv_opt.en  = s.ctrl_mem.send_ctrl.en
-      s.crossbar.recv_opt.en = s.ctrl_mem.send_ctrl.en
-      s.ctrl_mem.send_ctrl.rdy = s.element.recv_opt.rdy and s.crossbar.recv_opt.rdy
+      s.element.recv_opt.msg   @= s.ctrl_mem.send_ctrl.msg
+      s.crossbar.recv_opt.msg  @= s.ctrl_mem.send_ctrl.msg
+      s.element.recv_opt.en    @= s.ctrl_mem.send_ctrl.en
+      s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
+      s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy and s.crossbar.recv_opt.rdy
 
   # Line trace
   def line_trace( s ):

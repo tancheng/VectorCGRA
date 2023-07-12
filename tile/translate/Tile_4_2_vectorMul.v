@@ -85,7 +85,7 @@ module NormalQueueCtrlRTL__num_entries_2
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/queues.py:91
-  // @s.update_ff
+  // @update_ff
   // def up_reg():
   // 
   //   if s.reset:
@@ -154,7 +154,7 @@ module RegisterFile__e355018d318c7c45
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:20
-  // @s.update
+  // @update
   // def up_rf_read():
   //   for i in range( rd_ports ):
   //     s.rdata[i] = s.regs[ s.raddr[i] ]
@@ -166,7 +166,7 @@ module RegisterFile__e355018d318c7c45
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:32
-  // @s.update_ff
+  // @update_ff
   // def up_rf_write():
   //   for i in range( wr_ports ):
   //     if s.wen[i]:
@@ -376,7 +376,7 @@ module ChannelRTL__DataType_CGRAData_32_1_1__latency_1
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/noc/ChannelRTL.py:35
-  //   @s.update
+  //   @update
   //   def process():
   //     if s.recv.msg.bypass == b1( 0 ):
   //       s.recv.rdy = s.queues[0].enq.rdy
@@ -459,7 +459,7 @@ module CrossbarRTL__20918f721d5f331c
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/noc/CrossbarRTL.py:34
-  //     @s.update
+  //     @update
   //     def update_signal():
   //       out_rdy = b1( 0 )
   //       s.send_predicate.en = b1( 0 )
@@ -581,7 +581,7 @@ module RegisterFile__63449cda1f03128c
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:20
-  // @s.update
+  // @update
   // def up_rf_read():
   //   for i in range( rd_ports ):
   //     s.rdata[i] = s.regs[ s.raddr[i] ]
@@ -593,7 +593,7 @@ module RegisterFile__63449cda1f03128c
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:32
-  // @s.update_ff
+  // @update_ff
   // def up_rf_write():
   //   for i in range( wr_ports ):
   //     if s.wen[i]:
@@ -661,7 +661,7 @@ module CtrlMemRTL__8f238acfb01302b1
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/mem/ctrl/CtrlMemRTL.py:42
-  // @s.update
+  // @update
   // def update_signal():
   //   if s.times == TimeType( num_ctrl ) or s.reg_file.rdata[0].ctrl == OPT_START:
   //     s.send_ctrl.en = b1( 0 )
@@ -682,7 +682,7 @@ module CtrlMemRTL__8f238acfb01302b1
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/mem/ctrl/CtrlMemRTL.py:51
-  // @s.update_ff
+  // @update_ff
   // def update_raddr():
   //   if s.reg_file.rdata[0].ctrl != OPT_START:
   //     if s.times < TimeType( num_ctrl ):
@@ -767,7 +767,7 @@ module AdderRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/AdderRTL.py:31
-  //     @s.update
+  //     @update
   //     def comb_logic():
   // 
   //       # For pick input register
@@ -891,7 +891,7 @@ module AdderRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -913,7 +913,7 @@ module AdderRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -978,7 +978,7 @@ module MulRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/MulRTL.py:28
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register
@@ -1081,7 +1081,7 @@ module MulRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1103,7 +1103,7 @@ module MulRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -1169,7 +1169,7 @@ module LogicRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/LogicRTL.py:29
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register
@@ -1266,7 +1266,7 @@ module LogicRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1288,7 +1288,7 @@ module LogicRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -1352,7 +1352,7 @@ module ShifterRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/ShifterRTL.py:29
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register
@@ -1447,7 +1447,7 @@ module ShifterRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1469,7 +1469,7 @@ module ShifterRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -1533,7 +1533,7 @@ module PhiRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/PhiRTL.py:30
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register
@@ -1679,7 +1679,7 @@ module PhiRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1701,7 +1701,7 @@ module PhiRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -1768,7 +1768,7 @@ module CompRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/CompRTL.py:34
-  // @s.update
+  // @update
   // def read_reg():
   // 
   //   # For pick input register
@@ -1906,7 +1906,7 @@ module CompRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -1928,7 +1928,7 @@ module CompRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -1992,7 +1992,7 @@ module BranchRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/BranchRTL.py:30
-  //     @s.update
+  //     @update
   //     def comb_logic():
   // 
   //       # For pick input register
@@ -2099,7 +2099,7 @@ module BranchRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:47
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -2121,7 +2121,7 @@ module BranchRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/basic/Fu.py:41
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -2136,7 +2136,7 @@ module BranchRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/BranchRTL.py:88
-  // @s.update_ff
+  // @update_ff
   // def br_start_once():
   //   if s.reset:
   //     s.first <<= b1( 1 )
@@ -2202,7 +2202,7 @@ module MemUnitRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/MemUnitRTL.py:43
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register
@@ -2413,7 +2413,7 @@ module SelRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/SelRTL.py:53
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # For pick input register, Selector needs at least 3 inputs
@@ -2517,7 +2517,7 @@ module SelRTL__db8947ea533b8891
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/single/SelRTL.py:43
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -2571,7 +2571,7 @@ module VectorMulRTL__197a071796c128d3
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulRTL.py:48
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   # Pick input register
@@ -2633,7 +2633,7 @@ module VectorMulRTL__197a071796c128d3
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulRTL.py:42
-  // @s.update
+  // @update
   // def update_signal():
   //   for j in range( num_outports ):
   //     s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
@@ -2801,7 +2801,7 @@ module VectorMulComboRTL__60fd794a47393cda
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulComboRTL.py:64
-  //   @s.update
+  //   @update
   //   def update_input_output():
   // 
   //     s.send_out[0].en = s.recv_in[0].en and\
@@ -2891,7 +2891,7 @@ module VectorMulComboRTL__60fd794a47393cda
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulComboRTL.py:152
-  // @s.update
+  // @update
   // def update_mem():
   //   s.to_mem_waddr.en    = b1( 0 )
   //   s.to_mem_wdata.en    = b1( 0 )
@@ -2913,7 +2913,7 @@ module VectorMulComboRTL__60fd794a47393cda
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulComboRTL.py:135
-  // @s.update
+  // @update
   // def update_opt():
   // 
   //   for i in range( num_lanes ):
@@ -2948,7 +2948,7 @@ module VectorMulComboRTL__60fd794a47393cda
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/vector/VectorMulComboRTL.py:115
-  // @s.update
+  // @update
   // def update_signal():
   //   s.recv_in[0].rdy  = s.send_out[0].rdy
   //   s.recv_in[1].rdy  = s.send_out[0].rdy
@@ -3410,7 +3410,7 @@ module FlexibleFuRTL__af19c74e4933e98f
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/fu/flexible/FlexibleFuRTL.py:53
-  // @s.update
+  // @update
   // def comb_logic():
   // 
   //   for j in range( num_outports ):
@@ -3654,7 +3654,7 @@ module RegisterFile__b2651f5e70154f41
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:20
-  // @s.update
+  // @update
   // def up_rf_read():
   //   for i in range( rd_ports ):
   //     s.rdata[i] = s.regs[ s.raddr[i] ]
@@ -3666,7 +3666,7 @@ module RegisterFile__b2651f5e70154f41
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/venv/lib/python3.7/site-packages/pymtl3/stdlib/rtl/RegisterFile.py:32
-  // @s.update_ff
+  // @update_ff
   // def up_rf_write():
   //   for i in range( wr_ports ):
   //     if s.wen[i]:
@@ -3874,7 +3874,7 @@ module RegisterRTL__DataType_CGRAData_1_1__latency_1
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/rf/RegisterRTL.py:30
-  //   @s.update
+  //   @update
   //   def process():
   //     s.recv.rdy = s.queues[0].enq.rdy
   //     s.queues[0].enq.msg = s.recv.msg
@@ -4243,7 +4243,7 @@ module TileRTL__e04244646baa657d
 
   // PyMTL Update Block Source
   // At /home/cheng/workspace/projects/cgra/vrsa/tile/TileRTL.py:101
-  // @s.update
+  // @update
   // def update_opt():
   //   s.element.recv_opt.msg  = s.ctrl_mem.send_ctrl.msg
   //   s.crossbar.recv_opt.msg = s.ctrl_mem.send_ctrl.msg
