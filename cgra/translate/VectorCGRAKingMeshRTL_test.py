@@ -124,7 +124,7 @@ def test_homo_4x4( cmdline_opts ):
                     src_opt, ctrl_waddr )
   th.elaborate()
   th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
-                    f'CGRAHeteroRTL' )
+                    f'VectorCGRAKingMeshRTL' )
   th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                      'ALWCOMBORDER'] )

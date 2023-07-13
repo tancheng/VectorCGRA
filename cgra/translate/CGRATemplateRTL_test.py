@@ -356,7 +356,7 @@ def test_cgra_universal( cmdline_opts, paramCGRA = None):
                     src_opt, ctrl_waddr, tiles, links, dataSPM )
   th.elaborate()
   th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
-                    f'CGRAHeteroRTL' )
+                    f'CGRATemplateRTL' )
   th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                      'ALWCOMBORDER'] )
