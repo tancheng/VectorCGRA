@@ -89,7 +89,6 @@ class TileRTL( Component ):
         s.element.to_mem_waddr[i].rdy   //= 0
         s.element.to_mem_wdata[i].rdy   //= 0
 
-
     for i in range( num_connect_inports ):
       s.recv_data[i] //= s.crossbar.recv_data[i]
 
