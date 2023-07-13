@@ -9,13 +9,15 @@ Author : Cheng Tan
 
 """
 
-from pymtl3                           import *
-from pymtl3.stdlib.test               import TestSinkCL
-from pymtl3.stdlib.test.test_srcs     import TestSrcRTL
+from pymtl3 import *
+from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
+                                            VerilogVerilatorImportPass)
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
 
+from ...lib.test_srcs                 import TestSrcRTL
 from ...lib.opt_type                  import *
 from ...lib.messages                  import *
-
 from ...fu.flexible.FlexibleFuRTL     import FlexibleFuRTL
 from ...fu.single.AdderRTL            import AdderRTL
 from ...fu.single.MemUnitRTL          import MemUnitRTL
@@ -68,33 +70,7 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=100 ):
-  test_harness.elaborate()
-  test_harness.dut.verilog_translate_import = True
-  test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list = ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
-  test_harness = TranslationImportPass()(test_harness)
-  test_harness.apply( SimulationPass() )
-  test_harness.sim_reset()
-
-  # Run simulation
-  ncycles = 0
-  print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-  while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
-    ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-
-  # Check timeout
-  assert ncycles < max_cycles
-
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
-
-import platform
-import pytest
-def test_homo_4x4():
+def test_homo_4x4( cmdline_opts ):
   num_tile_inports  = 8
   num_tile_outports = 8
   num_xbar_inports  = 10
@@ -146,5 +122,13 @@ def test_homo_4x4():
   th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr )
+  th.elaborate()
+  th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
+                    f'CGRAHeteroRTL' )
+  th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
+                    ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                     'ALWCOMBORDER'] )
+  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
+
   run_sim( th )
 

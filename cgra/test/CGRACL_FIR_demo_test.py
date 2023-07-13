@@ -10,8 +10,6 @@ Author : Cheng Tan
 """
 
 from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
 
 from ...lib.opt_type              import *
 from ...lib.messages              import *
@@ -62,7 +60,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=18 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -70,15 +68,15 @@ def run_sim( test_harness, max_cycles=18 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   target_value = test_harness.output_target_value()
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
   print( '=' * 70 )
   print( "----------------- CL test ------------------" )
@@ -193,6 +191,6 @@ def test_CGRA_4x4_fir():
 #  data_mem  = acc_fl( fu_dfg, DataType, CtrlType )
 #
 #  th = TestHarness( DUT, FuList, cgra_ctrl, DataType, CtrlType,
-#                    width, height, data_mem ) 
+#                    width, height, data_mem )
 #  run_sim( th )
 

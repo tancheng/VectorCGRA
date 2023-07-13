@@ -10,13 +10,15 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.test             import TestSinkCL
-from pymtl3.stdlib.test.test_srcs   import TestSrcRTL
+from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
+                                            VerilogVerilatorImportPass)
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
 
+from ...lib.test_srcs               import TestSrcRTL
 from ...lib.opt_type                import *
 from ...lib.messages                import *
 from ...lib.common                  import *
-
 from ...fu.flexible.FlexibleFuRTL   import FlexibleFuRTL
 from ...fu.single.AdderRTL          import AdderRTL
 from ...fu.single.MemUnitRTL        import MemUnitRTL
@@ -30,8 +32,6 @@ from ...fu.single.BranchRTL         import BranchRTL
 from ...fu.single.RetRTL            import RetRTL
 from ...fu.double.SeqMulAdderRTL    import SeqMulAdderRTL
 from ..CGRATemplateRTL              import CGRATemplateRTL
-
-from pymtl3.passes.backends.verilog import TranslationImportPass
 
 fuType2RTL = {}
 fuType2RTL["Phi"  ] = PhiRTL
@@ -163,43 +163,20 @@ class Link:
     if s.fromMem:
       s.dstTile.fromMem = True
 
-def run_sim( test_harness, max_cycles=10 ):
-  test_harness.elaborate()
-  test_harness.dut.verilog_translate_import = True
-  test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list = ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
-  test_harness = TranslationImportPass()(test_harness)
-  test_harness.apply( SimulationPass() )
-  test_harness.sim_reset()
-
-  # Run simulation
-  ncycles = 0
-  print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-  while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
-    ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-
-  # Check timeout
-  assert ncycles < max_cycles
-
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
 
 import platform
 import pytest
 
-@pytest.mark.skipif('Linux' not in platform.platform(),
-                    reason="requires linux (gcc)")
+# @pytest.mark.skipif('Linux' not in platform.platform(),
+#                     reason="requires linux (gcc)")
 # def test_cgra_universal(t_width=2, t_height=2, t_ctrl_mem_size=8, t_data_mem_size=8):
-def test_cgra_universal(paramCGRA = None):
+def test_cgra_universal( cmdline_opts, paramCGRA = None):
   num_tile_inports  = 8
   num_tile_outports = 8
   num_xbar_inports  = 10
   num_xbar_outports = 12
   ctrl_mem_size     = paramCGRA.configMemSize if paramCGRA != None else 8
-  width             = paramCGRA.rows if paramCGRA != None else 2 
+  width             = paramCGRA.rows if paramCGRA != None else 2
   height            = paramCGRA.columns if paramCGRA != None else 2
   RouteType         = mk_bits( clog2( num_xbar_inports + 1 ) )
   AddrType          = mk_bits( clog2( ctrl_mem_size ) )
@@ -377,6 +354,13 @@ def test_cgra_universal(paramCGRA = None):
   th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr, tiles, links, dataSPM )
+  th.elaborate()
+  th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
+                    f'CGRAHeteroRTL' )
+  th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
+                    ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                     'ALWCOMBORDER'] )
+  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
 
   if paramCGRA != None:
     for tile in tiles:
@@ -388,4 +372,3 @@ def test_cgra_universal(paramCGRA = None):
             th.set_param(targetTile, FuList=targetFuList)
 
   run_sim( th )
-

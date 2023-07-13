@@ -7,7 +7,7 @@ Author : Cheng Tan
 """
 
 from pymtl3                      import *
-from pymtl3.stdlib.ifcs          import SendIfcRTL, RecvIfcRTL
+from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
 from ..noc.CrossbarRTL           import CrossbarRTL
 from ..noc.ChannelRTL            import ChannelRTL
 from ..tile.TileRTL              import TileRTL
