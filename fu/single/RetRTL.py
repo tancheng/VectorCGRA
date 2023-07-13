@@ -26,12 +26,19 @@ class RetRTL( Fu ):
     num_entries = 2
     CountType   = mk_bits( clog2( num_entries + 1 ) )
 
+    idx_nbits = clog2( num_inports )
+
+    s.in0     = Wire( FuInType )
+    s.in0_idx = Wire( idx_nbits )
+
+    s.in0_idx //= s.in0[0:idx_nbits]
+
     # TODO: declare in0 as wire
     @update
     def comb_logic():
 
       # For pick input register
-      in0 = FuInType( 0 )
+      s.in0 @= 0
       for i in range( num_inports ):
         s.recv_in[i].rdy @= b1( 0 )
 
@@ -39,8 +46,8 @@ class RetRTL( Fu ):
 
       if s.recv_opt.en:
         if s.recv_opt.msg.fu_in[0] != FuInType( 0 ):
-          in0 = s.recv_opt.msg.fu_in[0] - FuInType( 1 )
-          s.recv_in[in0].rdy @= b1( 1 )
+          s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType( 1 )
+          s.recv_in[s.in0_idx].rdy @= b1( 1 )
 
         if s.recv_opt.msg.predicate == b1( 1 ):
           s.recv_predicate.rdy @= b1( 1 )
@@ -49,8 +56,8 @@ class RetRTL( Fu ):
         s.send_out[j].en @= s.recv_opt.en
       if s.recv_opt.msg.ctrl == OPT_RET:
         # Branch is only used to set predication rather than delivering value.
-        s.send_out[0].msg @= DataType(s.recv_in[in0].msg.payload, b1( 0 ), b1( 0 ) )
-        if s.recv_in[in0].msg.predicate == b1( 0 ):#s.const_zero.payload:
+        s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1( 0 ), b1( 0 ) )
+        if s.recv_in[s.in0_idx].msg.predicate == b1( 0 ):#s.const_zero.payload:
           s.send_out[0].msg.predicate @= Bits1( 0 )
         else:
           s.send_out[0].msg.predicate @= Bits1( 1 )
@@ -60,7 +67,7 @@ class RetRTL( Fu ):
           s.send_out[j].en @= b1( 0 )
 
       if s.recv_opt.msg.predicate == b1( 1 ):
-        s.send_out[0].msg.predicate @= s.send_out[0].msg.predicate and\
+        s.send_out[0].msg.predicate @= s.send_out[0].msg.predicate & \
                                        s.recv_predicate.msg.predicate
 
   def line_trace( s ):

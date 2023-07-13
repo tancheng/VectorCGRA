@@ -67,14 +67,14 @@ class TwoSeqCombo( Component ):
       s.recv_opt.rdy    @= s.send_out[0].rdy
 #      s.send_out[0].en  = s.recv_in[0].en and s.recv_in[1].en and\
 #                          s.recv_in[2].en and s.recv_opt.en
-      s.send_out[0].en  @= s.recv_in[0].en and s.recv_opt.en
+      s.send_out[0].en  @= s.recv_in[0].en & s.recv_opt.en
 
       # Note that the predication for a combined FU should be identical/shareable,
       # which means the computation in different basic block cannot be combined.
       s.Fu0.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
       s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
 
-      s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy and\
+      s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy & \
                                   s.Fu1.recv_predicate.rdy
       s.Fu0.recv_predicate.en  @= s.recv_predicate.en
       s.Fu1.recv_predicate.en  @= s.recv_predicate.en
