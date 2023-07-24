@@ -84,9 +84,16 @@ class MemUnitRTL( Component ):
           s.send_out[j].en @= s.recv_in[i].en | s.send_out[j].en
         s.send_out[j].en @= s.send_out[j].en & s.recv_opt.en
 
-      s.send_out[0].msg @= s.from_mem_rdata.msg
-      s.to_mem_waddr.en @= b1( 0 )
-      s.to_mem_wdata.en @= b1( 0 )
+      s.send_out[0].msg     @= s.from_mem_rdata.msg
+
+      s.to_mem_waddr.en     @= b1( 0 )
+      # s.to_mem_waddr.msg    @= AddrType()
+      s.to_mem_wdata.en     @= b1( 0 )
+      # s.to_mem_wdata.msg    @= DataType()
+      # s.to_mem_raddr.en     @= 0
+      # s.to_mem_raddr.msg    @= AddrType()
+      # s.from_mem_rdata.rdy  @= 0
+
       if s.recv_opt.msg.ctrl == OPT_LD:
         s.recv_in[s.in0_idx].rdy     @= s.to_mem_raddr.rdy
         s.recv_in[s.in1_idx].rdy     @= s.from_mem_rdata.rdy

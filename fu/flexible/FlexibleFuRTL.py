@@ -54,7 +54,8 @@ class FlexibleFuRTL( Component ):
     def comb_logic():
 
       for j in range( num_outports ):
-        s.send_out[j].en @= b1( 0 )
+        s.send_out[j].en  @= b1( 0 )
+        s.send_out[j].msg @= DataType()
 
       for i in range( s.fu_list_size ):
 

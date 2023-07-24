@@ -45,6 +45,9 @@ class BranchRTL( Fu ):
       # in1 = FuInType( 0 )
       for i in range( num_inports ):
         s.recv_in[i].rdy @= b1( 0 )
+      for i in range( num_outports ):
+        s.send_out[i].en  @= s.recv_opt.en
+        s.send_out[i].msg @= DataType()
 
       s.recv_predicate.rdy @= b1( 0 )
 
@@ -59,9 +62,6 @@ class BranchRTL( Fu ):
         if s.recv_opt.msg.predicate == b1( 1 ):
           s.recv_predicate.rdy @= b1( 1 )
 
-
-      for j in range( num_outports ):
-        s.send_out[j].en @= s.recv_opt.en
       if s.recv_opt.msg.ctrl == OPT_BRH:
         # Branch is only used to set predication rather than delivering value.
         s.send_out[0].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ) )

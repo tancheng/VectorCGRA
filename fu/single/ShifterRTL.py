@@ -44,6 +44,9 @@ class ShifterRTL( Fu ):
       s.in1 @= FuInType( 0 )
       for i in range( num_inports ):
         s.recv_in[i].rdy @= b1( 0 )
+      for i in range( num_outports ):
+        s.send_out[i].en  @= s.recv_opt.en
+        s.send_out[i].msg @= DataType()
 
       s.recv_predicate.rdy @= b1( 0 )
 
@@ -59,8 +62,6 @@ class ShifterRTL( Fu ):
 
       s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                      s.recv_in[s.in1_idx].msg.predicate
-      for j in range( num_outports ):
-        s.send_out[j].en @= s.recv_opt.en
       if s.recv_opt.msg.ctrl == OPT_LLS:
         s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload << s.recv_in[s.in1_idx].msg.payload
         if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \

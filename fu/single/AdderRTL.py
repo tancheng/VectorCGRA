@@ -43,9 +43,14 @@ class AdderRTL( Fu ):
 
       s.in0 @= 0
       s.in1 @= 0
+      s.recv_predicate.rdy @= 0
       # For pick input register
       for i in range( num_inports ):
         s.recv_in[i].rdy @= b1( 0 )
+
+      for i in range( num_outports ):
+        s.send_out[i].en  @= s.recv_opt.en
+        s.send_out[i].msg @= DataType()
 
       s.recv_predicate.rdy @= b1( 0 )
 
@@ -62,8 +67,6 @@ class AdderRTL( Fu ):
       s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                      s.recv_in[s.in1_idx].msg.predicate
 
-      for j in range( num_outports ):
-        s.send_out[j].en @= s.recv_opt.en
 
 #      s.send_out[0].en = s.recv_opt.en
 

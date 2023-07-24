@@ -40,27 +40,31 @@ class ChannelRTL( Component ):
 
     @update
     def process():
+      for i in range(s.latency - 1):
+        s.queues[i+1].enq_msg @= s.queues[i].deq_msg
+        s.queues[i+1].enq_en  @= s.queues[i].deq_rdy & s.queues[i+1].enq_rdy
+        s.queues[i].deq_en    @= s.queues[i+1].enq_en
+
       if ~s.bypass_q.deq_msg.bypass:
         s.queues[0].enq_msg @= s.bypass_q.deq_msg
         s.bypass_q.deq_en   @= s.queues[0].enq_rdy & s.bypass_q.deq_rdy
         s.queues[0].enq_en  @= s.queues[0].enq_rdy & s.bypass_q.deq_rdy
-
-        for i in range(s.latency - 1):
-          s.queues[i+1].enq_msg @= s.queues[i].deq_msg
-          s.queues[i+1].enq_en  @= s.queues[i].deq_rdy & s.queues[i+1].enq_rdy
-          s.queues[i].deq_en    @= s.queues[i+1].enq_en
 
         s.send.msg                   @= s.queues[s.latency-1].deq_msg
         s.send.en                    @= s.send.rdy & s.queues[s.latency-1].deq_rdy
         s.queues[s.latency-1].deq_en @= s.send.rdy & s.queues[s.latency-1].deq_rdy
 
       else:
-        s.send.msg @= DataType(0, 0)
-        s.send.msg.payload @= s.bypass_q.deq_msg.payload
+        s.queues[0].enq_en           @= 0
+        s.queues[0].enq_msg          @= DataType()
+        s.queues[s.latency-1].deq_en @= 0
+
+        s.send.msg           @= DataType()
+        s.send.msg.payload   @= s.bypass_q.deq_msg.payload
         s.send.msg.predicate @= s.bypass_q.deq_msg.predicate
-        s.send.msg.bypass @= 0
-        s.send.en         @= s.send.rdy & s.bypass_q.deq_rdy
-        s.bypass_q.deq_en @= s.send.rdy & s.bypass_q.deq_rdy
+        s.send.msg.bypass    @= 0
+        s.send.en            @= s.send.rdy & s.bypass_q.deq_rdy
+        s.bypass_q.deq_en    @= s.send.rdy & s.bypass_q.deq_rdy
 
   def line_trace( s ):
     trace = '>'

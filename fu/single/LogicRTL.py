@@ -45,6 +45,9 @@ class LogicRTL( Fu ):
       s.in1 @= 0
       for i in range( num_inports ):
         s.recv_in[i].rdy @= b1( 0 )
+      for i in range( num_outports ):
+        s.send_out[i].en  @= b1( 0 )
+        s.send_out[i].msg @= DataType()
 
       s.recv_predicate.rdy @= b1( 0 )
 

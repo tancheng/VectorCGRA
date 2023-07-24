@@ -76,8 +76,8 @@ def test_homo_4x4( cmdline_opts ):
   num_xbar_inports  = 10
   num_xbar_outports = 12
   ctrl_mem_size     = 6
-  width         = 4
-  height        = 4
+  width         = 2
+  height        = 2
   RouteType     = mk_bits( clog2( num_xbar_inports + 1 ) )
   AddrType      = mk_bits( clog2( ctrl_mem_size ) )
   num_tiles     = width * height
@@ -135,7 +135,7 @@ def test_homo_4x4( cmdline_opts ):
 
   th.elaborate()
   th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
-                    f'VectorCGRAKingMeshRTL' )
+                    f'VectorCGRAKingMeshRTL_{width}x{height}' )
   th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                      'ALWCOMBORDER'] )

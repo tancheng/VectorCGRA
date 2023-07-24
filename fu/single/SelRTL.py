@@ -77,6 +77,9 @@ class SelRTL( Component ):
         s.recv_in[i].rdy @= b1( 0 )
 
       s.recv_predicate.rdy @= b1( 0 )
+      for i in range( num_outports ):
+        s.send_out[i].en  @= 0
+        s.send_out[i].msg @= DataType()
 
       if s.recv_opt.en:
         if s.recv_opt.msg.fu_in[0] != FuInType( 0 ):
@@ -91,7 +94,6 @@ class SelRTL( Component ):
         if s.recv_opt.msg.predicate == b1( 1 ):
           s.recv_predicate.rdy @= b1( 1 )
 
-      # TODO: use | & instead of or and
       for j in range( num_outports ):
         s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
         s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
