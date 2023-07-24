@@ -37,7 +37,15 @@ class CrossbarRTL( Component ):
     @update
     def update_signal():
       s.out_rdy @= b1( 0 )
-      s.send_predicate.en @= b1( 0 )
+      s.in_dir @= 0
+      s.send_predicate.en @= 0
+      s.send_predicate.msg @= PredicateType()
+      for i in range( num_inports ):
+        s.recv_data[i].rdy @= 0
+      for i in range( num_outports ):
+        s.send_data[i].en @= 0
+        s.send_data[i].msg @= DataType()
+
       # predicate_out_rdy = b1( 0 )
       # For predication register update. 'predicate' and 'predicate_in' no need
       # to be active at the same time. Specifically, the 'predicate' is for
@@ -48,6 +56,7 @@ class CrossbarRTL( Component ):
         # s.send_predicate.msg.payload = b1( 0 )
         # s.send_predicate.msg.predicate = b1( 0 )
         s.send_predicate.msg @= PredicateType( b1(0), b1(0) )
+
       if s.recv_opt.msg.ctrl != OPT_START:
         for i in range( num_inports ):
           # Set predicate once the recv_data is stable (i.e., en == true).
@@ -90,7 +99,7 @@ class CrossbarRTL( Component ):
         for i in range( num_outports ):
 #          s.send_data[i].msg.bypass = b1( 0 )
           s.send_data[i].en @= b1( 0 )
-      s.recv_opt.rdy @= s.out_rdy# and predicate_out_rdy
+      s.recv_opt.rdy @= s.out_rdy # and predicate_out_rdy
 
   # Line trace
   def line_trace( s ):

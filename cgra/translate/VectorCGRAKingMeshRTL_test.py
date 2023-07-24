@@ -39,7 +39,7 @@ from ..CGRAKingMeshRTL                import CGRAKingMeshRTL
 
 class TestHarness( Component ):
 
-  def construct( s, DUT, FunctionUnit, FuList, DataType, PredicateType,
+  def construct( s, DUT, FunctionUnit, fu_list, DataType, PredicateType,
                  CtrlType, width, height, ctrl_mem_size, data_mem_size,
                  src_opt, ctrl_waddr):
 
@@ -53,7 +53,7 @@ class TestHarness( Component ):
 
     s.dut = DUT( DataType, PredicateType, CtrlType, width, height,
                  ctrl_mem_size, data_mem_size, len( src_opt[0] ),
-                 FunctionUnit, FuList )
+                 FunctionUnit, fu_list )
 
     for i in range( s.num_tiles ):
       connect( s.src_opt[i].send,     s.dut.recv_wopt[i]  )
@@ -86,7 +86,8 @@ def test_homo_4x4( cmdline_opts ):
   DUT           = CGRAKingMeshRTL
   FunctionUnit  = FlexibleFuRTL
   # FuList        = [MemUnitRTL, AdderRTL]
-  FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL, VectorAdderComboRTL ]
+  vector_list        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL, VectorMulComboRTL, VectorAdderComboRTL ]
+  scalar_list   = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL ]
   DataType      = mk_data( 64, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
@@ -119,9 +120,19 @@ def test_homo_4x4( cmdline_opts ):
                      for _ in range( num_tiles ) ]
   ctrl_waddr   = [[ AddrType( 0 ), AddrType( 1 ), AddrType( 2 ), AddrType( 3 ),
                     AddrType( 4 ), AddrType( 5 ) ] for _ in range( num_tiles ) ]
-  th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
+  th = TestHarness( DUT, FunctionUnit, vector_list, DataType, PredicateType,
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr )
+  for row in range( height ):
+    for col in range( width ):
+      idx = col + row * height
+      if row % 2 == 0 and col % 2 == 1 or row % 2 == 1 and col % 2 == 0:
+        print( f' - set tile[{idx}] to vector')
+        th.set_param( f'top.dut.tile[{idx}].construct', FuList=vector_list  )
+      else:
+        print( f' - set tile[{idx}] to scalar')
+        th.set_param( f'top.dut.tile[{idx}].construct', FuList=scalar_list  )
+
   th.elaborate()
   th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'VectorCGRAKingMeshRTL' )
