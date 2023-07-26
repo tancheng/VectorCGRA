@@ -29,6 +29,7 @@ from ..CGRACL                     import CGRACL
 from ..CGRAFL                     import CGRAFL
 from ...lib.dfg_helper            import *
 
+import copy
 import os
 
 #-------------------------------------------------------------------------
@@ -55,13 +56,12 @@ class TestHarness( Component ):
   def output_target_value( s ):
     res = s.DataType(0, 1)
     res.payload = s.dut.tile[9].element.send_out[0].msg.payload
-    return res.payload
+    return copy.deepcopy(res.payload)
 
 
 def run_sim( test_harness, max_cycles=18 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
-  test_harness.sim_reset()
 
   # Run simulation
   ncycles = 0
