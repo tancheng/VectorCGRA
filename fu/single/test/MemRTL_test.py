@@ -97,10 +97,9 @@ def test_Mem():
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   src_in0       = [ DataType(1, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1) ] # addr
-  src_in1       = [ DataType(9, 1), DataType(6, 1), DataType(2, 1), DataType(7, 1) ] # data
-  # src_in1       = [ DataType(9, 1) ] # data
+  src_in1       = [ DataType(9, 1) ] # data
   src_predicate = [ PredicateType(1, 0), PredicateType(1,1), PredicateType(1,0), PredicateType(0,0) ]
-  sink_out      = [ DataType(0, 0), DataType(6, 1), DataType(6, 1) ]
+  sink_out      = [ DataType(0, 0), DataType(9, 1), DataType(9, 1) ]
   src_opt       = [ ConfigType( OPT_LD,  b1( 1 ), pickRegister ),
                     ConfigType( OPT_STR, b1( 0 ), pickRegister ),
                     ConfigType( OPT_LD,  b1( 0 ), pickRegister ),
@@ -122,10 +121,10 @@ def test_PseudoMem():
   FuInType = mk_bits( clog2( num_inports + 1 ) )
   pickRegister = [ FuInType( x+1 ) for x in range( num_inports ) ]
   src_in0  = [ DataType(1, 1), DataType(0, 1), DataType(0, 1) ]
-  src_in1  = [ DataType(9, 1), DataType(6, 1), DataType(7, 1) ]
+  src_in1  = [ DataType(9, 1) ]
   src_predicate = [ PredicateType(1, 1), PredicateType(0, 0), PredicateType(1, 0),
                     PredicateType(0, 0), PredicateType(0, 0), PredicateType(0, 0) ]
-  sink_out = [ DataType(0, 1), DataType(6, 1), DataType(6, 1), DataType(6, 1) ]
+  sink_out = [ DataType(0, 1), DataType(9, 1), DataType(9, 1), DataType(9, 1) ]
   src_opt  = [ ConfigType( OPT_LD      , b1( 0 ), pickRegister ),
                ConfigType( OPT_STR     , b1( 0 ), pickRegister ),
                ConfigType( OPT_LD_CONST, b1( 0 ), pickRegister ),
