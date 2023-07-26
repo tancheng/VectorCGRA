@@ -10,7 +10,6 @@
 </pre>
 [![Github Action](https://github.com/tancheng/VectorCGRA/actions/workflows/python-package.yml/badge.svg)](https://github.com/tancheng/VectorCGRA/actions/workflows/python-package.yml)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 
 VectorCGRA (vectorizable Coarse-Grained Reconfigurable Accelerator) generator is a parameterizable CGRA generator to generate synthesizable Verilog for different CGRAs based on user-specified configurations (e.g., CGRA size, type of the computing units in each tile, number of lanes for vectorization, communication connection, etc.).
 
@@ -123,4 +122,16 @@ When you're done testing/developing, you can deactivate the virtualenv::
 
 ```
  % deactivate
+```
+
+Publication
+--------------------------------------------------------
+```
+@inproceedings{tan2023vecpac,
+  title={VecPAC: A Vectorizable and Precision-Aware CGRA},
+  author={Tan, Cheng and Patil, Deepak and Tumeo, Antonino and Weisz, Gabriel and Reinhardt, Steve and Zhang, Jeff},
+  booktitle={2023 IEEE/ACM International Conference On Computer Aided Design (ICCAD)},
+  year={2023},
+  organization={IEEE}
+}
 ```
