@@ -59,7 +59,7 @@ class TestHarness( Component ):
     return copy.deepcopy(res.payload)
 
 
-def run_sim( test_harness, max_cycles=18 ):
+def run_sim( test_harness, max_cycles=17 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
 
