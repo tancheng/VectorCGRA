@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CGRARTL_test.py
+CGRAKingMeshRTL_test.py
 ==========================================================================
 Test cases for CGRAs with different configurations.
 
