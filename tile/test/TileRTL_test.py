@@ -3,6 +3,8 @@
 TileRTL_test.py
 ==========================================================================
 Test cases for Tile.
+Command:
+pytest TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
 
 Author : Cheng Tan
   Date : Dec 11, 2019
@@ -10,6 +12,11 @@ Author : Cheng Tan
 """
 
 from pymtl3                               import *
+
+from pymtl3.stdlib.test_utils             import (run_sim,
+                                                  config_model_with_cmdline_opts)
+from pymtl3.passes.backends.verilog       import (VerilogTranslationPass,
+                                                  VerilogVerilatorImportPass)
 
 from ...lib.test_sinks                    import TestSinkRTL
 from ...lib.test_srcs                     import TestSrcRTL
@@ -76,28 +83,7 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=100 ):
-  test_harness.elaborate()
-  test_harness.apply( DefaultPassGroup() )
-  test_harness.sim_reset()
-
-  # Run simulation
-  ncycles = 0
-  print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-  while not test_harness.done() and ncycles < max_cycles:
-    test_harness.sim_tick()
-    ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-
-  # Check timeout
-  assert ncycles < max_cycles
-
-  test_harness.sim_tick()
-  test_harness.sim_tick()
-  test_harness.sim_tick()
-
-def test_tile_alu():
+def test_tile_alu( cmdline_opts ):
   num_connect_inports  = 4
   num_connect_outports = 4
   num_fu_inports    = 2
@@ -161,5 +147,10 @@ def test_tile_alu():
                     CtrlType, ctrl_mem_size, data_mem_size,
                     num_fu_inports, num_fu_outports,
                     src_data, src_opt, opt_waddr, sink_out )
+  th.elaborate()
+  th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
+                    ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                     'ALWCOMBORDER'] )
+  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
   run_sim( th )
 
