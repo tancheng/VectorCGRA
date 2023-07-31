@@ -43,6 +43,8 @@ class FlexibleFuRTL( Component ):
     s.fu = [ FuList[i]( DataType, PredicateType, CtrlType, num_inports, num_outports,
                         data_mem_size ) for i in range( s.fu_list_size ) ]
 
+    s.fu_recv_const_rdy_vector = Wire( s.fu_list_size )
+
     # Connection
     for i in range( len( FuList ) ):
       s.to_mem_raddr[i]   //= s.fu[i].to_mem_raddr
@@ -62,7 +64,8 @@ class FlexibleFuRTL( Component ):
         # const connection
         s.fu[i].recv_const.msg @= s.recv_const.msg
         s.fu[i].recv_const.en  @= s.recv_const.en
-        s.recv_const.rdy       @= s.recv_const.rdy | s.fu[i].recv_const.rdy
+        # s.recv_const.rdy       @= s.recv_const.rdy | s.fu[i].recv_const.rdy
+        s.fu_recv_const_rdy_vector[i] @= s.fu[i].recv_const.rdy
 
         for j in range( num_inports):
           s.fu[i].recv_in_count[j] @= s.recv_in_count[j]
@@ -85,6 +88,8 @@ class FlexibleFuRTL( Component ):
             s.send_out[j].msg     @= s.fu[i].send_out[j].msg
             s.send_out[j].en      @= s.fu[i].send_out[j].en
           s.fu[i].send_out[j].rdy @= s.send_out[j].rdy
+
+      s.recv_const.rdy @= reduce_or( s.fu_recv_const_rdy_vector )
 
 
       for j in range( num_inports ):
