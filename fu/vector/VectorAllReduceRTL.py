@@ -1,7 +1,6 @@
 """
 ==========================================================================
-VectorAllReduceRTL.py
-==========================================================================
+VectorAllReduceRTL.py ==========================================================================
 AllReduce functional unit.
 
 Author : Cheng Tan
@@ -9,9 +8,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
+from pymtl3                import *
+from ...lib.ifcs           import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type       import *
+from ..basic.SumUnit       import SumUnit
+from ..basic.ReduceMulUnit import ReduceMulUnit
 
 class VectorAllReduceRTL( Component ):
 
@@ -45,25 +46,30 @@ class VectorAllReduceRTL( Component ):
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
+    # Reduction units
+    s.reduce_add = SumUnit( TempDataType, num_lanes )
+    for i in range( num_lanes ):
+      s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
+          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD else 0)
+
+    s.reduce_mul = ReduceMulUnit( TempDataType, num_lanes )
+    for i in range( num_lanes ):
+      s.reduce_mul.in_[i] //= lambda: (s.temp_result[i]
+          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL else 0)
+
     @update
     def update_result():
       # Connection: split data into vectorized wires
+      s.send_out[0].msg.payload @= 0
       for i in range( num_lanes ):
         s.temp_result[i] @= TempDataType( 0 )
         s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
-      # FIXME: unsynsthesizable code?
       if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
-        for i in range( num_lanes ):
-          # s.send_out[0].msg.payload[0:data_bandwidth] += s.temp_result[i]
-          s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] + s.temp_result[i]
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
 
       elif s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 1 )
-        for i in range( num_lanes ):
-          # s.send_out[0].msg.payload[0:data_bandwidth] *= s.temp_result[i]
-          s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] * s.temp_result[i]
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_mul.out
 
     @update
     def update_signal():
@@ -73,8 +79,7 @@ class VectorAllReduceRTL( Component ):
       s.recv_in[0].rdy  @= s.send_out[0].rdy
       # s.recv_in[1].rdy  = s.send_out[0].rdy
       s.recv_opt.rdy    @= s.send_out[0].rdy
-      s.send_out[0].en  @= s.recv_in[0].en and\
-                          s.recv_opt.en
+      s.send_out[0].en  @= s.recv_in[0].en & s.recv_opt.en
 
     @update
     def update_predicate():
