@@ -30,13 +30,13 @@ class CrossbarRTL( Component ):
     # TODO: should include position information or not
     # s.pos  = InPort( PositionType )
 
-    s.in_dir  = Wire( OutType )
-    s.out_rdy = Wire()
+    s.in_dir         = Wire( OutType )
+    s.out_rdy_vector = Wire( num_outports )
 
     # Routing logic
     @update
     def update_signal():
-      s.out_rdy @= b1( 0 )
+      s.out_rdy_vector @= 0
       s.in_dir @= 0
       s.send_predicate.en @= 0
       s.send_predicate.msg @= PredicateType()
@@ -67,7 +67,7 @@ class CrossbarRTL( Component ):
             # predicate_out_rdy = b1( 1 )
         for i in range( num_outports ):
           s.in_dir  @= s.recv_opt.msg.outport[i]
-          s.out_rdy @= s.out_rdy | s.send_data[i].rdy
+          s.out_rdy_vector[i] @= s.send_data[i].rdy
 #          s.send_data[i].msg.bypass = b1( 0 )
           if (s.in_dir > 0) & s.send_data[i].rdy:
             s.in_dir @= s.in_dir - 1
@@ -99,7 +99,7 @@ class CrossbarRTL( Component ):
         for i in range( num_outports ):
 #          s.send_data[i].msg.bypass = b1( 0 )
           s.send_data[i].en @= b1( 0 )
-      s.recv_opt.rdy @= s.out_rdy # and predicate_out_rdy
+      s.recv_opt.rdy @= reduce_or( s.out_rdy_vector )
 
   # Line trace
   def line_trace( s ):
