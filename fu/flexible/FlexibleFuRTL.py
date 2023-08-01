@@ -10,7 +10,7 @@ Author : Cheng Tan
 """
 
 from pymtl3                  import *
-from ...lib.ifcs      import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs             import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type         import *
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.AdderRTL   import AdderRTL
@@ -43,7 +43,10 @@ class FlexibleFuRTL( Component ):
     s.fu = [ FuList[i]( DataType, PredicateType, CtrlType, num_inports, num_outports,
                         data_mem_size ) for i in range( s.fu_list_size ) ]
 
-    s.fu_recv_const_rdy_vector = Wire( s.fu_list_size )
+    s.fu_recv_const_rdy_vector     = Wire( s.fu_list_size )
+    s.fu_recv_predicate_rdy_vector = Wire( s.fu_list_size )
+    s.fu_recv_opt_rdy_vector       = Wire( s.fu_list_size )
+    s.fu_recv_in_rdy_vector        = [ Wire( s.fu_list_size ) for i in range( num_inports ) ]
 
     # Connection
     for i in range( len( FuList ) ):
@@ -73,13 +76,15 @@ class FlexibleFuRTL( Component ):
         # opt connection
         s.fu[i].recv_opt.msg @= s.recv_opt.msg
         s.fu[i].recv_opt.en  @= s.recv_opt.en
-        s.recv_opt.rdy       @= s.fu[i].recv_opt.rdy | s.recv_opt.rdy
+        # s.recv_opt.rdy       @= s.fu[i].recv_opt.rdy | s.recv_opt.rdy
+        s.fu_recv_opt_rdy_vector[i] @= s.fu[i].recv_opt.rdy
 
         # Note that the predication for a combined FU should be identical/shareable,
         # which means the computation in different basic block cannot be combined.
         s.fu[i].recv_opt.msg.predicate @= s.recv_opt.msg.predicate
         s.fu[i].recv_predicate.en      @= s.recv_predicate.en
-        s.recv_predicate.rdy           @= s.fu[i].recv_predicate.rdy | s.recv_predicate.rdy
+        # s.recv_predicate.rdy           @= s.fu[i].recv_predicate.rdy | s.recv_predicate.rdy
+        s.fu_recv_predicate_rdy_vector[i] @= s.fu[i].recv_predicate.rdy
         s.fu[i].recv_predicate.msg     @= s.recv_predicate.msg
 
         # send_out connection
@@ -89,18 +94,21 @@ class FlexibleFuRTL( Component ):
             s.send_out[j].en      @= s.fu[i].send_out[j].en
           s.fu[i].send_out[j].rdy @= s.send_out[j].rdy
 
-      s.recv_const.rdy @= reduce_or( s.fu_recv_const_rdy_vector )
-
+      s.recv_const.rdy     @= reduce_or( s.fu_recv_const_rdy_vector )
+      s.recv_predicate.rdy @= reduce_or( s.fu_recv_predicate_rdy_vector )
+      s.recv_opt.rdy       @= reduce_or( s.fu_recv_opt_rdy_vector )
 
       for j in range( num_inports ):
         s.recv_in[j].rdy @= b1( 0 )
 
-      for i in range( s.fu_list_size ):
-        # recv_in connection
-        for j in range( num_inports ):
-          s.fu[i].recv_in[j].msg @= s.recv_in[j].msg
-          s.fu[i].recv_in[j].en  @= s.recv_in[j].en
-          s.recv_in[j].rdy       @= s.fu[i].recv_in[j].rdy | s.recv_in[j].rdy
+      # recv_in connection
+      for port in range( num_inports ):
+        for i in range( s.fu_list_size ):
+          s.fu[i].recv_in[port].msg @= s.recv_in[port].msg
+          s.fu[i].recv_in[port].en  @= s.recv_in[port].en
+          # s.recv_in[j].rdy       @= s.fu[i].recv_in[j].rdy | s.recv_in[j].rdy
+          s.fu_recv_in_rdy_vector[port][i] @= s.fu[i].recv_in[port].rdy
+        s.recv_in[port].rdy @= reduce_or( s.fu_recv_in_rdy_vector[port] )
 
   def line_trace( s ):
     opt_str = " #"

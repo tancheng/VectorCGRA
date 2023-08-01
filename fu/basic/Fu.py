@@ -40,11 +40,17 @@ class Fu( Component ):
     # s.initial_carry_in  = InPort( b1 )
     # s.initial_carry_out = OutPort( b1 )
 
+    # Components
+    s.recv_rdy_vector = Wire( num_outports )
+
     @update
     def update_signal():
       for j in range( num_outports ):
-        s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
-        s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
+        # s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+        s.recv_rdy_vector[j] @= s.send_out[j].rdy
+      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector )
+      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector )
 
     @update
     def update_mem():

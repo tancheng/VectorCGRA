@@ -55,6 +55,9 @@ class SelRTL( Component ):
     s.in1_idx //= s.in1[0:idx_nbits]
     s.in2_idx //= s.in2[0:idx_nbits]
 
+    # Components
+    s.recv_rdy_vector = Wire( num_outports )
+
     @update
     def update_mem():
       s.to_mem_waddr.en    @= b1( 0 )
@@ -95,8 +98,11 @@ class SelRTL( Component ):
           s.recv_predicate.rdy @= b1( 1 )
 
       for j in range( num_outports ):
-        s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
-        s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
+        # s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+        s.recv_rdy_vector[j] @= s.send_out[j].rdy
+      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector )
+      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector )
 
       for j in range( num_outports ):
         s.send_out[j].en @= s.recv_opt.en

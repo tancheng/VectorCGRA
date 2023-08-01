@@ -52,6 +52,10 @@ class MemUnitRTL( Component ):
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
 
+    # Components
+    s.recv_rdy_vector = Wire( num_outports )
+    s.recv_in_en_vector = Wire( num_inports )
+
     @update
     def comb_logic():
 
@@ -74,15 +78,24 @@ class MemUnitRTL( Component ):
           s.recv_predicate.rdy @= b1( 1 )
 
       for j in range( num_outports ):
-        s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
+        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
+        s.recv_rdy_vector[j] @= s.send_out[j].rdy
+
+      # for j in range( num_outports ):
+      #   s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector )
+      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector )
+
+      # for j in range( num_outports ):
+      #   for i in range( num_inports ):
+      #     s.send_out[j].en @= s.recv_in[i].en | s.send_out[j].en
+      #   s.send_out[j].en @= s.send_out[j].en & s.recv_opt.en
+
+      for i in range( num_inports ):
+        s.recv_in_en_vector[i] @= s.recv_in[i].en
 
       for j in range( num_outports ):
-        s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
-
-      for j in range( num_outports ):
-        for i in range( num_inports ):
-          s.send_out[j].en @= s.recv_in[i].en | s.send_out[j].en
-        s.send_out[j].en @= s.send_out[j].en & s.recv_opt.en
+        s.send_out[j].en @= s.recv_opt.en & reduce_or( s.recv_in_en_vector)
 
       s.send_out[0].msg     @= s.from_mem_rdata.msg
 
