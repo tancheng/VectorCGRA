@@ -44,6 +44,7 @@ class RetRTL( Fu ):
         s.recv_in[i].rdy @= b1( 0 )
 
       s.recv_predicate.rdy @= b1( 0 )
+      s.send_out_predicate @= b1( 0 )
 
       for j in range( num_outports ):
         s.send_out[j].en  @= s.recv_opt.en
