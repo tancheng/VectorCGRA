@@ -32,6 +32,7 @@ class RetRTL( Fu ):
     s.in0_idx = Wire( idx_nbits )
 
     s.in0_idx //= s.in0[0:idx_nbits]
+    s.send_out_predicate = Wire( 1 )
 
     # TODO: declare in0 as wire
     @update
@@ -44,6 +45,10 @@ class RetRTL( Fu ):
 
       s.recv_predicate.rdy @= b1( 0 )
 
+      for j in range( num_outports ):
+        s.send_out[j].en  @= s.recv_opt.en
+        s.send_out[j].msg @= DataType()
+
       if s.recv_opt.en:
         if s.recv_opt.msg.fu_in[0] != FuInType( 0 ):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType( 1 )
@@ -52,23 +57,22 @@ class RetRTL( Fu ):
         if s.recv_opt.msg.predicate == b1( 1 ):
           s.recv_predicate.rdy @= b1( 1 )
 
-      for j in range( num_outports ):
-        s.send_out[j].en @= s.recv_opt.en
       if s.recv_opt.msg.ctrl == OPT_RET:
         # Branch is only used to set predication rather than delivering value.
         s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1( 0 ), b1( 0 ) )
         if s.recv_in[s.in0_idx].msg.predicate == b1( 0 ):#s.const_zero.payload:
-          s.send_out[0].msg.predicate @= Bits1( 0 )
+          s.send_out_predicate @= 0
         else:
-          s.send_out[0].msg.predicate @= Bits1( 1 )
+          s.send_out_predicate @= 1
 
       else:
         for j in range( num_outports ):
           s.send_out[j].en @= b1( 0 )
 
       if s.recv_opt.msg.predicate == b1( 1 ):
-        s.send_out[0].msg.predicate @= s.send_out[0].msg.predicate & \
+        s.send_out[0].msg.predicate @= s.send_out_predicate & \
                                        s.recv_predicate.msg.predicate
+
 
   def line_trace( s ):
     opt_str = " #"
