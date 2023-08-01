@@ -90,15 +90,22 @@ class VectorAdderComboRTL( Component ):
     @update
     def update_opt():
 
+      for j in range( num_outports ):
+        s.send_out[j].en  @= b1( 0 )
+        s.send_out[j].msg.predicate @= b1( 0 )
+
       s.send_out[0].en @= s.recv_in[0].en & \
                           s.recv_in[1].en & \
                           s.recv_opt.en
 
+      s.recv_predicate.rdy @= b1( 0 )
+      s.recv_const.rdy     @= b1( 0 )
+
       for i in range( num_lanes ):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
+        s.Fu[i].recv_opt.msg.ctrl @= OPT_NAH
 
-      s.recv_predicate.rdy @= b1( 0 )
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.recv_predicate.rdy @= b1( 1 )
 

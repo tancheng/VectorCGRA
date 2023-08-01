@@ -12,9 +12,10 @@ Author : Cheng Tan
 """
 
 from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs        import SendIfcRTL, RecvIfcRTL
 from .VectorMulRTL      import VectorMulRTL
 from ...lib.opt_type    import *
+from ..basic.SumUnit    import SumUnit
 
 class VectorMulComboRTL( Component ):
 
@@ -47,6 +48,7 @@ class VectorMulComboRTL( Component ):
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
     TempDataType     = mk_bits( data_bandwidth )
+    FuDataType       = mk_bits( sub_bw )
     s.temp_result    = [ Wire( TempDataType ) for _ in range( num_lanes ) ]
 
     # Components
@@ -62,17 +64,30 @@ class VectorMulComboRTL( Component ):
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
-    # TODO: use & instead of and
+
+    # Reduction units
+    s.reduce_add = SumUnit( TempDataType, num_lanes )
+    for i in range( num_lanes ):
+      s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
+          if s.recv_opt.msg.ctrl == OPT_VEC_MUL else 0)
+
     @update
     def update_input_output():
 
+      # Initialization to avoid latches
       s.send_out[0].en @= s.recv_in[0].en & \
                           s.recv_in[1].en & \
                           s.recv_opt.en
+      s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
+
+      for i in range( num_lanes ):
+        s.temp_result[i] @= TempDataType( 0 )
+        s.Fu[i].recv_in[0].msg[0:sub_bw] @= FuDataType()
+        s.Fu[i].recv_in[1].msg[0:sub_bw] @= FuDataType()
 
       if s.recv_opt.msg.ctrl == OPT_VEC_MUL:
 
-        s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
+        # s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
 
         # Connection: split into vectorized FUs
         s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
@@ -87,10 +102,13 @@ class VectorMulComboRTL( Component ):
         for i in range( num_lanes ):
 
           s.temp_result[i] @= TempDataType( 0 )
-          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
+          # s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
+          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2] << (sub_bw * i)
 
-          s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] + (s.temp_result[i] << (sub_bw * i));
+          # s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] + (s.temp_result[i] << (sub_bw * i));
+          # s.send_out[0].msg.payload[0:data_bandwidth] @= s.send_out[0].msg.payload[0:data_bandwidth] + s.temp_result[i];
           # s.send_out[0].msg.payload[sub_bw*i:sub_bw*(i+1)] @= s.Fu[i].send_out[0].msg[0:sub_bw];
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
 
       elif s.recv_opt.msg.ctrl == OPT_MUL: # with highest precision
 
@@ -137,11 +155,14 @@ class VectorMulComboRTL( Component ):
     @update
     def update_opt():
 
+      s.recv_predicate.rdy @= b1( 0 )
+      s.send_out[0].msg.predicate @= b1( 0 )
+
       for i in range( num_lanes ):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
+        s.Fu[i].recv_opt.msg.ctrl @= OPT_NAH
 
-      s.recv_predicate.rdy @= b1( 0 )
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.recv_predicate.rdy @= b1( 1 )
 

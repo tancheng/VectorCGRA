@@ -84,10 +84,13 @@ class VectorAllReduceRTL( Component ):
     @update
     def update_predicate():
       s.recv_predicate.rdy @= b1( 0 )
+      s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.recv_predicate.rdy @= b1( 1 )
-      if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
-        s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
+      # else:
+      #   s.send_out[0].msg.predicate @= b1( 0 )
+      if s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_ADD | s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_MUL:
+        s.send_out[0].msg.predicate @= b1( 0 ) # s.recv_in[0].msg.predicate
 
     @update
     def update_mem():

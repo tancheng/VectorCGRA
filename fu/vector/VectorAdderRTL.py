@@ -86,6 +86,7 @@ class VectorAdderRTL( Component ):
 
       for j in range( num_outports ):
         s.send_out[j].en @= s.recv_opt.en
+        s.send_out[j].msg @= DataType()
 
       if s.recv_opt.msg.ctrl == OPT_ADD:
         s.send_out[0].msg @= s.recv_in[s.in0_idx].msg + s.recv_in[s.in1_idx].msg + s.carry_in_temp
