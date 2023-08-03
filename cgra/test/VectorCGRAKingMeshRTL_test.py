@@ -124,9 +124,9 @@ def test_homo_4x4( cmdline_opts ):
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr )
   th.elaborate()
-  th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
-                    ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                     'ALWCOMBORDER'] )
+  # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
+  #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+  #                    'ALWCOMBORDER'] )
   th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
   run_sim( th )
 

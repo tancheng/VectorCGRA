@@ -75,10 +75,13 @@ class VectorMulComboRTL( Component ):
     def update_input_output():
 
       # Initialization to avoid latches
+      for j in range( num_outports ):
+        s.send_out[j].en @= b1( 0 )
+
       s.send_out[0].en @= s.recv_in[0].en & \
                           s.recv_in[1].en & \
                           s.recv_opt.en
-      s.send_out[0].msg.payload[0:data_bandwidth] @= TempDataType( 0 )
+      s.send_out[0].msg.payload @= 0
 
       for i in range( num_lanes ):
         s.temp_result[i] @= TempDataType( 0 )
