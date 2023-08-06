@@ -7,9 +7,9 @@
 # Author : Cheng Tan
 #   Date : Feb 22, 2020
 
-from pymtl3                   import *
-from pymtl3.stdlib.ifcs       import RecvIfcRTL, SendIfcRTL
-from pymtl3.stdlib.rtl.queues import NormalQueueRTL, PipeQueueRTL
+from pymtl3                       import *
+from pymtl3.stdlib.dstruct.queues import BypassQueue, NormalQueue
+from ..lib.ifcs import RecvIfcRTL, SendIfcRTL
 
 
 class ChannelRTL( Component ):
@@ -27,36 +27,49 @@ class ChannelRTL( Component ):
 
 
     # Component
-    s.queues = [ NormalQueueRTL( DataType, s.num_entries )
+    s.queues = [ NormalQueue( DataType, s.num_entries )
                  for _ in range( s.latency ) ]
+
+    s.bypass_q = BypassQueue( DataType, num_entries=1 )
+    s.bypass_q.enq_en  //= s.recv.en
+    s.bypass_q.enq_msg //= s.recv.msg
+    s.bypass_q.enq_rdy //= s.recv.rdy
+
 
     s.count //= s.queues[s.latency - 1].count
 
-    @s.update
+    @update
     def process():
-      if s.recv.msg.bypass == b1( 0 ):
-        s.recv.rdy = s.queues[0].enq.rdy
-        s.queues[0].enq.msg = s.recv.msg
-        s.queues[0].enq.en  = s.recv.en and s.queues[0].enq.rdy
-        for i in range(s.latency - 1):
-          s.queues[i+1].enq.msg = s.queues[i].deq.ret
-          s.queues[i+1].enq.en  = s.queues[i].deq.rdy and s.queues[i+1].enq.rdy
-          s.queues[i].deq.en    = s.queues[i+1].enq.en
-  
-        s.send.msg  = s.queues[s.latency-1].deq.ret
-        s.send.en   = s.send.rdy and s.queues[s.latency-1].deq.rdy
-        s.queues[s.latency-1].deq.en   = s.send.en
+      for i in range(s.latency - 1):
+        s.queues[i+1].enq_msg @= s.queues[i].deq_msg
+        s.queues[i+1].enq_en  @= s.queues[i].deq_rdy & s.queues[i+1].enq_rdy
+        s.queues[i].deq_en    @= s.queues[i+1].enq_en
+
+      if ~s.bypass_q.deq_msg.bypass:
+        s.queues[0].enq_msg @= s.bypass_q.deq_msg
+        s.bypass_q.deq_en   @= s.queues[0].enq_rdy & s.bypass_q.deq_rdy
+        s.queues[0].enq_en  @= s.queues[0].enq_rdy & s.bypass_q.deq_rdy
+
+        s.send.msg                   @= s.queues[s.latency-1].deq_msg
+        s.send.en                    @= s.send.rdy & s.queues[s.latency-1].deq_rdy
+        s.queues[s.latency-1].deq_en @= s.send.rdy & s.queues[s.latency-1].deq_rdy
+
       else:
-        s.send.msg = s.data
-        s.send.msg.payload = s.recv.msg.payload
-        s.send.msg.predicate = s.recv.msg.predicate
-        s.send.msg.bypass = b1( 0 )
-        s.send.en = s.send.rdy and s.recv.en
-        s.recv.rdy = s.send.rdy
+        s.queues[0].enq_en           @= 0
+        s.queues[0].enq_msg          @= DataType()
+        s.queues[s.latency-1].deq_en @= 0
+
+        s.send.msg           @= DataType()
+        s.send.msg.payload   @= s.bypass_q.deq_msg.payload
+        s.send.msg.predicate @= s.bypass_q.deq_msg.predicate
+        s.send.msg.bypass    @= 0
+        s.send.en            @= s.send.rdy & s.bypass_q.deq_rdy
+        s.bypass_q.deq_en    @= s.send.rdy & s.bypass_q.deq_rdy
 
   def line_trace( s ):
     trace = '>'
     for i in range( s.latency ):
       trace += s.queues[i].line_trace() + '>'
+    return f'{s.bypass_q.line_trace()}'
     return f"in:{s.recv.msg}({trace})out:{s.send.msg}.count:{s.count} ## "
 

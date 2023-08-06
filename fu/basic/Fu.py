@@ -9,7 +9,7 @@ Author : Cheng Tan
 """
 
 from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type    import *
 
 class Fu( Component ):
@@ -37,24 +37,30 @@ class Fu( Component ):
     s.from_mem_rdata = RecvIfcRTL( DataType )
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
-    s.initial_carry_in  = InPort( b1 )
-    s.initial_carry_out = OutPort( b1 )
+    # s.initial_carry_in  = InPort( b1 )
+    # s.initial_carry_out = OutPort( b1 )
 
-    @s.update
+    # Components
+    s.recv_rdy_vector = Wire( num_outports )
+
+    @update
     def update_signal():
       for j in range( num_outports ):
-        s.recv_const.rdy = s.send_out[j].rdy or s.recv_const.rdy
-        s.recv_opt.rdy = s.send_out[j].rdy or s.recv_opt.rdy
+        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
+        # s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
+        s.recv_rdy_vector[j] @= s.send_out[j].rdy
+      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector )
+      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector )
 
-    @s.update
+    @update
     def update_mem():
-      s.to_mem_waddr.en    = b1( 0 )
-      s.to_mem_wdata.en    = b1( 0 )
-      s.to_mem_wdata.msg   = s.const_zero
-      s.to_mem_waddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.en    = b1( 0 )
-      s.from_mem_rdata.rdy = b1( 0 )
+      s.to_mem_waddr.en    @= b1( 0 )
+      s.to_mem_wdata.en    @= b1( 0 )
+      s.to_mem_wdata.msg   @= s.const_zero
+      s.to_mem_waddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.en    @= b1( 0 )
+      s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace( s ):
     opt_str = " #"

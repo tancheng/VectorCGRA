@@ -8,14 +8,14 @@ Author : Cheng Tan
 """
 
 from pymtl3                      import *
-from pymtl3.stdlib.ifcs          import SendIfcRTL, RecvIfcRTL
+from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ..fu.single.MemUnitRTL      import MemUnitRTL
+from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
+from ..mem.ctrl.CtrlMemCL        import CtrlMemCL
+from ..mem.const.ConstQueueRTL   import ConstQueueRTL
 from ..noc.CrossbarRTL           import CrossbarRTL
 from ..noc.ChannelRTL            import ChannelRTL
 from ..rf.RegisterRTL            import RegisterRTL
-from ..mem.ctrl.CtrlMemCL        import CtrlMemCL
-from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..mem.const.ConstQueueRTL   import ConstQueueRTL
-from ..fu.single.MemUnitRTL      import MemUnitRTL
 
 class TileCL( Component ):
 
@@ -93,13 +93,13 @@ class TileCL( Component ):
     for i in range( num_fu_outports ):
       s.element.send_out[i] //= s.crossbar.recv_data[num_mesh_ports+i]
 
-    @s.update
+    @update
     def update_opt():
-      s.element.recv_opt.msg   = s.ctrl_mem.send_ctrl.msg
-      s.crossbar.recv_opt.msg  = s.ctrl_mem.send_ctrl.msg
-      s.element.recv_opt.en    = s.ctrl_mem.send_ctrl.en
-      s.crossbar.recv_opt.en   = s.ctrl_mem.send_ctrl.en
-      s.ctrl_mem.send_ctrl.rdy = s.element.recv_opt.rdy or s.crossbar.recv_opt.rdy
+      s.element.recv_opt.msg   @= s.ctrl_mem.send_ctrl.msg
+      s.crossbar.recv_opt.msg  @= s.ctrl_mem.send_ctrl.msg
+      s.element.recv_opt.en    @= s.ctrl_mem.send_ctrl.en
+      s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
+      s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy or s.crossbar.recv_opt.rdy
 
   # Line trace
   def line_trace( s ):

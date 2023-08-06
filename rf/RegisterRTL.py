@@ -7,8 +7,9 @@
 #   Date : Aug 22, 2021
 
 from pymtl3                   import *
-from pymtl3.stdlib.ifcs       import RecvIfcRTL, SendIfcRTL
-from pymtl3.stdlib.rtl.queues import NormalQueueRTL, PipeQueueRTL
+from pymtl3.stdlib.dstruct.queues import NormalQueue
+
+from ..lib.ifcs import RecvIfcRTL, SendIfcRTL
 
 
 class RegisterRTL( Component ):
@@ -24,22 +25,22 @@ class RegisterRTL( Component ):
     s.send  = SendIfcRTL( DataType )
 
     # Component
-    s.queues = [ NormalQueueRTL( DataType, s.num_entries )
+    s.queues = [ NormalQueue( DataType, s.num_entries )
                  for _ in range( s.latency ) ]
 
-    @s.update
+    @update
     def process():
-      s.recv.rdy = s.queues[0].enq.rdy
-      s.queues[0].enq.msg = s.recv.msg
-      s.queues[0].enq.en  = s.recv.en and s.queues[0].enq.rdy
+      s.recv.rdy @= s.queues[0].enq_rdy
+      s.queues[0].enq_msg @= s.recv.msg
+      s.queues[0].enq_en  @= s.recv.en & s.queues[0].enq_rdy
       for i in range(s.latency - 1):
-        s.queues[i+1].enq.msg = s.queues[i].deq.ret
-        s.queues[i+1].enq.en  = s.queues[i].deq.rdy and s.queues[i+1].enq.rdy
-        s.queues[i].deq.en    = s.queues[i+1].enq.en
-  
-      s.send.msg  = s.queues[s.latency-1].deq.ret
-      s.send.en   = s.send.rdy and s.queues[s.latency-1].deq.rdy
-      s.queues[s.latency-1].deq.en   = s.send.en
+        s.queues[i+1].enq_msg @= s.queues[i].deq_msg
+        s.queues[i+1].enq_en  @= s.queues[i].deq_rdy & s.queues[i+1].enq_rdy
+        s.queues[i].deq_en    @= s.queues[i+1].enq_en
+
+      s.send.msg @= s.queues[s.latency-1].deq_msg
+      s.send.en  @= s.send.rdy & s.queues[s.latency-1].deq_rdy
+      s.queues[s.latency-1].deq_en @= s.send.en
 
   def line_trace( s ):
     trace = '>'

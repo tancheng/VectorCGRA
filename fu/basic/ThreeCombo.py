@@ -11,7 +11,7 @@ Author : Cheng Tan
 """
 
 from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type    import *
 
 class ThreeCombo( Component ):
@@ -38,8 +38,8 @@ class ThreeCombo( Component ):
     s.from_mem_rdata = RecvIfcRTL( DataType )
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
-    s.initial_carry_in  = InPort( b1 )
-    s.initial_carry_out = OutPort( b1 )
+    # s.initial_carry_in  = InPort( b1 )
+    # s.initial_carry_out = OutPort( b1 )
 
     # Components
     s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 4, 2, data_mem_size )
@@ -57,16 +57,17 @@ class ThreeCombo( Component ):
     s.Fu2.send_out[0].msg //= s.send_out[0].msg
     s.Fu2.send_out[0].msg //= s.send_out[1].msg
 
-    @s.update
+    # TODO: use & instead of and
+    @update
     def update_signal():
-      s.recv_in[0].rdy  = s.send_out[0].rdy
-      s.recv_in[1].rdy  = s.send_out[0].rdy
-      s.recv_in[2].rdy  = s.send_out[0].rdy
-      s.recv_in[3].rdy  = s.send_out[0].rdy
-      s.Fu0.recv_opt.en = s.recv_opt.en
-      s.Fu1.recv_opt.en = s.recv_opt.en
-      s.Fu2.recv_opt.en = s.recv_opt.en
-      s.recv_opt.rdy    = s.send_out[0].rdy
+      s.recv_in[0].rdy  @= s.send_out[0].rdy
+      s.recv_in[1].rdy  @= s.send_out[0].rdy
+      s.recv_in[2].rdy  @= s.send_out[0].rdy
+      s.recv_in[3].rdy  @= s.send_out[0].rdy
+      s.Fu0.recv_opt.en @= s.recv_opt.en
+      s.Fu1.recv_opt.en @= s.recv_opt.en
+      s.Fu2.recv_opt.en @= s.recv_opt.en
+      s.recv_opt.rdy    @= s.send_out[0].rdy
 #      s.send_out[0].en  = s.recv_in[0].en  and s.recv_in[1].en  and\
 #                          s.recv_in[2].en  and s.recv_in[3].en  and\
 #                          s.recv_opt.en
@@ -76,39 +77,39 @@ class ThreeCombo( Component ):
 
       # Note that the predication for a combined FU should be identical/shareable,
       # which means the computation in different basic block cannot be combined.
-      s.Fu0.recv_opt.msg.predicate = s.recv_opt.msg.predicate
-      s.Fu1.recv_opt.msg.predicate = s.recv_opt.msg.predicate
-      s.Fu2.recv_opt.msg.predicate = s.recv_opt.msg.predicate
+      s.Fu0.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
+      s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
+      s.Fu2.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
 
-      s.recv_predicate.rdy     = s.Fu0.recv_predicate.rdy and\
-                                 s.Fu1.recv_predicate.rdy and\
-                                 s.Fu2.recv_predicate.rdy
+      s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy and\
+                                  s.Fu1.recv_predicate.rdy and\
+                                  s.Fu2.recv_predicate.rdy
 
-      s.Fu0.recv_predicate.en  = s.recv_predicate.en
-      s.Fu1.recv_predicate.en  = s.recv_predicate.en
-      s.Fu2.recv_predicate.en  = s.recv_predicate.en
+      s.Fu0.recv_predicate.en  @= s.recv_predicate.en
+      s.Fu1.recv_predicate.en  @= s.recv_predicate.en
+      s.Fu2.recv_predicate.en  @= s.recv_predicate.en
 
-      s.Fu0.recv_predicate.msg = s.recv_predicate.msg
-      s.Fu1.recv_predicate.msg = s.recv_predicate.msg
-      s.Fu2.recv_predicate.msg = s.recv_predicate.msg
+      s.Fu0.recv_predicate.msg @= s.recv_predicate.msg
+      s.Fu1.recv_predicate.msg @= s.recv_predicate.msg
+      s.Fu2.recv_predicate.msg @= s.recv_predicate.msg
 
       # Connect count.
-      s.Fu0.recv_in_count[0] = s.recv_in_count[0]
-      s.Fu0.recv_in_count[1] = s.recv_in_count[1]
-      s.Fu1.recv_in_count[0] = s.recv_in_count[2]
-      s.Fu1.recv_in_count[1] = s.recv_in_count[3]
-      s.Fu2.recv_in_count[0] = s.recv_in_count[0]
-      s.Fu2.recv_in_count[1] = s.recv_in_count[2]
+      s.Fu0.recv_in_count[0] @= s.recv_in_count[0]
+      s.Fu0.recv_in_count[1] @= s.recv_in_count[1]
+      s.Fu1.recv_in_count[0] @= s.recv_in_count[2]
+      s.Fu1.recv_in_count[1] @= s.recv_in_count[3]
+      s.Fu2.recv_in_count[0] @= s.recv_in_count[0]
+      s.Fu2.recv_in_count[1] @= s.recv_in_count[2]
 
-    @s.update
+    @update
     def update_mem():
-      s.to_mem_waddr.en    = b1( 0 )
-      s.to_mem_wdata.en    = b1( 0 )
-      s.to_mem_wdata.msg   = s.const_zero
-      s.to_mem_waddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.en    = b1( 0 )
-      s.from_mem_rdata.rdy = b1( 0 )
+      s.to_mem_waddr.en    @= b1( 0 )
+      s.to_mem_wdata.en    @= b1( 0 )
+      s.to_mem_wdata.msg   @= s.const_zero
+      s.to_mem_waddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.en    @= b1( 0 )
+      s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace( s ):
     return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace() + " ; " + s.Fu2.line_trace()

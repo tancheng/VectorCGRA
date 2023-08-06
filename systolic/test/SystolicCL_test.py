@@ -10,9 +10,9 @@ Author : Cheng Tan
 """
 
 from pymtl3                       import *
-from pymtl3.stdlib.test           import TestSinkCL
-from pymtl3.stdlib.test.test_srcs import TestSrcRTL
 
+from ...lib.test_sinks            import TestSinkRTL
+from ...lib.test_srcs             import TestSrcRTL
 from ...lib.opt_type              import *
 from ...lib.messages              import *
 from ...lib.ctrl_helper           import *
@@ -38,7 +38,7 @@ class TestHarness( Component ):
     s.num_tiles = width * height
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
 
-    s.sink_out  = [ TestSinkCL( DataType, sink_out[i] )
+    s.sink_out  = [ TestSinkRTL( DataType, sink_out[i] )
                   for i in range( height-1 ) ]
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType, CtrlType,
@@ -53,7 +53,7 @@ class TestHarness( Component ):
 
 def run_sim( test_harness, max_cycles=6 ):
   test_harness.elaborate()
-  test_harness.apply( SimulationPass() )
+  test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
 
   # Run simulation
@@ -61,7 +61,7 @@ def run_sim( test_harness, max_cycles=6 ):
   print()
   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
   while ncycles < max_cycles:
-    test_harness.tick()
+    test_harness.sim_tick()
     ncycles += 1
     print( "----------------------------------------------------" )
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
@@ -69,9 +69,9 @@ def run_sim( test_harness, max_cycles=6 ):
   # Check timeout
 #  assert ncycles < max_cycles
 
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 # ------------------------------------------------------------------
 # To emulate systolic array
@@ -104,8 +104,8 @@ def test_systolic_2x2():
   CtrlType          = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
   FuInType          = mk_bits( clog2( num_fu_in + 1 ) )
   pickRegister      = [ FuInType( x+1 ) for x in range( num_fu_in ) ]
-  
-  src_opt       = [[CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [ 
+
+  src_opt       = [[CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                     CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
@@ -118,10 +118,10 @@ def test_systolic_2x2():
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
-                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [ 
+                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
-                    CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [ 
+                    CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                     CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
@@ -134,7 +134,7 @@ def test_systolic_2x2():
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
-                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [ 
+                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
                     CtrlType( OPT_MUL_CONST, b1( 0 ), pickRegister, [
@@ -147,13 +147,13 @@ def test_systolic_2x2():
                     RouteType(2), RouteType(0), RouteType(0), RouteType(5),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
-                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [ 
+                   [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
-                    CtrlType( OPT_NAH, b1( 0 ), pickRegister, [ 
+                    CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(3), RouteType(0)] ),
-                    CtrlType( OPT_MUL_CONST_ADD, b1( 0 ), pickRegister, [ 
+                    CtrlType( OPT_MUL_CONST_ADD, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(5),
                     RouteType(2), RouteType(0), RouteType(3), RouteType(0)] ),
                     CtrlType( OPT_MUL_CONST_ADD, b1( 0 ), pickRegister, [
@@ -197,7 +197,7 @@ def test_systolic_2x2():
                    [DataType(6, 1)], [DataType(8, 1)]] # preloaded data
   """
   1 3      2 6     14 20
-       x        =  
+       x        =
   2 4      4 8     30 44
   """
   sink_out = [[DataType(14, 1), DataType(20, 1)], [DataType(30, 1), DataType(44, 1)]]

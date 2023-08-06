@@ -7,7 +7,7 @@ Author : Cheng Tan
 """
 
 from pymtl3                      import *
-from pymtl3.stdlib.ifcs          import SendIfcRTL, RecvIfcRTL
+from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
 from ..noc.CrossbarRTL           import CrossbarRTL
 from ..noc.ChannelRTL            import ChannelRTL
 from ..tile.TileRTL              import TileRTL
@@ -52,7 +52,7 @@ class CGRATemplateRTL( Component ):
         dstTileIndex = link.dstTile.getIndex( TileList )
         s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
         s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
-      
+
       elif link.isToMem():
         memPort = link.getMemWritePort()
         srcTileIndex = link.srcTile.getIndex( TileList )
@@ -63,7 +63,7 @@ class CGRATemplateRTL( Component ):
         srcTileIndex = link.srcTile.getIndex( TileList )
         dstTileIndex = link.dstTile.getIndex( TileList )
         s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
- 
+
     # Connections
     for i in range( s.num_tiles):
       s.recv_waddr[i] //= s.tile[i].recv_waddr

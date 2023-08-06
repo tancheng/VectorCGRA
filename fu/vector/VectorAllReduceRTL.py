@@ -1,7 +1,6 @@
 """
 ==========================================================================
-VectorAllReduceRTL.py
-==========================================================================
+VectorAllReduceRTL.py ==========================================================================
 AllReduce functional unit.
 
 Author : Cheng Tan
@@ -9,9 +8,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
+from pymtl3                import *
+from ...lib.ifcs           import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type       import *
+from ..basic.SumUnit       import SumUnit
+from ..basic.ReduceMulUnit import ReduceMulUnit
 
 class VectorAllReduceRTL( Component ):
 
@@ -45,51 +46,61 @@ class VectorAllReduceRTL( Component ):
     s.to_mem_waddr   = SendIfcRTL( AddrType )
     s.to_mem_wdata   = SendIfcRTL( DataType )
 
-    @s.update
+    # Reduction units
+    s.reduce_add = SumUnit( TempDataType, num_lanes )
+    for i in range( num_lanes ):
+      s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
+          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD else 0)
+
+    s.reduce_mul = ReduceMulUnit( TempDataType, num_lanes )
+    for i in range( num_lanes ):
+      s.reduce_mul.in_[i] //= lambda: (s.temp_result[i]
+          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL else 0)
+
+    @update
     def update_result():
       # Connection: split data into vectorized wires
+      s.send_out[0].msg.payload @= 0
       for i in range( num_lanes ):
-        s.temp_result[i] = TempDataType( 0 )
-        s.temp_result[i][0:sub_bw] = s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
-
+        s.temp_result[i] @= TempDataType( 0 )
+        s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
       if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
-        s.send_out[0].msg.payload[0:data_bandwidth] = TempDataType( 0 )
-        for i in range( num_lanes ):
-          s.send_out[0].msg.payload[0:data_bandwidth] += s.temp_result[i]
-      elif s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL:
-        s.send_out[0].msg.payload[0:data_bandwidth] = TempDataType( 1 )
-        for i in range( num_lanes ):
-          s.send_out[0].msg.payload[0:data_bandwidth] *= s.temp_result[i]
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
 
-    @s.update
+      elif s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL:
+        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_mul.out
+
+    @update
     def update_signal():
       for i in range( num_inports ):
-        s.recv_in[i].rdy  = b1( 0 )
+        s.recv_in[i].rdy  @= b1( 0 )
 
-      s.recv_in[0].rdy  = s.send_out[0].rdy
+      s.recv_in[0].rdy  @= s.send_out[0].rdy
       # s.recv_in[1].rdy  = s.send_out[0].rdy
-      s.recv_opt.rdy    = s.send_out[0].rdy
-      s.send_out[0].en  = s.recv_in[0].en and\
-                          s.recv_opt.en
+      s.recv_opt.rdy    @= s.send_out[0].rdy
+      s.send_out[0].en  @= s.recv_in[0].en & s.recv_opt.en
 
-    @s.update
+    @update
     def update_predicate():
-      s.recv_predicate.rdy = b1( 0 )
+      s.recv_predicate.rdy @= b1( 0 )
+      s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
       if s.recv_opt.msg.predicate == b1( 1 ):
-        s.recv_predicate.rdy = b1( 1 )
-      if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
-        s.send_out[0].msg.predicate = s.recv_in[0].msg.predicate
+        s.recv_predicate.rdy @= b1( 1 )
+      # else:
+      #   s.send_out[0].msg.predicate @= b1( 0 )
+      if s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_ADD | s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_MUL:
+        s.send_out[0].msg.predicate @= b1( 0 ) # s.recv_in[0].msg.predicate
 
-    @s.update
+    @update
     def update_mem():
-      s.to_mem_waddr.en    = b1( 0 )
-      s.to_mem_wdata.en    = b1( 0 )
-      s.to_mem_wdata.msg   = s.const_zero
-      s.to_mem_waddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.msg   = AddrType( 0 )
-      s.to_mem_raddr.en    = b1( 0 )
-      s.from_mem_rdata.rdy = b1( 0 )
+      s.to_mem_waddr.en    @= b1( 0 )
+      s.to_mem_wdata.en    @= b1( 0 )
+      s.to_mem_wdata.msg   @= s.const_zero
+      s.to_mem_waddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.msg   @= AddrType( 0 )
+      s.to_mem_raddr.en    @= b1( 0 )
+      s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace( s ):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + " -> " + str(s.send_out[0].msg)

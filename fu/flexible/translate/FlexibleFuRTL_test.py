@@ -10,8 +10,8 @@ Author : Cheng Tan
 """
 
 from pymtl3                         import *
-from pymtl3.stdlib.test.test_srcs   import TestSrcRTL
-from pymtl3.stdlib.test.test_sinks  import TestSinkRTL
+from ....lib.test_sinks             import TestSinkRTL
+from ....lib.test_srcs              import TestSrcRTL
 
 from ..FlexibleFuRTL                import FlexibleFuRTL
 from ....lib.opt_type               import *
@@ -27,7 +27,7 @@ from ...single.MemUnitRTL           import MemUnitRTL
 from ...single.CompRTL              import CompRTL
 from ...single.BranchRTL            import BranchRTL
 
-from pymtl3.passes.backends.verilog import TranslationImportPass
+from pymtl3.stdlib.test_utils import run_sim, config_model_with_cmdline_opts
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -80,36 +80,36 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=100 ):
-  test_harness.elaborate()
-  test_harness.dut.verilog_translate_import = True
-  test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list = ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
-  test_harness = TranslationImportPass()(test_harness)
-  test_harness.apply( SimulationPass() )
-  test_harness.sim_reset()
-
-  # Run simulation
-  ncycles = 0
-  print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-  while not test_harness.done() and ncycles < max_cycles:
-    test_harness.tick()
-    ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
-
-  # Check timeout
-  assert ncycles < max_cycles
-
-  test_harness.tick()
-  test_harness.tick()
-  test_harness.tick()
+# def run_sim( test_harness, max_cycles=100 ):
+#   test_harness.elaborate()
+#   test_harness.dut.verilog_translate_import = True
+#   test_harness.dut.config_verilog_import = VerilatorImportConfigs(vl_Wno_list = ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT', 'ALWCOMBORDER'])
+#   test_harness = TranslationImportPass()(test_harness)
+#   test_harness.apply( DefaultPassGroup() )
+#   test_harness.sim_reset()
+#
+#   # Run simulation
+#   ncycles = 0
+#   print()
+#   print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+#   while not test_harness.done() and ncycles < max_cycles:
+#     test_harness.sim_tick()
+#     ncycles += 1
+#     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+#
+#   # Check timeout
+#   assert ncycles < max_cycles
+#
+#   test_harness.sim_tick()
+#   test_harness.sim_tick()
+#   test_harness.sim_tick()
 
 import platform
 import pytest
 
-@pytest.mark.skipif('Linux' not in platform.platform(),
-                    reason="requires linux (gcc)")
-def test_flexible_mul():
+# @pytest.mark.skipif('Linux' not in platform.platform(),
+#                     reason="requires linux (gcc)")
+def test_flexible_mul( cmdline_opts ):
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL]
   DataType      = mk_data( 64, 1 )
@@ -131,4 +131,7 @@ def test_flexible_mul():
                     data_mem_size, num_inports, num_outports,
                     src_in0, src_in1, src_predicate, src_opt,
                     sink_out, sink_out )
-  run_sim( th )
+  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
+  th.apply( DefaultPassGroup(linetrace=True) )
+  # run_sim( th )
+

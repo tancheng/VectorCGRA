@@ -9,10 +9,11 @@ Author : Cheng Tan
 
 """
 
-from pymtl3 import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ..lib.opt_type     import *
-from pymtl3.stdlib.rtl  import RegisterFile
+from pymtl3                  import *
+from pymtl3.stdlib.primitive import RegisterFile
+
+from ..lib.ifcs        import SendIfcRTL, RecvIfcRTL
+from ..lib.opt_type    import *
 
 class RegFile( Component ):
 
@@ -20,7 +21,7 @@ class RegFile( Component ):
 
     # Constant
 
-    AddrType = mk_bits( clog2( nregs ) )
+    AddrType = mk_bits( max(clog2( nregs ), 1) )
 
     # Interface
 
@@ -41,12 +42,12 @@ class RegFile( Component ):
     s.send_rdata.msg    //= s.reg_file.rdata[0]
     s.reg_file.wen[0]   //= b1( 1 )
 
-    @s.update
+    @update
     def update_signal():
-      s.recv_raddr.rdy = s.send_rdata.rdy
-      s.recv_waddr.rdy = s.send_rdata.rdy
-      s.recv_wdata.rdy = s.send_rdata.rdy
-      s.send_rdata.en  = s.recv_raddr.en
+      s.recv_raddr.rdy @= s.send_rdata.rdy
+      s.recv_waddr.rdy @= s.send_rdata.rdy
+      s.recv_wdata.rdy @= s.send_rdata.rdy
+      s.send_rdata.en  @= s.recv_raddr.en
 
   def line_trace( s ):
     out_str = "|".join([ str(data) for data in s.reg_file.regs ])

@@ -8,11 +8,11 @@ Author : Cheng Tan
   Date : Dec 27, 2019
 
 """
-
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from pymtl3.stdlib.rtl  import RegisterFile
+from copy import deepcopy
+from pymtl3                   import *
+from pymtl3.stdlib.primitive  import RegisterFile
+from ...lib.ifcs              import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type          import *
 
 class DataMemCL( Component ):
 
@@ -34,33 +34,36 @@ class DataMemCL( Component ):
 
     s.sram = [ DataType( 0, 0 ) for _ in range( data_mem_size ) ]
     for i in range( len( preload_data ) ):
-      s.sram[i] = preload_data[i] 
+      s.sram[i] = preload_data[i]
 
-    @s.update
+    @update
     def load():
       for i in range( rd_ports ):
-        s.send_rdata[i].msg = s.sram[ s.recv_raddr[i].msg ]
+        s.send_rdata[i].msg @= s.sram[ s.recv_raddr[i].msg ]
 
-    @s.update
+    # TODO
+    @update_once
     def store():
       for i in range( wr_ports ):
         if s.recv_wdata[i].en and s.recv_waddr[i].en:
-          s.sram[ s.recv_waddr[i].msg ] = s.recv_wdata[i].msg
+          s.sram[ s.recv_waddr[i].msg ] = deepcopy(s.recv_wdata[i].msg)
 
-    @s.update
+    @update
     def update_signal():
       for i in range( rd_ports ):
-        s.recv_raddr[i].rdy = s.send_rdata[i].rdy
+        s.recv_raddr[i].rdy @= s.send_rdata[i].rdy
                               # b1( 1 ) # s.send_rdata[i].rdy
-        s.send_rdata[i].en  = s.recv_raddr[i].en
+        s.send_rdata[i].en  @= s.recv_raddr[i].en
                               # s.send_rdata[i].rdy # s.recv_raddr[i].en
       for i in range( wr_ports ):
-        s.recv_waddr[i].rdy = Bits1( 1 )
-        s.recv_wdata[i].rdy = Bits1( 1 )
+        s.recv_waddr[i].rdy @= Bits1( 1 )
+        s.recv_wdata[i].rdy @= Bits1( 1 )
 
   def line_trace( s ):
     recv_str = "|".join([ str(data.msg) for data in s.recv_wdata    ])
     out_str  = "|".join([ str(data)     for data in s.sram ])
     send_str = "|".join([ str(data.msg) for data in s.send_rdata    ])
-    return f'{recv_str} : [{out_str}] : {send_str}'
+    # return f'{recv_str} : [{out_str}] : {send_str}'
+    sram_trace =  f'{"|".join([str(x) for x in s.sram])}'
+    return f'{s.recv_waddr[0]}<{s.recv_wdata[0]}({sram_trace}){s.recv_raddr[0]}>{s.send_rdata[0]}'
 

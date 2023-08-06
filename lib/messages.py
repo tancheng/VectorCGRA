@@ -105,8 +105,9 @@ def mk_ctrl( num_fu_in=2, num_inports=5, num_outports=5, prefix="CGRAConfig" ):
   field_dict[ 'predicate' ]    = PredicateType
   # The fu_in indicates the input port (i.e., ordering the oprands).
   field_dict[ 'fu_in' ]        = [ FuInType for _ in range( num_fu_in ) ]
+
   field_dict[ 'outport' ]      = [ InportsType for _ in range( num_outports ) ]
-  # I assume one tile supports single predicate at the entire execution time, as
+  # I assume one tile supports single predicate during the entire execution time, as
   # it is hard to distinguish predication for different operations (we automatically
   # update, i.e., 'or', the predicate stored in the predicate register). This should
   # be guaranteed by the compiler.

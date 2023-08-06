@@ -7,10 +7,10 @@ Author : Cheng Tan
   Date : Feb 16, 2019
 """
 
-from pymtl3             import *
-from pymtl3.stdlib.ifcs import SendIfcRTL, RecvIfcRTL
+from pymtl3 import *
 
-from ..lib.opt_type     import *
+from ..lib.ifcs     import SendIfcRTL, RecvIfcRTL
+from ..lib.opt_type import *
 
 class MulticasterRTL( Component ):
 
@@ -25,13 +25,13 @@ class MulticasterRTL( Component ):
     s.recv = RecvIfcRTL( DataType )
     s.send = [ SendIfcRTL( DataType ) for _ in range ( num_outports ) ]
 
-    @s.update
+    @update
     def update_signal():
-      s.recv.rdy = s.send[0].rdy
+      s.recv.rdy @= s.send[0].rdy
       for i in range( num_outports ):
-        s.recv.rdy = s.recv.rdy and s.send[i].rdy
-        s.send[i].en       = s.recv.en
-        s.send[i].msg      = s.recv.msg
+        s.recv.rdy    @= s.recv.rdy & s.send[i].rdy
+        s.send[i].en  @= s.recv.en
+        s.send[i].msg @= s.recv.msg
 
   # Line trace
   def line_trace( s ):

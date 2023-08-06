@@ -6,20 +6,21 @@ Author : Cheng Tan
   Date : Dec 11, 2019
 """
 
-from pymtl3                      import *
-from pymtl3.stdlib.ifcs          import SendIfcRTL, RecvIfcRTL
-from ..noc.CrossbarRTL           import CrossbarRTL
-from ..noc.ChannelRTL            import ChannelRTL
-from ..rf.RegisterRTL            import RegisterRTL
-from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
+from pymtl3 import *
+
 from ..fu.single.MemUnitRTL      import MemUnitRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..mem.const.ConstQueueRTL   import ConstQueueRTL
 from ..fu.single.AdderRTL        import AdderRTL
 from ..fu.single.PhiRTL          import PhiRTL
 from ..fu.single.CompRTL         import CompRTL
 from ..fu.single.MulRTL          import MulRTL
 from ..fu.single.BranchRTL       import BranchRTL
+from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
+from ..mem.const.ConstQueueRTL   import ConstQueueRTL
+from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
+from ..noc.CrossbarRTL           import CrossbarRTL
+from ..noc.ChannelRTL            import ChannelRTL
+from ..rf.RegisterRTL            import RegisterRTL
 
 class TileRTL( Component ):
 
@@ -84,10 +85,9 @@ class TileRTL( Component ):
       else:
         s.element.to_mem_raddr[i].rdy   //= 0
         s.element.from_mem_rdata[i].en  //= 0
-        s.element.from_mem_rdata[i].msg //= DataType( 0, 0 )
+        s.element.from_mem_rdata[i].msg //= DataType()
         s.element.to_mem_waddr[i].rdy   //= 0
         s.element.to_mem_wdata[i].rdy   //= 0
-
 
     for i in range( num_connect_inports ):
       s.recv_data[i] //= s.crossbar.recv_data[i]
@@ -109,13 +109,13 @@ class TileRTL( Component ):
     for i in range( num_fu_outports ):
       s.element.send_out[i] //= s.crossbar.recv_data[num_connect_outports+i]
 
-    @s.update
+    @update
     def update_opt():
-      s.element.recv_opt.msg  = s.ctrl_mem.send_ctrl.msg
-      s.crossbar.recv_opt.msg = s.ctrl_mem.send_ctrl.msg
-      s.element.recv_opt.en  = s.ctrl_mem.send_ctrl.en
-      s.crossbar.recv_opt.en = s.ctrl_mem.send_ctrl.en
-      s.ctrl_mem.send_ctrl.rdy = s.element.recv_opt.rdy and s.crossbar.recv_opt.rdy
+      s.element.recv_opt.msg   @= s.ctrl_mem.send_ctrl.msg
+      s.crossbar.recv_opt.msg  @= s.ctrl_mem.send_ctrl.msg
+      s.element.recv_opt.en    @= s.ctrl_mem.send_ctrl.en
+      s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
+      s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
   # Line trace
   def line_trace( s ):
@@ -125,3 +125,4 @@ class TileRTL( Component ):
     channel_send_str = "|".join([ str(x.send.msg) for x in s.channel ])
     out_str  = "|".join([ "("+str(x.msg.payload)+","+str(x.msg.predicate)+")" for x in s.send_data ])
     return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+
