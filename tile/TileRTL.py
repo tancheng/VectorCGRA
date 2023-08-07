@@ -26,7 +26,7 @@ class TileRTL( Component ):
 
   def construct( s, DataType, PredicateType, CtrlType,
                  ctrl_mem_size, data_mem_size, num_ctrl,
-                 num_fu_inports, num_fu_outports,
+                 total_steps, num_fu_inports, num_fu_outports,
                  num_connect_inports, num_connect_outports,
                  Fu=FlexibleFuRTL,
                  FuList=[PhiRTL,AdderRTL,CompRTL,MulRTL,BranchRTL,MemUnitRTL],
@@ -60,7 +60,7 @@ class TileRTL( Component ):
     s.const_queue = ConstQueueRTL( DataType, const_list if const_list != None else [DataType(0)])
     s.crossbar = CrossbarRTL( DataType, PredicateType, CtrlType,
                               num_xbar_inports, num_xbar_outports )
-    s.ctrl_mem = CtrlMemRTL( CtrlType, ctrl_mem_size, num_ctrl )
+    s.ctrl_mem = CtrlMemRTL( CtrlType, ctrl_mem_size, num_ctrl, total_steps )
     s.channel  = [ ChannelRTL( DataType ) for _ in range( num_xbar_outports ) ]
 
     # Additional one register for partial predication

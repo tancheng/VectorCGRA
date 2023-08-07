@@ -53,8 +53,8 @@ class TestHarness( Component ):
 
     s.dut           = DUT( DataType, PredicateType, CtrlType,
                            ctrl_mem_size, data_mem_size, len(src_opt),
-                           num_fu_inports, num_fu_outports, 4, 4,
-                           FunctionUnit, FuList )
+                           len(src_opt), num_fu_inports, num_fu_outports,
+                           4, 4, FunctionUnit, FuList )
 
     # connect( s.src_predicate.send, s.dut.reg_predicate )
     connect( s.src_opt.send,       s.dut.recv_wopt     )

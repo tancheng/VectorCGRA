@@ -22,8 +22,9 @@ from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 class CGRARTL( Component ):
 
   def construct( s, DataType, PredicateType, CtrlType, width, height,
-                 ctrl_mem_size, data_mem_size, num_ctrl, FunctionUnit,
-                 FuList, preload_data = None, preload_const = None ):
+                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
+                 FunctionUnit, FuList, preload_data = None,
+                 preload_const = None ):
 
     s.num_tiles = width * height
     s.num_mesh_ports = 4
@@ -37,8 +38,8 @@ class CGRARTL( Component ):
     if preload_const == None:
       preload_const = [[DataType(0, 0)] for _ in range(width*height)]
     s.tile = [ TileRTL( DataType, PredicateType, CtrlType,
-                        ctrl_mem_size, data_mem_size,
-                        num_ctrl, 4, 2, s.num_mesh_ports,
+                        ctrl_mem_size, data_mem_size, num_ctrl,
+                        total_steps, 4, 2, s.num_mesh_ports,
                         s.num_mesh_ports, const_list = preload_const[i] )
                         for i in range( s.num_tiles ) ]
     s.data_mem = DataMemRTL( DataType, data_mem_size, height, height, preload_data )

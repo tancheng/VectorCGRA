@@ -42,7 +42,8 @@ class TestHarness( Component ):
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType,
                  CtrlType, width, height, ctrl_mem_size, data_mem_size,
-                 max_sim_steps, src_opt, preload_data, preload_const )
+                 len( src_opt[0] ), max_sim_steps, src_opt, preload_data,
+                 preload_const )
     s.DataType = DataType
 
   def line_trace( s ):

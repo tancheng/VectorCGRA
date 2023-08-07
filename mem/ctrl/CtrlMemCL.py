@@ -17,12 +17,14 @@ from ...lib.opt_type import *
 
 class CtrlMemCL( Component ):
 
-  def construct( s, CtrlType, ctrl_mem_size, num_ctrl=4, opt_list=None, id=0 ):
+  def construct( s, CtrlType, ctrl_mem_size, ctrl_count_per_iter = 4,
+                 total_ctrl_steps = 4, opt_list = None, id = 0 ):
 
     # Constant
     s.id = id
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
-    TimeType = mk_bits( clog2( num_ctrl+1 ) )
+    PCType   = mk_bits( clog2( ctrl_count_per_iter + 1 ) )
+    TimeType = mk_bits( clog2( total_ctrl_steps + 2 ) )
 
     # Interface
     s.send_ctrl  = SendIfcRTL( CtrlType )
@@ -36,29 +38,27 @@ class CtrlMemCL( Component ):
 
     @update
     def load():
-      s.send_ctrl.msg @= s.sram[ s.cur ]
+      if s.times != 0:
+        s.send_ctrl.msg @= s.sram[ s.cur ]
 
     @update
     def update_signal():
-      if s.times == TimeType( num_ctrl ) or s.sram[s.cur].ctrl == OPT_START:
+      if s.times == 0:
+        s.send_ctrl.en @= b1( 0 )
+      elif s.times == TimeType( total_ctrl_steps ) or s.sram[s.cur].ctrl == OPT_START:
         s.send_ctrl.en @= b1( 0 )
       else:
         s.send_ctrl.en  @= s.send_ctrl.rdy
-      # if s.id == 6:
-      #   print("[update] tile[", s.id, "] check ctrl out: ", s.send_ctrl.msg, "; send_ctrl.en: ", s.send_ctrl.en, "; send_ctrl.rdy: ", s.send_ctrl.rdy, "; cur: ", s.cur, "; times: ", s.times)
 
     @update_ff
     def update_raddr():
+      if s.times < TimeType( total_ctrl_steps ):
+        s.times <<= s.times + TimeType( 1 )
       if s.send_ctrl.rdy:
-        if s.times < TimeType( num_ctrl ):
-          s.times <<= s.times + TimeType( 1 )
-        if zext(s.cur + 1, TimeType)  == TimeType(num_ctrl):
+        if zext(s.cur + 1, PCType) == PCType( ctrl_count_per_iter ):
           s.cur <<= AddrType( 0 )
         else:
           s.cur <<= s.cur + AddrType( 1 )
-#      if s.id == 6 or s.id == 5:
-#        print("[update_ff] tile [", s.id, "] check ctrl out: ", s.send_ctrl.msg, "; send_ctrl.en: ", s.send_ctrl.en, "; send_ctrl.rdy: ", s.send_ctrl.rdy, "; cur: ", s.cur, "; times: ", s.times)
-
 
 
   def line_trace( s ):

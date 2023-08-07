@@ -13,7 +13,7 @@ from pymtl3                       import *
 from ....lib.test_sinks           import TestSinkRTL
 from ....lib.test_srcs            import TestSrcRTL
 
-from ....fu.single.AdderRTL       import AdderRTL
+from ....fu.single.AdderCL        import AdderCL
 from ..CtrlMemRTL                 import CtrlMemRTL
 from ..CtrlMemCL                  import CtrlMemCL
 from ....lib.opt_type             import *
@@ -27,7 +27,8 @@ class TestHarness( Component ):
 
   def construct( s, MemUnit, DataType, PredicateType, ConfigType,
                  ctrl_mem_size, data_mem_size, src0_msgs, src1_msgs,
-                 ctrl_raddr, ctrl_waddr, ctrl_msgs, sink_msgs ):
+                 ctrl_raddr, ctrl_waddr, ctrl_msgs, sink_msgs,
+                 adder_latency, total_steps ):
 
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
 
@@ -37,10 +38,10 @@ class TestHarness( Component ):
     s.src_wdata = TestSrcRTL ( ConfigType, ctrl_msgs  )
     s.sink_out  = TestSinkRTL( DataType,   sink_msgs  )
 
-    s.alu       = AdderRTL( DataType, PredicateType, ConfigType, 2, 2,
-                            data_mem_size )
+    s.alu       = AdderCL( DataType, PredicateType, ConfigType, 2, 2,
+                           data_mem_size, adder_latency )
     s.ctrl_mem  = MemUnit( ConfigType, ctrl_mem_size, len( ctrl_msgs ),
-                           len( ctrl_msgs ) )
+                           total_steps )
 
     s.alu.recv_in_count[0] //= 1
     s.alu.recv_in_count[1] //= 1
@@ -91,6 +92,8 @@ def test_Ctrl():
   ctrl_mem_size = 4
   data_mem_size = 8
   num_inports   = 2
+  adder_latency = 4
+  total_steps   = ctrl_mem_size * adder_latency
   CtrlType      = mk_ctrl(num_inports)
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
@@ -106,6 +109,7 @@ def test_Ctrl():
   sink_out      = [ DataType(7,1), DataType(4,1), DataType(5,1), DataType(9,1) ]
   th = TestHarness( MemUnit, DataType, PredicateType, CtrlType,
                     ctrl_mem_size, data_mem_size, src_data0, src_data1,
-                    src_raddr, src_waddr, src_wdata, sink_out )
+                    src_raddr, src_waddr, src_wdata, sink_out,
+                    adder_latency, total_steps )
   run_sim( th )
 

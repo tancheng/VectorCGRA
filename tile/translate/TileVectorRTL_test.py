@@ -68,8 +68,9 @@ src_opt       = [ CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
 
 def test_elaborate():
   dut = TileRTL( DataType, PredicateType, CtrlType, ctrl_mem_size,
-                 data_mem_size, len(src_opt), num_fu_inports,
-                 num_fu_outports, 4, 4, FunctionUnit, FuList )
+                 data_mem_size, len( src_opt ), len( src_opt ),
+                 num_fu_inports, num_fu_outports, 4, 4,
+                 FunctionUnit, FuList )
   dut.apply( DefaultPassGroup(linetrace=True) )
   dut.sim_reset()
   dut.sim_tick()
@@ -78,8 +79,9 @@ def test_elaborate():
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
   dut = TileRTL( DataType, PredicateType, CtrlType, ctrl_mem_size,
-                       data_mem_size, len(src_opt), num_fu_inports,
-                       num_fu_outports, 4, 4, FunctionUnit, FuList )
+                 data_mem_size, len(src_opt), len(src_opt),
+                 num_fu_inports, num_fu_outports, 4, 4,
+                 FunctionUnit, FuList )
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'TileVectorRTL' )
   config_model_with_cmdline_opts( dut, cmdline_opts, duts=[] )

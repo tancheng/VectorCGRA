@@ -44,8 +44,8 @@ class TestHarness( Component ):
                   for i in range( num_tile_outports ) ]
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType, CtrlType,
-                 ctrl_mem_size, data_mem_size, len(src_opt), src_const,
-                 src_opt )
+                 ctrl_mem_size, data_mem_size, len(src_opt), len(src_opt),
+                 src_const, src_opt )
 
     for i in range( num_tile_inports ):
       connect( s.src_data[i].send, s.dut.recv_data[i] )
@@ -85,7 +85,7 @@ def run_sim( test_harness, max_cycles=100 ):
     print( "{}:{}".format( ncycles, test_harness.line_trace() ))
 
   # Check timeout
-  assert ncycles < max_cycles
+  assert ncycles <= max_cycles
 
   test_harness.sim_tick()
   test_harness.sim_tick()

@@ -46,8 +46,9 @@ class TestHarness( Component ):
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType, CtrlType,
-                 width, height, ctrl_mem_size, data_mem_size, 100, src_opt,
-                 preload_data, preload_const )
+                 width, height, ctrl_mem_size, data_mem_size,
+                 len( src_opt[0] ), 100, src_opt, preload_data,
+                 preload_const )
     s.DataType = DataType
 
   def line_trace( s ):

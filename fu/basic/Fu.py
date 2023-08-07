@@ -16,7 +16,8 @@ from ...lib.opt_type    import *
 class Fu( Component ):
 
   def construct( s, DataType, PredicateType, CtrlType,
-                 num_inports, num_outports, data_mem_size=4, latency = 1 ):
+                 num_inports, num_outports, data_mem_size = 4,
+                 latency = 1 ):
 
     # Constant
     AddrType      = mk_bits( clog2( data_mem_size ) )
@@ -58,11 +59,12 @@ class Fu( Component ):
     @update
     def update_signal():
       for j in range( num_outports ):
-        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
-        # s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
         s.recv_rdy_vector[j] @= s.send_out[j].rdy
       s.recv_const.rdy @= reduce_or( s.recv_rdy_vector ) & ( s.latency == latency - 1 )
-      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector ) & ( s.latency == latency - 1 )
+      # OPT_NAH doesn't require consuming any input.
+      s.recv_opt.rdy   @= (( s.recv_opt.msg.ctrl == OPT_NAH ) | \
+                           reduce_or( s.recv_rdy_vector ) ) & \
+                          ( s.latency == latency - 1 )
 
     @update
     def update_mem():
