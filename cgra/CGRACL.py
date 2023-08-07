@@ -20,7 +20,8 @@ class CGRACL( Component ):
 
   def construct( s, FunctionUnit, FuList, DataType, PredicateType,
                  CtrlType, width, height, ctrl_mem_size, data_mem_size,
-                 num_ctrl, preload_ctrl, preload_data, preload_const ):
+                 num_ctrl, total_steps, preload_ctrl, preload_data,
+                 preload_const ):
 
     s.num_tiles = width * height
     s.num_mesh_ports = 4
@@ -30,7 +31,8 @@ class CGRACL( Component ):
 
     s.tile = [ TileCL( FunctionUnit, FuList, DataType, PredicateType,
                        CtrlType, ctrl_mem_size, data_mem_size,
-                       num_ctrl, preload_const[i], preload_ctrl[i], i )
+                       num_ctrl, total_steps, preload_const[i],
+                       preload_ctrl[i], i )
                        for i in range( s.num_tiles ) ]
     s.data_mem = DataMemCL( DataType, data_mem_size, height, height,
                             preload_data )

@@ -13,7 +13,7 @@ from pymtl3 import *
 from ....lib.test_sinks           import TestSinkRTL
 from ....lib.test_srcs            import TestSrcRTL
 
-from ....fu.single.AdderRTL       import AdderRTL
+from ....fu.single.AdderCL        import AdderCL
 from ..CtrlMemCL                  import CtrlMemCL
 from ....lib.opt_type             import *
 from ....lib.messages             import *
@@ -26,7 +26,7 @@ class TestHarness( Component ):
 
   def construct( s, MemUnit, DataType, PredicateType, ConfigType,
                  ctrl_mem_size, data_mem_size, src0_msgs, src1_msgs,
-                 ctrl_msgs, sink_msgs ):
+                 ctrl_msgs, sink_msgs, adder_latency, total_steps ):
 
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
 
@@ -34,9 +34,10 @@ class TestHarness( Component ):
     s.src_data1 = TestSrcRTL ( DataType,   src1_msgs  )
     s.sink_out  = TestSinkRTL( DataType,   sink_msgs  )
 
-    s.alu       = AdderRTL( DataType, PredicateType, ConfigType, 2, 2,
-                            data_mem_size )
-    s.ctrl_mem  = MemUnit( ConfigType, ctrl_mem_size, len(ctrl_msgs), ctrl_msgs )
+    s.alu       = AdderCL( DataType, PredicateType, ConfigType, 2, 2,
+                           data_mem_size, adder_latency )
+    s.ctrl_mem  = MemUnit( ConfigType, ctrl_mem_size, len( ctrl_msgs ),
+                           total_steps, ctrl_msgs )
 
     s.alu.recv_in_count[0] //= 1;
     s.alu.recv_in_count[1] //= 1;
@@ -78,13 +79,17 @@ def run_sim( test_harness, max_cycles=100 ):
   test_harness.sim_tick()
 
 def test_PseudoCtrl():
-  MemUnit       = CtrlMemCL
-  DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
-  ctrl_mem_size = 8
-  data_mem_size = 8
-  num_inports   = 2
+  MemUnit          = CtrlMemCL
+  DataType         = mk_data( 16, 1 )
+  PredicateType    = mk_predicate( 1, 1 )
+  CtrlType         = mk_ctrl()
+  ctrl_mem_size    = 4
+  data_mem_size    = 8
+  num_inports      = 2
+  adder_latency    = 4
+  cl_reset_latency = 3
+  # The reset latency for CL simulation seems to be 3 cycles.
+  total_steps   = ctrl_mem_size * adder_latency + cl_reset_latency
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   AddrType      = mk_bits( clog2( ctrl_mem_size ) )
@@ -97,6 +102,33 @@ def test_PseudoCtrl():
   sink_out      = [ DataType(7,1),DataType(4,1),DataType(5,1),DataType(9,1)]
   th = TestHarness( MemUnit, DataType, PredicateType, CtrlType,
                     ctrl_mem_size, data_mem_size, src_data0, src_data1,
-                    src_wdata, sink_out )
+                    src_wdata, sink_out, adder_latency, total_steps )
+  run_sim( th )
+
+def test_PseudoCtrl_variantLatency():
+  MemUnit          = CtrlMemCL
+  DataType         = mk_data( 16, 1 )
+  PredicateType    = mk_predicate( 1, 1 )
+  CtrlType         = mk_ctrl()
+  ctrl_mem_size    = 4
+  data_mem_size    = 8
+  num_inports      = 2
+  adder_latency    = 4
+  cl_reset_latency = 3
+  # The reset latency for CL simulation seems to be 3 cycles.
+  total_steps   = ctrl_mem_size * adder_latency + cl_reset_latency 
+  FuInType      = mk_bits( clog2( num_inports + 1 ) )
+  pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
+  AddrType      = mk_bits( clog2( ctrl_mem_size ) )
+  src_data0     = [ DataType(1,1), DataType(5,1), DataType(7,1), DataType(6,1) ]
+  src_data1     = [ DataType(6,1), DataType(1,1), DataType(2,1), DataType(3,1) ]
+  src_wdata     = [ CtrlType( OPT_ADD, b1( 0 ), pickRegister ),
+                    CtrlType( OPT_SUB, b1( 0 ), pickRegister ),
+                    CtrlType( OPT_SUB, b1( 0 ), pickRegister ),
+                    CtrlType( OPT_ADD, b1( 0 ), pickRegister ) ]
+  sink_out      = [ DataType(7,1),DataType(4,1),DataType(5,1),DataType(9,1)]
+  th = TestHarness( MemUnit, DataType, PredicateType, CtrlType,
+                    ctrl_mem_size, data_mem_size, src_data0, src_data1,
+                    src_wdata, sink_out, adder_latency, total_steps )
   run_sim( th )
 

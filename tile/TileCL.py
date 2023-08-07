@@ -20,7 +20,7 @@ from ..rf.RegisterRTL            import RegisterRTL
 class TileCL( Component ):
 
   def construct( s, Fu, FuList, DataType, PredicateType, CtrlType,
-                 ctrl_mem_size, data_mem_size, num_ctrl,
+                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                  const_list, opt_list, id=0 ):
 
     # Constant
@@ -49,7 +49,8 @@ class TileCL( Component ):
     s.const_queue = ConstQueueRTL( DataType, const_list )
     s.crossbar    = CrossbarRTL( DataType, PredicateType, CtrlType, num_xbar_inports,
                                  num_xbar_outports, bypass_point, id )
-    s.ctrl_mem    = CtrlMemCL( CtrlType, ctrl_mem_size, num_ctrl, opt_list, id )
+    s.ctrl_mem    = CtrlMemCL( CtrlType, ctrl_mem_size, num_ctrl, total_steps,
+                               opt_list, id )
     s.channel     = [ ChannelRTL ( DataType ) for _ in range( num_xbar_outports ) ]
 
     # Additional one register for partial predication

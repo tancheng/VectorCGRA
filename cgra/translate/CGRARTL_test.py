@@ -77,7 +77,7 @@ src_opt           = [ [ CtrlType( OPT_INC, b1( 0 ), pickRegister, [
 def test_elaborate():
   dut = CGRARTL( DataType, PredicateType, CtrlType, width, height,
                  ctrl_mem_size, data_mem_size, len( src_opt[0] ),
-                 FunctionUnit, FuList )
+                 len( src_opt[0] ), FunctionUnit, FuList )
   dut.apply( DefaultPassGroup(linetrace=True) )
   dut.sim_reset()
   dut.sim_tick()
@@ -87,7 +87,7 @@ def test_elaborate():
 def test_translate( cmdline_opts ):
   dut = CGRARTL( DataType, PredicateType, CtrlType, width, height,
                  ctrl_mem_size, data_mem_size, len( src_opt[0] ),
-                 FunctionUnit, FuList )
+                 len( src_opt[0] ), FunctionUnit, FuList )
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'CGRARTL' )
   config_model_with_cmdline_opts( dut, cmdline_opts, duts=[] )

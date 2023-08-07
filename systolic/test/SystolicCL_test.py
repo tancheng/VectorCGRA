@@ -42,8 +42,9 @@ class TestHarness( Component ):
                   for i in range( height-1 ) ]
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType, CtrlType,
-                 width, height, ctrl_mem_size, data_mem_size, ctrl_mem_size,
-                 src_opt, preload_data, preload_const )
+                 width, height, ctrl_mem_size, data_mem_size,
+                 len( src_opt[0] ), 0, src_opt,
+                 preload_data, preload_const )
 
     for i in range( height-1 ):
       connect( s.dut.send_data[i],  s.sink_out[i].recv )

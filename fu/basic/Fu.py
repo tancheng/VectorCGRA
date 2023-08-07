@@ -2,10 +2,11 @@
 ==========================================================================
 Fu.py
 ==========================================================================
-Simple generic functional unit for CGRA tile.
+Simple generic functional unit for CGRA tile. This is the basic functional
+unit that can be inherited by both the CL and RTL modules.
 
 Author : Cheng Tan
-  Date : November 27, 2019
+  Date : August 6, 2023
 """
 
 from pymtl3             import *
@@ -15,14 +16,16 @@ from ...lib.opt_type    import *
 class Fu( Component ):
 
   def construct( s, DataType, PredicateType, CtrlType,
-                 num_inports, num_outports, data_mem_size=4 ):
+                 num_inports, num_outports, data_mem_size = 4,
+                 latency = 1 ):
 
     # Constant
     AddrType      = mk_bits( clog2( data_mem_size ) )
     s.const_zero  = DataType(0, 0)
-    num_entries = 2
+    num_entries   = 2
     CountType     = mk_bits( clog2( num_entries + 1 ) )
     FuInType      = mk_bits( clog2( num_inports + 1 ) )
+    LatencyType = mk_bits( clog2( latency + 1 ) )
 
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
@@ -42,15 +45,26 @@ class Fu( Component ):
 
     # Components
     s.recv_rdy_vector = Wire( num_outports )
+    s.latency = Wire( LatencyType )
+
+    @update_ff
+    def proceed_latency():
+      if s.recv_opt.msg.ctrl == OPT_START:
+        s.latency <<= LatencyType( 0 )
+      elif s.latency == latency - 1:
+        s.latency <<= LatencyType( 0 )
+      else:
+        s.latency <<= s.latency + LatencyType( 1 )
 
     @update
     def update_signal():
       for j in range( num_outports ):
-        # s.recv_const.rdy @= s.send_out[j].rdy | s.recv_const.rdy
-        # s.recv_opt.rdy @= s.send_out[j].rdy | s.recv_opt.rdy
         s.recv_rdy_vector[j] @= s.send_out[j].rdy
-      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector )
-      s.recv_opt.rdy   @= reduce_or( s.recv_rdy_vector )
+      s.recv_const.rdy @= reduce_or( s.recv_rdy_vector ) & ( s.latency == latency - 1 )
+      # OPT_NAH doesn't require consuming any input.
+      s.recv_opt.rdy   @= (( s.recv_opt.msg.ctrl == OPT_NAH ) | \
+                           reduce_or( s.recv_rdy_vector ) ) & \
+                          ( s.latency == latency - 1 )
 
     @update
     def update_mem():

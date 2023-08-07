@@ -19,7 +19,8 @@ class SystolicCL( Component ):
 
   def construct( s, FunctionUnit, FuList, DataType, PredicateType,
                  CtrlType, width, height, ctrl_mem_size, data_mem_size,
-                 num_ctrl, preload_ctrl, preload_data, preload_const ):
+                 num_ctrl, total_steps, preload_ctrl, preload_data,
+                 preload_const ):
 
     # Constant
     NORTH = 0
@@ -35,7 +36,7 @@ class SystolicCL( Component ):
     # Components
     s.tile = [ TileCL( FunctionUnit, FuList, DataType, PredicateType,
                        CtrlType, ctrl_mem_size, data_mem_size, num_ctrl,
-                       preload_const[i], preload_ctrl[i] )
+                       total_steps, preload_const[i], preload_ctrl[i] )
                        for i in range( s.num_tiles ) ]
     s.data_mem = DataMemCL( DataType, data_mem_size, height, height,
                             preload_data )

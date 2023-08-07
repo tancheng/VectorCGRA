@@ -67,7 +67,7 @@ class TestHarness( Component ):
 
     s.dut = DUT( DataType, PredicateType, CtrlType, width, height,
                  ctrl_mem_size, data_mem_size, len( src_opt[0] ),
-                 FunctionUnit, FuList, tileList, linkList, dataSPM )
+                 len( src_opt[0] ), FunctionUnit, FuList, tileList, linkList, dataSPM )
 
     for i in range( s.num_tiles ):
       connect( s.src_opt[i].send,     s.dut.recv_wopt[i]  )

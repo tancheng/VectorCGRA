@@ -52,8 +52,9 @@ jobs:
         pip install pytest
         pip list
         
-    - name: Test with pytest
+    - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         pytest .. -v --tb=short
+        pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
