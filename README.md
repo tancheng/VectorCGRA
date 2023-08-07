@@ -112,10 +112,15 @@ We can now use git to clone the VectorCGRA repo.
 
 ### Run an example to generate Verilog
 
-In [folder](https://github.com/tancheng/VectorCGRA/tree/master/cgra/translate), just type:
+For [CGRA translation](https://github.com/tancheng/VectorCGRA/tree/master/cgra/translate), just type:
 
 ```
- % pytest --tb=short -sv CGRARTL_test.py
+ % pytest VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+```
+`--test-verilog` is used to generate Verilog Code, `--dump-vtb` is used to generate the test bench, `--dump-vcd` is used to generate the Value Change Dump (VCD) file.
+Note that the `--dump-vtb` need to be used with `--test-verilog`. `--dump-vcd` can be used without Verilog translation for different modules. For example, for [Tile testing](https://github.com/tancheng/VectorCGRA/tree/master/tile/test):
+```
+ % pytest --tb=short -sv TileRTL_test.py --dump-vcd
 ```
 
 When you're done testing/developing, you can deactivate the virtualenv::
