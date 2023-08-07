@@ -49,7 +49,9 @@ class CtrlMemRTL( Component ):
 
     @update
     def update_signal():
-      if (total_ctrl_steps > 0 and s.times == TimeType( total_ctrl_steps )) | (s.reg_file.rdata[0].ctrl == OPT_START):
+      if ( ( total_ctrl_steps > 0 ) & \
+           ( s.times == TimeType( total_ctrl_steps ) ) ) | \
+         (s.reg_file.rdata[0].ctrl == OPT_START):
         s.send_ctrl.en @= b1( 0 )
       else:
         s.send_ctrl.en @= s.send_ctrl.rdy # s.recv_raddr[i].rdy
@@ -59,11 +61,13 @@ class CtrlMemRTL( Component ):
     @update_ff
     def update_raddr():
       if s.reg_file.rdata[0].ctrl != OPT_START:
-        if total_ctrl_steps == 0 or s.times < TimeType( total_ctrl_steps ):
+        if ( total_ctrl_steps == 0 ) | \
+           ( s.times < TimeType( total_ctrl_steps ) ):
           s.times <<= s.times + TimeType( 1 )
         # Reads the next ctrl signal only when the current one is done.
         if s.send_ctrl.rdy:
-          if zext(s.reg_file.raddr[0] + 1, PCType) == PCType( ctrl_count_per_iter ):
+          if zext(s.reg_file.raddr[0] + 1, PCType) == \
+             PCType( ctrl_count_per_iter ):
             s.reg_file.raddr[0] <<= AddrType( 0 )
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
