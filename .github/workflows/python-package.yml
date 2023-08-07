@@ -57,4 +57,4 @@ jobs:
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         pytest .. -v --tb=short
-        pytest ../cgra/translate/CGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
