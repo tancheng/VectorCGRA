@@ -50,6 +50,13 @@ OPT_MUL_ADD_LLS           = Bits6( 22 )
 OPT_MUL_SUB_LLS           = Bits6( 23 )
 OPT_MUL_SUB_LRS           = Bits6( 24 )
 
+OPT_FADD                  = Bits6( 37 )
+OPT_FSUB                  = Bits6( 38 )
+OPT_FADD_CONST            = Bits6( 39 )
+OPT_FINC                  = Bits6( 40 )
+OPT_FMUL                  = Bits6( 41 )
+OPT_FMUL_CONST            = Bits6( 42 )
+
 OPT_VEC_ADD          = Bits6( 50 )
 OPT_VEC_INC          = Bits6( 51 )
 OPT_VEC_ADD_CONST    = Bits6( 52 )
@@ -88,14 +95,21 @@ OPT_SYMBOL_DICT = {
   OPT_SEL           : "(sel)",
   OPT_LD_CONST      : "(ldcst)",
   OPT_MUL_ADD       : "(* +)",
-  OPT_MUL_CONST_ADD : "(*' +)",
   OPT_MUL_CONST     : "(*')",
+  OPT_MUL_CONST_ADD : "(*' +)",
   OPT_MUL_SUB       : "(* -)",
   OPT_MUL_LLS       : "(* <<)",
   OPT_MUL_LRS       : "(* >>)",
   OPT_MUL_ADD_LLS   : "(* + <<)",
   OPT_MUL_SUB_LLS   : "(* + <<)",
   OPT_MUL_SUB_LRS   : "(* - >>)",
+
+  OPT_FADD           : "(f+)",
+  OPT_FADD_CONST     : "(f+')",
+  OPT_FINC           : "(f++)",
+  OPT_FSUB           : "(f-)",
+  OPT_FMUL           : "(f*)",
+  OPT_FMUL_CONST     : "(f*')",
 
   OPT_VEC_ADD         : "(v1+)",
   OPT_VEC_INC         : "(v1++)",
