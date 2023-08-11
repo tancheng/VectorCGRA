@@ -1,0 +1,3 @@
+[submodule "fu/pymtl3_hardfloat"]
+	path = fu/pymtl3_hardfloat
+	url = git@github.com:pymtl/pymtl3-hardfloat.git

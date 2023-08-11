@@ -24,6 +24,8 @@ from ...fu.single.LogicRTL                import LogicRTL
 from ...fu.single.PhiRTL                  import PhiRTL
 from ...fu.single.CompRTL                 import CompRTL
 from ...fu.single.BranchRTL               import BranchRTL
+from ...fu.float.FpAddRTL                 import FpAddRTL
+from ...fu.float.FpMulRTL                 import FpMulRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...mem.ctrl.CtrlMemRTL               import CtrlMemRTL
 from ..TileRTL                            import TileRTL
@@ -42,8 +44,10 @@ RouteType     = mk_bits( clog2( num_xbar_inports + 1 ) )
 AddrType      = mk_bits( clog2( ctrl_mem_size ) )
 DUT           = TileRTL
 FunctionUnit  = FlexibleFuRTL
-FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL, SelRTL ] #, ThreeMulAdderShifterRTL ]
-DataType      = mk_data( 64, 1 )
+FuList        = [ AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL,
+                  CompRTL, BranchRTL, MemUnitRTL, SelRTL, FpAddRTL,
+                  FpMulRTL ] #, ThreeMulAdderShifterRTL ]
+DataType      = mk_data( 16, 1 )
 PredicateType = mk_predicate( 1, 1 )
 CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
 FuInType      = mk_bits( clog2( num_fu_in + 1 ) )
