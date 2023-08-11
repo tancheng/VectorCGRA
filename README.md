@@ -20,7 +20,7 @@ The docker image is available [here](https://hub.docker.com/layers/cgra/cgra-flo
 Installation
 --------------------------------------------------------
 
-VectorCGRA requires Python3.7 and has the following additional prerequisites:
+VectorCGRA requires Python (should work well on 3.7/3.8/3.9/3.10) and has the following additional prerequisites:
 
  - graphviz, verilator
  - git, Python headers, and libffi
@@ -93,7 +93,7 @@ commands will create and activate the virtual environment:
 
 ```
  % pip install py==1.11.0
- % pip install git+https://github.com/tancheng/pymtl3.git
+ % pip install -U git+https://github.com/cornell-brg/pymtl3@yo-struct-list-fix
  % pip install --upgrade pip setuptools twine
  % pip install hypothesis
  % pip list
