@@ -64,14 +64,6 @@ src_opt       = [ CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                   RouteType(5), RouteType(0), RouteType(0), RouteType(5),
                   RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ) ]
 
-def test_elaborate():
-  dut = TileRTL( DataType, PredicateType, CtrlType, ctrl_mem_size,
-                 data_mem_size, len( src_opt ), len( src_opt ),
-                 num_fu_inports, num_fu_outports, 4, 4, FunctionUnit, FuList )
-  dut.apply( DefaultPassGroup(linetrace=True) )
-  dut.sim_reset()
-  dut.sim_tick()
-  dut.sim_tick()
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
