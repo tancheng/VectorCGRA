@@ -31,14 +31,16 @@ class CrossbarRTL( Component ):
     # s.pos  = InPort( PositionType )
 
     s.in_dir         = Wire( OutType )
+    s.in_dir_local   = Wire( OutType )
     s.out_rdy_vector = Wire( num_outports )
 
     # Routing logic
     @update
     def update_signal():
-      s.out_rdy_vector @= 0
-      s.in_dir @= 0
-      s.send_predicate.en @= 0
+      s.out_rdy_vector     @= 0
+      s.in_dir             @= 0
+      s.in_dir_local       @= 0
+      s.send_predicate.en  @= 0
       s.send_predicate.msg @= PredicateType()
       for i in range( num_inports ):
         s.recv_data[i].rdy @= 0
@@ -70,26 +72,25 @@ class CrossbarRTL( Component ):
           s.out_rdy_vector[i] @= s.send_data[i].rdy
 #          s.send_data[i].msg.bypass = b1( 0 )
           if (s.in_dir > 0) & s.send_data[i].rdy:
-            s.in_dir @= s.in_dir - 1
-            s.recv_data[s.in_dir].rdy @= s.send_data[i].rdy
-            s.send_data[i].en         @= s.recv_data[s.in_dir].en
-            if s.send_data[i].en & s.recv_data[s.in_dir].rdy:
-              s.send_data[i].msg.payload   @= s.recv_data[s.in_dir].msg.payload
-              s.send_data[i].msg.predicate @= s.recv_data[s.in_dir].msg.predicate
-#              s.send_data[i].msg = s.recv_data[in_dir].msg
-              s.send_data[i].msg.bypass    @= s.recv_data[s.in_dir].msg.bypass
-            # The generate one can be send to other tile without buffering,
-            # but buffering is still needed when 'other tile' is yourself
-            # (i.e., generating output to self input). Here we avoid self
-            # connecting by checking whether the inport belongs to FU and
-            # outport be towards to remote tiles to eliminate combinational
-            # loop.
-            if (s.in_dir >= s.bypass_point) & (i < s.bypass_point):
-              s.send_data[i].msg.bypass @= b1( 1 )
-#              print("in crossbar ", s, " set bypass ... s.recv_opt.msg.outport[", i, "]: ", s.recv_opt.msg.outport[i])
-            else:
-              s.send_data[i].msg.bypass @= b1( 0 )
-#            print("in crossbar if... s.send_data[", i, "].msg: ", s.send_data[i].msg, "; recv.rdy: ", s.recv_data[in_dir].rdy)
+            s.in_dir_local @= s.in_dir - 1
+            s.recv_data[s.in_dir_local].rdy @= s.send_data[i].rdy
+            s.send_data[i].en         @= s.recv_data[s.in_dir_local].en
+            if s.send_data[i].en & s.recv_data[s.in_dir_local].rdy:
+              s.send_data[i].msg.payload   @= s.recv_data[s.in_dir_local].msg.payload
+              s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local].msg.predicate
+              s.send_data[i].msg.bypass    @= s.recv_data[s.in_dir_local].msg.bypass
+              # The generate one can be send to other tile without buffering,
+              # but buffering is still needed when 'other tile' is yourself
+              # (i.e., generating output to self input). Here we avoid self
+              # connecting by checking whether the inport belongs to FU and
+              # outport be towards to remote tiles to eliminate combinational
+              # loop.
+              if (s.in_dir_local >= s.bypass_point) & (i < s.bypass_point):
+                s.send_data[i].msg.bypass @= b1( 1 )
+#                print("in crossbar ", s, " set bypass ... s.recv_opt.msg.outport[", i, "]: ", s.recv_opt.msg.outport[i])
+              else:
+                s.send_data[i].msg.bypass @= b1( 0 )
+#              print("in crossbar if... s.send_data[", i, "].msg: ", s.send_data[i].msg, "; recv.rdy: ", s.recv_data[in_dir].rdy)
           else:
             s.send_data[i].en  @= b1( 0 )
             #s.send_data[i].msg = b1( 0 )
