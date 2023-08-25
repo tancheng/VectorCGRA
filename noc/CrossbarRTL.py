@@ -33,17 +33,22 @@ class CrossbarRTL( Component ):
     s.in_dir         = Wire( OutType )
     s.in_dir_local   = Wire( OutType )
     s.out_rdy_vector = Wire( num_outports )
+    s.recv_predicate_vector = Wire( num_inports )
+    # Used to indicate whether the recv_data could be popped.
+    s.recv_arrived_vector   = Wire( num_inports )
 
     # Routing logic
     @update
     def update_signal():
-      s.out_rdy_vector     @= 0
-      s.in_dir             @= 0
-      s.in_dir_local       @= 0
-      s.send_predicate.en  @= 0
-      s.send_predicate.msg @= PredicateType()
+      s.out_rdy_vector        @= 0
+      s.recv_predicate_vector @= 0
+      s.in_dir                @= 0
+      s.in_dir_local          @= 0
+      s.send_predicate.en     @= 0
+      s.send_predicate.msg    @= PredicateType()
       for i in range( num_inports ):
         s.recv_data[i].rdy @= 0
+        s.recv_arrived_vector[i] @= 1
       for i in range( num_outports ):
         s.send_data[i].en @= 0
         s.send_data[i].msg @= DataType()
@@ -65,20 +70,31 @@ class CrossbarRTL( Component ):
           if s.recv_opt.msg.predicate_in[i] & s.recv_data[i].en:
             s.send_predicate.en @= b1( 1 )
             s.send_predicate.msg.payload @= b1( 1 )
-            s.send_predicate.msg.predicate @= s.send_predicate.msg.predicate | s.recv_data[i].msg.predicate
+            # s.send_predicate.msg.predicate @= s.send_predicate.msg.predicate | s.recv_data[i].msg.predicate
+            s.recv_predicate_vector[i] @= s.recv_data[i].msg.predicate
             # predicate_out_rdy = b1( 1 )
         for i in range( num_outports ):
           s.in_dir  @= s.recv_opt.msg.outport[i]
           s.out_rdy_vector[i] @= s.send_data[i].rdy
 #          s.send_data[i].msg.bypass = b1( 0 )
+          if s.in_dir > 0:
+            s.in_dir_local @= s.in_dir - 1
+            s.recv_arrived_vector[s.in_dir_local] @= 0
           if (s.in_dir > 0) & s.send_data[i].rdy:
             s.in_dir_local @= s.in_dir - 1
-            s.recv_data[s.in_dir_local].rdy @= s.send_data[i].rdy
+            # s.recv_arrived_vector[s.in_dir_local] @= 1
+            s.recv_arrived_vector[s.in_dir_local] @= \
+              s.recv_data[s.in_dir_local].msg.valid
+
+            # s.recv_data[s.in_dir_local].rdy @= s.send_data[i].rdy
+            s.recv_data[s.in_dir_local].rdy @= s.send_data[i].rdy & \
+              reduce_and( s.recv_arrived_vector )
             s.send_data[i].en         @= s.recv_data[s.in_dir_local].en
             if s.send_data[i].en & s.recv_data[s.in_dir_local].rdy:
               s.send_data[i].msg.payload   @= s.recv_data[s.in_dir_local].msg.payload
               s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local].msg.predicate
               s.send_data[i].msg.bypass    @= s.recv_data[s.in_dir_local].msg.bypass
+              s.send_data[i].msg.valid     @= 0
               # The generate one can be send to other tile without buffering,
               # but buffering is still needed when 'other tile' is yourself
               # (i.e., generating output to self input). Here we avoid self
@@ -101,6 +117,8 @@ class CrossbarRTL( Component ):
 #          s.send_data[i].msg.bypass = b1( 0 )
           s.send_data[i].en @= b1( 0 )
       s.recv_opt.rdy @= reduce_or( s.out_rdy_vector )
+      s.send_predicate.msg.predicate @= reduce_or( s.recv_predicate_vector )
+
 
   # Line trace
   def line_trace( s ):

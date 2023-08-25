@@ -21,11 +21,11 @@ from ..ChannelRTL      import ChannelRTL
 
 class TestHarness( Component ):
 
-  def construct( s, MsgType, src_msgs, sink_msgs ):
+  def construct( s, MsgType, src_msgs, sink_msgs, latency ):
 
     s.src  = TestSrcRTL ( MsgType, src_msgs  )
     s.sink = TestSinkRTL( MsgType, sink_msgs )
-    s.dut  = ChannelRTL( MsgType )
+    s.dut  = ChannelRTL( MsgType, latency )
 
     # Connections
     s.src.send //= s.dut.recv
@@ -71,8 +71,14 @@ def run_sim( test_harness, max_cycles=100 ):
 
 DataType  = mk_data( 16, 1 )
 test_msgs = [ DataType(7,1,1), DataType(4,1), DataType(1,1), DataType(2,1), DataType(3,1) ]
-sink_msgs = [ DataType(7,1,0), DataType(4,1), DataType(1,1), DataType(2,1), DataType(3,1) ]
+sink_msgs = [ DataType(7,1,0,1), DataType(4,1,0,1), DataType(1,1,0,1), DataType(2,1,0,1), DataType(3,1,0,1) ]
 
 def test_simple():
-  th = TestHarness( DataType, test_msgs, sink_msgs)
+  latency = 1
+  th = TestHarness( DataType, test_msgs, sink_msgs, latency)
+  run_sim( th )
+
+def test_latency():
+  latency = 2
+  th = TestHarness( DataType, test_msgs, sink_msgs, latency)
   run_sim( th )

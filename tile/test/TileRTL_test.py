@@ -97,7 +97,8 @@ def test_tile_alu( cmdline_opts ):
   RouteType         = mk_bits( clog2( num_xbar_inports + 1 ) )
   AddrType          = mk_bits( clog2( ctrl_mem_size ) )
   FuInType          = mk_bits( clog2( num_fu_in + 1 ) )
-  pickRegister      = [ FuInType( x+1 ) for x in range( num_fu_in ) ]
+  pickRegister0     = [ FuInType( 0 ) for x in range( num_fu_in ) ]
+  pickRegister1     = [ FuInType( 1 ), FuInType( 2 ), FuInType( 0 ), FuInType( 0 ) ]
   DUT               = TileRTL
   FunctionUnit      = FlexibleFuRTL
   FuList            = [AdderRTL, MulRTL, MemUnitRTL]
@@ -105,25 +106,25 @@ def test_tile_alu( cmdline_opts ):
   PredicateType     = mk_predicate( 1, 1 )
   CtrlType          = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
   opt_waddr         = [ AddrType( 0 ), AddrType( 1 ), AddrType( 2 ) ]
-  src_opt           = [ CtrlType( OPT_NAH, b1(0), pickRegister, [
+  src_opt           = [ CtrlType( OPT_NAH, b1(0), pickRegister0, [
                         RouteType(0), RouteType(0), RouteType(0), RouteType(0),
                         RouteType(4), RouteType(3), RouteType(0), RouteType(0)] ),
-                        CtrlType( OPT_ADD, b1(0), pickRegister, [
+                        CtrlType( OPT_ADD, b1(0), pickRegister1, [
                         RouteType(0), RouteType(0), RouteType(0), RouteType(5),
                         RouteType(4), RouteType(1), RouteType(0), RouteType(0)] ),
-                        CtrlType( OPT_SUB, b1(0), pickRegister, [
+                        CtrlType( OPT_SUB, b1(0), pickRegister1, [
                         RouteType(5), RouteType(0), RouteType(0), RouteType(5),
                         RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ) ]
-  src_data          = [ [DataType(2, 1)],# DataType( 3, 1)],
+  src_data          = [ [DataType(2, 1, 0, 1)],# DataType( 3, 1)],
                         [],#DataType(3, 1), DataType( 4, 1)],
-                        [DataType(4, 1)],# DataType( 5, 1)],
-                        [DataType(5, 1), DataType( 7, 1)] ]
+                        [DataType(4, 1, 0, 1)],# DataType( 5, 1)],
+                        [DataType(5, 1, 0, 1), DataType( 7, 1, 0, 1)] ]
   # src_predicate    = [ b1( 0 ), b1( 0 ), b1( 0 ) ]
   src_const         = [ DataType(5, 1), DataType(0, 0), DataType(7, 1) ]
-  sink_out          = [ [DataType(5, 1)],# DataType( 4, 1)],
+  sink_out          = [ [DataType(5, 1, 0, 1)],# DataType( 4, 1)],
                         [],
                         [],
-                        [DataType(9, 1), DataType( 5, 1)]]
+                        [DataType(9, 1, 0, 1), DataType( 5, 1, 0, 1)]]
   """
   src_opt      = [ CtrlType( OPT_NAH, [
                    RouteType(4), RouteType(3), RouteType(2), RouteType(1),

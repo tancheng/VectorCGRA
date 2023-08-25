@@ -20,6 +20,7 @@ from ..mem.const.ConstQueueRTL   import ConstQueueRTL
 from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
 from ..noc.CrossbarRTL           import CrossbarRTL
 from ..noc.ChannelRTL            import ChannelRTL
+from ..noc.BypassChannelRTL      import BypassChannelRTL
 from ..rf.RegisterRTL            import RegisterRTL
 
 class TileRTL( Component ):
@@ -62,6 +63,8 @@ class TileRTL( Component ):
                               num_xbar_inports, num_xbar_outports )
     s.ctrl_mem = CtrlMemRTL( CtrlType, ctrl_mem_size, num_ctrl, total_steps )
     s.channel  = [ ChannelRTL( DataType ) for _ in range( num_xbar_outports ) ]
+    # Added to break the combinational loops
+    s.bypass_channel = [ BypassChannelRTL( DataType ) for _ in range( num_fu_outports ) ]
 
     # Additional one register for partial predication
     s.reg_predicate = RegisterRTL( PredicateType )
@@ -73,7 +76,6 @@ class TileRTL( Component ):
     s.ctrl_mem.recv_ctrl  //= s.recv_wopt
 
     # Data
-
     s.element.recv_const //= s.const_queue.send_const
 
     for i in range( len( FuList ) ):
@@ -107,7 +109,9 @@ class TileRTL( Component ):
       s.channel[num_connect_inports+i].count //= s.element.recv_in_count[i]
 
     for i in range( num_fu_outports ):
-      s.element.send_out[i] //= s.crossbar.recv_data[num_connect_outports+i]
+      # s.element.send_out[i] //= s.crossbar.recv_data[num_connect_outports+i]
+      s.element.send_out[i]    //= s.bypass_channel[i].recv
+      s.bypass_channel[i].send //= s.crossbar.recv_data[num_connect_outports+i]
 
     @update
     def update_opt():

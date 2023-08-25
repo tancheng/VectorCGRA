@@ -51,6 +51,7 @@ class ChannelRTL( Component ):
         s.queues[0].enq_en  @= s.queues[0].enq_rdy & s.bypass_q.deq_rdy
 
         s.send.msg                   @= s.queues[s.latency-1].deq_msg
+        s.send.msg.valid             @= s.queues[s.latency-1].deq_rdy
         s.send.en                    @= s.send.rdy & s.queues[s.latency-1].deq_rdy
         s.queues[s.latency-1].deq_en @= s.send.rdy & s.queues[s.latency-1].deq_rdy
 
@@ -63,6 +64,7 @@ class ChannelRTL( Component ):
         s.send.msg.payload   @= s.bypass_q.deq_msg.payload
         s.send.msg.predicate @= s.bypass_q.deq_msg.predicate
         s.send.msg.bypass    @= 0
+        s.send.msg.valid     @= s.bypass_q.deq_rdy
         s.send.en            @= s.send.rdy & s.bypass_q.deq_rdy
         s.bypass_q.deq_en    @= s.send.rdy & s.bypass_q.deq_rdy
 
