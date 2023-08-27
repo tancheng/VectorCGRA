@@ -115,16 +115,16 @@ def test_tile_alu( cmdline_opts ):
                         CtrlType( OPT_SUB, b1(0), pickRegister1, [
                         RouteType(5), RouteType(0), RouteType(0), RouteType(5),
                         RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ) ]
-  src_data          = [ [DataType(2, 1, 0, 1)],# DataType( 3, 1)],
+  src_data          = [ [DataType(2, 1)],# DataType( 3, 1)],
                         [],#DataType(3, 1), DataType( 4, 1)],
-                        [DataType(4, 1, 0, 1)],# DataType( 5, 1)],
-                        [DataType(5, 1, 0, 1), DataType( 7, 1, 0, 1)] ]
+                        [DataType(4, 1)],# DataType( 5, 1)],
+                        [DataType(5, 1), DataType( 7, 1)] ]
   # src_predicate    = [ b1( 0 ), b1( 0 ), b1( 0 ) ]
   src_const         = [ DataType(5, 1), DataType(0, 0), DataType(7, 1) ]
-  sink_out          = [ [DataType(5, 1, 0, 1)],# DataType( 4, 1)],
+  sink_out          = [ [DataType(5, 1)],# DataType( 4, 1)],
                         [],
                         [],
-                        [DataType(9, 1, 0, 1), DataType( 5, 1, 0, 1)]]
+                        [DataType(9, 1), DataType( 5, 1)]]
   """
   src_opt      = [ CtrlType( OPT_NAH, [
                    RouteType(4), RouteType(3), RouteType(2), RouteType(1),

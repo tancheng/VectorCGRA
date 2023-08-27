@@ -1,11 +1,11 @@
 """
 ==========================================================================
-CrossbarRTL_test.py
+CrossbarBlockRTL_test.py
 ==========================================================================
-Test cases for Crossbar.
+Test cases for Crossbar. Output is blocked for a few cycles.
 
 Author : Cheng Tan
-  Date : Dec 9, 2019
+  Date : August 26, 2023
 
 """
 
@@ -14,7 +14,7 @@ from ...lib.test_sinks import TestSinkRTL
 from ...lib.test_srcs  import TestSrcRTL
 
 from ..CrossbarRTL     import CrossbarRTL
-from ..ChannelRTL      import ChannelRTL
+from ..BlockChannelRTL import BlockChannelRTL
 from ...lib.opt_type   import *
 from ...lib.messages   import *
 
@@ -38,23 +38,20 @@ class TestHarness( Component ):
                      for i in range( num_outports ) ]
 
     s.dut = CrossbarUnit( DataType, PredicateType, CtrlType, num_inports,
-                          num_outports, num_inports-1 )
-    latency   = 2
-    s.channel = ChannelRTL( DataType, latency )
+                          num_outports, num_inports )
 
-    assert( num_inports == 3 )
-    connect( s.src_data[0].send,  s.dut.recv_data[0] )
-    connect( s.dut.send_data[0],  s.sink_out[0].recv )
+    # Delayed latency.
+    latency   = 9
+    s.channel = BlockChannelRTL( DataType, latency )
 
-    # The channel/fifo connecting with inport 1 has latency of 2.
-    connect( s.src_data[1].send,  s.channel.recv )
-    connect( s.channel.send,      s.dut.recv_data[1] )
-    connect( s.dut.send_data[1],  s.sink_out[1].recv )
-
-    connect( s.src_data[2].send,  s.dut.recv_data[2] )
-    connect( s.dut.send_data[2],  s.sink_out[2].recv )
-
-    connect( s.src_opt.send,     s.dut.recv_opt )
+    for i in range( num_inports ):
+      connect( s.src_data[i].send, s.dut.recv_data[i] )
+      if i != 0:
+        s.dut.send_data[i] //= s.sink_out[i].recv
+      else:
+        s.dut.send_data[i] //= s.channel.recv
+    connect( s.src_opt.send, s.dut.recv_opt     )
+    connect( s.channel.send, s.sink_out[0].recv )
 
   def done( s ):
     done = True
@@ -71,7 +68,7 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=10 ):
+def run_sim( test_harness, max_cycles=100 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
@@ -87,13 +84,13 @@ def run_sim( test_harness, max_cycles=10 ):
 
   # Check timeout
 
-  assert ncycles <= max_cycles
+  assert ncycles < max_cycles
 
   test_harness.sim_tick()
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-def test_mul_with_long_latency_input():
+def test_multi():
   FU = CrossbarRTL
   num_fu_in     = 3
   num_inports   = 3
@@ -104,29 +101,17 @@ def test_mul_with_long_latency_input():
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   RouteType     = mk_bits( clog2( num_inports + 1 ) )
-  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2), RouteType(1), RouteType(1)]) ]
-  src_data      = [ [DataType(3, 1, 0, 1), DataType(7, 1, 0, 1)], [DataType(2, 1, 0, 1)], [DataType(9, 1, 0, 1)] ]
-  sink_out      = [ [DataType(2, 1)], [DataType(3, 1)], [DataType(3, 1)] ]
+  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2),
+                                                             RouteType(1),
+                                                             RouteType(1)]),
+                    CtrlType( OPT_SUB, b1(0), pickRegister, [RouteType(3),
+                                                             RouteType(2),
+                                                             RouteType(1)]) ]
+  src_data      = [ [DataType(3, 1), DataType(4, 1)], [DataType(2, 1), DataType(7, 1)], [DataType(9, 1)] ]
+  sink_out      = [ [DataType(2, 1), DataType(9, 1)],
+                    [DataType(3, 1), DataType(7, 1)],
+                    [DataType(3, 1), DataType(4, 1)] ]
   th = TestHarness( FU, DataType, PredicateType, CtrlType, num_inports, num_outports,
                     src_data, src_opt, sink_out )
   run_sim( th )
-
-def test_mul_with_long_latency_input_and_additional_blocked_input():
-  FU = CrossbarRTL
-  num_fu_in     = 3
-  num_inports   = 3
-  num_outports  = 3
-  DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl( num_fu_in, num_inports, num_outports )
-  FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
-  RouteType     = mk_bits( clog2( num_inports + 1 ) )
-  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2), RouteType(1), RouteType(1)]) ]
-  src_data      = [ [DataType(3, 1, 0, 1), DataType(7, 1, 0, 1)], [DataType(2, 1, 0, 1)], [DataType(9, 1, 0, 1)] ]
-  sink_out      = [ [DataType(2, 1)], [DataType(3, 1)], [DataType(3, 1)] ]
-  th = TestHarness( FU, DataType, PredicateType, CtrlType, num_inports, num_outports,
-                    src_data, src_opt, sink_out )
-  run_sim( th )
-
 

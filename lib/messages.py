@@ -22,18 +22,18 @@ def mk_data( payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
   PayloadType   = mk_bits( payload_nbits   )
   PredicateType = mk_bits( predicate_nbits )
   BypassType    = mk_bits( bypass_nbits )
-  ValidType     = mk_bits( 1 )
+  DelayType     = mk_bits( 1 )
 
   new_name = f"{prefix}_{payload_nbits}_{predicate_nbits}_{bypass_nbits}_1"
 
   def str_func( s ):
-    return f"{s.payload}.{s.predicate}.{s.bypass}.{s.valid}"
+    return f"{s.payload}.{s.predicate}.{s.bypass}.{s.delay}"
 
   return mk_bitstruct( new_name, {
       'payload'  : PayloadType,
       'predicate': PredicateType,
       'bypass'   : BypassType,
-      'valid'    : ValidType,
+      'delay'    : DelayType,
     },
     namespace = { '__str__': str_func }
   )

@@ -1,5 +1,5 @@
 #=========================================================================
-# ChannelRTL.py
+# BypassChannelRTL.py
 #=========================================================================
 # RTL channel module for connecting basic components to form accelerator.
 # This simple channel has latency insensitive send/recv interfaces.
