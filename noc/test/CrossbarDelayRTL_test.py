@@ -76,7 +76,7 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=10 ):
+def run_sim( test_harness, max_cycles=30 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
@@ -110,12 +110,10 @@ def test_mul_with_long_latency_input():
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   RouteType     = mk_bits( clog2( num_inports + 1 ) )
 
-  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2),
-                                                             RouteType(1),
-                                                             RouteType(1)]),
-                   CtrlType( OPT_SUB, b1(0), pickRegister, [RouteType(3),
-                                                            RouteType(2),
-                                                            RouteType(1)]) ]
+  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister,
+                             [RouteType(2), RouteType(1), RouteType(1)]),
+                   CtrlType( OPT_SUB, b1(0), pickRegister,
+                            [RouteType(3), RouteType(2), RouteType(1)]) ]
   src_data      = [ [DataType(3, 1), DataType(4, 1)], [DataType(2, 1), DataType(7, 1)], [DataType(9, 1)] ]
   sink_out      = [ [DataType(2, 1), DataType(9, 1, 1)],
                     [DataType(3, 1), DataType(7, 1)],
@@ -128,3 +126,61 @@ def test_mul_with_long_latency_input():
                     src_data, src_opt, sink_out )
   run_sim( th )
  
+def test_latency_with_predicate():
+  FU = CrossbarRTL
+  num_fu_in     = 3
+  num_inports   = 3
+  num_outports  = 3
+  DataType      = mk_data( 16, 1 )
+  PredicateType = mk_predicate( 1, 1 )
+  CtrlType      = mk_ctrl( num_fu_in, num_inports, num_outports )
+  FuInType      = mk_bits( clog2( num_inports + 1 ) )
+  pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
+  RouteType     = mk_bits( clog2( num_inports + 1 ) )
+
+  src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister,
+                             [RouteType(2), RouteType(1), RouteType(1)],
+                             [b1(1), b1(0), b1(0)] ),
+                    CtrlType( OPT_SUB, b1(0), pickRegister,
+                             [RouteType(3), RouteType(2), RouteType(0)],
+                             [b1(1), b1(0), b1(0)] ),
+                    CtrlType( OPT_ADD, b1(0), pickRegister,
+                             [RouteType(0), RouteType(0), RouteType(2)],
+                             [b1(1), b1(0), b1(0)] ),
+                    CtrlType( OPT_SUB, b1(0), pickRegister,
+                             [RouteType(0), RouteType(0), RouteType(1)],
+                             [b1(0), b1(0), b1(0)] ) ]
+
+  src_data      = [ [DataType(3, 1), DataType(4, 1), DataType(5, 1), DataType(6, 1)],
+                    [DataType(2, 1), DataType(7, 1), DataType(8, 1)],
+                    [DataType(9, 1)] ]
+  sink_out      = [ [DataType(2, 1), DataType(9, 1, 1)],
+                    [DataType(3, 1), DataType(7, 1)],
+                    [DataType(3, 1), DataType(8, 1), DataType(6, 1)] ]
+
+  # src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2), RouteType(1), RouteType(1)]) ]
+  # src_data      = [ [DataType(3, 1), DataType(7, 1)], [DataType(2, 1, 1)], [DataType(9, 1)] ]
+  # sink_out      = [ [DataType(2, 1)], [DataType(3, 1)], [DataType(3, 1)] ]
+  th = TestHarness( FU, DataType, PredicateType, CtrlType, num_inports, num_outports,
+                    src_data, src_opt, sink_out )
+  run_sim( th )
+ 
+# 141 def test_predicate():
+# 142   FU = CrossbarRTL
+# 143   num_fu_in     = 3
+# 144   num_inports   = 3
+# 145   num_outports  = 3
+# 146   DataType      = mk_data( 16, 1 )
+# 147   PredicateType = mk_predicate( 1, 1 )
+# 148   CtrlType      = mk_ctrl( num_fu_in, num_inports, num_outports )
+# 149   FuInType      = mk_bits( clog2( num_inports + 1 ) )
+# 150   pickRegister  = [ FuInType( 0 ) for x in range( num_inports ) ]
+# 151   RouteType     = mk_bits( clog2( num_inports + 1 ) )
+# 152   src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2), RouteType(1), RouteType(0)], [b1(0), b1(0), b1(1)]),
+# 153                     CtrlType( OPT_SUB, b1(0), pickRegister, [RouteType(0), RouteType(3), RouteType(2)], [b1(0), b1(0), b1(0)]),
+# 154                     CtrlType( OPT_ADD, b1(1), pickRegister, [RouteType(0), RouteType(0), RouteType(0)], [b1(1), b1(1), b1(0)]) ]
+# 155   src_data      = [ [DataType(1, 1), DataType(2, 1)], [DataType(3, 1), DataType(4, 1), DataType(5, 0)], [DataType(6, 1), DataType(7, 0)] ]
+# 156   sink_out      = [ [DataType(3, 1)], [DataType(1, 1), DataType(7, 0, 1)], [DataType(4, 1)] ]
+# 157   th = TestHarness( FU, DataType, PredicateType, CtrlType, num_inports, num_outports,
+# 158                     src_data, src_opt, sink_out )
+# 159   run_sim( th )

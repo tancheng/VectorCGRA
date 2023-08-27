@@ -98,6 +98,11 @@ class PhiRTL( Fu ):
            (s.recv_predicate.msg.payload == b1( 0 )):
           #s.recv_predicate.rdy = b1( 0 )
           s.recv_in[s.in0_idx].rdy   @= b1( 0 )
+          print("ph\' disable recv_in.rdy due to msg.predicate: ",
+                s.recv_opt.msg.predicate, "; msg.payload: ",
+                s.recv_predicate.msg.payload)
+        else:
+          print("ph\' set rdy as 1")
 
       else:
         for j in range( num_outports ):

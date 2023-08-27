@@ -37,8 +37,10 @@ class CrossbarRTL( Component ):
     s.recv_predicate_vector = Wire( num_inports )
     # Used to indicate whether the recv_data could be popped.
     s.recv_blocked_vector = Wire( num_inports )
-    s.recv_blocked_by_others = [ Wire( b1 ) for _ in range( num_inports ) ]
-    s.send_blocked_by_others = [ Wire( b1 ) for _ in range( num_outports ) ]
+    # received or sent once but there are still some others pending. So the
+    # one already done should not proceed the next to avoid overwriting.
+    s.recv_but_block_by_others = [ Wire( b1 ) for _ in range( num_inports ) ]
+    s.send_but_blocked_by_others = [ Wire( b1 ) for _ in range( num_outports ) ]
 
     # Routing logic
     @update
@@ -75,42 +77,32 @@ class CrossbarRTL( Component ):
         for i in range( num_inports ):
           s.recv_blocked_vector[i] @= (s.recv_data[i].msg.delay == 1)
 
+          # The predicate_in might not be issued to other ports on the xbar,
+          # but it also needs to be drained from the recv_data, otherwise,
+          # it would block the recv_data channel/buffer.
+          if s.recv_opt.msg.predicate_in[i] & \
+             ~s.recv_blocked_vector[i] & \
+             ~s.recv_but_block_by_others[i]:
+            s.recv_data[i].rdy @= 1
+
         for i in range( num_outports ):
           s.out_rdy_vector[i] @= s.send_data[i].rdy
           s.in_dir[i]  @= s.recv_opt.msg.outport[i]
-          if s.in_dir[i] == 0:
-            s.out_rdy_vector[i] @= 1
-          else:
+          if s.in_dir[i] > 0:
             s.send_data[i].msg.delay @= s.recv_data[s.in_dir_local[i]].msg.delay
+          else:
+            s.out_rdy_vector[i] @= 1
 
         for i in range( num_outports ):
           s.in_dir[i]  @= s.recv_opt.msg.outport[i]
-          if s.in_dir[i] > 0:
-            s.in_dir_local[i] @= s.in_dir[i] - 1
           if (s.in_dir[i] > 0) & s.send_data[i].rdy:
             s.in_dir_local[i] @= s.in_dir[i] - 1
-            # s.recv_data[s.in_dir_local[i]].rdy @= \
-            #         s.send_data[i].rdy & \
-            #         ~reduce_or( s.recv_blocked_vector ) & \
-            #         reduce_and( s.out_rdy_vector )
-
-            # s.recv_data[s.in_dir_local[i]].rdy @= \
-            #         s.send_data[i].rdy & \
-            #         ~s.recv_blocked_by_others[i]
-
-            # s.recv_data[s.in_dir_local[i]].rdy @= \
-            #         s.send_data[i].rdy & \
-            #         ~s.recv_blocked_vector[s.in_dir_local[i]] & \
-            #         ~s.recv_blocked_by_others[s.in_dir_local[i]]
 
             s.recv_data[s.in_dir_local[i]].rdy @= \
                     s.send_data[i].rdy & \
                     ~s.recv_blocked_vector[s.in_dir_local[i]] & \
-                    ~s.recv_blocked_by_others[s.in_dir_local[i]] & \
-                    ~s.send_blocked_by_others[i]
-            print("check s.send_blocked_by_others[", i, "]: ",
-                  s.send_blocked_by_others[i])
-
+                    ~s.recv_but_block_by_others[s.in_dir_local[i]] & \
+                    ~s.send_but_block_by_others[i]
 
             s.send_data[i].en @= s.recv_data[s.in_dir_local[i]].en
             if s.send_data[i].en & s.recv_data[s.in_dir_local[i]].rdy:
@@ -136,38 +128,20 @@ class CrossbarRTL( Component ):
           s.send_data[i].en @= b1( 0 )
       s.recv_opt.rdy @= reduce_and( s.out_rdy_vector ) & ~reduce_or( s.recv_blocked_vector )
       s.send_predicate.msg.predicate @= reduce_or( s.recv_predicate_vector )
-      # print()
-      # for i in range( num_inports ):
-      #   print("[comb] check reduce_or(recv_block): ",
-      #         reduce_or( s.recv_blocked_vector ),
-      #         "; s.recv_blocked_vector[", i, "]: ",
-      #         s.recv_blocked_vector[i],
-      #         "; s.recv_blocked_by_others[", i, "]: ",
-      #         s.recv_blocked_by_others[i] )
-
-
 
     @update_ff
     def update_blocked_by_others():
       for i in range( num_inports ):
-        # s.recv_blocked_by_others[i] <<= reduce_or( s.recv_blocked_vector )
         if reduce_or( s.recv_blocked_vector ) & ~s.recv_blocked_vector[i]:
-          s.recv_blocked_by_others[i] <<= 1
+          s.recv_but_block_by_others[i] <<= 1
         elif ~reduce_or( s.recv_blocked_vector ):
-          s.recv_blocked_by_others[i] <<= 0
-        # print("[update_ff] check reduce_or(recv_block): ",
-        #       reduce_or( s.recv_blocked_vector ),
-        #       "; s.recv_blocked_vector[", i, "]: ",
-        #       s.recv_blocked_vector[i],
-        #       "; s.recv_blocked_by_others[", i, "]: ",
-        #       s.recv_blocked_by_others[i] )
+          s.recv_but_block_by_others[i] <<= 0
 
       for i in range( num_outports ):
-        # s.recv_blocked_by_others[i] <<= reduce_or( s.recv_blocked_vector )
         if ~reduce_and( s.out_rdy_vector ) & s.out_rdy_vector[i]:
-          s.send_blocked_by_others[i] <<= 1
+          s.send_but_block_by_others[i] <<= 1
         elif reduce_and( s.out_rdy_vector ):
-          s.send_blocked_by_others[i] <<= 0
+          s.send_but_block_by_others[i] <<= 0
 
 
   # Line trace
