@@ -64,8 +64,8 @@ class BranchRTL( Fu ):
 
       if s.recv_opt.msg.ctrl == OPT_BRH:
         # Branch is only used to set predication rather than delivering value.
-        s.send_out[0].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ) )
-        s.send_out[1].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ) )
+        s.send_out[0].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ), b1( 0 ) )
+        s.send_out[1].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ), b1( 0 ) )
         if s.recv_in[s.in0_idx].msg.payload == s.const_zero.payload:
           s.send_out[0].msg.predicate @= Bits1( 1 )
           s.send_out[1].msg.predicate @= Bits1( 0 )
@@ -73,8 +73,8 @@ class BranchRTL( Fu ):
           s.send_out[0].msg.predicate @= Bits1( 0 )
           s.send_out[1].msg.predicate @= Bits1( 1 )
       elif s.recv_opt.msg.ctrl == OPT_BRH_START:
-        s.send_out[0].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ) )
-        s.send_out[1].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ) )
+        s.send_out[0].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ), b1( 0 ) )
+        s.send_out[1].msg @= DataType(ZeroType( 0 ), b1( 0 ), b1( 0 ), b1( 0 ) )
         if s.first:
           s.send_out[0].msg.predicate @= Bits1( 1 )
           s.send_out[1].msg.predicate @= Bits1( 0 )
