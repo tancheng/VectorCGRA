@@ -40,7 +40,7 @@ class CrossbarRTL( Component ):
     # received or sent once but there are still some others pending. So the
     # one already done should not proceed the next to avoid overwriting.
     s.recv_but_block_by_others = [ Wire( b1 ) for _ in range( num_inports ) ]
-    s.send_but_blocked_by_others = [ Wire( b1 ) for _ in range( num_outports ) ]
+    s.send_but_block_by_others = [ Wire( b1 ) for _ in range( num_outports ) ]
 
     # Routing logic
     @update
