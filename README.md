@@ -105,6 +105,7 @@ We can now use git to clone the VectorCGRA repo.
  % git clone https://github.com/tancheng/VectorCGRA.git
  % git submodule update --init
 ```
+Note that if the submodule update fails, try change the `url` of `[submodule "fu/pymtl3_hardfloat"]` in the `.git/config` from `git@github.com:pymtl/pymtl3-hardfloat.git` to `https://github.com/pymtl/pymtl3-hardfloat.git`.
 
 ### Run an example to generate Verilog
 
