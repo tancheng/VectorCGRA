@@ -25,8 +25,7 @@ VectorCGRA should work well on Python 3.7/3.8/3.9/3.10 with the following additi
 
 The steps for installing these prerequisites and VectorCGRA on a fresh Ubuntu
 distribution are shown below. They have been tested with Ubuntu Trusty
-14.04 ~ 18.04. (Ubuntu18.04 is preferred as the older versions are not
-well maintained)
+14.04 ~ 20.04.
 
 ### Install python3
 
@@ -89,7 +88,7 @@ commands will create and activate the virtual environment:
 
 ```
  % pip install py==1.11.0
- % pip install -U git+https://github.com/cornell-brg/pymtl3@yo-struct-list-fix
+ % pip install -U git+https://github.com/tancheng/pymtl3.1@yo-struct-list-fix
  % pip install --upgrade pip setuptools twine
  % pip install hypothesis
  % pip list
