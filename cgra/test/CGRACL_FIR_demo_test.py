@@ -13,7 +13,6 @@ from pymtl3                       import *
 
 from ...lib.opt_type              import *
 from ...lib.messages              import *
-from ...lib.ctrl_helper           import *
 
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL        import AdderRTL
@@ -28,6 +27,7 @@ from ..CGRACL                     import CGRACL
 
 from ..CGRAFL                     import CGRAFL
 from ...lib.dfg_helper            import *
+from ...lib.ctrl_helper           import *
 
 import copy
 import os
@@ -140,7 +140,7 @@ def test_CGRA_4x4_fir():
                                 II )
   src_opt           = cgra_ctrl.get_ctrl()
 
-#  print(src_opt)
+  # print( src_opt )
 
   preload_data      = [ DataType( 5, 1 ) ] * data_mem_size
   preload_const     = []
