@@ -71,7 +71,7 @@ class AdderRTL( Fu ):
 #      s.send_out[0].en = s.recv_opt.en
 
       if s.recv_opt.msg.ctrl == OPT_ADD:
-        s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_in[s.in1_idx].msg.payload
+        s.send_out[0].msg.payload   @= s.recv_in[s.in0_idx].msg.payload + s.recv_in[s.in1_idx].msg.payload
         s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & s.recv_in[s.in1_idx].msg.predicate
         if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
                              (s.recv_in_count[s.in1_idx] == 0) ):
@@ -79,21 +79,21 @@ class AdderRTL( Fu ):
           s.recv_in[s.in1_idx].rdy @= b1( 0 )
           s.send_out[0].msg.predicate @= b1( 0 )
       elif s.recv_opt.msg.ctrl == OPT_ADD_CONST:
-        s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_const.msg.payload
+        s.send_out[0].msg.payload   @= s.recv_in[s.in0_idx].msg.payload + s.recv_const.msg.payload
         s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
       elif s.recv_opt.msg.ctrl == OPT_INC:
-        s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.const_one.payload
+        s.send_out[0].msg.payload   @= s.recv_in[s.in0_idx].msg.payload + s.const_one.payload
         s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
       elif s.recv_opt.msg.ctrl == OPT_SUB:
-        s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload - s.recv_in[s.in1_idx].msg.payload
+        s.send_out[0].msg.payload   @= s.recv_in[s.in0_idx].msg.payload - s.recv_in[s.in1_idx].msg.payload
         s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
         if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
                              (s.recv_in_count[s.in1_idx] == 0) ):
-          s.recv_in[s.in0_idx].rdy @= b1( 0 )
-          s.recv_in[s.in1_idx].rdy @= b1( 0 )
+          s.recv_in[s.in0_idx].rdy    @= b1( 0 )
+          s.recv_in[s.in1_idx].rdy    @= b1( 0 )
           s.send_out[0].msg.predicate @= b1( 0 )
       elif s.recv_opt.msg.ctrl == OPT_PAS:
-        s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+        s.send_out[0].msg.payload   @= s.recv_in[s.in0_idx].msg.payload
         s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
       else:
         for j in range( num_outports ):

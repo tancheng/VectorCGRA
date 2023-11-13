@@ -1,19 +1,19 @@
 #=========================================================================
-# ChannelRTL_test.py
+# BlockChannelRTL_test.py
 #=========================================================================
-# Simple test for Channel
+# Test for BlockChannel
 #
 # Author : Cheng Tan
-#   Date : Dec 11, 2019
+#   Date : August 26, 2023
 
 import pytest
 from pymtl3                   import *
 from pymtl3.stdlib.test_utils import TestVectorSimulator
 
-from ...lib.test_sinks import TestSinkRTL
-from ...lib.test_srcs  import TestSrcRTL
-from ...lib.messages   import *
-from ..ChannelRTL      import ChannelRTL
+from ...lib.test_sinks        import TestSinkRTL
+from ...lib.test_srcs         import TestSrcRTL
+from ...lib.messages          import *
+from ..BlockChannelRTL        import BlockChannelRTL
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -25,7 +25,7 @@ class TestHarness( Component ):
 
     s.src  = TestSrcRTL ( MsgType, src_msgs  )
     s.sink = TestSinkRTL( MsgType, sink_msgs )
-    s.dut  = ChannelRTL( MsgType, latency )
+    s.dut  = BlockChannelRTL( MsgType, latency )
 
     # Connections
     s.src.send //= s.dut.recv
@@ -77,12 +77,7 @@ DataType  = mk_data( 16, 1 )
 test_msgs = [ DataType(7,1,1), DataType(4,1), DataType(1,1), DataType(2,1), DataType(3,1) ]
 sink_msgs = [ DataType(7,1), DataType(4,1), DataType(1,1), DataType(2,1), DataType(3,1) ]
 
-def test_simple():
-  latency = 1
-  th = TestHarness( DataType, test_msgs, sink_msgs, latency)
-  run_sim( th )
-
 def test_latency():
-  latency = 2
+  latency = 5
   th = TestHarness( DataType, test_msgs, sink_msgs, latency)
   run_sim( th )
