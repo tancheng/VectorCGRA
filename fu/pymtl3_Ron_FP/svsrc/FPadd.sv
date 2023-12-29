@@ -47,8 +47,8 @@
 // DPDA_ 
 module FPadd_plain
 (
-   input logic clk,
-   input logic rst,
+   //input logic clk,
+   //input logic rst,
    //Inputs   
    input logic [15:0] rhs_0,
    input logic [15:0] rhs_1,

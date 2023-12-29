@@ -9,7 +9,7 @@ class FPadd( VerilogPlaceholder, Component ):
 
   # Constructor
 
-  def construct( s, expWidth = 5, sigWidth = 11 ):
+  def construct( s ): #, expWidth = 5, sigWidth = 11 ):
 
     # Interface
     #input logic clk,
@@ -19,8 +19,8 @@ class FPadd( VerilogPlaceholder, Component ):
     #input logic [15:0] rhs_1,
     #//Outputs
     #output logic [15:0] lhs_0
-    s.clk = InPort() # unused
-    s.rst = InPort() # unused
+    #s.clk = InPort() # unused
+    #s.rst = InPort() # unused
     s.rhs_0 = InPort(16)
     s.rhs_1 = InPort(16)
     s.lhs_0 = OutPort(16)
