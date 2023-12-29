@@ -58,7 +58,7 @@ def run_tv_test( dut, test_vectors, precision, tolerance ):
 
   def tv_out( dut, tv ):
     test_out = fNToFloat(tv[4], precision=precision)
-    actual_out = fNToFloat(dut.out, precision=precision)
+    actual_out = fNToFloat(dut.lhs_0, precision=precision)
 
     assert abs(test_out - actual_out) < tolerance
 
@@ -75,10 +75,10 @@ def run_tv_test( dut, test_vectors, precision, tolerance ):
 
 # ====================== Tests for half-precision ========================
 
-def test_addF16_ones():
+expWidth = 5
+sigWidth = 11
 
-  expWidth = 5
-  sigWidth = 11
+def test_addF16_ones(cmdline_opts):
   precision = expWidth + sigWidth
   tolerance = 0.001
 
@@ -89,6 +89,58 @@ def test_addF16_ones():
   a = floatToFN(a, precision=precision)
   b = floatToFN(b, precision=precision)
   out = floatToFN(out, precision=precision)
+
+  run_tv_test( FPadd(), [[0, 0, a, b, out]],  precision, tolerance)
+
+def test_addF16_positive_positive(cmdline_opts):
+  precision = expWidth + sigWidth
+  tolerance = 0.001
+
+  a = 17.61
+  b = 51.41
+  out = a + b
+
+  a = floatToFN(a, precision=precision)
+  b = floatToFN(b, precision=precision)
+  out = floatToFN(out, precision=precision)
+
+  run_tv_test( FPadd(), [[0, 0, a, b, out]],  precision, tolerance)
+
+def test_addF16_positive_negative(cmdline_opts):
+  precision = expWidth + sigWidth
+  tolerance = 0.001
+
+  a = 15.0
+  b = -64.2
+  out = a + b
+
+  a = floatToFN(a, precision=precision)
+  b = floatToFN(b, precision=precision)
+  out = floatToFN(out, precision=precision)
+
+  run_tv_test( FPadd(), [[0, 0, a, b, out]],  precision, tolerance)
+
+def test_addF16_negative_positive(cmdline_opts):
+  precision = expWidth + sigWidth
+  tolerance = 0.001
+
+  a = -1.5
+  b = 49.9
+  out = a + b
+
+  a = floatToFN(a, precision=precision)
+  b = floatToFN(b, precision=precision)
+  out = floatToFN(out, precision=precision)
+
+  run_tv_test( FPadd(), [[0, 0, a, b, out]],  precision, tolerance)
+
+def test_addF16_negative_negative(cmdline_opts):
+  precision = expWidth + sigWidth
+  tolerance = 0.001
+
+  a = -1.61
+  b = -2.41
+  out = a + b
 
   run_tv_test( FPadd(), [[0, 0, a, b, out]],  precision, tolerance)
 
