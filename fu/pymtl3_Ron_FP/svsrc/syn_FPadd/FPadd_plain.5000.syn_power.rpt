@@ -1,0 +1,42 @@
+Information: Propagating switching activity (medium effort zero delay simulation). (PWR-6)
+Warning: There is no defined clock in the design. (PWR-80)
+Warning: Design has unannotated primary inputs. (PWR-414)
+ 
+****************************************
+Report : power
+        -hier
+        -analysis_effort medium
+Design : FPadd_plain
+Version: L-2016.03-SP5-1
+Date   : Tue Jan  2 16:50:22 2024
+****************************************
+
+
+Library(s) Used:
+
+    sc9mcpp84_14lppxl_base_rvt_c14_nn_nominal_max_0p80v_25c (File: /cad/GF/arm/gf/14lppxl/sc9mcpp84_base_rvt_c14/r0p0/db/sc9mcpp84_14lppxl_base_rvt_c14_nn_nominal_max_0p80v_25c.db)
+
+
+Operating Conditions: nn_nominal_max_0p80v_25c   Library: sc9mcpp84_14lppxl_base_rvt_c14_nn_nominal_max_0p80v_25c
+Wire Load Model Mode: segmented
+
+Design        Wire Load Model            Library
+------------------------------------------------
+FPadd_plain            Small             sc9mcpp84_14lppxl_base_rvt_c14_nn_nominal_max_0p80v_25c
+
+
+Global Operating Voltage = 0.8  
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000ff
+    Time Units = 1ps
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1pW
+
+
+--------------------------------------------------------------------------------
+                                       Switch   Int      Leak     Total
+Hierarchy                              Power    Power    Power    Power    %
+--------------------------------------------------------------------------------
+FPadd_plain                              40.180   30.055 7.01e+04   70.235 100.0
+1
