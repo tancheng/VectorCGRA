@@ -24,8 +24,13 @@ from ...fu.single.AdderRTL        import AdderRTL
 from ...fu.single.ShifterRTL      import ShifterRTL
 from ...fu.single.MemUnitRTL      import MemUnitRTL
 from ..CGRAKingMeshRTL            import CGRAKingMeshRTL
-from ...fu.pymtl3_Ron_FP.FPaddRTL import FPadd
+
+from ...fu.pymtl3_Ron_FP.FPaddRTL  import FPadd
 from ...fu.pymtl3_Ron_FP.FPmultRTL import FPmult
+from ...fu.float_Ron_FP.FPadd2nd   import FPadd2nd
+
+from ...fu.pymtl3_hardfloat.HardFloat.AddFNRTL import AddFN
+from ...fu.float.FpAddRTL                      import FpAddRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -79,7 +84,7 @@ def test_homo_2x2( cmdline_opts ):
   num_fu_in     = 4
   DUT           = CGRAKingMeshRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [MemUnitRTL, FPadd, FPmult]
+  FuList        = [MemUnitRTL, FPadd2nd]#, FPmult]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
