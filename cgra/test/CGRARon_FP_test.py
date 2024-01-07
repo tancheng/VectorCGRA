@@ -32,6 +32,8 @@ from ...fu.float_Ron_FP.FPadd2nd   import FPadd2nd
 from ...fu.pymtl3_hardfloat.HardFloat.AddFNRTL import AddFN
 from ...fu.float.FpAddRTL                      import FpAddRTL
 
+from ...fu.ALUgen_Ron_2nd.ALUgenMAC2nd import ALUgenMAC2nd
+
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -84,7 +86,7 @@ def test_homo_2x2( cmdline_opts ):
   num_fu_in     = 4
   DUT           = CGRAKingMeshRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [MemUnitRTL, FPadd2nd]#, FPmult]
+  FuList        = [MemUnitRTL, ALUgenMAC2nd] #FPadd2nd]#, FPmult]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
