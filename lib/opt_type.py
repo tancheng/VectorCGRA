@@ -66,6 +66,11 @@ OPT_VEC_MUL          = Bits6( 55 )
 OPT_VEC_REDUCE_ADD   = Bits6( 56 )
 OPT_VEC_REDUCE_MUL   = Bits6( 57 )
 
+OPT_LT  = Bits6( 60 )
+OPT_GTE = Bits6( 61 )
+OPT_GT  = Bits6( 62 )
+OPT_LTE = Bits6( 63 )
+
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
   OPT_NAH           : "( )",
@@ -119,5 +124,10 @@ OPT_SYMBOL_DICT = {
   OPT_VEC_MUL         : "(v1*)",
   OPT_VEC_REDUCE_ADD  : "(vall+)",
   OPT_VEC_REDUCE_MUL  : "(vall*)",
+
+  OPT_LT  : "(?<)",
+  OPT_GTE : "(?>=)",
+  OPT_GT  : "(?>)",
+  OPT_LTE : "(?<=)",
 
 }
