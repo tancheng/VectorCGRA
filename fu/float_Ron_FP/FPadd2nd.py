@@ -78,39 +78,39 @@ class FPadd2nd( Fu ):
       s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                      s.recv_in[s.in1_idx].msg.predicate
 
-      if s.recv_opt.msg.ctrl == OPT_FADD:
-        s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-        s.fadd.rhs_1 @= s.recv_in[s.in1_idx].msg.payload
-        s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
-                                       s.recv_in[s.in1_idx].msg.predicate
-        if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
-                             (s.recv_in_count[s.in1_idx] == 0) ):
-          s.recv_in[s.in0_idx].rdy @= b1( 0 )
-          s.recv_in[s.in1_idx].rdy @= b1( 0 )
-          s.send_out[0].msg.predicate @= b1( 0 )
+      #if s.recv_opt.msg.ctrl == OPT_FADD:
+      s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
+      s.fadd.rhs_1 @= s.recv_in[s.in1_idx].msg.payload
+      s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                     s.recv_in[s.in1_idx].msg.predicate
+      if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
+                           (s.recv_in_count[s.in1_idx] == 0) ):
+        s.recv_in[s.in0_idx].rdy @= b1( 0 )
+        s.recv_in[s.in1_idx].rdy @= b1( 0 )
+        s.send_out[0].msg.predicate @= b1( 0 )
 
-      elif s.recv_opt.msg.ctrl == OPT_FADD_CONST:
-        s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-        s.fadd.rhs_1 @= s.recv_const.msg.payload
-        s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
+      #elif s.recv_opt.msg.ctrl == OPT_FADD_CONST:
+      #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
+      #  s.fadd.rhs_1 @= s.recv_const.msg.payload
+      #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
 
-      elif s.recv_opt.msg.ctrl == OPT_FINC:
-        s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-        s.fadd.rhs_1 @= s.FLOATING_ONE
-        s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
+      #elif s.recv_opt.msg.ctrl == OPT_FINC:
+      #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
+      #  s.fadd.rhs_1 @= s.FLOATING_ONE
+      #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
 
-      elif s.recv_opt.msg.ctrl == OPT_FSUB:
-        s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-        s.fadd.rhs_1 @= s.recv_in[s.in1_idx].msg.payload
-        s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
-        if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
-                             (s.recv_in_count[s.in1_idx] == 0) ):
-          s.recv_in[s.in0_idx].rdy @= b1( 0 )
-          s.recv_in[s.in1_idx].rdy @= b1( 0 )
-          s.send_out[0].msg.predicate @= b1( 0 )
-      else:
-        for j in range( num_outports ):
-          s.send_out[j].en @= b1( 0 )
+      #elif s.recv_opt.msg.ctrl == OPT_FSUB:
+      #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
+      #  s.fadd.rhs_1 @= s.recv_in[s.in1_idx].msg.payload
+      #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
+      #  if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
+      #                       (s.recv_in_count[s.in1_idx] == 0) ):
+      #    s.recv_in[s.in0_idx].rdy @= b1( 0 )
+      #    s.recv_in[s.in1_idx].rdy @= b1( 0 )
+      #    s.send_out[0].msg.predicate @= b1( 0 )
+      #else:
+      #  for j in range( num_outports ):
+      #    s.send_out[j].en @= b1( 0 )
 
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.send_out[0].msg.predicate @= s.send_out[0].msg.predicate & \
