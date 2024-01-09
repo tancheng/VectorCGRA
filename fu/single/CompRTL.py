@@ -88,7 +88,7 @@ class CompRTL( Fu ):
           s.send_out[0].msg @= s.const_zero
           s.send_out[0].msg.predicate @= b1( 1 )
 
-      elif s.recv_opt.msg.ctrl == OPT_LE:
+      elif s.recv_opt.msg.ctrl == OPT_LT:
         if s.recv_in[s.in0_idx].msg.payload < s.recv_in[s.in1_idx].msg.payload:
           s.send_out[0].msg @= s.const_one
           s.send_out[0].msg.predicate @= predicate

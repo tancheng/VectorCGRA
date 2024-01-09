@@ -40,7 +40,7 @@ class CGRAKingMeshRTL( Component ):
     s.tile = [ TileRTL( DataType, PredicateType, CtrlType,
                         ctrl_mem_size, data_mem_size, num_ctrl,
                         total_steps, 4, 2, s.num_mesh_ports,
-                        s.num_mesh_ports, const_list = preload_const[i] )
+                        s.num_mesh_ports, FuList=FuList, const_list = preload_const[i] )
                         for i in range( s.num_tiles ) ]
     s.data_mem = DataMemRTL( DataType, data_mem_size, height, height, preload_data )
 

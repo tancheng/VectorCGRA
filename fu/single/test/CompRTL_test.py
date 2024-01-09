@@ -89,7 +89,7 @@ def test_Comp():
   src_ref       = [ DataType(9, 1), DataType(5, 1), DataType(2, 1) ]
   src_predicate = [ PredicateType(1,0), PredicateType(1,0), PredicateType(1,1) ]
   src_opt       = [ CtrlType( OPT_EQ, b1( 0 ), pickRegister ),
-                    CtrlType( OPT_LE, b1( 0 ), pickRegister ),
+                    CtrlType( OPT_LT, b1( 0 ), pickRegister ),
                     CtrlType( OPT_EQ, b1( 0 ), pickRegister ) ]
   sink_out      = [ DataType(1, 1), DataType(1, 1), DataType(0, 1) ]
   th = TestHarness( FU, DataType, PredicateType, CtrlType,

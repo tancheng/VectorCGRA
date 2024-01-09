@@ -32,7 +32,6 @@ OPT_LD                    = Bits6( 12 )
 OPT_STR                   = Bits6( 13 )
 OPT_EQ                    = Bits6( 14 )
 OPT_EQ_CONST              = Bits6( 33 )
-OPT_LE                    = Bits6( 15 )
 OPT_RET                   = Bits6( 35 )
 OPT_BRH                   = Bits6( 16 )
 OPT_BRH_START             = Bits6( 34 )
@@ -66,6 +65,11 @@ OPT_VEC_MUL          = Bits6( 55 )
 OPT_VEC_REDUCE_ADD   = Bits6( 56 )
 OPT_VEC_REDUCE_MUL   = Bits6( 57 )
 
+OPT_LT  = Bits6( 60 )
+OPT_GTE = Bits6( 61 )
+OPT_GT  = Bits6( 62 )
+OPT_LTE = Bits6( 63 )
+
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
   OPT_NAH           : "( )",
@@ -86,7 +90,6 @@ OPT_SYMBOL_DICT = {
   OPT_STR           : "(st)",
   OPT_EQ            : "(?=)",
   OPT_EQ_CONST      : "(?=')",
-  OPT_LE            : "(?<)",
   OPT_BRH           : "(br)",
   OPT_RET           : "(ret)",
   OPT_BRH_START     : "(br*)",
@@ -119,5 +122,10 @@ OPT_SYMBOL_DICT = {
   OPT_VEC_MUL         : "(v1*)",
   OPT_VEC_REDUCE_ADD  : "(vall+)",
   OPT_VEC_REDUCE_MUL  : "(vall*)",
+
+  OPT_LT  : "(?<)",
+  OPT_GTE : "(?>=)",
+  OPT_GT  : "(?>)",
+  OPT_LTE : "(?<=)",
 
 }
