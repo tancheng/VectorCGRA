@@ -91,18 +91,19 @@ def test_add_basic(cmdline_opts):
   num_outports  = 1
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
-  src_in0       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(3, 1) ]
-  src_in1       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(3, 1) ]
-  src_in2       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(3, 1) ]
+  src_in0       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(4, 1), DataType(3, 1) ]
+  src_in1       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(5, 1), DataType(3, 1) ]
+  src_in2       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1),DataType(3, 1),DataType(3, 1),DataType(3, 1), DataType(3, 1), DataType(3, 1) ]
   src_predicate = [ PredicateType(1, 1), PredicateType(1, 1), PredicateType(1, 1) ]
   src_const     = [ DataType(1, 1), DataType(2, 1), DataType(3, 1) ]
-  sink_out      = [ DataType(2, 1), DataType(0, 1), DataType(0, 1),DataType(1, 1),DataType(0, 1),DataType(1, 1), DataType(12, 1) ]
+  sink_out      = [ DataType(2, 1), DataType(0, 1), DataType(0, 1),DataType(1, 1),DataType(0, 1),DataType(1, 1), DataType(20, 1), DataType(12, 1) ]
   src_opt       = [ ConfigType( OPT_ADD, b1( 1 ), pickRegister ),
                     ConfigType( OPT_SUB, b1( 1 ), pickRegister ),
                     ConfigType( OPT_LT, b1( 1 ), pickRegister ),
                     ConfigType( OPT_LTE, b1( 1 ), pickRegister ),
                     ConfigType( OPT_GT, b1( 1 ), pickRegister ),
                     ConfigType( OPT_GTE, b1( 1 ), pickRegister ),
+                    ConfigType( OPT_MUL, b1( 1 ), pickRegister ),
                     ConfigType( OPT_MUL_ADD, b1( 1 ), pickRegister ) ]
   th = TestHarness( FU, DataType, PredicateType, ConfigType,
                     num_inports, num_outports, data_mem_size,
