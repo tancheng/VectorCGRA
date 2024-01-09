@@ -9,30 +9,26 @@ Author : Cheng Tan & Ron Jokai
 
 """
 
-from pymtl3                       import *
-from pymtl3.stdlib.test_utils     import (run_sim,
-                                          config_model_with_cmdline_opts)
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+from pymtl3                                    import *
+from pymtl3.stdlib.test_utils                  import (run_sim,
+                                                       config_model_with_cmdline_opts)
+from pymtl3.passes.backends.verilog            import (VerilogTranslationPass,
+                                                       VerilogVerilatorImportPass)
 
-from ...lib.test_srcs             import TestSrcRTL
-from ...lib.opt_type              import *
-from ...lib.messages              import *
+from ...lib.test_srcs                          import TestSrcRTL
+from ...lib.opt_type                           import *
+from ...lib.messages                           import *
 
-from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...fu.single.AdderRTL        import AdderRTL
-from ...fu.single.ShifterRTL      import ShifterRTL
-from ...fu.single.MemUnitRTL      import MemUnitRTL
-from ..CGRAKingMeshRTL            import CGRAKingMeshRTL
-
-from ...fu.pymtl3_Ron_FP.FPaddRTL  import FPadd
-from ...fu.pymtl3_Ron_FP.FPmultRTL import FPmult
-from ...fu.float_Ron_FP.FPadd2nd   import FPadd2nd
+from ...fu.flexible.FlexibleFuRTL              import FlexibleFuRTL
+from ...fu.single.AdderRTL                     import AdderRTL
+from ...fu.single.ShifterRTL                   import ShifterRTL
+from ...fu.single.MemUnitRTL                   import MemUnitRTL
+from ..CGRAKingMeshRTL                         import CGRAKingMeshRTL
 
 from ...fu.pymtl3_hardfloat.HardFloat.AddFNRTL import AddFN
 from ...fu.float.FpAddRTL                      import FpAddRTL
 
-from ...fu.ALUgen_Ron_2nd.ALUgenMAC2nd import ALUgenMAC2nd
+from ...fu.ALUgen_fusedALU_fixedp.ALUgenMACFU  import ALUgenMACFU
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -86,7 +82,7 @@ def test_homo_2x2( cmdline_opts ):
   num_fu_in     = 4
   DUT           = CGRAKingMeshRTL
   FunctionUnit  = FlexibleFuRTL
-  FuList        = [MemUnitRTL, ALUgenMAC2nd] #FPadd2nd]#, FPmult]
+  FuList        = [MemUnitRTL, ALUgenMACFU] #FPadd2nd]#, FPmult]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
   CtrlType      = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )

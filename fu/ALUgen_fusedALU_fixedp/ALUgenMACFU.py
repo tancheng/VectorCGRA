@@ -17,7 +17,7 @@ from ..pymtl3_fusedALU_fixedp.ALUgenMACRTL import ALUgenMAC
 class ALUgenMACFU( Fu ):
   def construct( s, DataType, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size):
-    super( ALUgenMAC2nd, s ).construct( DataType, PredicateType, CtrlType,
+    super( ALUgenMACFU, s ).construct( DataType, PredicateType, CtrlType,
                                    num_inports, num_outports,
                                    data_mem_size )
 
