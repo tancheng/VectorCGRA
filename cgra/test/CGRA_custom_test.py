@@ -115,6 +115,9 @@ def test_homo_2x2( cmdline_opts ):
                      for _ in range( num_tiles ) ]
   ctrl_waddr   = [[ AddrType( 0 ), AddrType( 1 ), AddrType( 2 ), AddrType( 3 ),
                     AddrType( 4 ), AddrType( 5 ) ] for _ in range( num_tiles ) ]
+
+  assert DataType.get_field_type( 'payload' ).nbits == 16
+
   th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr )
@@ -173,6 +176,9 @@ def test_hetero_2x2( cmdline_opts ):
                          for _ in range( num_tiles ) ]
   ctrl_waddr        = [[ AddrType( 0 ), AddrType( 1 ), AddrType( 2 ), AddrType( 3 ),
                          AddrType( 4 ), AddrType( 5 ) ] for _ in range( num_tiles ) ]
+
+  assert DataType.get_field_type( 'payload' ).nbits == 16
+
   th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
                     CtrlType, width, height, ctrl_mem_size, data_mem_size,
                     src_opt, ctrl_waddr )
