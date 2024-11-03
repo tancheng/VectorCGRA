@@ -46,8 +46,11 @@ data_mem_size     = 2
 num_fu_in         = 4
 DUT               = CGRARTL
 FunctionUnit      = FlexibleFuRTL
-FuList            = [ AdderRTL, MemUnitRTL ]#AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
-DataType          = mk_data( 16, 1 )
+FuList            = [ AdderRTL, MemUnitRTL ]# SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
+# Parameterizes channel bandwidth as around 2-byte per cycle.
+payload_nbits = 16 # 32
+predicate_nbits = 1
+DataType = mk_data( payload_nbits, predicate_nbits )
 PredicateType     = mk_predicate( 1, 1 )
 #  FuList           = [ SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
 #  DataType         = mk_data( 16, 1 )
