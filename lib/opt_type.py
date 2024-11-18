@@ -72,7 +72,7 @@ OPT_LTE = Bits6( 63 )
 
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
-  OPT_NAH           : "( )",
+  OPT_NAH           : "(NAH)",
   OPT_PAS           : "(->)",
   OPT_ADD           : "(+)",
   OPT_ADD_CONST     : "(+')",
