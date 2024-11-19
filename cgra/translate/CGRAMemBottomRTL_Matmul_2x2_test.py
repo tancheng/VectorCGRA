@@ -52,7 +52,7 @@ class TestHarness(Component):
                    for i in range(s.num_tiles)]
 
     s.dut = DUT(DataType, PredicateType, CtrlType, width, height,
-                ctrl_mem_size, data_mem_size, len(src_opt[0]),
+                ctrl_mem_size, data_mem_size, kMaxCycles,
                 kMaxCycles, FunctionUnit, fu_list, preload_data,
                 preload_const)
 
@@ -123,7 +123,9 @@ def test_CGRA_systolic(cmdline_opts):
   FuInType = mk_bits(clog2( num_fu_in + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_in)]
   
-  src_opt = [[CtrlType(OPT_LD_CONST, b1(0), pickRegister, [
+  src_opt = [
+             # On tile 0 ([0, 0]).
+             [CtrlType(OPT_LD_CONST, b1(0), pickRegister, [
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
               CtrlType( OPT_LD_CONST, b1(0), pickRegister, [
@@ -136,6 +138,7 @@ def test_CGRA_systolic(cmdline_opts):
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
              ],
+             # On tile 1 ([0, 1]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
@@ -152,22 +155,31 @@ def test_CGRA_systolic(cmdline_opts):
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
              ],
-             [CtrlType( OPT_NAH, b1(0), pickRegister, [
-              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
-              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
-              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
-              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
-              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
-              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
-              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
-              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
-              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
-              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
-              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
-             ],
+             # On tile 2 ([1, 0]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
               RouteType(2), RouteType(0), RouteType(0), RouteType(0),
               RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(5),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+             ],
+             # On tile 3 ([1, 1]).
+             [CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
               CtrlType( OPT_NAH, b1(0), pickRegister, [
               RouteType(2), RouteType(0), RouteType(0), RouteType(0),
               RouteType(2), RouteType(0), RouteType(3), RouteType(0)]),
@@ -177,7 +189,16 @@ def test_CGRA_systolic(cmdline_opts):
               CtrlType( OPT_MUL_CONST_ADD, b1(0), pickRegister, [
               RouteType(2), RouteType(0), RouteType(0), RouteType(5),
               RouteType(2), RouteType(0), RouteType(3), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+
              ],
+             # On tile 4 ([2, 0]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
               RouteType(0), RouteType(0), RouteType(0), RouteType(0),
               RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
@@ -190,7 +211,16 @@ def test_CGRA_systolic(cmdline_opts):
               CtrlType( OPT_MUL_CONST, b1(0), pickRegister, [
               RouteType(0), RouteType(0), RouteType(0), RouteType(5),
               RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+
              ],
+             # On tile 5 ([2, 1]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
               RouteType(0), RouteType(0), RouteType(0), RouteType(0),
               RouteType(2), RouteType(0), RouteType(3), RouteType(0)]),
@@ -206,6 +236,14 @@ def test_CGRA_systolic(cmdline_opts):
               CtrlType( OPT_MUL_CONST_ADD, b1(0), pickRegister, [
               RouteType(0), RouteType(0), RouteType(0), RouteType(5),
               RouteType(2), RouteType(0), RouteType(3), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+
              ]
             ]
   
@@ -223,7 +261,7 @@ def test_CGRA_systolic(cmdline_opts):
        x        =
   2 4      4 8     30 44
   """
-  sink_out = [[DataType(1, 1), DataType(20, 1)], [DataType(30, 1),
+  sink_out = [[DataType(14, 1), DataType(20, 1)], [DataType(30, 1),
                DataType(44, 1)]]
 
   ctrl_waddr = [[AddrType(0), AddrType(1), AddrType(2), AddrType(3)]
