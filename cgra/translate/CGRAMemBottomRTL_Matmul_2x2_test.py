@@ -247,13 +247,25 @@ def test_CGRA_systolic(cmdline_opts):
   
   preload_mem = [DataType(1, 1), DataType(2, 1), DataType(3, 1),
                  DataType(4, 1)]
-  preload_const = [[DataType(0, 1), DataType(1, 1), DataType(0, 0)], # last one is not useful, just to make the length aligned
-                   [DataType(0, 0), DataType(2, 1), DataType(3, 1)], # offset address used for loading
-                   # preloaded data
-                   [DataType(2, 1), DataType(0, 0), DataType(0, 0)],
-                   [DataType(4, 1), DataType(0, 0), DataType(0, 0)],
-                   [DataType(6, 1), DataType(0, 0), DataType(0, 0)],
-                   [DataType(8, 1), DataType(0, 0), DataType(0, 0)]] # preloaded data
+  preload_const = [
+                   # The offset address used for loading input activation.
+                   # We use a shared data memory here, indicating global address
+                   # space. Users can make each tile has its own address space.
+
+                   # The last one is not useful for the first colum, which is just
+                   # to make the length aligned.
+                   [DataType(0, 1), DataType(1, 1), DataType(0, 0)],
+                   # The first one is not useful for the second colum, which is just
+                   # to make the length aligned.
+                   [DataType(0, 0), DataType(2, 1), DataType(3, 1)],
+
+                   # Preloads weights. 3 items to align with the above const length.
+                   # Duplication exists as the iter of the const queue automatically
+                   # increment.
+                   [DataType(2, 1), DataType(2, 1), DataType(2, 1)],
+                   [DataType(4, 1), DataType(4, 1), DataType(4, 1)],
+                   [DataType(6, 1), DataType(6, 1), DataType(6, 1)],
+                   [DataType(8, 1), DataType(8, 1), DataType(8, 1)]]
   
   data_mem_size = len(preload_mem)
 

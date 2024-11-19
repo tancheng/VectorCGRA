@@ -61,4 +61,5 @@ jobs:
         pytest .. -v --tb=short
         pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         pytest ../tile/translate/TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        pytest ../cgra/translate/CGRAMemBottomRTL_Matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
 
