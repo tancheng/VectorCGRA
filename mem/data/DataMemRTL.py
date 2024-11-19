@@ -50,9 +50,9 @@ class DataMemRTL( Component ):
             s.reg_file.wen[i] @= s.recv_wdata[i].en & s.recv_waddr[i].en
 
     else:
-      s.preloadData = [ DataType( 0 ) for _ in range( data_mem_size ) ]
+      s.preloadData = [ Wire( DataType ) for _ in range( data_mem_size ) ]
       for i in range( len( preload_data ) ):
-        s.preloadData[ i ] = preload_data[i]
+        s.preloadData[ i ] //= preload_data[i]
 
       @update
       def update_read_with_init():
