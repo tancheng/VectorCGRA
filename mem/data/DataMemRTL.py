@@ -72,7 +72,7 @@ class DataMemRTL( Component ):
           if s.recv_waddr[i].en == b1(1):
             s.reg_file.waddr[i] @= s.recv_waddr[i].msg
             s.reg_file.wdata[i] @= s.recv_wdata[i].msg
-            s.reg_file.wen[i]   @= s.recv_wdata[i].en and s.recv_waddr[i].en
+            s.reg_file.wen[i]   @= s.recv_wdata[i].en & s.recv_waddr[i].en
 
     # Connections
 

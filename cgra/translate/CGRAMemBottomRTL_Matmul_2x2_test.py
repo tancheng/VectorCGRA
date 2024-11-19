@@ -59,7 +59,6 @@ class TestHarness(Component):
     s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(height - 1)]
 
-    print("[cheng] height: ", height)
     for i in range(height - 1):
       connect(s.dut.send_data[i], s.sink_out[i].recv)
 
@@ -91,7 +90,6 @@ def run_sim( test_harness, max_cycles = kMaxCycles ):
     ncycles += 1
     print("----------------------------------------------------")
     print("{}:{}".format( ncycles, test_harness.line_trace()))
-    print("[cheng] test_harness.dut.sink_out.recv -- rdy: ", test_harness.sink_out[0].recv.rdy, ", en: ", test_harness.sink_out[0].recv.en)
 
   # Check timeout
 #  assert ncycles < max_cycles
@@ -249,10 +247,13 @@ def test_CGRA_systolic(cmdline_opts):
   
   preload_mem = [DataType(1, 1), DataType(2, 1), DataType(3, 1),
                  DataType(4, 1)]
-  preload_const = [[DataType(0, 1), DataType(1, 1)],
+  preload_const = [[DataType(0, 1), DataType(1, 1), DataType(0, 0)], # last one is not useful, just to make the length aligned
                    [DataType(0, 0), DataType(2, 1), DataType(3, 1)], # offset address used for loading
-                   [DataType(2, 1)], [DataType(4, 1)], # preloaded data
-                   [DataType(6, 1)], [DataType(8, 1)]] # preloaded data
+                   # preloaded data
+                   [DataType(2, 1), DataType(0, 0), DataType(0, 0)],
+                   [DataType(4, 1), DataType(0, 0), DataType(0, 0)],
+                   [DataType(6, 1), DataType(0, 0), DataType(0, 0)],
+                   [DataType(8, 1), DataType(0, 0), DataType(0, 0)]] # preloaded data
   
   data_mem_size = len(preload_mem)
 
