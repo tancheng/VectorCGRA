@@ -1,8 +1,8 @@
 """
 ==========================================================================
-CGRARTL_Matmul_2x2_test.py
+CGRAMemBottomRTL_matmul_2x2_test.py
 ==========================================================================
-Translation for 2x2 CGRA. The provided test is only used for a 2x2 matmul.
+Translation for 3x2 CGRA. The provided test is only used for a 2x2 matmul.
 
 Author : Cheng Tan
   Date : Oct 14, 2024
@@ -34,7 +34,7 @@ from ..CGRAMemBottomRTL import CGRAMemBottomRTL
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 12
+kMaxCycles = 20
 
 class TestHarness(Component):
 
@@ -43,6 +43,7 @@ class TestHarness(Component):
                 src_opt, ctrl_waddr, preload_data, preload_const,
                 sink_out):
 
+    s.height = height
     s.num_tiles = width * height
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -67,12 +68,10 @@ class TestHarness(Component):
       connect(s.ctrl_waddr[i].send, s.dut.recv_waddr[i])
 
   def done(s):
-    done = True
-    for i in range(s.num_tiles):
-      if not s.src_opt[i].done():
-        done = False
-        break
-    return done
+    for i in range(s.height - 1):
+      if not s.sink_out[i].done():
+        return False
+    return True
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -85,14 +84,14 @@ def run_sim( test_harness, max_cycles = kMaxCycles ):
   ncycles = 0
   print()
   print("{}:{}".format( ncycles, test_harness.line_trace()))
-  while ncycles < max_cycles:
+  while not test_harness.done():
     test_harness.sim_tick()
     ncycles += 1
     print("----------------------------------------------------")
     print("{}:{}".format( ncycles, test_harness.line_trace()))
-
+    
   # Check timeout
-#  assert ncycles < max_cycles
+  assert ncycles < max_cycles
 
   test_harness.sim_tick()
   test_harness.sim_tick()
@@ -103,7 +102,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_tile_outports = 4
   num_xbar_inports = 6
   num_xbar_outports = 8
-  ctrl_mem_size = 8
+  ctrl_mem_size = 10
   width = 2
   height = 3
   RouteType = mk_bits(clog2(num_xbar_inports + 1))
@@ -135,6 +134,13 @@ def test_CGRA_systolic(cmdline_opts):
               CtrlType( OPT_LD_CONST, b1(0), pickRegister, [
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
              ],
              # On tile 1 ([0, 1]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
@@ -152,6 +158,10 @@ def test_CGRA_systolic(cmdline_opts):
               CtrlType( OPT_LD_CONST, b1(0), pickRegister, [
               RouteType(5), RouteType(0), RouteType(0), RouteType(0),
               RouteType(0), RouteType(0), RouteType(0), RouteType(0)]),
+
+              CtrlType( OPT_NAH, b1(0), pickRegister, [
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0),
+              RouteType(2), RouteType(0), RouteType(0), RouteType(0)]),
              ],
              # On tile 2 ([1, 0]).
              [CtrlType( OPT_NAH, b1(0), pickRegister, [
@@ -277,8 +287,11 @@ def test_CGRA_systolic(cmdline_opts):
   sink_out = [[DataType(14, 1), DataType(20, 1)], [DataType(30, 1),
                DataType(44, 1)]]
 
-  ctrl_waddr = [[AddrType(0), AddrType(1), AddrType(2), AddrType(3)]
-               for _ in range(num_tiles)]
+  # When the max iterations are larger than the number of control signals,
+  # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
+  # read) continue.
+  ctrl_waddr = [[AddrType(0), AddrType(1), AddrType(2), AddrType(3),
+                 AddrType(4), AddrType(5)] for _ in range(num_tiles)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlType, width, height, ctrl_mem_size, data_mem_size,
