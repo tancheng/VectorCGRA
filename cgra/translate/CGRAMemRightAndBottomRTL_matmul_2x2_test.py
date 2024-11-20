@@ -89,7 +89,8 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles = kMaxCycles ):
+def run_sim(test_harness, enable_verification_pymtl,
+            max_cycles = kMaxCycles):
   # test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
 
@@ -97,17 +98,24 @@ def run_sim( test_harness, max_cycles = kMaxCycles ):
   ncycles = 0
   print()
   print("{}:{}".format( ncycles, test_harness.line_trace()))
-  while not test_harness.done():
-    test_harness.sim_tick()
-    ncycles += 1
-    print("----------------------------------------------------")
-    print("{}:{}".format( ncycles, test_harness.line_trace()))
+  if enable_verification_pymtl:
+    while not test_harness.done():
+      test_harness.sim_tick()
+      ncycles += 1
+      print("----------------------------------------------------")
+      print("{}:{}".format( ncycles, test_harness.line_trace()))
 
-  # Checks the output parity.
-  assert test_harness.check_parity()
+    # Checks the output parity.
+    assert test_harness.check_parity()
 
-  # Checks timeout.
-  assert ncycles < max_cycles
+    # Checks timeout.
+    assert ncycles < max_cycles
+  else:
+    while ncycles < max_cycles:
+      test_harness.sim_tick()
+      ncycles += 1
+      print("----------------------------------------------------")
+      print("{}:{}".format( ncycles, test_harness.line_trace()))
 
   test_harness.sim_tick()
   test_harness.sim_tick()
@@ -394,11 +402,14 @@ def test_CGRA_systolic(cmdline_opts):
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                      f'CGRARTL')
+                      f'CGRAMemRightAndBottomRTL')
   # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
   #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
   #                    'ALWCOMBORDER'] )
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
 
-  run_sim(th)
+  enable_verification_pymtl = not (cmdline_opts['test_verilog'] or \
+                                   cmdline_opts['dump_vcd'] or \
+                                   cmdline_opts['dump_vtb'])
+  run_sim(th, enable_verification_pymtl)
 
