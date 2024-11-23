@@ -39,6 +39,7 @@ OPT_PHI                   = Bits6( 17 )
 OPT_PHI_CONST             = Bits6( 32 )
 OPT_SEL                   = Bits6( 27 )
 OPT_LD_CONST              = Bits6( 28 )
+OPT_STR_CONST             = Bits6( 58 )
 OPT_MUL_ADD               = Bits6( 18 )
 OPT_MUL_CONST             = Bits6( 29 )
 OPT_MUL_CONST_ADD         = Bits6( 30 )
@@ -72,7 +73,7 @@ OPT_LTE = Bits6( 63 )
 
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
-  OPT_NAH           : "( )",
+  OPT_NAH           : "(NAH)",
   OPT_PAS           : "(->)",
   OPT_ADD           : "(+)",
   OPT_ADD_CONST     : "(+')",
@@ -97,6 +98,7 @@ OPT_SYMBOL_DICT = {
   OPT_PHI_CONST     : "(ph')",
   OPT_SEL           : "(sel)",
   OPT_LD_CONST      : "(ldcst)",
+  OPT_STR_CONST     : "(strcst)",
   OPT_MUL_ADD       : "(* +)",
   OPT_MUL_CONST     : "(*')",
   OPT_MUL_CONST_ADD : "(*' +)",

@@ -25,6 +25,8 @@ from ..SystolicCL                 import SystolicCL
 
 import os
 
+kMaxCycles = 6
+
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -43,7 +45,7 @@ class TestHarness( Component ):
 
     s.dut = DUT( FunctionUnit, FuList, DataType, PredicateType, CtrlType,
                  width, height, ctrl_mem_size, data_mem_size,
-                 len( src_opt[0] ), 0, src_opt,
+                 len( src_opt[0] ), kMaxCycles, src_opt,
                  preload_data, preload_const )
 
     for i in range( height-1 ):
@@ -52,10 +54,9 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=6 ):
+def run_sim( test_harness, max_cycles = kMaxCycles ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
-  test_harness.sim_reset()
 
   # Run simulation
   ncycles = 0
@@ -106,7 +107,9 @@ def test_systolic_2x2():
   FuInType          = mk_bits( clog2( num_fu_in + 1 ) )
   pickRegister      = [ FuInType( x+1 ) for x in range( num_fu_in ) ]
 
-  src_opt       = [[CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
+  src_opt       = [
+                   # Tile 0:
+                   [CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                     CtrlType( OPT_LD_CONST, b1( 0 ), pickRegister, [
@@ -119,6 +122,7 @@ def test_systolic_2x2():
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
+                   # Tile 1:
                    [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
@@ -135,6 +139,7 @@ def test_systolic_2x2():
                     RouteType(5), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
+                   # Tile 2:
                    [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
@@ -148,6 +153,7 @@ def test_systolic_2x2():
                     RouteType(2), RouteType(0), RouteType(0), RouteType(5),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
+                   # Tile 3:
                    [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
@@ -161,6 +167,7 @@ def test_systolic_2x2():
                     RouteType(2), RouteType(0), RouteType(0), RouteType(5),
                     RouteType(2), RouteType(0), RouteType(3), RouteType(0)] ),
                    ],
+                   # Tile 4:
                    [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
@@ -174,6 +181,7 @@ def test_systolic_2x2():
                     RouteType(0), RouteType(0), RouteType(0), RouteType(5),
                     RouteType(2), RouteType(0), RouteType(0), RouteType(0)] ),
                    ],
+                   # Tile 5:
                    [CtrlType( OPT_NAH, b1( 0 ), pickRegister, [
                     RouteType(0), RouteType(0), RouteType(0), RouteType(0),
                     RouteType(2), RouteType(0), RouteType(3), RouteType(0)] ),

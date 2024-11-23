@@ -40,7 +40,7 @@ class CGRARTL( Component ):
     s.tile = [ TileRTL( DataType, PredicateType, CtrlType,
                         ctrl_mem_size, data_mem_size, num_ctrl,
                         total_steps, 4, 2, s.num_mesh_ports,
-                        s.num_mesh_ports, 
+                        s.num_mesh_ports,
                         Fu = FunctionUnit,
                         FuList = FuList,
                         const_list = preload_const[i] )
