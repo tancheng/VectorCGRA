@@ -1,7 +1,7 @@
 #=========================================================================
-# OrChannelRTL_test.py
+# LinkOrRTL_test.py
 #=========================================================================
-# Simple test for OrChannel
+# Simple test for LinkOrRTL.
 #
 # Author : Cheng Tan
 #   Date : April 19, 2024
@@ -13,7 +13,7 @@ from pymtl3.stdlib.test_utils import TestVectorSimulator
 from ...lib.test_sinks        import TestSinkRTL
 from ...lib.test_srcs         import TestSrcRTL
 from ...lib.messages          import *
-from ..OrChannelRTL           import OrChannelRTL
+from ..LinkOrRTL import LinkOrRTL
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -26,7 +26,7 @@ class TestHarness( Component ):
     s.src0  = TestSrcRTL ( MsgType, src_msgs_0  )
     s.src1  = TestSrcRTL ( MsgType, src_msgs_1  )
     s.sink = TestSinkRTL ( MsgType, sink_msgs )
-    s.dut  = OrChannelRTL( MsgType )
+    s.dut  = LinkOrRTL( MsgType )
 
     # Connections
     s.src0.send //= s.dut.recv_fu
@@ -75,9 +75,9 @@ def run_sim( test_harness, max_cycles=100 ):
 #-------------------------------------------------------------------------
 
 DataType  = mk_data( 16, 1 )
-test_msgs_0 = [ DataType(7,1,1), DataType(4,1), DataType(1,1), DataType(0,1), DataType(0,0) ]
+test_msgs_0 = [ DataType(7,0,1), DataType(4,1), DataType(1,1), DataType(0,1), DataType(0,0) ]
 test_msgs_1 = [ DataType(0,1,1), DataType(0,0), DataType(2,0), DataType(2,1), DataType(3,1) ]
-sink_msgs   = [ DataType(7,1), DataType(4,1), DataType(3,1), DataType(2,1), DataType(3,1) ]
+sink_msgs   = [ DataType(0,1), DataType(4,1), DataType(1,1), DataType(0,1), DataType(3,1) ]
 
 def test_simple():
   th = TestHarness( DataType, test_msgs_0, test_msgs_1, sink_msgs )
