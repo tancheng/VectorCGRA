@@ -177,18 +177,6 @@ class TileSeparateCrossbarRTL(Component):
     @update
     def update_opt():
 
-      print("[cheng] ctrl: ", str(s.ctrl_mem.send_ctrl.msg))
-
-      # for i in range(num_tile_outports):
-      #   s.routing_crossbar.crossbar_outport[i] @= s.ctrl_mem.send_ctrl.msg.routing_xbar_outport[i]
-      #   s.fu_crossbar.crossbar_outport[i] @= s.ctrl_mem.send_ctrl.msg.fu_xbar_outport[i]
-
-      #   print("[cheng] tile's routing control signals[", i, "]: ", str(s.ctrl_mem.send_ctrl.msg.routing_xbar_outport[i]))
-      #   print("[cheng] tile's routing_xbar[", i, "]: ", str(s.routing_crossbar.crossbar_outport[i]))
-
-      print("[cheng] tile's routing control signals: ", str(s.ctrl_mem.send_ctrl.msg.routing_xbar_outport))
-      print("[cheng] tile's routing_xbar: ", str(s.routing_crossbar.crossbar_outport))
-
       s.element.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.routing_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.fu_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
