@@ -20,7 +20,8 @@ class CrossbarSeparateRTL(Component):
                 id = 0):
 
     InType = mk_bits(clog2(num_inports + 1))
-    NumInportType = mk_bits(clog2(num_inports))
+    num_index = num_inports if num_inports != 1 else 2
+    NumInportType = mk_bits(clog2(num_index))
     s.bypass_point = bypass_point
 
     # Interface
