@@ -61,4 +61,5 @@ class ChannelNormalRTL( Component ):
 
   def line_trace( s ):
     trace = " -> ".join("channel_stage_" + str(i) + ": " + s.queues[i].line_trace() for i in range(s.latency))
+    return trace
 
