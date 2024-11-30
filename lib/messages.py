@@ -139,8 +139,7 @@ def mk_separate_ctrl(num_fu_inports = 4,
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   PredicateType = mk_bits(1)
 
-  new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_{num_fu_outports}_\
-          {num_tile_inports}_{num_tile_outports}"
+  new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_{num_fu_outports}_{num_tile_inports}_{num_tile_outports}"
 
   def str_func(s):
     out_str = '(fu_in)'

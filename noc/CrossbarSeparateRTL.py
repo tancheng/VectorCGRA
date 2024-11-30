@@ -20,6 +20,7 @@ class CrossbarSeparateRTL(Component):
                 id = 0):
 
     InType = mk_bits(clog2(num_inports + 1))
+    NumInportType = mk_bits(clog2(num_inports))
     s.bypass_point = bypass_point
 
     # Interface
@@ -37,7 +38,7 @@ class CrossbarSeparateRTL(Component):
     # s.pos  = InPort( PositionType )
 
     s.in_dir = [Wire(InType) for _ in range(num_outports)]
-    s.in_dir_local = [Wire(InType) for _ in range(num_outports)]
+    s.in_dir_local = [Wire(NumInportType) for _ in range(num_outports)]
     s.out_rdy_vector = Wire(num_outports)
     s.recv_predicate_vector = Wire(num_inports)
     # Used to indicate whether the recv_data could be popped.
@@ -94,16 +95,17 @@ class CrossbarSeparateRTL(Component):
           s.out_rdy_vector[i] @= s.send_data[i].rdy
           # s.in_dir[i]  @= s.recv_opt.msg.routing_xbar_outport[i]
           s.in_dir[i] @= s.crossbar_outport[i]
-          if s.in_dir[i] > 0:
-            s.send_data[i].msg.delay @= s.recv_data[s.in_dir_local[i]].msg.delay
-          else:
-            s.out_rdy_vector[i] @= 1
+          # if s.in_dir[i] > 0:
+          #   s.send_data[i].msg.delay @= s.recv_data[s.in_dir_local[i]].msg.delay
+          # else:
+          #   s.out_rdy_vector[i] @= 1
+          s.out_rdy_vector[i] @= 1
 
         for i in range( num_outports ):
           # s.in_dir[i]  @= s.recv_opt.msg.routing_xbar_outport[i]
           s.in_dir[i]  @= s.crossbar_outport[i]
           if (s.in_dir[i] > 0) & s.send_data[i].rdy:
-            s.in_dir_local[i] @= s.in_dir[i] - 1
+            s.in_dir_local[i] @= trunc(s.in_dir[i] - 1, NumInportType)
             s.recv_data[s.in_dir_local[i]].rdy @= \
                     s.send_data[i].rdy & \
                     ~s.recv_blocked_vector[s.in_dir_local[i]] & \
