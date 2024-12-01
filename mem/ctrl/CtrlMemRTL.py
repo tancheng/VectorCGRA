@@ -73,6 +73,6 @@ class CtrlMemRTL( Component ):
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
   def line_trace( s ):
-    out_str  = "||".join([ str(data) for data in s.reg_file.regs ])
-    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
+    out_str  = f'[{", ".join([ str(data.__dict__) for data in s.reg_file.regs ])}]'
+    return f'class: {s.__class__.__name__}, recv_ctrl_msg: {s.recv_ctrl.msg.__dict__} : out: {out_str} : send_ctrl_msg: {str(s.send_ctrl.msg.__dict__)}'
 

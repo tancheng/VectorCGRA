@@ -154,5 +154,5 @@ class CGRAKingMeshRTL( Component ):
     # str += " :: [" + s.data_mem.line_trace() + "]"
     res = "||\n".join([ (("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                               for (i,x) in enumerate(s.tile) ])
-    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
+    res += "\n data_mem:: [" + s.data_mem.line_trace() + "]    \n"
     return res
