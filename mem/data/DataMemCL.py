@@ -6,13 +6,15 @@ CL data memory with preloaded data for simulation.
 
 Author : Cheng Tan
   Date : Dec 27, 2019
-
 """
+
+
 from copy import deepcopy
-from pymtl3                   import *
-from pymtl3.stdlib.primitive  import RegisterFile
-from ...lib.ifcs              import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type          import *
+from pymtl3 import *
+from pymtl3.stdlib.primitive import RegisterFile
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class DataMemCL( Component ):
 

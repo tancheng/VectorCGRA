@@ -7,15 +7,17 @@ Author : Cheng Tan
   Date : Dec 28, 2019
 """
 
-from pymtl3                      import *
+
+from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..fu.single.MemUnitRTL      import MemUnitRTL
-from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
-from ..mem.ctrl.CtrlMemCL        import CtrlMemCL
-from ..mem.const.ConstQueueRTL   import ConstQueueRTL
-from ..noc.CrossbarRTL           import CrossbarRTL
-from ..noc.ChannelRTL            import ChannelRTL
-from ..rf.RegisterRTL            import RegisterRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..mem.ctrl.CtrlMemCL import CtrlMemCL
+from ..mem.const.ConstQueueRTL import ConstQueueRTL
+from ..noc.ChannelRTL import ChannelRTL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..rf.RegisterRTL import RegisterRTL
+
 
 class TileCL( Component ):
 

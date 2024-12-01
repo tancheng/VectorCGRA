@@ -6,33 +6,31 @@ Test cases for CGRAs with different configurations.
 
 Author : Cheng Tan
   Date : April 1, 2023
-
 """
 
-from pymtl3                           import *
-from pymtl3.stdlib.test_utils     import (run_sim,
-                                          config_model_with_cmdline_opts)
+
+from pymtl3 import *
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-
-from ...lib.test_srcs             import TestSrcRTL
-from ...lib.opt_type                  import *
-from ...lib.messages                  import *
-
-from ...fu.flexible.FlexibleFuRTL     import FlexibleFuRTL
-from ...fu.single.AdderRTL            import AdderRTL
-from ...fu.single.MemUnitRTL          import MemUnitRTL
-from ...fu.single.MulRTL              import MulRTL
-from ...fu.single.SelRTL              import SelRTL
-from ...fu.single.ShifterRTL          import ShifterRTL
-from ...fu.single.LogicRTL            import LogicRTL
-from ...fu.single.PhiRTL              import PhiRTL
-from ...fu.single.CompRTL             import CompRTL
-from ...fu.single.BranchRTL           import BranchRTL
-from ...fu.vector.VectorMulComboRTL   import VectorMulComboRTL
+from ..CGRAKingMeshRTL import CGRAKingMeshRTL
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.SelRTL import SelRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
 
-from ..CGRAKingMeshRTL                import CGRAKingMeshRTL
 
 #-------------------------------------------------------------------------
 # Test harness

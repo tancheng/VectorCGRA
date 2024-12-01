@@ -7,14 +7,15 @@ Author : Cheng Tan
   Date : Dec 28, 2019
 """
 
-from pymtl3               import *
-from ..noc.CrossbarRTL    import CrossbarRTL
-from ..noc.ChannelRTL     import ChannelRTL
-from ..tile.TileCL        import TileCL
-from ..lib.opt_type       import *
-from ..lib.common         import *
-from ..lib.ifcs           import SendIfcRTL, RecvIfcRTL
+from pymtl3 import *
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.opt_type import *
+from ..lib.util.common import *
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..noc.ChannelRTL import ChannelRTL
 from ..mem.data.DataMemCL import DataMemCL
+from ..tile.TileCL import TileCL
+
 
 class CGRACL( Component ):
 

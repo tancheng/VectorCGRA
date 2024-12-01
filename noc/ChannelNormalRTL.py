@@ -12,7 +12,8 @@
 
 from pymtl3 import *
 from pymtl3.stdlib.dstruct.queues import NormalQueue
-from ..lib.ifcs import RecvIfcRTL, SendIfcRTL
+from ..lib.basic.en_rdy.ifcs import RecvIfcRTL, SendIfcRTL
+
 
 class ChannelNormalRTL( Component ):
   def construct(s, DataType, latency = 1, num_entries = 2):

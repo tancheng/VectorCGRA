@@ -6,17 +6,17 @@ Test cases for functional unit Ret.
 
 Author : Cheng Tan
   Date : September 21, 2021
-
 """
 
 from pymtl3                       import *
 
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
+from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
 
 from ..RetRTL                     import RetRTL
 from ....lib.opt_type             import *
 from ....lib.messages             import *
+
 
 #-------------------------------------------------------------------------
 # Test harness

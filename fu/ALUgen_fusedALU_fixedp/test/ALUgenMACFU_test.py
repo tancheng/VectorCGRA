@@ -1,21 +1,23 @@
 """
 ==========================================================================
-_test.py
+ALUgenMACFU_test.py
 ==========================================================================
 
 Author : RJ
   Date : Jan 6, 2024
 """
 
-from pymtl3                       import *
-from pymtl3.stdlib.test_utils     import (run_sim,
-                                          config_model_with_cmdline_opts)
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
-from ....mem.const.ConstQueueRTL  import ConstQueueRTL
-from ..ALUgenMACFU                import ALUgenMACFU
+
+from pymtl3 import *
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
+from ..ALUgenMACFU import ALUgenMACFU
+from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.messages import *
+from ....lib.opt_type import *
+from ....mem.const.ConstQueueRTL import ConstQueueRTL
+
 
 def test_elaborate( cmdline_opts ):
   DataType      = mk_data( 16, 1 )

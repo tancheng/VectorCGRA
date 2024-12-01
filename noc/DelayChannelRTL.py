@@ -11,8 +11,7 @@
 
 from pymtl3                       import *
 from pymtl3.stdlib.dstruct.queues import BypassQueue, NormalQueue
-from ..lib.ifcs                   import RecvIfcRTL, SendIfcRTL
-
+from ..lib.basic.en_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 
 class DelayChannelRTL( Component ):
   def construct(s, DataType, delay = 5 ):

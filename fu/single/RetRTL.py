@@ -6,13 +6,14 @@ Functional unit Ret as a CGRA tile.
 
 Author : Cheng Tan
   Date : September 21, 2021
-
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from ..basic.Fu         import Fu
+
+from pymtl3 import *
+from ..basic.Fu import Fu
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class RetRTL( Fu ):
 

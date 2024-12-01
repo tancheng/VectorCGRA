@@ -6,19 +6,19 @@ Test cases for functional unit.
 
 Author : Cheng Tan
   Date : November 27, 2019
-
 """
 
-from pymtl3                       import *
 
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
+from pymtl3 import *
 
-from ..MemUnitRTL                 import MemUnitRTL
-from ....mem.data.DataMemRTL      import DataMemRTL
-from ....mem.data.DataMemCL       import DataMemCL
+from ..MemUnitRTL import MemUnitRTL
+from ....lib.messages import *
+from ....lib.opt_type import *
+from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....mem.data.DataMemCL import DataMemCL
+from ....mem.data.DataMemRTL import DataMemRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness

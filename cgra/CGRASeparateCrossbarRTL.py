@@ -11,14 +11,15 @@ from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.AdderRTL import AdderRTL
-from ..lib.common import *
-from ..lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.util.common import *
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.opt_type import *
 from ..mem.data.DataMemCL import DataMemCL
 from ..mem.data.DataMemRTL import DataMemRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL
 from ..tile.TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
+
 
 class CGRASeparateCrossbarRTL(Component):
   def construct(s, DataType, PredicateType, CtrlType, width, height,
