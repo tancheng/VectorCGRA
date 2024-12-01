@@ -8,27 +8,28 @@ Author : Cheng Tan
   Date : Oct 14, 2024
 """
 
+
 from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-
-from ...lib.test_srcs import TestSrcRTL
-from ...lib.test_sinks import TestSinkRTL
-from ...lib.opt_type import *
-from ...lib.messages import *
+from ..CGRAMemBottomRTL import CGRAMemBottomRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
-from ...fu.single.SelRTL import SelRTL
-from ...fu.single.ShifterRTL import ShifterRTL
-from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.PhiRTL import PhiRTL
-from ...fu.single.CompRTL import CompRTL
+from ...fu.single.SelRTL import SelRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
-from ...fu.single.BranchRTL import BranchRTL
-from ..CGRAMemBottomRTL import CGRAMemBottomRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness
