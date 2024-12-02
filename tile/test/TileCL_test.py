@@ -6,21 +6,21 @@ Test cases for Tile.
 
 Author : Cheng Tan
   Date : Dec 28, 2019
-
 """
 
-from pymtl3                               import *
 
-from ...lib.test_sinks                    import TestSinkRTL
-from ...lib.test_srcs                     import TestSrcRTL
-from ...lib.opt_type                      import *
-from ...lib.messages                      import *
-from ...fu.single.AdderRTL                import AdderRTL
-from ...fu.single.MemUnitRTL              import MemUnitRTL
+from pymtl3 import *
+from ..TileCL import TileCL
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
-from ...mem.ctrl.CtrlMemCL                import CtrlMemCL
-from ..TileCL                             import TileCL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
+from ...mem.ctrl.CtrlMemCL import CtrlMemCL
+
 
 #-------------------------------------------------------------------------
 # Test harness

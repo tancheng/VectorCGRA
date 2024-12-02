@@ -6,14 +6,14 @@ Control memory for CGRA.
 
 Author : Cheng Tan
   Date : Dec 21, 2019
-
 """
 
-from pymtl3                  import *
-from pymtl3.stdlib.primitive import RegisterFile
 
-from ...lib.ifcs     import SendIfcRTL, RecvIfcRTL
+from pymtl3 import *
+from pymtl3.stdlib.primitive import RegisterFile
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
+
 
 class CtrlMemRTL( Component ):
 

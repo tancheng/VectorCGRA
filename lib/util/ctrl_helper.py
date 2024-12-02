@@ -10,10 +10,10 @@ Author : Cheng Tan
 
 """
 
-from .messages                   import *
-from .map_helper                 import *
-from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 
+from .map_helper import *
+from ..messages import *
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 import json
 
 class TileCtrl:

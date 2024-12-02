@@ -6,13 +6,14 @@ Adder for CGRA tile. The latency is parameterizable.
 
 Author : Cheng Tan
   Date : Aug 5, 2023
-
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from ..basic.Fu         import Fu
+
+from pymtl3 import *
+from ..basic.Fu import Fu
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class AdderCL( Fu ):
 

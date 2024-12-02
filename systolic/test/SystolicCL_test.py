@@ -6,24 +6,22 @@ Test cases for Systolic Array with CL data/config memory.
 
 Author : Cheng Tan
   Date : Dec 28, 2019
-
 """
 
-from pymtl3                       import *
 
-from ...lib.test_sinks            import TestSinkRTL
-from ...lib.test_srcs             import TestSrcRTL
-from ...lib.opt_type              import *
-from ...lib.messages              import *
-from ...lib.ctrl_helper           import *
-
+from pymtl3 import *
+from ..SystolicCL import SystolicCL
+from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...fu.single.AdderRTL        import AdderRTL
-from ...fu.single.MemUnitRTL      import MemUnitRTL
-from ...fu.double.SeqMulAdderRTL  import SeqMulAdderRTL
-from ..SystolicCL                 import SystolicCL
-
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
+from ...lib.util.ctrl_helper import *
 import os
+
 
 kMaxCycles = 6
 

@@ -7,9 +7,9 @@
 # Author : Cheng Tan
 #   Date : Feb 22, 2020
 
-from pymtl3                       import *
+from pymtl3 import *
 from pymtl3.stdlib.dstruct.queues import BypassQueue
-from ..lib.ifcs                   import RecvIfcRTL, SendIfcRTL
+from ..lib.basic.en_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 
 
 class BypassChannelRTL( Component ):

@@ -63,7 +63,8 @@ def mk_predicate( payload_nbits=1, predicate_nbits=1, prefix="CGRAData" ):
 # Generic config message
 #=========================================================================
 
-def mk_ctrl( num_fu_in=2, num_inports=5, num_outports=5, prefix="CGRAConfig" ):
+def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
+            prefix = "CGRAConfig"):
 
   ctrl_nbits    = 6
   CtrlType      = mk_bits( ctrl_nbits )
@@ -72,7 +73,8 @@ def mk_ctrl( num_fu_in=2, num_inports=5, num_outports=5, prefix="CGRAConfig" ):
   FuInType      = mk_bits( clog2( num_fu_in + 1 ) )
   PredicateType = mk_bits( 1 )
 
-  new_name = f"{prefix}_{ctrl_nbits}_{num_fu_in}_{num_inports}_{num_outports}"
+  new_name = f"{prefix}_{ctrl_nbits}_{num_fu_in}_{num_inports}_" \
+             f"{num_outports}"
 
   def str_func( s ):
     out_str = '(in)'
@@ -100,27 +102,31 @@ def mk_ctrl( num_fu_in=2, num_inports=5, num_outports=5, prefix="CGRAConfig" ):
     return f"(opt){s.ctrl}|{out_str}"
 
   field_dict = {}
-  field_dict[ 'ctrl' ]         = CtrlType
-  # The 'predicate' indicates whether the current operation is based on the partial
-  # predication or not. Note that 'predicate' is different from the following
-  # 'predicate_in', which contributes to the 'predicate' at the next cycle.
-  field_dict[ 'predicate' ]    = PredicateType
-  # The fu_in indicates the input register ID (i.e., operands) for the operation.
-  field_dict[ 'fu_in' ]        = [ FuInType for _ in range( num_fu_in ) ]
+  field_dict['ctrl'] = CtrlType
+  # The 'predicate' indicates whether the current operation is based on
+  # the partial predication or not. Note that 'predicate' is different
+  # from the following 'predicate_in', which contributes to the
+  # 'predicate' at the next cycle.
+  field_dict['predicate'] = PredicateType
+  # The fu_in indicates the input register ID (i.e., operands) for the
+  # operation.
+  field_dict['fu_in'] = [FuInType for _ in range(num_fu_in)]
 
-  field_dict[ 'outport' ]      = [ InportsType for _ in range( num_outports ) ]
-  # I assume one tile supports single predicate during the entire execution time, as
-  # it is hard to distinguish predication for different operations (we automatically
-  # update, i.e., 'or', the predicate stored in the predicate register). This should
-  # be guaranteed by the compiler.
-  field_dict[ 'predicate_in' ] = [ PredicateType for _ in range( num_inports ) ]
+  field_dict['outport'] = [InportsType for _ in range(num_outports)]
+  # I assume one tile supports single predicate during the entire
+  # execution time, as it is hard to distinguish predication for
+  # different operations (we automatically update, i.e., 'or', the
+  # predicate stored in the predicate register). This should be
+  # guaranteed by the compiler.
+  field_dict['predicate_in'] = [PredicateType for _ in range(
+      num_inports)]
 
   # TODO: to support multiple predicate
   # field_dict[ 'predicate_in0' ] = ...
   # field_dict[ 'predicate_in1' ] = ...
 
-  return mk_bitstruct( new_name, field_dict,
-    namespace = { '__str__': str_func }
+  return mk_bitstruct(new_name, field_dict,
+    namespace = {'__str__': str_func}
   )
 
 
@@ -139,7 +145,9 @@ def mk_separate_ctrl(num_fu_inports = 4,
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   PredicateType = mk_bits(1)
 
-  new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_{num_fu_outports}_{num_tile_inports}_{num_tile_outports}"
+  new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
+             f"{num_fu_outports}_{num_tile_inports}_" \
+             f"{num_tile_outports}"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -180,20 +188,25 @@ def mk_separate_ctrl(num_fu_inports = 4,
   field_dict = {}
   field_dict['ctrl'] = OperationType
   # TODO: need fix to pair `predicate` with specific operation.
-  # The 'predicate' indicates whether the current operation is based on the partial
-  # predication or not. Note that 'predicate' is different from the following
-  # 'predicate_in', which contributes to the 'predicate' at the next cycle.
+  # The 'predicate' indicates whether the current operation is based on
+  # the partial predication or not. Note that 'predicate' is different
+  # from the following 'predicate_in', which contributes to the 'predicate'
+  # at the next cycle.
   field_dict['predicate'] = PredicateType
-  # The fu_in indicates the input register ID (i.e., operands) for the operation.
+  # The fu_in indicates the input register ID (i.e., operands) for the
+  # operation.
   field_dict['fu_in'] = [FuInType for _ in range(num_fu_inports)]
 
-  field_dict['routing_xbar_outport'] = [TileInportsType for _ in range(num_routing_outports)]
-  field_dict['fu_xbar_outport'] = [FuOutType for _ in range(num_routing_outports)]
-  # I assume one tile supports single predicate during the entire execution time, as
-  # it is hard to distinguish predication for different operations (we automatically
-  # update, i.e., 'or', the predicate stored in the predicate register). This should
-  # be guaranteed by the compiler.
-  field_dict['routing_predicate_in'] = [PredicateType for _ in range(num_tile_inports)]
+  field_dict['routing_xbar_outport'] = [TileInportsType for _ in range(
+      num_routing_outports)]
+  field_dict['fu_xbar_outport'] = [FuOutType for _ in range(
+      num_routing_outports)]
+  # I assume one tile supports single predicate during the entire execution
+  # time, as it is hard to distinguish predication for different operations
+  # (we automatically update, i.e., 'or', the predicate stored in the
+  # predicate register). This should be guaranteed by the compiler.
+  field_dict['routing_predicate_in'] = [PredicateType for _ in range(
+      num_tile_inports)]
 
   # TODO: to support multiple predicate
   # field_dict[ 'predicate_in0' ] = ...
@@ -202,4 +215,53 @@ def mk_separate_ctrl(num_fu_inports = 4,
   return mk_bitstruct( new_name, field_dict,
     namespace = { '__str__': str_func }
   )
+
+
+#=========================================================================
+# Ring multi-CGRA data/config/cmd packet
+#=========================================================================
+
+def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
+                           payload_nbits = 16, predicate_nbits = 1,
+                           prefix="RingMultiCGRAPacket" ):
+
+  IdType = mk_bits(clog2(nrouters))
+  OpqType = mk_bits(opaque_nbits)
+  PayloadType = mk_bits(payload_nbits)
+  PredicateType = mk_bits(predicate_nbits)
+
+  new_name = f"{prefix}_{nrouters}_{vc}_{opaque_nbits}_{payload_nbits}_" \
+             f"{predicate_nbits}"
+
+  if vc > 1:
+    VcIdType = mk_bits( clog2( vc ) )
+
+    def str_func( s ):
+      return f"{s.src}>{s.dst}:{s.opaque}:{s.vc_id}:{s.payload}." \
+             f"{s.predicate}"
+
+    return mk_bitstruct( new_name, {
+        'src': IdType,
+        'dst': IdType,
+        'opaque': OpqType,
+        'vc_id': VcIdType,
+        'payload': PayloadType,
+        'predicate': PredicateType,
+      },
+      namespace = { '__str__': str_func }
+    )
+
+  else:
+    def str_func( s ):
+      return f"{s.src}>{s.dst}:{s.opaque}:{s.payload}.{s.predicate}"
+
+    return mk_bitstruct( new_name, {
+        'src': IdType,
+        'dst': IdType,
+        'opaque': OpqType,
+        'payload': PayloadType,
+        'predicate': PredicateType,
+      },
+      namespace = { '__str__': str_func }
+    )
 

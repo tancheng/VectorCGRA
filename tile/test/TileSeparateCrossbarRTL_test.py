@@ -8,25 +8,26 @@ pytest TileSeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb
 
 Author : Cheng Tan
   Date : Nov 26, 2024
-
 """
+
 
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-from ...lib.test_sinks import TestSinkRTL
-from ...lib.test_srcs import TestSrcRTL
-from ...lib.opt_type import *
-from ...lib.messages import *
+from ..TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.MulRTL import MulRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.MulRTL import MulRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
 from ...mem.ctrl.CtrlMemRTL import CtrlMemRTL
-from ..TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness

@@ -10,7 +10,7 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from ..lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.opt_type import *
 
 class CrossbarSeparateRTL(Component):

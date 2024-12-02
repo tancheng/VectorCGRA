@@ -6,10 +6,9 @@ CGRAFL -- running DFG nodes one by one.
 
 Author : Cheng Tan
   Date : Feb 13, 2020
-
 """
 
-from pymtl3         import *
+from pymtl3 import *
 from ..lib.opt_type import *
 from ..lib.messages import *
 

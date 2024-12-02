@@ -7,12 +7,13 @@ functional unit for CGRA tile.
 
 Author : Cheng Tan
   Date : November 28, 2019
-
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
+
+from pymtl3 import *
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class ThreeCombo( Component ):
 

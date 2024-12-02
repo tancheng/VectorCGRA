@@ -6,13 +6,13 @@ Test cases for functional unit Phi.
 
 Author : Cheng Tan
   Date : November 27, 2019
-
 """
+
 
 from pymtl3                       import *
 
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
+from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
 from ....lib.opt_type             import *
 from ....lib.messages             import *
 

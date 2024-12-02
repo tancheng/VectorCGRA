@@ -1,18 +1,21 @@
-#=========================================================================
-# RegisterRTL.py
-#=========================================================================
-# RTL register module specifically for predication.
-#
-# Author : Cheng Tan
-#   Date : Aug 22, 2021
+'''
+=========================================================================
+RegisterRTL.py
+=========================================================================
+RTL register module specifically for predication.
 
-from pymtl3                   import *
+Author : Cheng Tan
+  Date : Aug 22, 2021
+'''
+
+
+from pymtl3 import *
 from pymtl3.stdlib.dstruct.queues import NormalQueue
-
-from ..lib.ifcs import RecvIfcRTL, SendIfcRTL
+from ..lib.basic.en_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 
 
 class RegisterRTL( Component ):
+
   def construct(s, DataType, latency = 1 ):
 
     # Constant

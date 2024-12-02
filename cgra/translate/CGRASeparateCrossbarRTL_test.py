@@ -6,8 +6,8 @@ Test cases for CGRAs with different configurations.
 
 Author : Cheng Tan
   Date : Nov 29, 2024
-
 """
+
 
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
@@ -19,9 +19,10 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-from ...lib.test_srcs import TestSrcRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness

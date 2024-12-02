@@ -6,14 +6,14 @@ Constant queue used for simulation.
 
 Author : Cheng Tan
   Date : Jan 20, 2020
-
 """
+
 
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
-
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
+
 
 class ConstQueueRTL( Component ):
 

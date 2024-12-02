@@ -16,11 +16,13 @@ Author : Cheng Tan
   Date : August 9, 2023
 """
 
-from pymtl3                                import *
-from ...lib.ifcs                           import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type                       import *
-from ..basic.Fu                            import Fu
+
+from pymtl3 import *
+from ..basic.Fu import Fu
 from ..pymtl3_hardfloat.HardFloat.MulFNRTL import MulFN
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class FpMulRTL( Fu ):
 

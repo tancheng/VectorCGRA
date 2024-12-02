@@ -6,31 +6,28 @@ Test cases for CGRAs with CL data/config memory.
 
 Author : Cheng Tan
   Date : Dec 28, 2019
-
 """
 
-from pymtl3                       import *
 
-from ...lib.opt_type              import *
-from ...lib.messages              import *
-
+from pymtl3 import *
+from ..CGRACL import CGRACL
+from ..CGRAFL import CGRAFL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...fu.single.AdderRTL        import AdderRTL
-from ...fu.single.MulRTL          import MulRTL
-from ...fu.single.LogicRTL        import LogicRTL
-from ...fu.single.CompRTL         import CompRTL
-from ...fu.single.BranchRTL       import BranchRTL
-from ...fu.single.PhiRTL          import PhiRTL
-from ...fu.single.ShifterRTL      import ShifterRTL
-from ...fu.single.MemUnitRTL      import MemUnitRTL
-from ..CGRACL                     import CGRACL
-
-from ..CGRAFL                     import CGRAFL
-from ...lib.dfg_helper            import *
-from ...lib.ctrl_helper           import *
-
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.util.ctrl_helper import *
+from ...lib.util.dfg_helper import *
+from ...lib.messages import *
+from ...lib.opt_type import *
 import copy
 import os
+
 
 #-------------------------------------------------------------------------
 # Test harness

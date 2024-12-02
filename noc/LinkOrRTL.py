@@ -11,7 +11,7 @@
 #   Date : April 19, 2024
 
 from pymtl3 import *
-from ..lib.ifcs import RecvIfcRTL, SendIfcRTL
+from ..lib.basic.en_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 
 
 class LinkOrRTL(Component):

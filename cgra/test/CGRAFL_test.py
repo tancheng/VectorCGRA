@@ -9,12 +9,13 @@ Author : Cheng Tan
 
 """
 
-from pymtl3                       import *
-from ...lib.messages              import *
-from ..CGRAFL                     import CGRAFL
-from ...lib.dfg_helper            import *
 
+from pymtl3 import *
+from ...lib.messages import *
+from ..CGRAFL import CGRAFL
+from ...lib.util.dfg_helper import *
 import os
+
 
 def test_fl():
   target_json = "dfg_fir.json"
