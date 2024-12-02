@@ -60,7 +60,8 @@ class RetRTL( Fu ):
 
       if s.recv_opt.msg.ctrl == OPT_RET:
         # Branch is only used to set predication rather than delivering value.
-        s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1( 0 ), b1( 0 ) )
+        #                             payload,                          predicate, bypass,  delay
+        s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1( 0 ),   b1( 0 ), b1( 0 ) )
         if s.recv_in[s.in0_idx].msg.predicate == b1( 0 ):#s.const_zero.payload:
           s.send_out_predicate @= 0
         else:

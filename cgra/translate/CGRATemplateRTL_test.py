@@ -187,8 +187,8 @@ def test_cgra_universal( cmdline_opts, paramCGRA = None):
   DUT               = CGRATemplateRTL
   FunctionUnit      = FlexibleFuRTL
   # FuList            = [ SeqMulAdderRTL, MemUnitRTL ]#AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
-  # FuList           = [ PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL ]
-  FuList           = [ PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, MulRTL, LogicRTL, BranchRTL ]
+  FuList           = [ PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL ]
+  # FuList           = [ PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, MulRTL, LogicRTL, BranchRTL ]
   DataType          = mk_data( 32, 1 )
   PredicateType     = mk_predicate( 1, 1 )
 #  DataType         = mk_data( 16, 1 )
@@ -364,6 +364,7 @@ def test_cgra_universal( cmdline_opts, paramCGRA = None):
   th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
 
   if paramCGRA != None:
+    print(f'paramCGRA: {paramCGRA}')
     for tile in tiles:
         if not tile.isDefaultFus():
             targetFuList = []
