@@ -8,11 +8,11 @@ The vectorized Mul works at different vectorization granularities.
 
 Author : Cheng Tan
   Date : April 17, 2022
-
 """
 
+
 from pymtl3             import *
-from ...lib.ifcs        import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs        import SendIfcRTL, RecvIfcRTL
 from .VectorMulRTL      import VectorMulRTL
 from ...lib.opt_type    import *
 from ..basic.SumUnit    import SumUnit

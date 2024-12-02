@@ -9,12 +9,13 @@ This basic multiplier is different from the scalar one:
 
 Author : Cheng Tan
   Date : APril 17, 2022
-
 """
 
+
 from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type    import *
+
 
 class VectorMulRTL( Component ):
 

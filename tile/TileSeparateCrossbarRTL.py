@@ -14,16 +14,17 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
+
 from pymtl3 import *
 
-from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
+from ..fu.single.BranchRTL import BranchRTL
 from ..fu.single.PhiRTL import PhiRTL
 from ..fu.single.CompRTL import CompRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
-from ..fu.single.BranchRTL import BranchRTL
-from ..lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..mem.ctrl.CtrlMemRTL import CtrlMemRTL
 from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL

@@ -10,12 +10,11 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-
-from ...lib.test_sinks import TestSinkRTL
-from ...lib.test_srcs  import TestSrcRTL
-from ...lib.opt_type   import *
-from ...lib.messages   import *
-from ..MulticasterRTL  import MulticasterRTL
+from ..MulticasterRTL import MulticasterRTL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.opt_type import *
+from ...lib.messages import *
 
 #-------------------------------------------------------------------------
 # Test harness

@@ -9,11 +9,12 @@ Author : Cheng Tan
 
 """
 
-from pymtl3                  import *
-from ...lib.ifcs             import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type         import *
+from pymtl3 import *
 from ...fu.single.MemUnitRTL import MemUnitRTL
-from ...fu.single.AdderRTL   import AdderRTL
+from ...fu.single.AdderRTL  import AdderRTL
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class FlexibleFuRTL( Component ):
 

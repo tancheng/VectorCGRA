@@ -2,26 +2,28 @@
 =========================================================================
 TileRTL.py
 =========================================================================
+
 Author : Cheng Tan
   Date : Dec 11, 2019
 """
 
-from pymtl3 import *
 
-from ..fu.single.MemUnitRTL      import MemUnitRTL
+from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..fu.single.AdderRTL        import AdderRTL
-from ..fu.single.PhiRTL          import PhiRTL
-from ..fu.single.CompRTL         import CompRTL
-from ..fu.single.MulRTL          import MulRTL
-from ..fu.single.BranchRTL       import BranchRTL
-from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
-from ..mem.const.ConstQueueRTL   import ConstQueueRTL
-from ..mem.ctrl.CtrlMemRTL       import CtrlMemRTL
-from ..noc.CrossbarRTL           import CrossbarRTL
-from ..noc.ChannelRTL            import ChannelRTL
-from ..rf.RegisterRTL            import RegisterRTL
+from ..fu.single.AdderRTL import AdderRTL
+from ..fu.single.BranchRTL import BranchRTL
+from ..fu.single.CompRTL import CompRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..fu.single.MulRTL import MulRTL
+from ..fu.single.PhiRTL import PhiRTL
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..mem.const.ConstQueueRTL import ConstQueueRTL
+from ..mem.ctrl.CtrlMemRTL import CtrlMemRTL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..noc.ChannelRTL import ChannelRTL
+from ..rf.RegisterRTL import RegisterRTL
 # from ..noc.BypassChannelRTL      import BypassChannelRTL
+
 
 class TileRTL( Component ):
 

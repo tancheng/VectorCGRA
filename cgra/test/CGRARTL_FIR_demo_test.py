@@ -6,31 +6,28 @@ Test cases for CGRAs with different configurations.
 
 Author : Cheng Tan
   Date : Dec 15, 2019
-
 """
 
-from pymtl3                       import *
-from pymtl3.stdlib.test_utils     import (run_sim,
-                                          config_model_with_cmdline_opts)
+
+from pymtl3 import *
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-
-from ...lib.test_srcs             import TestSrcRTL
-from ...lib.opt_type              import *
-from ...lib.messages              import *
-
+from ..CGRAFL import CGRAFL
+from ..CGRARTL import CGRARTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...fu.single.AdderRTL        import AdderRTL
-from ...fu.single.ShifterRTL      import ShifterRTL
-from ...fu.single.MemUnitRTL      import MemUnitRTL
-from ..CGRARTL                    import CGRARTL
-
-from ..CGRAFL                     import CGRAFL
-from ...lib.dfg_helper            import *
-from ...lib.ctrl_helper           import *
-
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
+from ...lib.util.dfg_helper import *
+from ...lib.util.ctrl_helper import *
 import copy
 import os
+
 
 #-------------------------------------------------------------------------
 # Test harness

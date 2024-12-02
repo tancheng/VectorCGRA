@@ -7,13 +7,15 @@ Author : Cheng Tan
   Date : May 24, 2020
 """
 
-from pymtl3                   import *
-from ..noc.CrossbarRTL        import CrossbarRTL
-from ..noc.ChannelRTL         import ChannelRTL
-from ..tile.TileCL            import TileCL
-from ..lib.opt_type           import *
-from ..lib.ifcs               import SendIfcRTL, RecvIfcRTL
-from ..mem.data.DataMemCL     import DataMemCL
+
+from pymtl3 import *
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.opt_type import *
+from ..mem.data.DataMemCL import DataMemCL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..noc.ChannelRTL import ChannelRTL
+from ..tile.TileCL import TileCL
+
 
 class SystolicCL( Component ):
 

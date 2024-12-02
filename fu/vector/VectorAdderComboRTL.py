@@ -10,11 +10,11 @@ granularities.
 
 Author : Cheng Tan
   Date : March 28, 2022
-
 """
 
+
 from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from .VectorAdderRTL    import VectorAdderRTL
 from ...lib.opt_type    import *
 

@@ -6,13 +6,14 @@ Functional unit Branch for CGRA tile.
 
 Author : Cheng Tan
   Date : December 1, 2019
-
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
-from ..basic.Fu         import Fu
+
+from pymtl3 import *
+from ..basic.Fu import Fu
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class BranchRTL( Fu ):
 

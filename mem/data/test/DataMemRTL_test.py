@@ -3,17 +3,19 @@
 DataMemRTL_test.py
 ==========================================================================
 Test cases for DataMemRTL.
+
 Author : Cheng Tan
   Date : Nov 26, 2022
 """
 
-from pymtl3                       import *
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
 
-from ....lib.opt_type             import *
-from ....lib.messages             import *
-from ..DataMemRTL                 import DataMemRTL
+from pymtl3 import *
+from ..DataMemRTL import DataMemRTL
+from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.messages import *
+from ....lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness

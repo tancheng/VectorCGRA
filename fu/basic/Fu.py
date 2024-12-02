@@ -9,9 +9,11 @@ Author : Cheng Tan
   Date : August 6, 2023
 """
 
-from pymtl3             import *
-from ...lib.ifcs import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type    import *
+
+from pymtl3 import *
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class Fu( Component ):
 

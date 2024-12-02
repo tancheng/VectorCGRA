@@ -1,19 +1,22 @@
-#=========================================================================
-# ChannelRTL_test.py
-#=========================================================================
-# Simple test for Channel
-#
-# Author : Cheng Tan
-#   Date : Dec 11, 2019
+'''
+=========================================================================
+ChannelRTL_test.py
+=========================================================================
+Simple test for Channel
+
+Author : Cheng Tan
+  Date : Dec 11, 2019
+'''
+
 
 import pytest
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import TestVectorSimulator
+from ..RegisterRTL import RegisterRTL
+from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.messages import *
 
-from ...lib.test_sinks import TestSinkRTL
-from ...lib.test_srcs  import TestSrcRTL
-from ...lib.messages   import *
-from ..RegisterRTL     import RegisterRTL
 
 #-------------------------------------------------------------------------
 # TestHarness

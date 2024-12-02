@@ -4,3 +4,6 @@
 [submodule "fu/dp_fpfma"]
 	path = fu/dp_fpfma
 	url = https://github.com/tancheng/dp_fpfma
+[submodule "noc/PyOCN"]
+	path = noc/PyOCN
+	url = https://github.com/tancheng/PyOCN

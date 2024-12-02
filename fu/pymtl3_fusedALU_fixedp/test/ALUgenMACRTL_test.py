@@ -2,17 +2,15 @@
 # Unit testing for AddFNRTL PyMTL wrapper module
 #=========================================================================
 
+
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import run_test_vector_sim, TestVectorSimulator
 from pymtl3.passes.backends.verilog import *
-
-import hypothesis
 from hypothesis import given
-from hypothesis import strategies as st
 from hypothesis import settings
-
+from hypothesis import strategies as st
 from ..ALUgenMACRTL import ALUgenMAC
-
+import hypothesis
 import random
 
 
