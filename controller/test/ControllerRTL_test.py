@@ -1,8 +1,8 @@
 '''
 =========================================================================
-ChannelRTL_test.py
+ControllerRTL_test.py
 =========================================================================
-Simple test for Channel.
+Simple test for ControllerRTL.
 
 Author : Cheng Tan
   Date : Dec 2, 2024
@@ -98,24 +98,24 @@ def mk_src_pkts( nterminals, lst ):
   return src_pkts
 
 DataType = mk_data(32, 1)
-test_msgs = [DataType(7, 1, 1), DataType(2, 1), DataType(3, 1)]
-sink_msgs = [DataType(0xdeadbeef, 0), DataType(0xbeefdead, 0), DataType(0xdeedbeed, 0)]
+test_msgs = [DataType(1, 1, 1), DataType(2, 1), DataType(3, 1)]
+sink_msgs = [DataType(4, 0), DataType(5, 0), DataType(6, 0)]
 
 nterminals = 4
 Pkt = mk_ring_multi_cgra_pkt(nterminals, payload_nbits = 32,
                              predicate_nbits = 1)
 src_pkts = [
     #   src  dst opq vc payload     predicate
-    Pkt(0,   0,  0,  0, 0xdeadbeef, 0),
-    Pkt(0,   0,  0,  0, 0xbeefdead, 0),
-    Pkt(0,   0,  0,  0, 0xdeedbeed, 0),
+    Pkt(1,   2,  0,  0, 4, 0),
+    Pkt(1,   2,  0,  0, 5, 0),
+    Pkt(1,   2,  0,  0, 6, 0),
 ]
 
 sink_pkts = [
     #   src  dst opq vc payload     predicate
-    Pkt(0,   0,  0,  0, 7, 0),
-    Pkt(0,   0,  0,  0, 2, 0),
-    Pkt(0,   0,  0,  0, 3, 0),
+    Pkt(1,   2,  0,  0, 1, 0),
+    Pkt(1,   2,  0,  0, 2, 0),
+    Pkt(1,   2,  0,  0, 3, 0),
 ]
 
 ctrl_mem_size = 4

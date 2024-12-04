@@ -14,6 +14,7 @@ from pymtl3.stdlib.primitive import RegisterFile
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL as ValRdySendIfcRTL
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as ValRdyRecvIfcRTL
+from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..lib.opt_type import *
 
 
@@ -47,6 +48,13 @@ class ControllerRTL(Component):
     s.recv_from_master = RecvIfcRTL(CGRADataType)
     s.send_to_master = SendIfcRTL(CGRADataType)
 
+    # Data formatting to simplify assignment.
+    s.pkt2data = Wire(CGRADataType)
+    s.data2pkt = Wire(RingPktType)
+
+
+    # Component
+    s.queue = ChannelNormalRTL(CGRADataType, latency = 1, num_entries = 2)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -62,27 +70,30 @@ class ControllerRTL(Component):
     # s.recv_cmd = [RecvIfcRTL(b2) for _ in range(s.num_tiles)]
     # s.send_cmd = [SendIfcRTL(b2) for _ in range(s.num_tiles)]
 
-
-    s.pkt2data = Wire(CGRADataType)
-    s.data2pkt = Wire(RingPktType)
+    # Connections
+    s.queue.recv //= s.recv_from_master
 
     @update
     def update_data():
       s.pkt2data.payload @= s.recv_from_other.msg.payload
-      s.data2pkt.payload @= s.recv_from_master.msg.payload
+      # s.data2pkt.payload @= s.recv_from_master.msg.payload
+      s.data2pkt.payload @= s.queue.send.msg.payload
+      s.data2pkt.src @= 1
+      s.data2pkt.dst @= 2
 
 
     # Can also be @update instead of @update_ff
-    # @update
-    @update_ff
+    @update
     def update_controller():
-      s.recv_from_other.rdy <<= s.send_to_master.rdy
-      s.send_to_master.en <<= s.recv_from_other.val & s.send_to_master.rdy
-      s.send_to_master.msg <<= s.pkt2data
+      s.recv_from_other.rdy @= s.send_to_master.rdy
+      s.send_to_master.en @= s.recv_from_other.val & s.send_to_master.rdy
+      s.send_to_master.msg @= s.pkt2data
 
-      s.recv_from_master.rdy <<= s.send_to_other.rdy
-      s.send_to_other.val <<= s.recv_from_master.en
-      s.send_to_other.msg <<= s.data2pkt
+      # s.recv_from_master.rdy @= s.send_to_other.rdy
+      # s.send_to_other.val @= s.recv_from_master.en
+      s.send_to_other.val @= s.queue.count > 0
+      s.send_to_other.msg @= s.data2pkt
+      s.queue.send.rdy @= s.send_to_other.rdy
 
 
   def line_trace(s):
