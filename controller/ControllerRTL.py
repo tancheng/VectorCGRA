@@ -73,6 +73,7 @@ class ControllerRTL(Component):
     # Connections
     s.queue.recv //= s.recv_from_master
 
+
     @update
     def update_data():
       s.pkt2data.payload @= s.recv_from_other.msg.payload
