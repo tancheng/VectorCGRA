@@ -13,8 +13,8 @@ from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..lib.util.common import *
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
-from ..lib.basic.val_rdy.ifcs import SendIfcRTL as ValRdySendIfcRTL
-from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as ValRdyRecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
 from ..lib.opt_type import *
 from ..mem.data.DataMemScalableRTL import DataMemScalableRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
@@ -35,9 +35,12 @@ class CGRAWithControllerRTL(Component):
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
     # Interfaces
-    s.recv_waddr = [RecvIfcRTL(AddrType)  for _ in range(s.num_tiles)]
-    s.recv_wopt = [RecvIfcRTL(CtrlType)  for _ in range(s.num_tiles)]
+    s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(s.num_tiles)]
+    s.recv_wopt = [RecvIfcRTL(CtrlType) for _ in range(s.num_tiles)]
 
+    # Explicitly provides the ValRdyRecvIfcRTL in the library, as the
+    # translation pass sometimes not able to distinguish the
+    # EnRdyRecvIfcRTL from it.
     s.recv_from_other = ValRdyRecvIfcRTL(NocPktType)
     s.send_to_other = ValRdySendIfcRTL(NocPktType)
 

@@ -29,7 +29,33 @@ class RecvIfcRTL( Interface ):
   def __str__( s ):
     return valrdy_to_str( s.msg, s.val, s.rdy, s.trace_len )
 
+class ValRdyRecvIfcRTL( Interface ):
+
+  def construct( s, Type ):
+
+    s.msg = InPort( Type )
+    s.val = InPort()
+    s.rdy = OutPort()
+
+    s.trace_len = len(str(Type()))
+
+  def __str__( s ):
+    return valrdy_to_str( s.msg, s.val, s.rdy, s.trace_len )
+
 class SendIfcRTL( Interface ):
+
+  def construct( s, Type ):
+
+    s.msg = OutPort( Type )
+    s.val = OutPort()
+    s.rdy = InPort()
+
+    s.trace_len = len(str(Type()))
+
+  def __str__( s ):
+    return valrdy_to_str( s.msg, s.val, s.rdy, s.trace_len )
+
+class ValRdySendIfcRTL( Interface ):
 
   def construct( s, Type ):
 

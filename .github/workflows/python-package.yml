@@ -66,4 +66,6 @@ jobs:
         pytest ../cgra/translate/CGRAMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short
         pytest ../cgra/translate/CGRAMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py --tb=short -sv
+        pytest --tb=short -sv ../cgra/translate/CGRAWithControllerRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        pytest --tb=short -sv ../scale_out/translate/RingMultiCGRARTL_test.py --test-verilog --dump-vtb --dump-vcd
 
