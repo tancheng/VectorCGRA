@@ -56,6 +56,8 @@ models into C++ simulators. VectorCGRA uses Verilator for Verilog import.
  $ sudo make install
 ```
 
+> If there's exception when make, can try with `apt-get install verilator` directly. (https://verilator.org/guide/latest/install.html)
+
  [4]: http://www.veripool.org/wiki/verilator
 
 ### Install git, Python headers, and libffi
@@ -93,6 +95,18 @@ commands will create and activate the virtual environment:
  % pip install hypothesis
  % pip list
 ```
+
+> If you are using Python 3.12, please install `pip install -U git+https://github.com/pymtl/pymtl3@pymtl4.0-dev` and checkout py312-dev branch, difference is:
+```python
+th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
+run_sim( th )
+```
+to
+```python
+# th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
+run_sim( th, cmdline_opts, duts=['dut'] )
+```
+
 Take a look at the [workflow](https://github.com/tancheng/VectorCGRA/blob/master/.github/workflows/python-package.yml) if you encounter any problem to run the test in this repo.
 
 ### Clone VectorCGRA repo
