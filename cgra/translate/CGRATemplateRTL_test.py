@@ -360,7 +360,7 @@ def test_cgra_universal( cmdline_opts, paramCGRA = None):
   th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                      'ALWCOMBORDER'] )
-  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
+  # th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
 
   if paramCGRA != None:
     for tile in tiles:
@@ -371,4 +371,4 @@ def test_cgra_universal( cmdline_opts, paramCGRA = None):
             targetTile = "top.dut.tile[" + str(tile.getIndex(tiles)) + "].construct"
             th.set_param(targetTile, FuList=targetFuList)
 
-  run_sim( th )
+  run_sim( th, cmdline_opts, duts=['dut'] )

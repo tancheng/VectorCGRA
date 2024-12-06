@@ -143,8 +143,8 @@ def test_homo_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
-  run_sim(th)
+  # th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
+  run_sim(th, cmdline_opts, duts=['dut'])
 
 def test_hetero_2x2(cmdline_opts):
   num_tile_inports  = 4
@@ -232,7 +232,7 @@ def test_hetero_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
+  # th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
   #th.set_param("top.dut.tile[1].construct", FuList=[MemUnitRTL,ShifterRTL])
-  run_sim(th)
+  run_sim(th, cmdline_opts, duts=['dut'])
 
