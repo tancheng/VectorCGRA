@@ -99,12 +99,12 @@ class DataMemRTL( Component ):
         s.recv_wdata[i].rdy @= Bits1( 1 )
 
   def line_trace(s):
-    recv_raddr_str = "recv_read_addr: " + "|".join([str(data.msg) for data in s.recv_raddr])
-    recv_waddr_str = "recv_write_addr: " + "|".join([str(data.msg) for data in s.recv_waddr])
-    recv_wdata_str = "recv_write_data: " + "|".join([str(data.msg) for data in s.recv_wdata])
-    content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
-    send_rdata_str = "send_read_data: " + "|".join([str(data.msg) for data in s.send_rdata])
-    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || [{content_str}] || {send_rdata_str}'
+    recv_raddr_str = "recv_read_addr: " + f'[{", ".join([str(data.msg) for data in s.recv_raddr])}]'
+    recv_waddr_str = "recv_write_addr: " + f'[{", ".join([str(data.msg) for data in s.recv_waddr])}]'
+    recv_wdata_str = "recv_write_data: " + f'[{", ".join([str(data.msg.__dict__) for data in s.recv_wdata])}]'
+    content_str = "content: " + f'[{", ".join([str(data.__dict__) for data in s.reg_file.regs])}]'
+    send_rdata_str = "send_read_data: " + f'[{", ".join([str(data.msg) for data in s.send_rdata])}]'
+    return f'class: {s.__class__.__name__}, {recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || [{content_str}] || {send_rdata_str}'
     # return f'DataMem: {recv_str} : [{out_str}] : {send_str} initWrites: {s.initWrites}'
     # return s.reg_file.line_trace()
     # return f'<{s.reg_file.wen[0]}>{s.reg_file.waddr[0]}:{s.reg_file.wdata[0]}|{s.reg_file.raddr[0]}:{s.reg_file.rdata[0]}'

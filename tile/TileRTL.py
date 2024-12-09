@@ -6,6 +6,7 @@ TileRTL.py
 Author : Cheng Tan
   Date : Dec 11, 2019
 """
+import json
 
 
 from pymtl3 import *
@@ -123,12 +124,13 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
+
   # Line trace
   def line_trace( s ):
-
-    recv_str    = "|".join([ str(x.msg) for x in s.recv_data ])
-    channel_recv_str = "|".join([ str(x.recv.msg) for x in s.channel ])
-    channel_send_str = "|".join([ str(x.send.msg) for x in s.channel ])
-    out_str  = "|".join([ "("+str(x.msg.payload)+","+str(x.msg.predicate)+")" for x in s.send_data ])
-    return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+    recv_str    = f'[{", ".join([ str(x.msg.__dict__) for x in s.recv_data ])}]'
+    # recv_json = json.dumps(s.recv_data)
+    channel_recv_str = f'[{", ".join([ str(x.recv.msg.__dict__) for x in s.channel ])}]'
+    channel_send_str = f'[{", ".join([ str(x.send.msg.__dict__) for x in s.channel ])}]'
+    out_str  = f'[{", ".join([ "{send_msg_payload: "+str(x.msg.payload)+", send_msg_predicate: "+str(x.msg.predicate)+"}" for x in s.send_data ])}]'
+    return f"class: {s.__class__.__name__}, recv: {recv_str} => [recv_opt_msg: {str(s.crossbar.recv_opt.msg.__dict__)}] ({s.element.line_trace()}) => channel_recv: {channel_recv_str} => channel_send: {channel_send_str} => out: {out_str}"
 
