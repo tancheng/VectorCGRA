@@ -31,7 +31,7 @@ class TestHarness(Component):
 
     s.num_routers = num_routers
     RingPos = mk_ring_pos(num_routers)
-    cmp_fn = lambda a, b : a.payload == b.payload
+    cmp_fn = lambda a, b : a.data == b.data
 
     s.srcs  = [TestSrcRTL(MsgType, src_msgs[i])
                for i in range(num_routers)]
@@ -84,14 +84,15 @@ class RingNetwork_Tests:
   def _test_cgra_data(s, translation = ''):
     DataType = mk_data(16, 1)
     nterminals = 4
-    Pkt = mk_ring_multi_cgra_pkt(nterminals, payload_nbits = 32,
-                                 predicate_nbits = 1)
+    addr_nbits = 8
+    Pkt = mk_ring_multi_cgra_pkt(nterminals, addr_nbits = addr_nbits,
+                                 data_nbits = 32, predicate_nbits = 1)
     src_pkts = mk_src_pkts(nterminals, [
-      #   src  dst opq vc payload     predicate
-      Pkt(0,   1,  0,  0, 0xfaceb00c, 1),
-      Pkt(1,   2,  1,  0, 0xdeadbeef, 0),
-      Pkt(2,   3,  2,  0, 0xbaadface, 1),
-      Pkt(3,   0,  0,  0, 0xfaceb00c, 0),
+      #   src  dst opq vc cmd addr data        predicate
+      Pkt(0,   1,  0,  0, 0,  0,   0xfaceb00c, 1),
+      Pkt(1,   2,  1,  0, 0,  0,   0xdeadbeef, 0),
+      Pkt(2,   3,  2,  0, 0,  0,   0xbaadface, 1),
+      Pkt(3,   0,  0,  0, 0,  0,   0xfaceb00c, 0),
     ])
     dst_pkts = ringnet_fl(src_pkts)
     th = TestHarness(Pkt, nterminals, src_pkts, dst_pkts)

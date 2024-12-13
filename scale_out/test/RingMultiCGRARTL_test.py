@@ -89,7 +89,8 @@ def test_homo_2x2(cmdline_opts):
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  AddrType = mk_bits(clog2(ctrl_mem_size))
+  addr_nbits = clog2(ctrl_mem_size)
+  AddrType = mk_bits(addr_nbits)
   num_tiles = width * height
   DUT = RingMultiCGRARTL
   FunctionUnit = FlexibleFuRTL
@@ -99,7 +100,8 @@ def test_homo_2x2(cmdline_opts):
   CtrlType = mk_separate_ctrl(num_fu_inports, num_fu_outports,
                               num_tile_inports, num_tile_outports)
   NocPktType = mk_ring_multi_cgra_pkt(nrouters = num_terminals,
-                                      payload_nbits = 32,
+                                      addr_nbits = addr_nbits,
+                                      data_nbits = 32,
                                       predicate_nbits = 1)
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
   src_opt = [[
