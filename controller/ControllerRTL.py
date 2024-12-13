@@ -76,9 +76,9 @@ class ControllerRTL(Component):
 
     @update
     def update_data():
-      s.pkt2data.payload @= s.recv_from_other.msg.payload
+      s.pkt2data.payload @= s.recv_from_other.msg.data
       # s.data2pkt.payload @= s.recv_from_master.msg.payload
-      s.data2pkt.payload @= s.queue.send.msg.payload
+      s.data2pkt.data @= s.queue.send.msg.payload
       s.data2pkt.src @= 1
       s.data2pkt.dst @= 2
 

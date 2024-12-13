@@ -121,12 +121,17 @@ def run_sim(test_harness, max_cycles=20):
 #   def test_ring_data(self):
 #     self._test_ring_data('zeros')
 
-
-DataType = mk_data(32, 1)
+data_nbits = 32
+predicate_nbits = 1
+DataType = mk_data(data_nbits, predicate_nbits)
 num_terminals = 4
+ctrl_mem_size = 4
+addr_nbits = clog2(ctrl_mem_size)
+AddrType = mk_bits(addr_nbits)
 RingPktType = mk_ring_multi_cgra_pkt(num_terminals,
-                                     payload_nbits = 32,
-                                     predicate_nbits = 1)
+                                     addr_nbits = addr_nbits,
+                                     data_nbits = data_nbits,
+                                     predicate_nbits = predicate_nbits)
 src_data = [
             [],
             [DataType(7, 1, 1), DataType(8, 1), DataType(9, 1)],
@@ -141,9 +146,6 @@ sink_data = [
              [DataType(1, 0, 0), DataType(7, 0, 0), DataType(2, 0, 0), DataType(8, 0, 0), DataType(3, 0, 0), DataType(9, 0, 0)],
              []
             ]
-
-ctrl_mem_size = 4
-AddrType = mk_bits(clog2(ctrl_mem_size))
 
 def test_simple(cmdline_opts):
   th = TestHarness(RingPktType, DataType, AddrType, num_terminals,
