@@ -6,20 +6,21 @@ Helper map and functions to get corresponding functional unit and ctrl.
 
 Author : Cheng Tan
   Date : Feb 22, 2020
-
 """
 
-from .opt_type              import *
-from ..fu.single.AdderRTL   import AdderRTL
-from ..fu.single.ShifterRTL import ShifterRTL
-from ..fu.single.LogicRTL   import LogicRTL
-from ..fu.single.MulRTL     import MulRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..fu.single.CompRTL    import CompRTL
-from ..fu.single.PhiRTL     import PhiRTL
-from ..fu.single.RetRTL     import RetRTL
-from ..fu.single.BranchRTL  import BranchRTL
-from ..fu.single.SelRTL     import SelRTL
+
+from ..opt_type import *
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.RetRTL import RetRTL
+from ...fu.single.SelRTL import SelRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+
 
 # -----------------------------------------------------------------------
 # Global dictionary for UnitType and OptType

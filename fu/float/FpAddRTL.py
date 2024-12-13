@@ -16,13 +16,16 @@ Author : Yanghui Ou
   Date : Aug 8, 2023
 """
 
-from pymtl3                                import *
-from ...lib.ifcs                           import SendIfcRTL, RecvIfcRTL
-from ...lib.opt_type                       import *
-from ..basic.Fu                            import Fu
+
+from pymtl3 import *
+from ..basic.Fu import Fu
 from ..pymtl3_hardfloat.HardFloat.AddFNRTL import AddFN
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.opt_type import *
+
 
 class FpAddRTL( Fu ):
+
   def construct( s, DataType, PredicateType, CtrlType,
                  num_inports, num_outports, data_mem_size, exp_nbits = 4,
                  sig_nbits = 11 ):

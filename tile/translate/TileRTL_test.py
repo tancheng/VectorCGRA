@@ -6,29 +6,30 @@ TileRTL_test.py
 Author: Yanghui Ou
   Date: July 11, 2023
 '''
+
+
 from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
+from ..TileRTL import TileRTL
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.float.FpAddRTL import FpAddRTL
+from ...fu.float.FpMulRTL import FpMulRTL
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.SelRTL import SelRTL
+from ...fu.single.ShifterRTL import ShifterRTL
+from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...lib.messages import *
+from ...lib.opt_type import *
+from ...mem.ctrl.CtrlMemRTL import CtrlMemRTL
 
-from ...lib.opt_type                      import *
-from ...lib.messages                      import *
-from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
-from ...fu.single.AdderRTL                import AdderRTL
-from ...fu.single.MemUnitRTL              import MemUnitRTL
-from ...fu.single.MulRTL                  import MulRTL
-from ...fu.single.SelRTL                  import SelRTL
-from ...fu.single.ShifterRTL              import ShifterRTL
-from ...fu.single.LogicRTL                import LogicRTL
-from ...fu.single.PhiRTL                  import PhiRTL
-from ...fu.single.CompRTL                 import CompRTL
-from ...fu.single.BranchRTL               import BranchRTL
-from ...fu.float.FpAddRTL                 import FpAddRTL
-from ...fu.float.FpMulRTL                 import FpMulRTL
-from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...mem.ctrl.CtrlMemRTL               import CtrlMemRTL
-from ..TileRTL                            import TileRTL
 
 num_connect_inports  = 4
 num_connect_outports = 4

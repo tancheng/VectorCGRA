@@ -5,11 +5,11 @@ AllReduce functional unit.
 
 Author : Cheng Tan
   Date : April 23, 2022
-
 """
 
+
 from pymtl3                import *
-from ...lib.ifcs           import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs           import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type       import *
 from ..basic.SumUnit       import SumUnit
 from ..basic.ReduceMulUnit import ReduceMulUnit

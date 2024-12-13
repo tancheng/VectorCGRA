@@ -6,30 +6,27 @@ Test cases for flexible functional unit.
 
 Author : Cheng Tan
   Date : Dec 14, 2019
-
 """
 
+
 from pymtl3 import *
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
-
-from ..FlexibleFuRTL              import FlexibleFuRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
-
-from ...single.AdderRTL           import AdderRTL
-from ...single.MulRTL             import MulRTL
-from ...single.ShifterRTL         import ShifterRTL
-from ...single.LogicRTL           import LogicRTL
-from ...single.PhiRTL             import PhiRTL
-from ...single.MemUnitRTL         import MemUnitRTL
-from ...single.CompRTL            import CompRTL
-from ...single.BranchRTL          import BranchRTL
-
-from ..FuFL                       import *
-
-import hypothesis
 from hypothesis import strategies as st
+from ..FlexibleFuRTL import FlexibleFuRTL
+from ..FuFL import *
+from ...single.AdderRTL import AdderRTL
+from ...single.BranchRTL import BranchRTL
+from ...single.CompRTL import CompRTL
+from ...single.LogicRTL import LogicRTL
+from ...single.MemUnitRTL import MemUnitRTL
+from ...single.MulRTL import MulRTL
+from ...single.PhiRTL import PhiRTL
+from ...single.ShifterRTL import ShifterRTL
+from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.opt_type import *
+from ....lib.messages import *
+import hypothesis
+
 
 #from pymtl3.passes.backends.verilog import TranslationImportPass
 

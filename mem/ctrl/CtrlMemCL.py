@@ -6,14 +6,14 @@ CL control memory used for simulation.
 
 Author : Cheng Tan
   Date : Dec 27, 2019
-
 """
 
-from pymtl3                  import *
-from pymtl3.stdlib.primitive import RegisterFile
 
-from ...lib.ifcs     import SendIfcRTL, RecvIfcRTL
+from pymtl3 import *
+from pymtl3.stdlib.primitive import RegisterFile
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
+
 
 class CtrlMemCL( Component ):
 
@@ -52,8 +52,10 @@ class CtrlMemCL( Component ):
 
     @update_ff
     def update_raddr():
+
       if s.times < TimeType( total_ctrl_steps ):
         s.times <<= s.times + TimeType( 1 )
+
       if s.send_ctrl.rdy:
         if zext(s.cur + 1, PCType) == PCType( ctrl_count_per_iter ):
           s.cur <<= AddrType( 0 )
@@ -63,5 +65,5 @@ class CtrlMemCL( Component ):
 
   def line_trace( s ):
     out_str  = "||".join([ str(data) for data in s.sram ])
-    return f'[{out_str}] : {s.send_ctrl.msg}'
+    return f'[{out_str}] : {OPT_SYMBOL_DICT[s.send_ctrl.msg.ctrl]}'
 

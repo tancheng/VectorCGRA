@@ -6,12 +6,12 @@ Test cases for vector adder.
 
 Author : Cheng Tan
   Date : March 13, 2022
-
 """
 
+
 from pymtl3                       import *
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
+from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
 
 from ..VectorMulRTL             import VectorMulRTL
 from ....mem.const.ConstQueueRTL  import ConstQueueRTL

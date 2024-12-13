@@ -6,18 +6,19 @@ Author : Cheng Tan
   Date : Dec 15, 2019
 """
 
-from pymtl3                      import *
-from ..lib.ifcs                  import SendIfcRTL, RecvIfcRTL
-from ..noc.CrossbarRTL           import CrossbarRTL
-from ..noc.ChannelRTL            import ChannelRTL
-from ..tile.TileRTL              import TileRTL
-from ..lib.opt_type              import *
-from ..lib.common                import *
-from ..mem.data.DataMemRTL       import DataMemRTL
-from ..mem.data.DataMemCL        import DataMemCL
-from ..fu.single.MemUnitRTL      import MemUnitRTL
-from ..fu.single.AdderRTL        import AdderRTL
+from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..fu.single.AdderRTL import AdderRTL
+from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.opt_type import *
+from ..lib.util.common import *
+from ..mem.data.DataMemRTL import DataMemRTL
+from ..mem.data.DataMemCL import DataMemCL
+from ..noc.ChannelRTL import ChannelRTL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..tile.TileRTL import TileRTL
+
 
 class CGRARTL( Component ):
 
@@ -40,7 +41,10 @@ class CGRARTL( Component ):
     s.tile = [ TileRTL( DataType, PredicateType, CtrlType,
                         ctrl_mem_size, data_mem_size, num_ctrl,
                         total_steps, 4, 2, s.num_mesh_ports,
-                        s.num_mesh_ports, const_list = preload_const[i] )
+                        s.num_mesh_ports,
+                        Fu = FunctionUnit,
+                        FuList = FuList,
+                        const_list = preload_const[i] )
                         for i in range( s.num_tiles ) ]
     s.data_mem = DataMemRTL( DataType, data_mem_size, height, height, preload_data )
 

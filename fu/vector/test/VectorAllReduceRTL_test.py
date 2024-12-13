@@ -6,12 +6,12 @@ Test case for VectorAllReduceRTL functional unit.
 
 Author : Cheng Tan
   Date : April 23, 2022
-
 """
 
+
 from pymtl3                       import *
-from ....lib.test_sinks           import TestSinkRTL
-from ....lib.test_srcs            import TestSrcRTL
+from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
+from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
 
 from ..VectorAllReduceRTL         import VectorAllReduceRTL
 from ....lib.opt_type             import *
