@@ -3,8 +3,24 @@
 DataMemWithCrossbarRTL.py
 ==========================================================================
 Data memory for CGRA. It has addtional port to connect to controller,
-which can be used for multi-CGRA fabric. In addition, it contains a
-crossbar to handle multi-bank conflicts.
+which can be used for multi-CGRA fabric.
+ - Send/recv data request/response to/from other CGRA controllers.
+   - Based on whether the target data address is within the local space.
+   - Coherence is not targeted for now; protyping in static memory space.
+ - Send/recv cmd request/response to/from other CGRA controllers.
+   - E.g., dynamic rescheduling.
+   - The cmd can be originally derived from a runtime scheduler.
+
+In addition, it contains a crossbar to handle multi-bank conflicts.
+ - Crossbar contains an arbitor, i.e., stall may happen on certain port.
+   - Therefore, bypass queue is leveraged on the input port.
+ - [ ] https://github.com/tancheng/VectorCGRA/issues/26:
+     Blocking vs. non-blocking should be configured/propagated here.
+   - Non-blocking:
+     - Immediate return data though it is not ready:
+       - Bank conflicted lower priority access.
+       - Remote accessed data.
+   - Blocking and non-blocking might be configurabled in a dynamic way.
 
 Author : Cheng Tan
   Date : Dec 5, 2024
@@ -12,136 +28,243 @@ Author : Cheng Tan
 
 
 from pymtl3 import *
+from pymtl3.stdlib.dstruct.queues import BypassQueue
 from pymtl3.stdlib.primitive import RegisterFile
+from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
+from ...lib.messages import *
 
 
 class DataMemWithCrossbarRTL(Component):
 
-  def construct(s, DataType, data_mem_size_total, num_banks = 1,
-                rd_ports_per_bank = 1, wr_ports_per_bank = 1,
+  def construct(s, DataType, data_mem_size_global, data_mem_size_per_bank,
+                num_banks = 4, num_rd_tiles = 4, num_wr_tiles = 4,
                 preload_data_per_bank = None):
 
     # Constant
 
-    data_mem_size_per_bank = data_mem_size_total // num_banks
-    AddrType = mk_bits(clog2(data_mem_size_per_bank))
+    AddrType = mk_bits(clog2(data_mem_size_global))
+    PerBankAddrType = mk_bits(clog2(data_mem_size_per_bank))
     s.num_banks = num_banks
+    num_xbar_in_rd_ports = num_rd_tiles + 1
+    num_xbar_in_wr_ports = num_wr_tiles + 1
+    num_xbar_out_rd_ports = num_banks + 1
+    num_xbar_out_wr_ports = num_banks + 1
+    TileSramXbarRdPktType = \
+        mk_tile_sram_xbar_pkt(num_xbar_in_rd_ports,
+                              num_xbar_out_rd_ports,
+                              data_mem_size_global)
+    TileSramXbarWrPktType = \
+        mk_tile_sram_xbar_pkt(num_xbar_in_wr_ports,
+                              num_xbar_out_wr_ports,
+                              data_mem_size_global)
 
     # Interface
 
-    s.recv_from_tile_raddr = [[RecvIfcRTL(AddrType) for _ in range(
-        rd_ports_per_bank)] for _ in range(num_banks)]
-    s.send_to_tile_rdata = [[SendIfcRTL(DataType) for _ in range(
-        rd_ports_per_bank)] for _ in range(num_banks)]
-    s.recv_from_tile_waddr = [[RecvIfcRTL(AddrType) for _ in range(
-        wr_ports_per_bank)] for _ in range(num_banks)]
-    s.recv_from_tile_wdata = [[RecvIfcRTL(DataType) for _ in range(
-        wr_ports_per_bank)] for _ in range(num_banks)]
+    # [0, ..., num_rd_tiles - 1] indicate the requests from/to the tiles,
+    # [num_rd_tiles] indicates the request from/to the NoC.
+    s.recv_raddr = [RecvIfcRTL(AddrType) for _ in range(num_xbar_in_rd_ports)]
+    s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_xbar_in_rd_ports)]
+    s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(num_xbar_in_wr_ports)]
+    s.recv_wdata = [RecvIfcRTL(DataType) for _ in range(num_xbar_in_wr_ports)]
 
-    s.recv_from_noc = RecvIfcRTL(DataType)
-    s.send_to_noc = SendIfcRTL(DataType)
+    # Requests that targets remote SRAMs.
+    s.send_to_noc_raddr = SendIfcRTL(AddrType)
+    s.recv_from_noc_rdata = RecvIfcRTL(DataType)
+    s.send_to_noc_waddr = SendIfcRTL(AddrType)
+    s.send_to_noc_wdata = SendIfcRTL(DataType)
+
 
     # Component
 
+    # As we include xbar and multi-bank for the memory hierarchy,
+    # we prefer as few as possible number of ports.
+    rd_ports_per_bank = 1
+    wr_ports_per_bank = 1
+
     s.reg_file = [RegisterFile(DataType, data_mem_size_per_bank,
-                               rd_ports_per_bank,
-                               wr_ports_per_bank)
+                               rd_ports_per_bank, wr_ports_per_bank)
                   for _ in range(num_banks)]
+    # The additional 1 on inports indicates the read/write from NoC.
+    # The additional 1 on outports indicates the request out of bound of
+    # local memory space that would be forwarded to NoC.
+    s.read_crossbar = XbarBypassQueueRTL(TileSramXbarRdPktType, num_xbar_in_rd_ports,
+                                         num_xbar_out_rd_ports)
+    s.write_crossbar = XbarBypassQueueRTL(TileSramXbarWrPktType, num_xbar_in_wr_ports,
+                                          num_xbar_out_wr_ports)
     s.initWrites = [[Wire(b1) for _ in range(data_mem_size_per_bank)]
                     for _ in range(num_banks)]
+    s.init_mem_done = Wire(b1)
+    s.init_mem_addr = Wire(AddrType)
 
-    # FIXME: Following signals need to be set via some logic, i.e.,
-    # handling miss accesses.
-    s.send_to_noc.en //= 0
-    s.send_to_noc.msg //= DataType(0, 0)
-    s.recv_from_noc.rdy //= 0
+    s.rd_pkt = [Wire(TileSramXbarRdPktType) for _ in range(num_xbar_in_rd_ports)]
+    s.wr_pkt = [Wire(TileSramXbarWrPktType) for _ in range(num_xbar_in_wr_ports)]
 
-    if preload_data_per_bank == None:
-      @update
-      def update_read_without_init():
-        for b in num_banks:
-          for i in range(rd_ports_per_bank):
-            # s.reg_file.wen[wr_ports + i] @= b1(0)
-            s.reg_file[b].raddr[i] @= s.recv_from_tile_raddr[b][i].msg
-            s.send_to_tile_rdata[b][i].msg @= s.reg_file[b].rdata[i]
+    s.recv_wdata_bypass_q = [BypassQueue(DataType) for _ in range(num_xbar_in_wr_ports)]
 
-          for i in range(wr_ports_per_bank):
-            s.reg_file[b].wen[i] @= b1(0)
-            s.reg_file[b].waddr[i] @= s.recv_from_tile_waddr[b][i].msg
-            s.reg_file[b].wdata[i] @= s.recv_from_tile_wdata[b][i].msg
-            if s.recv_from_tile_waddr[b][i].en == b1(1):
-              s.reg_file[b].wen[i] @= s.recv_from_tile_wdata[b][i].en & s.recv_from_tile_waddr[b][i].en
 
-    else:
+    if preload_data_per_bank != None:
       s.preload_data_per_bank = [[Wire(DataType) for _ in range(data_mem_size_per_bank)]
-                       for _ in range(num_banks)]
+                                 for _ in range(num_banks)]
       for b in range(num_banks):
         for i in range(len(preload_data_per_bank[b])):
           s.preload_data_per_bank[b][i] //= preload_data_per_bank[b][i]
 
-      @update
-      def update_read_with_init():
-        for b in range(num_banks):
-          for i in range(rd_ports_per_bank):
-            s.reg_file[b].wen[i] @= b1(0)
-            # FIXME: xbar needs to be added between the regs and the requires.
-            if s.initWrites[b][s.recv_from_tile_raddr[b][i].msg] == b1(0):
-              s.send_to_tile_rdata[b][i].msg @= s.preload_data_per_bank[b][s.recv_from_tile_raddr[b][i].msg]
-              s.reg_file[b].waddr[i] @= s.recv_from_tile_raddr[b][i].msg
-              s.reg_file[b].wdata[i] @= s.preload_data_per_bank[b][s.recv_from_tile_raddr[b][i].msg]
-              s.reg_file[b].wen[i] @= b1(1)
-            else:
-              s.reg_file[b].raddr[i] @= s.recv_from_tile_raddr[b][i].msg
-              s.send_to_tile_rdata[b][i].msg @= s.reg_file[b].rdata[i]
-
-          for i in range(wr_ports_per_bank):
-            if s.recv_from_tile_waddr[b][i].en == b1(1):
-              s.reg_file[b].waddr[i] @= s.recv_from_tile_waddr[b][i].msg
-              s.reg_file[b].wdata[i] @= s.recv_from_tile_wdata[b][i].msg
-              s.reg_file[b].wen[i] @= s.recv_from_tile_wdata[b][i].en & s.recv_from_tile_waddr[b][i].en
-
-    @update_ff
-    def update_init():
-      for b in range(num_banks):
-        for i in range(rd_ports_per_bank):
-          if s.recv_from_tile_raddr[b][i].en == b1(1):
-            s.initWrites[b][s.recv_from_tile_raddr[b][i].msg] <<= s.initWrites[b][s.recv_from_tile_raddr[b][i].msg] | b1(1)
-        for i in range(wr_ports_per_bank):
-          if s.recv_from_tile_waddr[b][i].en == b1(1):
-            s.initWrites[b][s.recv_from_tile_waddr[b][i].msg] <<= s.initWrites[b][s.recv_from_tile_waddr[b][i].msg] | b1(1)
-
     @update
-    def update_signal():
-      for b in range(num_banks):
-        for i in range(rd_ports_per_bank):
-          s.recv_from_tile_raddr[b][i].rdy @= s.send_to_tile_rdata[b][i].rdy
-          s.send_to_tile_rdata[b][i].en @= s.recv_from_tile_raddr[b][i].en
-        for i in range(wr_ports_per_bank):
-          s.recv_from_tile_waddr[b][i].rdy @= Bits1(1)
-          s.recv_from_tile_wdata[b][i].rdy @= Bits1(1)
+    def assemble_xbar_pkt():
+      if s.init_mem_done != b1(0):
+        for i in range(num_xbar_in_rd_ports):
+          # Calculates the target bank.
+          bank_index = min(s.recv_raddr[i].msg // data_mem_size_per_bank, num_banks)
+          s.rd_pkt[i] @= TileSramXbarRdPktType(i, trunc(bank_index, 2), s.recv_raddr[i].msg)
+
+        for i in range(num_xbar_in_wr_ports):
+          # Calculates the target bank.
+          bank_index = min(s.recv_waddr[i].msg // data_mem_size_per_bank, num_banks)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i, trunc(bank_index, 2), s.recv_waddr[i].msg)
+
+
+    # Connects xbar with the sram.
+    @update
+    def update_read_without_init():
+
+      # Initializes the signals.
+      for i in range(num_xbar_in_rd_ports):
+        s.send_rdata[i].en @= 0
+        s.recv_raddr[i].rdy @= 0
+        s.recv_waddr[i].rdy @= 0
+        s.recv_wdata_bypass_q[i].deq_en @= 0
+
+      for i in range(num_xbar_in_wr_ports):
+        s.recv_wdata[i].rdy @= 0
+        s.recv_wdata_bypass_q[i].enq_en @= 0
+
+      if s.init_mem_done == b1(0):
+        for b in range(num_banks):
+          s.reg_file[b].waddr[0] @= trunc(s.init_mem_addr, PerBankAddrType)
+          s.reg_file[b].wdata[0] @= s.preload_data_per_bank[b][s.init_mem_addr]
+          s.reg_file[b].wen[0] @= b1(1)
+
+      else:
+
+        for i in range(num_xbar_in_wr_ports):
+          s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].enq_rdy
+          s.recv_wdata_bypass_q[i].enq_en @= s.recv_wdata[i].en
+          s.recv_wdata_bypass_q[i].enq_msg @= s.recv_wdata[i].msg
+
+
+        for i in range(num_xbar_in_rd_ports):
+          s.read_crossbar.recv[i].val @= s.recv_raddr[i].en
+          s.read_crossbar.recv[i].msg @= s.rd_pkt[i]
+          s.recv_raddr[i].rdy @= s.read_crossbar.recv[i].rdy
+  
+        for i in range(num_xbar_in_wr_ports):
+          s.write_crossbar.recv[i].val @= s.recv_waddr[i].en
+          s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
+          s.recv_waddr[i].rdy @= s.write_crossbar.recv[i].rdy
+
+        # Connects the read ports towards SRAM and NoC from the xbar.
+        for b in range(num_banks):
+          s.read_crossbar.send[b].rdy @= 1
+          s.reg_file[b].raddr[0] @= trunc(s.read_crossbar.send[b].msg.addr % data_mem_size_per_bank, PerBankAddrType)
+
+        for i in range(num_xbar_in_rd_ports):
+          arbitrated_rd_msg = s.read_crossbar.input_units[i].send.msg
+          # TODO: Check the translated SVerilog in terms of parallel vs. sequential.
+          if s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i and arbitrated_rd_msg.dst < num_banks:
+            s.send_rdata[i].msg @= s.reg_file[arbitrated_rd_msg.dst].rdata[0]
+            s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+
+          # Handles the case the load requests going through the NoC towards remote SRAMs.
+          elif s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i and arbitrated_rd_msg.dst >= num_banks:
+            s.send_rdata[i].msg @= s.recv_from_noc_rdata.msg
+            # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
+            s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
+                                  s.recv_from_noc_rdata.en
+                                  # FIXME: The msg would come back one by one in order, so no
+                                  # need to check the src_tile, which can be improved.
+                                  # s.recv_from_noc_rdata.en & \
+                                  # (s.recv_from_noc_rdata.msg.src_tile == i)
+
+        # Handles the one connecting to the NoC.
+        s.send_to_noc_raddr.msg @= s.read_crossbar.send[num_banks].msg.addr
+        s.send_to_noc_raddr.en @= s.read_crossbar.send[num_banks].val & s.send_to_noc_raddr.rdy
+        # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
+        # Outstanding remote read access would block the inport (for read request) of the NoC. 
+        s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.en
+        s.recv_from_noc_rdata.rdy @= s.read_crossbar.send[num_banks].val
+
+
+        # Connects the write ports towards SRAM and NoC from the xbar.
+        for b in range(num_banks):
+          s.reg_file[b].wen[0] @= b1(0)
+          s.reg_file[b].waddr[0] @= trunc(s.write_crossbar.send[b].msg.addr % data_mem_size_per_bank, PerBankAddrType)
+          s.reg_file[b].wdata[0] @= s.recv_wdata_bypass_q[s.write_crossbar.send[b].msg.src].deq_msg
+          s.write_crossbar.send[b].rdy @= 1
+          s.reg_file[b].wen[0] @= s.write_crossbar.send[b].val
+
+        for i in range(num_xbar_in_wr_ports):
+          arbitrated_wr_msg = s.write_crossbar.input_units[i].send.msg
+          s.recv_wdata_bypass_q[i].deq_en @= s.recv_wdata_bypass_q[i].deq_rdy & \
+                  s.write_crossbar.send[arbitrated_wr_msg.dst].val
+
+        # Handles the one connecting to the NoC.
+        s.send_to_noc_waddr.msg @= s.write_crossbar.send[num_banks].msg.addr
+        s.send_to_noc_waddr.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_waddr.rdy
+        s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_waddr.rdy
+        # Write address should be accompanied by a data.
+        s.send_to_noc_wdata.msg @= s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg
+        s.send_to_noc_wdata.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_wdata.rdy
+
+
+    # Preloads data.
+    @update_ff
+    def update_init_index():
+      if s.init_mem_done == b1(0) and s.init_mem_addr < data_mem_size_per_bank - 1:
+        s.init_mem_addr <<= s.init_mem_addr + AddrType(1)
+      else:
+        s.init_mem_done <<= b1(1)
+        s.init_mem_addr <<= AddrType(0)
+
 
 
   def line_trace(s):
     recv_raddr_str = "recv_from_tile_read_addr: {"
-    send_rdata_str = "send_to_tile_read_data: {"
     recv_waddr_str = "recv_from_tile_write_addr: {"
     recv_wdata_str = "recv_from_tile_write_data: {"
     content_str = "content: {"
+    send_rdata_str = "send_to_tile_read_data: {"
+
+    send_to_noc_raddr_str = "send_to_noc_read_addr: {"
+    recv_from_noc_rdata_str = "recv_from_noc_read_data: {"
+    send_to_noc_waddr_str = "send_to_noc_write_addr: {"
+    send_to_noc_wdata_str = "send_to_noc_write_data: {"
+
 
     for b in range(s.num_banks):
-      recv_raddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_from_tile_raddr[b]]) + ";"
-      recv_waddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_from_tile_waddr[b]]) + ";"
-      recv_wdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_from_tile_wdata[b]]) + ";"
+      recv_raddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_raddr]) + ";"
+      recv_waddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_waddr]) + ";"
+      recv_wdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_wdata]) + ";"
       content_str +=  " bank[" + str(b) + "]: " + "|".join([str(data) for data in s.reg_file[b].regs]) + ";"
-      send_rdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_to_tile_rdata[b]]) + ";"
+      send_rdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
+
+    send_to_noc_raddr_str += str(s.send_to_noc_raddr.msg) + ";"
+    recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
+    send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
+    send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
 
     recv_raddr_str += "}"
     send_rdata_str += "}"
     recv_waddr_str += "}"
     recv_wdata_str += "}"
+    send_to_noc_raddr_str += "}"
+    recv_from_noc_rdata_str += "}"
+    send_to_noc_waddr_str += "}"
+    send_to_noc_wdata_str += "}"
+    read_crossbar_str = "read_crossbar: " + s.read_crossbar.line_trace()
+    write_crossbar_str = "write_crossbar: " + s.write_crossbar.line_trace()
     content_str += "}"
 
-    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || [{content_str}] || {send_rdata_str}'
+    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_raddr_str} || {recv_from_noc_rdata_str} || {send_to_noc_waddr_str} || {send_to_noc_wdata_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
 
