@@ -305,7 +305,7 @@ def test_CGRA_systolic(cmdline_opts):
   # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
   #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
   #                    'ALWCOMBORDER'] )
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
+  # th = config_model_with_cmdline_opts(th, cmdline_opts, duts=['dut'])
 
-  run_sim(th)
+  run_sim(th, cmdline_opts, duts=['dut'])
 
