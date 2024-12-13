@@ -30,7 +30,7 @@ class TestHarness(Component):
 
   def construct(s, MsgType, PktType, AddrType, src_msgs, sink_msgs, src_pkts, sink_pkts):
 
-    cmp_fn = lambda a, b : a.payload == b.payload
+    cmp_fn = lambda a, b : a.data == b.data
     s.src_en_rdy = TestSrcRTL(MsgType, src_msgs)
     s.sink_en_rdy = TestSinkRTL(MsgType, sink_msgs)
     s.src_val_rdy = TestValRdySrcRTL(PktType, src_pkts)
@@ -97,29 +97,34 @@ def mk_src_pkts( nterminals, lst ):
     src_pkts[ src ].append( pkt )
   return src_pkts
 
-DataType = mk_data(32, 1)
+data_nbits = 32
+predicate_nbits = 1
+DataType = mk_data(data_nbits, predicate_nbits)
 test_msgs = [DataType(1, 1, 1), DataType(2, 1), DataType(3, 1)]
 sink_msgs = [DataType(4, 0), DataType(5, 0), DataType(6, 0)]
 
 nterminals = 4
-Pkt = mk_ring_multi_cgra_pkt(nterminals, payload_nbits = 32,
-                             predicate_nbits = 1)
+ctrl_mem_size = 4
+addr_nbits = clog2(ctrl_mem_size)
+AddrType = mk_bits(addr_nbits)
+
+Pkt = mk_ring_multi_cgra_pkt(nterminals,
+                             addr_nbits = addr_nbits,
+                             data_nbits = data_nbits,
+                             predicate_nbits = predicate_nbits)
 src_pkts = [
-    #   src  dst opq vc payload     predicate
-    Pkt(1,   2,  0,  0, 4, 0),
-    Pkt(1,   2,  0,  0, 5, 0),
-    Pkt(1,   2,  0,  0, 6, 0),
+    #   src  dst opq vc cmd addr data predicate
+    Pkt(1,   2,  0,  0, 0,  0,   4,   0),
+    Pkt(1,   2,  0,  0, 0,  0,   5,   0),
+    Pkt(1,   2,  0,  0, 0,  0,   6,   0),
 ]
 
 sink_pkts = [
-    #   src  dst opq vc payload     predicate
-    Pkt(1,   2,  0,  0, 1, 0),
-    Pkt(1,   2,  0,  0, 2, 0),
-    Pkt(1,   2,  0,  0, 3, 0),
+    #   src  dst opq vc cmd addr data predicate
+    Pkt(1,   2,  0,  0, 0,  0,   1,   0),
+    Pkt(1,   2,  0,  0, 0,  0,   2,   0),
+    Pkt(1,   2,  0,  0, 0,  0,   3,   0),
 ]
-
-ctrl_mem_size = 4
-AddrType = mk_bits(clog2(ctrl_mem_size))
 
 def test_simple():
   th = TestHarness(DataType, Pkt, AddrType, test_msgs, sink_msgs, src_pkts, sink_pkts)
