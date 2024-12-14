@@ -303,7 +303,6 @@ def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
                           prefix="TileSramXbarPacket"):
 
   SrcType = mk_bits(clog2(number_src))
-  print("[cheng] check tile_sram_xbar_pkt -- num_src: ", number_src, "; clog2(num_src): ", clog2(number_src))
   DstType = mk_bits(clog2(number_dst))
   AddrType = mk_bits(clog2(mem_size_global))
 

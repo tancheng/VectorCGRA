@@ -44,13 +44,20 @@ class DataMemWithCrossbarRTL(Component):
 
     # Constant
 
-    AddrType = mk_bits(clog2(data_mem_size_global))
-    PerBankAddrType = mk_bits(clog2(data_mem_size_per_bank))
+    global_addr_nbits = clog2(data_mem_size_global)
+    per_bank_addr_nbits = clog2(data_mem_size_per_bank)
+    assert(2 ** global_addr_nbits == data_mem_size_global)
+    assert(2 ** per_bank_addr_nbits == data_mem_size_per_bank)
+    AddrType = mk_bits(global_addr_nbits)
+    PerBankAddrType = mk_bits(per_bank_addr_nbits)
     s.num_banks = num_banks
+    LocalBankIndexType = mk_bits(clog2(num_banks))
     num_xbar_in_rd_ports = num_rd_tiles + 1
     num_xbar_in_wr_ports = num_wr_tiles + 1
     num_xbar_out_rd_ports = num_banks + 1
     num_xbar_out_wr_ports = num_banks + 1
+    XbarOutRdType = mk_bits(clog2(num_xbar_out_rd_ports))
+    XbarOutWrType = mk_bits(clog2(num_xbar_out_wr_ports))
     TileSramXbarRdPktType = \
         mk_tile_sram_xbar_pkt(num_xbar_in_rd_ports,
                               num_xbar_out_rd_ports,
@@ -96,7 +103,7 @@ class DataMemWithCrossbarRTL(Component):
     s.initWrites = [[Wire(b1) for _ in range(data_mem_size_per_bank)]
                     for _ in range(num_banks)]
     s.init_mem_done = Wire(b1)
-    s.init_mem_addr = Wire(AddrType)
+    s.init_mem_addr = Wire(PerBankAddrType)
 
     s.rd_pkt = [Wire(TileSramXbarRdPktType) for _ in range(num_xbar_in_rd_ports)]
     s.wr_pkt = [Wire(TileSramXbarWrPktType) for _ in range(num_xbar_in_wr_ports)]
@@ -116,13 +123,19 @@ class DataMemWithCrossbarRTL(Component):
       if s.init_mem_done != b1(0):
         for i in range(num_xbar_in_rd_ports):
           # Calculates the target bank.
-          bank_index = min(s.recv_raddr[i].msg // data_mem_size_per_bank, num_banks)
-          s.rd_pkt[i] @= TileSramXbarRdPktType(i, trunc(bank_index, 2), s.recv_raddr[i].msg)
+          if s.recv_raddr[i].msg < data_mem_size_per_bank * num_banks:
+            bank_index = trunc(s.recv_raddr[i].msg >> per_bank_addr_nbits, XbarOutRdType)
+          else:
+            bank_index = XbarOutRdType(num_banks)
+          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index, s.recv_raddr[i].msg)
 
         for i in range(num_xbar_in_wr_ports):
           # Calculates the target bank.
-          bank_index = min(s.recv_waddr[i].msg // data_mem_size_per_bank, num_banks)
-          s.wr_pkt[i] @= TileSramXbarWrPktType(i, trunc(bank_index, 2), s.recv_waddr[i].msg)
+          if s.recv_waddr[i].msg < data_mem_size_per_bank * num_banks:
+            bank_index = trunc(s.recv_waddr[i].msg >> per_bank_addr_nbits, XbarOutWrType)
+          else:
+            bank_index = XbarOutWrType(num_banks)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, s.recv_waddr[i].msg)
 
 
     # Connects xbar with the sram.
@@ -170,14 +183,14 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].raddr[0] @= trunc(s.read_crossbar.send[b].msg.addr % data_mem_size_per_bank, PerBankAddrType)
 
         for i in range(num_xbar_in_rd_ports):
-          arbitrated_rd_msg = s.read_crossbar.input_units[i].send.msg
+          arbitrated_rd_msg = s.read_crossbar.packet_on_input_units[i]
           # TODO: Check the translated SVerilog in terms of parallel vs. sequential.
-          if s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i and arbitrated_rd_msg.dst < num_banks:
-            s.send_rdata[i].msg @= s.reg_file[arbitrated_rd_msg.dst].rdata[0]
+          if (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst < num_banks):
+            s.send_rdata[i].msg @= s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
             s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
 
           # Handles the case the load requests going through the NoC towards remote SRAMs.
-          elif s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i and arbitrated_rd_msg.dst >= num_banks:
+          elif (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst >= num_banks):
             s.send_rdata[i].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
             s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
@@ -205,7 +218,7 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].wen[0] @= s.write_crossbar.send[b].val
 
         for i in range(num_xbar_in_wr_ports):
-          arbitrated_wr_msg = s.write_crossbar.input_units[i].send.msg
+          arbitrated_wr_msg = s.write_crossbar.packet_on_input_units[i]
           s.recv_wdata_bypass_q[i].deq_en @= s.recv_wdata_bypass_q[i].deq_rdy & \
                   s.write_crossbar.send[arbitrated_wr_msg.dst].val
 
@@ -221,11 +234,11 @@ class DataMemWithCrossbarRTL(Component):
     # Preloads data.
     @update_ff
     def update_init_index():
-      if s.init_mem_done == b1(0) and s.init_mem_addr < data_mem_size_per_bank - 1:
-        s.init_mem_addr <<= s.init_mem_addr + AddrType(1)
+      if (s.init_mem_done == b1(0)) & (s.init_mem_addr < data_mem_size_per_bank - 1):
+        s.init_mem_addr <<= s.init_mem_addr + PerBankAddrType(1)
       else:
         s.init_mem_done <<= b1(1)
-        s.init_mem_addr <<= AddrType(0)
+        s.init_mem_addr <<= PerBankAddrType(0)
 
 
 
