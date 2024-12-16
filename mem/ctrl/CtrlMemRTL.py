@@ -7,8 +7,7 @@ Control memory for CGRA.
 Author : Cheng Tan
   Date : Dec 21, 2019
 """
-
-
+from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
@@ -73,6 +72,15 @@ class CtrlMemRTL( Component ):
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
   def line_trace( s ):
-    out_str  = f'[{", ".join([ str(data.__dict__) for data in s.reg_file.regs ])}]'
-    return f'class: {s.__class__.__name__}, recv_ctrl_msg: {s.recv_ctrl.msg.__dict__} : out: {out_str} : send_ctrl_msg: {str(s.send_ctrl.msg.__dict__)}'
+
+    out_md  = markdown_table([ data.__dict__ for data in s.reg_file.regs ]).set_params(quote=False).get_markdown()
+    # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
+    recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in s.recv_ctrl.msg.__dict__.items()])
+    send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in s.send_ctrl.msg.__dict__.items()])
+    return (f'\n## class: {s.__class__.__name__}\n'
+            f'- recv_ctrl_msg:\n'
+            f'{recv_ctrl_msg}\n'
+            f'- out: {out_md}\n'
+            f'- send_ctrl_msg:\n'
+            f'{send_ctrl_msg}\n')
 
