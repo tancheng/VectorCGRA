@@ -11,7 +11,6 @@ import json
 
 from pymtl3 import *
 
-from lib.opt_type import OPT_SYMBOL_DICT
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
