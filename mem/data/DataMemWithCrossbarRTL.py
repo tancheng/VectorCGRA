@@ -32,13 +32,15 @@ from pymtl3.stdlib.dstruct.queues import BypassQueue
 from pymtl3.stdlib.primitive import RegisterFile
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.cmd_type import *
 from ...lib.opt_type import *
 from ...lib.messages import *
 
 
 class DataMemWithCrossbarRTL(Component):
 
-  def construct(s, DataType, data_mem_size_global, data_mem_size_per_bank,
+  def construct(s, NocPktType, DataType,
+                data_mem_size_global, data_mem_size_per_bank,
                 num_banks = 4, num_rd_tiles = 4, num_wr_tiles = 4,
                 preload_data_per_bank = None):
 
@@ -52,6 +54,8 @@ class DataMemWithCrossbarRTL(Component):
     PerBankAddrType = mk_bits(per_bank_addr_nbits)
     s.num_banks = num_banks
     LocalBankIndexType = mk_bits(clog2(num_banks))
+    s.num_rd_tiles = num_rd_tiles
+    s.num_wr_tiles = num_wr_tiles
     num_xbar_in_rd_ports = num_rd_tiles + 1
     num_xbar_in_wr_ports = num_wr_tiles + 1
     num_xbar_out_rd_ports = num_banks + 1
@@ -68,23 +72,23 @@ class DataMemWithCrossbarRTL(Component):
                               data_mem_size_global)
 
     # Interface
-
     # [0, ..., num_rd_tiles - 1] indicate the requests from/to the tiles,
-    # [num_rd_tiles] indicates the request from/to the NoC.
+    # [num_rd_tiles] indicates the request from the NoC.
     s.recv_raddr = [RecvIfcRTL(AddrType) for _ in range(num_xbar_in_rd_ports)]
-    s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_xbar_in_rd_ports)]
     s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(num_xbar_in_wr_ports)]
     s.recv_wdata = [RecvIfcRTL(DataType) for _ in range(num_xbar_in_wr_ports)]
+    s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_rd_tiles)]
+
+    s.send_to_noc_load_response_pkt = SendIfcRTL(NocPktType)
+
+    # Response that is from a remote SRAM.
+    s.recv_from_noc_rdata = RecvIfcRTL(DataType)
 
     # Requests that targets remote SRAMs.
-    s.send_to_noc_raddr = SendIfcRTL(AddrType)
-    s.recv_from_noc_rdata = RecvIfcRTL(DataType)
-    s.send_to_noc_waddr = SendIfcRTL(AddrType)
-    s.send_to_noc_wdata = SendIfcRTL(DataType)
-
+    s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
+    s.send_to_noc_store_pkt = SendIfcRTL(NocPktType)
 
     # Component
-
     # As we include xbar and multi-bank for the memory hierarchy,
     # we prefer as few as possible number of ports.
     rd_ports_per_bank = 1
@@ -110,6 +114,7 @@ class DataMemWithCrossbarRTL(Component):
 
     s.recv_wdata_bypass_q = [BypassQueue(DataType) for _ in range(num_xbar_in_wr_ports)]
 
+    s.send_to_noc_load_pending = Wire(b1)
 
     if preload_data_per_bank != None:
       s.preload_data_per_bank = [[Wire(DataType) for _ in range(data_mem_size_per_bank)]
@@ -144,10 +149,13 @@ class DataMemWithCrossbarRTL(Component):
 
       # Initializes the signals.
       for i in range(num_xbar_in_rd_ports):
-        s.send_rdata[i].en @= 0
         s.recv_raddr[i].rdy @= 0
         s.recv_waddr[i].rdy @= 0
         s.recv_wdata_bypass_q[i].deq_en @= 0
+
+      for i in range(num_rd_tiles):
+        s.send_rdata[i].en @= 0
+      s.send_to_noc_load_response_pkt.en @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.recv_wdata[i].rdy @= 0
@@ -184,13 +192,29 @@ class DataMemWithCrossbarRTL(Component):
 
         for i in range(num_xbar_in_rd_ports):
           arbitrated_rd_msg = s.read_crossbar.packet_on_input_units[i]
-          # TODO: Check the translated SVerilog in terms of parallel vs. sequential.
           if (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst < num_banks):
-            s.send_rdata[i].msg @= s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
-            s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+            loaded_msg = s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
+            if i <= s.num_rd_tiles:
+              s.send_rdata[i].msg @= loaded_msg # s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
+              s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+            # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
+            else:
+              assembled_noc_load_response_pkt_msg = \
+                  NocPktType(
+                      0, 0, 0, 0, CMD_LOAD_RESPONSE,
+                      s.read_crossbar.send[arbitrated_rd_msg.dst].msg.addr,
+                      loaded_msg.payload,
+                      loaded_msg.predicate
+                  )
+              s.send_to_noc_load_response_pkt.msg @= assembled_noc_load_response_pkt_msg
+              s.send_to_noc_load_response_pkt.en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
 
           # Handles the case the load requests going through the NoC towards remote SRAMs.
           elif (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst >= num_banks):
+            # Request from NoC would never target a remote access, i.e., as long
+            # as the request can come from the NoC, it meant to access this local
+            # SRAM, which should be guarded by the controller and NoC routers.
+            assert(i < num_banks)
             s.send_rdata[i].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
             s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
@@ -200,13 +224,32 @@ class DataMemWithCrossbarRTL(Component):
                                   # s.recv_from_noc_rdata.en & \
                                   # (s.recv_from_noc_rdata.msg.src_tile == i)
 
-        # Handles the one connecting to the NoC.
-        s.send_to_noc_raddr.msg @= s.read_crossbar.send[num_banks].msg.addr
-        s.send_to_noc_raddr.en @= s.read_crossbar.send[num_banks].val & s.send_to_noc_raddr.rdy
-        # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
+
+        # Handles the request (not response) towards the others via the NoC.
+        assembled_sending_to_noc_load_pkt = NocPktType(
+            0, # src
+            0, # dst
+            0, # opaque
+            0, # vc_id
+            CMD_LOAD_REQUEST,
+            s.read_crossbar.send[num_banks].msg.addr,
+            0, # data
+            1) # predicate
+        # s.send_to_noc_raddr.msg @= s.read_crossbar.send[num_banks].msg.addr
+        # s.send_to_noc_raddr.en @= s.read_crossbar.send[num_banks].val & s.send_to_noc_raddr.rdy
+        s.send_to_noc_load_request_pkt.msg @= assembled_sending_to_noc_load_pkt
+        # 'send_to_noc_load_pending' avoids sending pending request multiple times.
+        s.send_to_noc_load_request_pkt.en @= s.read_crossbar.send[num_banks].val & \
+                                     s.send_to_noc_load_request_pkt.rdy & \
+                                     ~s.send_to_noc_load_pending
         # Outstanding remote read access would block the inport (for read request) of the NoC. 
-        s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.en
+        # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
+        # 'val` indicates the data is arbitrated successfully.
         s.recv_from_noc_rdata.rdy @= s.read_crossbar.send[num_banks].val
+        # Only allows releasing the pending request until the required load data is back,
+        # i.e., though the request already sent out to NoC (the port is still blocked until
+        # response is back).
+        s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.en
 
 
         # Connects the write ports towards SRAM and NoC from the xbar.
@@ -223,12 +266,19 @@ class DataMemWithCrossbarRTL(Component):
                   s.write_crossbar.send[arbitrated_wr_msg.dst].val
 
         # Handles the one connecting to the NoC.
-        s.send_to_noc_waddr.msg @= s.write_crossbar.send[num_banks].msg.addr
-        s.send_to_noc_waddr.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_waddr.rdy
-        s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_waddr.rdy
-        # Write address should be accompanied by a data.
-        s.send_to_noc_wdata.msg @= s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg
-        s.send_to_noc_wdata.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_wdata.rdy
+        assembled_sending_to_noc_store_pkt = NocPktType(
+            0, # src
+            0, # dst
+            0, # opaque
+            0, # vc_id
+            CMD_STORE_REQUEST,
+            s.write_crossbar.send[num_banks].msg.addr,
+            s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.payload,
+            s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.predicate)
+
+        s.send_to_noc_store_pkt.msg @= assembled_sending_to_noc_store_pkt
+        s.send_to_noc_store_pkt.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_store_pkt.rdy
+        s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
 
 
     # Preloads data.
@@ -241,6 +291,11 @@ class DataMemWithCrossbarRTL(Component):
         s.init_mem_addr <<= PerBankAddrType(0)
 
 
+    # Indicates whether the remote (towards others via NoC) load is pending on response.
+    @update_ff
+    def update_remote_load_pending():
+      s.send_to_noc_load_pending <<= s.recv_from_noc_rdata.en
+
 
   def line_trace(s):
     recv_raddr_str = "recv_from_tile_read_addr: {"
@@ -249,10 +304,13 @@ class DataMemWithCrossbarRTL(Component):
     content_str = "content: {"
     send_rdata_str = "send_to_tile_read_data: {"
 
-    send_to_noc_raddr_str = "send_to_noc_read_addr: {"
+    # send_to_noc_raddr_str = "send_to_noc_read_addr: {"
+    send_to_noc_load_request_pkt_str = "send_to_noc_load_request_pkt: {"
+    send_to_noc_load_response_pkt_str = "send_to_noc_load_response_pkt: {"
     recv_from_noc_rdata_str = "recv_from_noc_read_data: {"
-    send_to_noc_waddr_str = "send_to_noc_write_addr: {"
-    send_to_noc_wdata_str = "send_to_noc_write_data: {"
+    # send_to_noc_waddr_str = "send_to_noc_write_addr: {"
+    # send_to_noc_wdata_str = "send_to_noc_write_data: {"
+    send_to_noc_store_pkt_str = "send_to_noc_store_pkt: {"
 
 
     for b in range(s.num_banks):
@@ -260,24 +318,31 @@ class DataMemWithCrossbarRTL(Component):
       recv_waddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_waddr]) + ";"
       recv_wdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_wdata]) + ";"
       content_str +=  " bank[" + str(b) + "]: " + "|".join([str(data) for data in s.reg_file[b].regs]) + ";"
-      send_rdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
+      send_to_noc_load_request_pkt_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
 
-    send_to_noc_raddr_str += str(s.send_to_noc_raddr.msg) + ";"
+    # send_to_noc_raddr_str += str(s.send_to_noc_raddr.msg) + ";"
+    send_to_noc_load_request_pkt_str += str(s.send_to_noc_load_request_pkt.msg) + ";"
+    send_to_noc_load_response_pkt_str += " " + str(s.send_to_noc_load_response_pkt.msg) + " "
     recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
-    send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
-    send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
+    # send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
+    # send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
+    send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ";"
 
     recv_raddr_str += "}"
     send_rdata_str += "}"
     recv_waddr_str += "}"
     recv_wdata_str += "}"
-    send_to_noc_raddr_str += "}"
+    # send_to_noc_raddr_str += "}"
+    send_to_noc_load_request_pkt_str += "}"
+    send_to_noc_load_response_pkt_str += "}"
     recv_from_noc_rdata_str += "}"
-    send_to_noc_waddr_str += "}"
-    send_to_noc_wdata_str += "}"
+    # send_to_noc_waddr_str += "}"
+    # send_to_noc_wdata_str += "}"
+    send_to_noc_store_pkt_str += "}"
     read_crossbar_str = "read_crossbar: " + s.read_crossbar.line_trace()
     write_crossbar_str = "write_crossbar: " + s.write_crossbar.line_trace()
     content_str += "}"
 
-    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_raddr_str} || {recv_from_noc_rdata_str} || {send_to_noc_waddr_str} || {send_to_noc_wdata_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
+    # return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_raddr_str} || {recv_from_noc_rdata_str} || {send_to_noc_waddr_str} || {send_to_noc_wdata_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
+    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_rdata_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
 

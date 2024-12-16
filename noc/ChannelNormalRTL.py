@@ -26,8 +26,8 @@ class ChannelNormalRTL( Component ):
     # that this would contribute to the overall register file size
     # and it has nothing to do with the latency.
     s.num_entries = num_entries
-    s.data = DataType(0, 0)
-    s.count = OutPort(mk_bits(clog2(s.num_entries+1)))
+    s.data = DataType()
+    s.count = OutPort(mk_bits(clog2(s.num_entries + 1)))
 
     # Interface
     s.recv = RecvIfcRTL(DataType)

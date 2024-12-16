@@ -1,0 +1,3 @@
+ - [ ] DataMemWithCrossbarRTL test with requests from NoC -> return correct response.
+ - [ ] E2e test with NoC.
+ - [ ] Translation.
