@@ -13,7 +13,7 @@ import json
 from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 
-from tile.TileRTL_constant import tile_port_direction_dict
+from ...tile.TileRTL_constant import tile_port_direction_dict
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.AdderRTL  import AdderRTL
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
