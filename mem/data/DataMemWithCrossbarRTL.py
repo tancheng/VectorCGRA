@@ -206,8 +206,6 @@ class DataMemWithCrossbarRTL(Component):
             loaded_msg = s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
             if i <= s.num_rd_tiles:
               index = RdTileIdType(i)
-              # s.send_rdata[trunc(i, RdTileIdType)].msg @= loaded_msg
-              # s.send_rdata[trunc(i, RdTileIdType)].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
               s.send_rdata[index].msg @= loaded_msg
               s.send_rdata[index].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
             # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
@@ -228,14 +226,15 @@ class DataMemWithCrossbarRTL(Component):
             # as the request can come from the NoC, it meant to access this local
             # SRAM, which should be guarded by the controller and NoC routers.
             # assert(i < num_banks)
-            s.send_rdata[trunc(i, RdTileIdType)].msg @= s.recv_from_noc_rdata.msg
+            index = RdTileIdType(i)
+            s.send_rdata[index].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
-            s.send_rdata[trunc(i, RdTileIdType)].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
-                                  s.recv_from_noc_rdata.en
-                                  # FIXME: The msg would come back one by one in order, so no
-                                  # need to check the src_tile, which can be improved.
-                                  # s.recv_from_noc_rdata.en & \
-                                  # (s.recv_from_noc_rdata.msg.src_tile == i)
+            s.send_rdata[index].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
+                                      s.recv_from_noc_rdata.en
+                                      # FIXME: The msg would come back one by one in order, so no
+                                      # need to check the src_tile, which can be improved.
+                                      # s.recv_from_noc_rdata.en & \
+                                      # (s.recv_from_noc_rdata.msg.src_tile == i)
 
 
         # Handles the request (not response) towards the others via the NoC.
