@@ -122,6 +122,12 @@ class DataMemWithCrossbarRTL(Component):
       for b in range(num_banks):
         for i in range(len(preload_data_per_bank[b])):
           s.preload_data_per_bank[b][i] //= preload_data_per_bank[b][i]
+    else:
+      s.preload_data_per_bank = [[Wire(DataType) for _ in range(1)]
+                                 for _ in range(num_banks)]
+      for b in range(num_banks):
+        s.preload_data_per_bank[b][0] //= DataType()
+
 
     @update
     def assemble_xbar_pkt():
@@ -281,14 +287,22 @@ class DataMemWithCrossbarRTL(Component):
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
 
 
-    # Preloads data.
-    @update_ff
-    def update_init_index():
-      if (s.init_mem_done == b1(0)) & (s.init_mem_addr < data_mem_size_per_bank - 1):
-        s.init_mem_addr <<= s.init_mem_addr + PerBankAddrType(1)
-      else:
-        s.init_mem_done <<= b1(1)
-        s.init_mem_addr <<= PerBankAddrType(0)
+    if preload_data_per_bank != None:
+      # Preloads data.
+      @update_ff
+      def update_init_index_increment():
+        if (s.init_mem_done == b1(0)) & (s.init_mem_addr < data_mem_size_per_bank - 1):
+          s.init_mem_addr <<= s.init_mem_addr + PerBankAddrType(1)
+        else:
+          s.init_mem_done <<= b1(1)
+          s.init_mem_addr <<= PerBankAddrType(0)
+
+    else:
+      @update_ff
+      def update_init_index_once():
+          if s.init_mem_done == b1(0):
+            s.init_mem_done <<= b1(1)
+            s.init_mem_addr <<= PerBankAddrType(0)
 
 
     # Indicates whether the remote (towards others via NoC) load is pending on response.
