@@ -80,6 +80,12 @@ class CtrlMemRTL( Component ):
         out_dict['outport'] = [ int(op) for op in  out_dict['outport']]
       if 'predicate_in' in out_dict:
         out_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
+      if 'routing_xbar_outport' in out_dict:
+        out_dict['routing_xbar_outport'] = [ int(rxop) for rxop in  out_dict['routing_xbar_outport']]
+      if 'fu_xbar_outport' in out_dict:
+        out_dict['fu_xbar_outport'] = [ int(fxop) for fxop in  out_dict['fu_xbar_outport']]
+      if 'routing_predicate_in' in out_dict:
+        out_dict['routing_predicate_in'] = [ int(rpi) for rpi in  out_dict['routing_predicate_in']]
     out_md  = markdown_table(out_dicts).set_params(quote=False).get_markdown()
     # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
     recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
@@ -106,7 +112,6 @@ class CtrlMemRTL( Component ):
     if 'routing_predicate_in' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['routing_predicate_in'] = [int(rpi) for rpi in send_ctrl_msg_dict['routing_predicate_in']]
     send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
-    print(f"send_ctrl_msg_dict: {send_ctrl_msg_dict}")
     return (f'\n## class: {s.__class__.__name__}\n'
             f'- recv_ctrl_msg:\n'
             f'{recv_ctrl_msg}\n'

@@ -12,6 +12,8 @@ import json
 
 from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
+
+from tile.TileRTL_constant import tile_port_direction_dict
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.AdderRTL  import AdderRTL
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
@@ -118,11 +120,18 @@ class FlexibleFuRTL( Component ):
     opt_str = " #"
     if s.recv_opt.en:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
-    # out_str = f'[{",".join([str(x.msg.__dict__) for x in s.send_out])}]'
+
     out_md = markdown_table([x.msg.__dict__ for x in s.send_out]).set_params(quote=False).get_markdown()
-    # recv_str = f'[{",".join([str(x.msg.__dict__) for x in s.recv_in])}]'
-    recv_list = [x.msg.__dict__ for x in s.recv_in]
+
+    recv_data = [x.msg.__dict__ for x in s.recv_in]
+    recv_list = []
+    for idx, data in enumerate(recv_data):
+      port_direction = tile_port_direction_dict[idx]
+      dict_with_direction = {"port_direction": port_direction}
+      dict_with_direction.update(data)
+      recv_list.append(dict_with_direction)
     recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
+
     return (f'## class: {s.__class__.__name__}\n'
             f'- recv:'
             f'{recv_md}\n'
