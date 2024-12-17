@@ -8,7 +8,6 @@ Author : Cheng Tan
   Date : Dec 2, 2024
 """
 
-
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
@@ -18,7 +17,6 @@ from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ..lib.cmd_type import *
 from ..lib.opt_type import *
-
 
 class ControllerRTL(Component):
 
@@ -77,6 +75,23 @@ class ControllerRTL(Component):
     # s.send_cmd = [SendIfcRTL(b2) for _ in range(s.num_tiles)]
 
 
+    # LUT for global data address mapping.
+    addr_offset_nbits = 0
+    s.addr2controller_lut = [Wire(ControllerIdType) for _ in range(len(controller2addr_map))]
+    # Assumes the address range is contiguous within one CGRA's SPMs.
+    addr2controller_vector = [-1 for _ in range(len(controller2addr_map))]
+    s.addr_base_items = len(controller2addr_map)
+    for src_controller_id, address_range in controller2addr_map.items():
+      begin_addr, end_addr = address_range[0], address_range[1]
+      address_length = end_addr - begin_addr + 1
+      assert (address_length & (address_length - 1)) == 0, f"{adderss_length} is not a power of 2."
+      addr_offset_nbits = clog2(address_length)
+      addr_base = begin_addr >> addr_offset_nbits
+      assert addr2controller_vector[addr_base] == -1, f"address range [{begin_addr}, {end_addr}] overlaps with others."
+      addr2controller_vector[addr_base] = ControllerIdType(src_controller_id)
+
+      s.addr2controller_lut[addr_base] //= ControllerIdType(src_controller_id)
+
     # Connections
     # Requests towards others, 1 cycle delay to improve timing.
     s.recv_from_master_load_request_pkt_queue.recv //= s.recv_from_master_load_request_pkt
@@ -89,18 +104,8 @@ class ControllerRTL(Component):
     s.send_to_master_store_request_addr_queue.send //= s.send_to_master_store_request_addr
     s.send_to_master_store_request_data_queue.send //= s.send_to_master_store_request_data
 
-
-    # FIXME: Probably not translatable.
-    def getDstId(target_address):
-      for src_controller_id, address_range in controller2addr_map.items():
-        if target_address >= address_range[0] and target_address <= address_range[1]:
-          return src_controller_id
-      assert(False)
-
-
     @update
     def update_received_msg():
-
       kLoadRequestInportIdx = 0
       kLoadResponseInportIdx = 1
       kStoreRequestInportIdx = 2
@@ -180,7 +185,7 @@ class ControllerRTL(Component):
             s.send_to_master_store_request_addr_queue.recv.msg @= \
                 CGRAAddrType(received_pkt.addr)
             s.send_to_master_store_request_data_queue.recv.msg @= \
-                CGRADataType(received_pkt.data, received_pkt.predicate)
+                CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
             s.send_to_master_store_request_addr_queue.recv.en @= 1
             s.send_to_master_store_request_data_queue.recv.en @= 1
 
@@ -188,19 +193,19 @@ class ControllerRTL(Component):
           if s.send_to_master_load_response_data_queue.recv.rdy:
             s.recv_from_noc.rdy @= 1
             s.send_to_master_load_response_data_queue.recv.msg @= \
-                CGRADataType(received_pkt.data, received_pkt.predicate)
+                CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
             s.send_to_master_load_response_data_queue.recv.en @= 1
 
-        else:
-          # TODO: Handle other cmd types.
-          assert(False)
+        # else:
+        #   # TODO: Handle other cmd types.
+        #   assert(False)
 
 
     @update
     def update_sending_to_noc_msg():
       s.send_to_noc.val @= s.crossbar.send[0].val
       s.crossbar.send[0].rdy @= s.send_to_noc.rdy
-      addr_dst_id = getDstId(s.crossbar.send[0].msg.addr)
+      addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.addr >> addr_offset_nbits, ControllerIdType)]
       s.send_to_noc.msg @= \
           NocPktType(s.crossbar.send[0].msg.src,
                      addr_dst_id,

@@ -56,6 +56,7 @@ class DataMemWithCrossbarRTL(Component):
     LocalBankIndexType = mk_bits(clog2(num_banks))
     s.num_rd_tiles = num_rd_tiles
     s.num_wr_tiles = num_wr_tiles
+    RdTileIdType = mk_bits(clog2(num_rd_tiles))
     num_xbar_in_rd_ports = num_rd_tiles + 1
     num_xbar_in_wr_ports = num_wr_tiles + 1
     num_xbar_out_rd_ports = num_banks + 1
@@ -117,16 +118,19 @@ class DataMemWithCrossbarRTL(Component):
     s.send_to_noc_load_pending = Wire(b1)
 
     if preload_data_per_bank != None:
+      preload_data_per_bank_size = data_mem_size_per_bank
       s.preload_data_per_bank = [[Wire(DataType) for _ in range(data_mem_size_per_bank)]
                                  for _ in range(num_banks)]
       for b in range(num_banks):
         for i in range(len(preload_data_per_bank[b])):
           s.preload_data_per_bank[b][i] //= preload_data_per_bank[b][i]
     else:
-      s.preload_data_per_bank = [[Wire(DataType) for _ in range(1)]
+      preload_data_per_bank_size = 1
+      s.preload_data_per_bank = [[Wire(DataType) for _ in range(preload_data_per_bank_size)]
                                  for _ in range(num_banks)]
       for b in range(num_banks):
         s.preload_data_per_bank[b][0] //= DataType()
+    PreloadDataPerBankSizeType = mk_bits(max(1, clog2(preload_data_per_bank_size)))
 
 
     @update
@@ -151,7 +155,7 @@ class DataMemWithCrossbarRTL(Component):
 
     # Connects xbar with the sram.
     @update
-    def update_read_without_init():
+    def update_all():
 
       # Initializes the signals.
       for i in range(num_xbar_in_rd_ports):
@@ -170,7 +174,7 @@ class DataMemWithCrossbarRTL(Component):
       if s.init_mem_done == b1(0):
         for b in range(num_banks):
           s.reg_file[b].waddr[0] @= trunc(s.init_mem_addr, PerBankAddrType)
-          s.reg_file[b].wdata[0] @= s.preload_data_per_bank[b][s.init_mem_addr]
+          s.reg_file[b].wdata[0] @= s.preload_data_per_bank[b][trunc(s.init_mem_addr, PreloadDataPerBankSizeType)]
           s.reg_file[b].wen[0] @= b1(1)
 
       else:
@@ -201,8 +205,11 @@ class DataMemWithCrossbarRTL(Component):
           if (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst < num_banks):
             loaded_msg = s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
             if i <= s.num_rd_tiles:
-              s.send_rdata[i].msg @= loaded_msg # s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
-              s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+              index = RdTileIdType(i)
+              # s.send_rdata[trunc(i, RdTileIdType)].msg @= loaded_msg
+              # s.send_rdata[trunc(i, RdTileIdType)].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+              s.send_rdata[index].msg @= loaded_msg
+              s.send_rdata[index].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
             # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
             else:
               assembled_noc_load_response_pkt_msg = \
@@ -220,10 +227,10 @@ class DataMemWithCrossbarRTL(Component):
             # Request from NoC would never target a remote access, i.e., as long
             # as the request can come from the NoC, it meant to access this local
             # SRAM, which should be guarded by the controller and NoC routers.
-            assert(i < num_banks)
-            s.send_rdata[i].msg @= s.recv_from_noc_rdata.msg
+            # assert(i < num_banks)
+            s.send_rdata[trunc(i, RdTileIdType)].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
-            s.send_rdata[i].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
+            s.send_rdata[trunc(i, RdTileIdType)].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
                                   s.recv_from_noc_rdata.en
                                   # FIXME: The msg would come back one by one in order, so no
                                   # need to check the src_tile, which can be improved.
