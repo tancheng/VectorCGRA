@@ -31,23 +31,27 @@ from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
 class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlType, NocPktType, num_terminals, width, height,
-                ctrl_mem_size, data_mem_size, src_opt, ctrl_waddr):
+                CtrlType, NocPktType, CmdType, num_terminals, width, height,
+                ctrl_mem_size, data_mem_size_global,
+                data_mem_size_per_bank, num_banks_per_cgra, src_opt,
+                ctrl_waddr, controller2addr_map):
 
     s.num_terminals = num_terminals
     s.num_tiles = width * height
-    AddrType = mk_bits(clog2(ctrl_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
     s.src_opt = [[TestSrcRTL(CtrlType, src_opt[j])
                   for j in range(s.num_tiles)]
                  for i in range(s.num_terminals)]
-    s.ctrl_waddr = [[TestSrcRTL(AddrType, ctrl_waddr[j])
+    s.ctrl_waddr = [[TestSrcRTL(CtrlAddrType, ctrl_waddr[j])
                      for j in range(s.num_tiles)]
                     for i in range(s.num_terminals)]
 
-    s.dut = DUT(DataType, AddrType, PredicateType, CtrlType, NocPktType,
-                num_terminals, width, height, ctrl_mem_size, data_mem_size,
-                len(src_opt[0]), len(src_opt[0]), FunctionUnit, FuList)
+    s.dut = DUT(DataType, PredicateType, CtrlType, NocPktType, CmdType,
+                num_terminals, width, height, ctrl_mem_size,
+                data_mem_size_global, data_mem_size_per_bank,
+                num_banks_per_cgra, len(src_opt[0]), len(src_opt[0]),
+                FunctionUnit, FuList, controller2addr_map)
 
     # Connections
     # s.dut.data_mem.recv_from_noc.rdy //= 0
@@ -82,25 +86,36 @@ def test_homo_2x2(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size = 8
+  data_mem_size_global = 32
+  data_mem_size_per_bank = 4
+  num_banks_per_cgra = 2
   num_terminals = 4
   width = 2
   height = 2
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  addr_nbits = clog2(ctrl_mem_size)
-  AddrType = mk_bits(addr_nbits)
+  ctrl_addr_nbits = clog2(ctrl_mem_size)
+  CtrlAddrType = mk_bits(ctrl_addr_nbits)
+  data_addr_nbits = clog2(data_mem_size_global)
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
   num_tiles = width * height
   DUT = RingMultiCGRARTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
+  CmdType = mk_bits(4)
+  controller2addr_map = {
+          0: [0, 7],
+          1: [8, 15],
+          2: [16, 23],
+          3: [24, 31],
+  }
   CtrlType = mk_separate_ctrl(num_fu_inports, num_fu_outports,
                               num_tile_inports, num_tile_outports)
   NocPktType = mk_ring_multi_cgra_pkt(nrouters = num_terminals,
-                                      addr_nbits = addr_nbits,
+                                      addr_nbits = data_addr_nbits,
                                       data_nbits = 32,
                                       predicate_nbits = 1)
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -154,11 +169,12 @@ def test_homo_2x2(cmdline_opts):
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)])
 
              ] for _ in range(num_tiles)]
-  ctrl_waddr = [[AddrType(0), AddrType(1), AddrType(2), AddrType(3),
-                 AddrType(4), AddrType(5)] for _ in range(num_tiles)]
+  ctrl_waddr = [[CtrlAddrType(0), CtrlAddrType(1), CtrlAddrType(2), CtrlAddrType(3),
+                 CtrlAddrType(4), CtrlAddrType(5)] for _ in range(num_tiles)]
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   CtrlType, NocPktType, num_terminals, width, height,
-                   ctrl_mem_size, data_mem_size, src_opt, ctrl_waddr)
+                   CtrlType, NocPktType, CmdType, num_terminals, width, height,
+                   ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
+                   num_banks_per_cgra, src_opt, ctrl_waddr, controller2addr_map)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
