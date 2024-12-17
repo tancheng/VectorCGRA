@@ -72,11 +72,27 @@ class CtrlMemRTL( Component ):
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
   def line_trace( s ):
-
-    out_md  = markdown_table([ data.__dict__ for data in s.reg_file.regs ]).set_params(quote=False).get_markdown()
+    out_dicts = [ dict(data.__dict__) for data in s.reg_file.regs ]
+    for out_dict in out_dicts:
+      out_dict['ctrl'] = OPT_SYMBOL_DICT[out_dict['ctrl']]
+      out_dict['fu_in'] = [ int(fi) for fi in  out_dict['fu_in']]
+      out_dict['outport'] = [ int(op) for op in  out_dict['outport']]
+      out_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
+    out_md  = markdown_table(out_dicts).set_params(quote=False).get_markdown()
     # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
-    recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in s.recv_ctrl.msg.__dict__.items()])
-    send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in s.send_ctrl.msg.__dict__.items()])
+    recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
+    recv_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_ctrl_msg_dict['ctrl']]
+    recv_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  out_dict['fu_in']]
+    recv_ctrl_msg_dict['outport'] = [ int(op) for op in  out_dict['outport']]
+    recv_ctrl_msg_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
+    recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_ctrl_msg_dict.items()])
+    send_ctrl_msg_dict = dict(s.send_ctrl.msg.__dict__)
+    send_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[send_ctrl_msg_dict['ctrl']]
+    send_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  send_ctrl_msg_dict['fu_in']]
+    send_ctrl_msg_dict['outport'] = [int(op) for op in send_ctrl_msg_dict['outport']]
+    send_ctrl_msg_dict['predicate_in'] = [int(pi) for pi in send_ctrl_msg_dict['predicate_in']]
+    send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
+    print(f"send_ctrl_msg_dict: {send_ctrl_msg_dict}")
     return (f'\n## class: {s.__class__.__name__}\n'
             f'- recv_ctrl_msg:\n'
             f'{recv_ctrl_msg}\n'

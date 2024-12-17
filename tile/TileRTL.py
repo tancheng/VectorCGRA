@@ -11,6 +11,7 @@ import json
 
 from pymtl3 import *
 
+from ..lib.opt_type import OPT_SYMBOL_DICT
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
@@ -140,11 +141,11 @@ class TileRTL( Component ):
       dict_with_direction.update(data)
       recv_list.append(dict_with_direction)
     recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-    recv_opt_msg_dict = s.crossbar.recv_opt.msg.__dict__
-    # todo
-    # E   AttributeError: 'str' object has no attribute 'clone'
-    # print(f"s.crossbar.recv_opt.msg: {s.crossbar.recv_opt.msg}")
-    # recv_opt_msg_dict['ctrl'] = OPT_SYMBOL_DICT[s.crossbar.recv_opt.msg.ctrl]
+    recv_opt_msg_dict = dict(s.crossbar.recv_opt.msg.__dict__)
+    recv_opt_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_opt_msg_dict['ctrl']]
+    recv_opt_msg_dict['fu_in'] = [int(fi) for fi in recv_opt_msg_dict['fu_in']]
+    recv_opt_msg_dict['outport'] = [int(op) for op in recv_opt_msg_dict['outport']]
+    recv_opt_msg_dict['predicate_in'] = [int(pi) for pi in recv_opt_msg_dict['predicate_in']]
     recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
 
     channel_recv_md = markdown_table([ x.recv.msg.__dict__ for x in s.channel ]).set_params(quote=False).get_markdown()
