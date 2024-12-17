@@ -76,7 +76,8 @@ class CtrlMemRTL( Component ):
     for out_dict in out_dicts:
       out_dict['ctrl'] = OPT_SYMBOL_DICT[out_dict['ctrl']]
       out_dict['fu_in'] = [ int(fi) for fi in  out_dict['fu_in']]
-      out_dict['outport'] = [ int(op) for op in  out_dict['outport']]
+      if out_dict['outport']:
+        out_dict['outport'] = [ int(op) for op in  out_dict['outport']]
       out_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
     out_md  = markdown_table(out_dicts).set_params(quote=False).get_markdown()
     # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
