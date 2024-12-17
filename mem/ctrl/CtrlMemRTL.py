@@ -92,11 +92,19 @@ class CtrlMemRTL( Component ):
     recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_ctrl_msg_dict.items()])
     send_ctrl_msg_dict = dict(s.send_ctrl.msg.__dict__)
     send_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[send_ctrl_msg_dict['ctrl']]
+    if 'predicate' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['predicate'] = int(send_ctrl_msg_dict['predicate'])
     send_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  send_ctrl_msg_dict['fu_in']]
     if 'outport' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['outport'] = [int(op) for op in send_ctrl_msg_dict['outport']]
     if 'predicate_in' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['predicate_in'] = [int(pi) for pi in send_ctrl_msg_dict['predicate_in']]
+    if 'routing_xbar_outport' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['routing_xbar_outport'] = [int(rxop) for rxop in send_ctrl_msg_dict['routing_xbar_outport']]
+    if 'fu_xbar_outport' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['fu_xbar_outport'] = [int(fxop) for fxop in send_ctrl_msg_dict['fu_xbar_outport']]
+    if 'routing_predicate_in' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['routing_predicate_in'] = [int(rpi) for rpi in send_ctrl_msg_dict['routing_predicate_in']]
     send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
     print(f"send_ctrl_msg_dict: {send_ctrl_msg_dict}")
     return (f'\n## class: {s.__class__.__name__}\n'
