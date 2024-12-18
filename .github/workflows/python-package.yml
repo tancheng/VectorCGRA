@@ -58,14 +58,27 @@ jobs:
       run: |
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
+        # Simulation across all tests.
         pytest .. -v --tb=short
-        pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # Tile translation.
         pytest ../tile/translate/TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # Kingmesh topology CGRA translation.
+        pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # Separate crossbars CGRA simulation/translation.
+        pytest ../cgra/test/CGRASeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         pytest ../cgra/translate/CGRASeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # 3x2 CGRA performs 2x2 matmul translation.
         pytest ../cgra/translate/CGRAMemBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # 3x3 CGRA performs 2x2 matmul simulation/translation.
         pytest ../cgra/translate/CGRAMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short
         pytest ../cgra/translate/CGRAMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        # Ring network simulation.
         pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py --tb=short -sv
-        pytest --tb=short -sv ../cgra/translate/CGRAWithControllerRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        # CGRA with separate crossbars (for tiles and FUs), crossbar-based data
+        # memory (for multi-bank), and controller.
+        pytest --tb=short -sv ../cgra/translate/CGRAWithCrossbarDataMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        # CGRAs are interconnected with ring topology. The CGRA contains
+        # separate crossbars (for tiles and FUs), crossbar-based data memory (for
+        # multi-bank), and controller.
         pytest --tb=short -sv ../scale_out/translate/RingMultiCGRARTL_test.py --test-verilog --dump-vtb --dump-vcd
 

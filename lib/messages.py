@@ -218,50 +218,104 @@ def mk_separate_ctrl(num_fu_inports = 4,
 
 
 #=========================================================================
+# Cmd message
+#=========================================================================
+
+def mk_cmd(cmd_nbits = 6,
+           prefix="CommandMessage"):
+
+  CmdType = mk_bits(clog2(cmd_nbits))
+
+  new_name = f"{cmd}"
+
+  def str_func(s):
+    return f"{s.cmd}"
+
+  return mk_bitstruct(new_name, {
+      'cmd': CmdType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+
+#=========================================================================
 # Ring multi-CGRA data/config/cmd packet
 #=========================================================================
 
 def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
-                           payload_nbits = 16, predicate_nbits = 1,
-                           prefix="RingMultiCGRAPacket" ):
+                           cmd_nbits = 6, addr_nbits = 16,
+                           data_nbits = 16, predicate_nbits = 1,
+                           prefix="RingMultiCGRAPacket"):
 
   IdType = mk_bits(clog2(nrouters))
   OpqType = mk_bits(opaque_nbits)
-  PayloadType = mk_bits(payload_nbits)
+  CmdType = mk_bits(cmd_nbits)
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
   PredicateType = mk_bits(predicate_nbits)
 
-  new_name = f"{prefix}_{nrouters}_{vc}_{opaque_nbits}_{payload_nbits}_" \
-             f"{predicate_nbits}"
+  new_name = f"{prefix}_{nrouters}_{vc}_{opaque_nbits}_{cmd_nbits}_" \
+             f"{addr_nbits}_{data_nbits}_{predicate_nbits}"
 
   if vc > 1:
-    VcIdType = mk_bits( clog2( vc ) )
+    VcIdType = mk_bits(clog2(vc))
 
-    def str_func( s ):
-      return f"{s.src}>{s.dst}:{s.opaque}:{s.vc_id}:{s.payload}." \
-             f"{s.predicate}"
+    def str_func(s):
+      return f"{s.src}>{s.dst}:{s.opaque}:{s.vc_id}:{s.cmd}." \
+             f"{s.addr}.{s.data}.{s.predicate}"
 
-    return mk_bitstruct( new_name, {
+    return mk_bitstruct(new_name, {
         'src': IdType,
         'dst': IdType,
         'opaque': OpqType,
         'vc_id': VcIdType,
-        'payload': PayloadType,
+        'cmd': CmdType,
+        'addr': AddrType,
+        'data': DataType,
         'predicate': PredicateType,
       },
-      namespace = { '__str__': str_func }
+      namespace = {'__str__': str_func}
     )
 
   else:
-    def str_func( s ):
-      return f"{s.src}>{s.dst}:{s.opaque}:{s.payload}.{s.predicate}"
+    def str_func(s):
+      return f"{s.src}>{s.dst}:{s.opaque}:{s.cmd}.{s.addr}.{s.data}." \
+             f"{s.predicate}"
 
-    return mk_bitstruct( new_name, {
+    return mk_bitstruct(new_name, {
         'src': IdType,
         'dst': IdType,
         'opaque': OpqType,
-        'payload': PayloadType,
+        'cmd': CmdType,
+        'addr': AddrType,
+        'data': DataType,
         'predicate': PredicateType,
       },
-      namespace = { '__str__': str_func }
+      namespace = {'__str__': str_func}
     )
+
+#=========================================================================
+# Crossbar (tiles <-> SRAM) packet
+#=========================================================================
+
+def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
+                          mem_size_global = 64,
+                          prefix="TileSramXbarPacket"):
+
+  SrcType = mk_bits(clog2(number_src))
+  DstType = mk_bits(clog2(number_dst))
+  AddrType = mk_bits(clog2(mem_size_global))
+
+  new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
+
+  def str_func(s):
+    return f"{s.src}>{s.dst}:{s.addr}"
+
+  return mk_bitstruct(new_name, {
+      'src': SrcType,
+      'dst': DstType,
+      'addr': AddrType,
+    },
+    namespace = {'__str__': str_func}
+  )
 
