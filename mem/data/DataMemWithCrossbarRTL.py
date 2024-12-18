@@ -132,7 +132,6 @@ class DataMemWithCrossbarRTL(Component):
         s.preload_data_per_bank[b][0] //= DataType()
     PreloadDataPerBankSizeType = mk_bits(max(1, clog2(preload_data_per_bank_size)))
 
-
     @update
     def assemble_xbar_pkt():
       if s.init_mem_done != b1(0):
@@ -178,12 +177,10 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].wen[0] @= b1(1)
 
       else:
-
         for i in range(num_xbar_in_wr_ports):
           s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].enq_rdy
           s.recv_wdata_bypass_q[i].enq_en @= s.recv_wdata[i].en
           s.recv_wdata_bypass_q[i].enq_msg @= s.recv_wdata[i].msg
-
 
         for i in range(num_xbar_in_rd_ports):
           s.read_crossbar.recv[i].val @= s.recv_raddr[i].en
@@ -201,59 +198,55 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].raddr[0] @= trunc(s.read_crossbar.send[b].msg.addr % data_mem_size_per_bank, PerBankAddrType)
 
         for i in range(num_xbar_in_rd_ports):
-          arbitrated_rd_msg = s.read_crossbar.packet_on_input_units[i]
-          if (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst < num_banks):
-            loaded_msg = s.reg_file[trunc(arbitrated_rd_msg.dst, LocalBankIndexType)].rdata[0]
+          if (s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.src == i) & \
+             (s.read_crossbar.packet_on_input_units[i].dst < num_banks):
             if i <= s.num_rd_tiles:
-              index = RdTileIdType(i)
-              s.send_rdata[index].msg @= loaded_msg
-              s.send_rdata[index].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+              s.send_rdata[RdTileIdType(i)].msg @= s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0]
+              s.send_rdata[RdTileIdType(i)].en @= s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
             # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
             else:
-              assembled_noc_load_response_pkt_msg = \
+              s.send_to_noc_load_response_pkt.msg @= \
                   NocPktType(
                       0, 0, 0, 0, CMD_LOAD_RESPONSE,
-                      s.read_crossbar.send[arbitrated_rd_msg.dst].msg.addr,
-                      loaded_msg.payload,
-                      loaded_msg.predicate
+                      s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr,
+                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
+                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate
                   )
-              s.send_to_noc_load_response_pkt.msg @= assembled_noc_load_response_pkt_msg
-              s.send_to_noc_load_response_pkt.en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val
+              s.send_to_noc_load_response_pkt.en @= \
+                  s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
 
           # Handles the case the load requests going through the NoC towards remote SRAMs.
-          elif (s.read_crossbar.send[arbitrated_rd_msg.dst].msg.src == i) & (arbitrated_rd_msg.dst >= num_banks):
+          elif (s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.src == i) & \
+               (s.read_crossbar.packet_on_input_units[i].dst >= num_banks):
             # Request from NoC would never target a remote access, i.e., as long
             # as the request can come from the NoC, it meant to access this local
             # SRAM, which should be guarded by the controller and NoC routers.
             # assert(i < num_banks)
-            index = RdTileIdType(i)
-            s.send_rdata[index].msg @= s.recv_from_noc_rdata.msg
+            s.send_rdata[RdTileIdType(i)].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
-            s.send_rdata[index].en @= s.read_crossbar.send[arbitrated_rd_msg.dst].val & \
-                                      s.recv_from_noc_rdata.en
-                                      # FIXME: The msg would come back one by one in order, so no
-                                      # need to check the src_tile, which can be improved.
-                                      # s.recv_from_noc_rdata.en & \
-                                      # (s.recv_from_noc_rdata.msg.src_tile == i)
+            s.send_rdata[RdTileIdType(i)].en @= \
+                s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val & \
+                s.recv_from_noc_rdata.en
+                # FIXME: The msg would come back one by one in order, so no
+                # need to check the src_tile, which can be improved.
+                # s.recv_from_noc_rdata.en & \
+                # (s.recv_from_noc_rdata.msg.src_tile == i)
 
 
         # Handles the request (not response) towards the others via the NoC.
-        assembled_sending_to_noc_load_pkt = NocPktType(
-            0, # src
-            0, # dst
-            0, # opaque
-            0, # vc_id
-            CMD_LOAD_REQUEST,
-            s.read_crossbar.send[num_banks].msg.addr,
-            0, # data
-            1) # predicate
-        # s.send_to_noc_raddr.msg @= s.read_crossbar.send[num_banks].msg.addr
-        # s.send_to_noc_raddr.en @= s.read_crossbar.send[num_banks].val & s.send_to_noc_raddr.rdy
-        s.send_to_noc_load_request_pkt.msg @= assembled_sending_to_noc_load_pkt
+        s.send_to_noc_load_request_pkt.msg @= \
+            NocPktType(0, # src
+                       0, # dst
+                       0, # opaque
+                       0, # vc_id
+                       CMD_LOAD_REQUEST,
+                       s.read_crossbar.send[num_banks].msg.addr,
+                       0, # data
+                       1) # predicate
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.en @= s.read_crossbar.send[num_banks].val & \
-                                     s.send_to_noc_load_request_pkt.rdy & \
-                                     ~s.send_to_noc_load_pending
+                                             s.send_to_noc_load_request_pkt.rdy & \
+                                             ~s.send_to_noc_load_pending
         # Outstanding remote read access would block the inport (for read request) of the NoC. 
         # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
         # 'val` indicates the data is arbitrated successfully.
@@ -262,7 +255,6 @@ class DataMemWithCrossbarRTL(Component):
         # i.e., though the request already sent out to NoC (the port is still blocked until
         # response is back).
         s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.en
-
 
         # Connects the write ports towards SRAM and NoC from the xbar.
         for b in range(num_banks):
@@ -273,25 +265,21 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].wen[0] @= s.write_crossbar.send[b].val
 
         for i in range(num_xbar_in_wr_ports):
-          arbitrated_wr_msg = s.write_crossbar.packet_on_input_units[i]
           s.recv_wdata_bypass_q[i].deq_en @= s.recv_wdata_bypass_q[i].deq_rdy & \
-                  s.write_crossbar.send[arbitrated_wr_msg.dst].val
+                  s.write_crossbar.send[s.write_crossbar.packet_on_input_units[i].dst].val
 
         # Handles the one connecting to the NoC.
-        assembled_sending_to_noc_store_pkt = NocPktType(
-            0, # src
-            0, # dst
-            0, # opaque
-            0, # vc_id
-            CMD_STORE_REQUEST,
-            s.write_crossbar.send[num_banks].msg.addr,
-            s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.payload,
-            s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.predicate)
-
-        s.send_to_noc_store_pkt.msg @= assembled_sending_to_noc_store_pkt
+        s.send_to_noc_store_pkt.msg @= \
+            NocPktType(0, # src
+                       0, # dst
+                       0, # opaque
+                       0, # vc_id
+                       CMD_STORE_REQUEST,
+                       s.write_crossbar.send[num_banks].msg.addr,
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.payload,
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.predicate)
         s.send_to_noc_store_pkt.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_store_pkt.rdy
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
-
 
     if preload_data_per_bank != None:
       # Preloads data.
@@ -310,12 +298,10 @@ class DataMemWithCrossbarRTL(Component):
             s.init_mem_done <<= b1(1)
             s.init_mem_addr <<= PerBankAddrType(0)
 
-
     # Indicates whether the remote (towards others via NoC) load is pending on response.
     @update_ff
     def update_remote_load_pending():
       s.send_to_noc_load_pending <<= s.recv_from_noc_rdata.en
-
 
   def line_trace(s):
     recv_raddr_str = "recv_from_tile_read_addr: {"
