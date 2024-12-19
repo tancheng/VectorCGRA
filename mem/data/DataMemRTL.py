@@ -7,8 +7,7 @@ Data memory for CGRA.
 Author : Cheng Tan
   Date : Dec 20, 2019
 """
-
-
+from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
@@ -99,14 +98,17 @@ class DataMemRTL( Component ):
         s.recv_wdata[i].rdy @= Bits1( 1 )
 
   def line_trace(s):
-    recv_raddr_str = "recv_read_addr: " + f'[{", ".join([str(data.msg) for data in s.recv_raddr])}]'
-    recv_waddr_str = "recv_write_addr: " + f'[{", ".join([str(data.msg) for data in s.recv_waddr])}]'
-    recv_wdata_str = "recv_write_data: " + f'[{", ".join([str(data.msg.__dict__) for data in s.recv_wdata])}]'
-    content_str = "content: " + f'[{", ".join([str(data.__dict__) for data in s.reg_file.regs])}]'
-    send_rdata_str = "send_read_data: " + f'[{", ".join([str(data.msg) for data in s.send_rdata])}]'
-    return f'class: {s.__class__.__name__}, {recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || [{content_str}] || {send_rdata_str}'
-    # return f'DataMem: {recv_str} : [{out_str}] : {send_str} initWrites: {s.initWrites}'
-    # return s.reg_file.line_trace()
-    # return f'<{s.reg_file.wen[0]}>{s.reg_file.waddr[0]}:{s.reg_file.wdata[0]}|{s.reg_file.raddr[0]}:{s.reg_file.rdata[0]}'
-    # rf_trace = f'<{s.reg_file.wen[0]}>{s.reg_file.waddr[0]}:{s.reg_file.wdata[0]}|{s.reg_file.raddr[0]}:{s.reg_file.rdata[0]}'
-    # return f'[{s.recv_wdata[0].en & s.recv_waddr[0].en}]{s.recv_waddr[0]}<{s.recv_wdata[0]}({rf_trace}){s.recv_raddr[0]}>{s.send_rdata[0]}'
+    recv_raddr_str = f'[{", ".join([str(data.msg) for data in s.recv_raddr])}]'
+    recv_waddr_str = f'[{", ".join([str(data.msg) for data in s.recv_waddr])}]'
+    recv_wdata_dicts = [dict(data.msg.__dict__) for data in s.recv_wdata]
+    recv_wdata_md = markdown_table(recv_wdata_dicts).set_params(quote=False).get_markdown()
+    reg_dicts = [dict(data.__dict__) for data in s.reg_file.regs]
+    reg_md = markdown_table(reg_dicts).set_params(quote=False).get_markdown()
+    send_rdata_dicts = [dict(data.msg.__dict__) for data in s.send_rdata]
+    send_rdata_md = markdown_table(send_rdata_dicts).set_params(quote=False).get_markdown()
+    return (f'\nclass: {s.__class__.__name__}\n'
+            f'- recv_raddr: {recv_raddr_str}\n'
+            f'- recv_waddr: {recv_waddr_str}\n'
+            f'- recv_wdata: {recv_wdata_md}\n'
+            f'- regs: {reg_md}\n'
+            f'- send_rdata: {send_rdata_md}')

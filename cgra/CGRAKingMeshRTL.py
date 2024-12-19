@@ -158,6 +158,6 @@ class CGRAKingMeshRTL( Component ):
     res = ''
     for (i, x) in enumerate(s.tile):
       res += "# [tile"+str(i)+"]: " + x.line_trace() + x.ctrl_mem.line_trace() + '\n'
-    res += "\n data_mem:: [" + s.data_mem.line_trace() + "]    \n"
+    res += f"\ndata_mem: {s.data_mem.line_trace()}"
     res += "------\n\n"
     return res
