@@ -6,9 +6,13 @@ TileRTL.py
 Author : Cheng Tan
   Date : Dec 11, 2019
 """
+import json
 
 
 from pymtl3 import *
+
+from .TileRTL_constant import tile_port_direction_dict
+from ..lib.opt_type import OPT_SYMBOL_DICT
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
@@ -23,7 +27,7 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
 # from ..noc.BypassChannelRTL      import BypassChannelRTL
-
+from py_markdown_table.markdown_table import markdown_table
 
 class TileRTL( Component ):
 
@@ -123,12 +127,43 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
+
   # Line trace
   def line_trace( s ):
+    # recv_str    = f'[{", ".join([ str(x.msg.__dict__) for x in s.recv_data ])}]'
+    recv_data = [ x.msg.__dict__ for x in s.recv_data ]
+    recv_list = []
+    for idx, data in enumerate(recv_data):
+      port_direction = tile_port_direction_dict[idx]
+      dict_with_direction = {"port_direction": port_direction}
+      dict_with_direction.update(data)
+      recv_list.append(dict_with_direction)
+    recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
+    recv_opt_msg_dict = dict(s.crossbar.recv_opt.msg.__dict__)
+    recv_opt_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_opt_msg_dict['ctrl']]
+    recv_opt_msg_dict['fu_in'] = [int(fi) for fi in recv_opt_msg_dict['fu_in']]
+    recv_opt_msg_dict['outport'] = [int(op) for op in recv_opt_msg_dict['outport']]
+    recv_opt_msg_dict['predicate_in'] = [int(pi) for pi in recv_opt_msg_dict['predicate_in']]
+    recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
 
-    recv_str    = "|".join([ str(x.msg) for x in s.recv_data ])
-    channel_recv_str = "|".join([ str(x.recv.msg) for x in s.channel ])
-    channel_send_str = "|".join([ str(x.send.msg) for x in s.channel ])
-    out_str  = "|".join([ "("+str(x.msg.payload)+","+str(x.msg.predicate)+")" for x in s.send_data ])
-    return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+    channel_recv_md = markdown_table([ x.recv.msg.__dict__ for x in s.channel ]).set_params(quote=False).get_markdown()
+    channel_send_md = markdown_table([ x.send.msg.__dict__ for x in s.channel ]).set_params(quote=False).get_markdown()
+    out_md  = markdown_table([ dict(send_msg_payload=x.msg.payload, send_msg_predicate=x.msg.predicate) for x in s.send_data ]).set_params(quote=False).get_markdown()
+    return (f"\n## class[{s.__class__.__name__}]:\n"
+            f"- recv:"
+            f"{recv_md}\n"
+            f"===>\n"
+            f"- recv_opt_msg:\n"
+            f"{recv_opt_msg}\n"
+            f"- element:\n"
+            f"{s.element.line_trace()}\n"
+            f"===>\n"
+            f"- channel_recv:\n"
+            f"{channel_recv_md}\n"
+            f"===>\n"
+            f"- channel_send:"
+            f"{channel_send_md}\n"
+            f"===>\n"
+            f"- out:"
+            f"{out_md}\n")
 
