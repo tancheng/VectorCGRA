@@ -7,8 +7,7 @@ Control memory for CGRA.
 Author : Cheng Tan
   Date : Dec 21, 2019
 """
-
-
+from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
@@ -73,6 +72,50 @@ class CtrlMemRTL( Component ):
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
   def line_trace( s ):
-    out_str  = "||".join([ str(data) for data in s.reg_file.regs ])
-    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
+    out_dicts = [ dict(data.__dict__) for data in s.reg_file.regs ]
+    for out_dict in out_dicts:
+      out_dict['ctrl'] = OPT_SYMBOL_DICT[out_dict['ctrl']]
+      out_dict['fu_in'] = [ int(fi) for fi in  out_dict['fu_in']]
+      if 'outport' in out_dict:
+        out_dict['outport'] = [ int(op) for op in  out_dict['outport']]
+      if 'predicate_in' in out_dict:
+        out_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
+      if 'routing_xbar_outport' in out_dict:
+        out_dict['routing_xbar_outport'] = [ int(rxop) for rxop in  out_dict['routing_xbar_outport']]
+      if 'fu_xbar_outport' in out_dict:
+        out_dict['fu_xbar_outport'] = [ int(fxop) for fxop in  out_dict['fu_xbar_outport']]
+      if 'routing_predicate_in' in out_dict:
+        out_dict['routing_predicate_in'] = [ int(rpi) for rpi in  out_dict['routing_predicate_in']]
+    out_md  = markdown_table(out_dicts).set_params(quote=False).get_markdown()
+    # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
+    recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
+    recv_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_ctrl_msg_dict['ctrl']]
+    recv_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  out_dict['fu_in']]
+    if 'outport' in recv_ctrl_msg_dict:
+      recv_ctrl_msg_dict['outport'] = [ int(op) for op in  out_dict['outport']]
+    if 'predicate_in' in recv_ctrl_msg_dict:
+      recv_ctrl_msg_dict['predicate_in'] = [ int(pi) for pi in  out_dict['predicate_in']]
+    recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_ctrl_msg_dict.items()])
+    send_ctrl_msg_dict = dict(s.send_ctrl.msg.__dict__)
+    send_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[send_ctrl_msg_dict['ctrl']]
+    if 'predicate' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['predicate'] = int(send_ctrl_msg_dict['predicate'])
+    send_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  send_ctrl_msg_dict['fu_in']]
+    if 'outport' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['outport'] = [int(op) for op in send_ctrl_msg_dict['outport']]
+    if 'predicate_in' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['predicate_in'] = [int(pi) for pi in send_ctrl_msg_dict['predicate_in']]
+    if 'routing_xbar_outport' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['routing_xbar_outport'] = [int(rxop) for rxop in send_ctrl_msg_dict['routing_xbar_outport']]
+    if 'fu_xbar_outport' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['fu_xbar_outport'] = [int(fxop) for fxop in send_ctrl_msg_dict['fu_xbar_outport']]
+    if 'routing_predicate_in' in send_ctrl_msg_dict:
+      send_ctrl_msg_dict['routing_predicate_in'] = [int(rpi) for rpi in send_ctrl_msg_dict['routing_predicate_in']]
+    send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
+    return (f'\n## class: {s.__class__.__name__}\n'
+            f'- recv_ctrl_msg:\n'
+            f'{recv_ctrl_msg}\n'
+            f'- out: {out_md}\n'
+            f'- send_ctrl_msg:\n'
+            f'{send_ctrl_msg}\n')
 
