@@ -237,7 +237,6 @@ def mk_cmd(cmd_nbits = 6,
     namespace = {'__str__': str_func}
   )
 
-
 #=========================================================================
 # Ring multi-CGRA data/config/cmd packet
 #=========================================================================
@@ -293,6 +292,38 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
       },
       namespace = {'__str__': str_func}
     )
+
+#=========================================================================
+# Ring for delivering ctrl signals and commands across tiles
+#=========================================================================
+
+def mk_ring_across_tiles_pkt(nrouters = 4, ctrl_action_nbits = 2,
+                             ctrl_addr_nbits = 4, ctrl_signal_nbits = 10,
+                             prefix="RingAcrossTilesPacket"):
+
+  IdType = mk_bits(clog2(nrouters))
+  OpqType = mk_bits(1)
+  CtrlActionType = mk_bits(ctrl_action_nbits)
+  CtrlAddrType = mk_bits(ctrl_addr_nbits)
+  CtrlSignalType = mk_bits(ctrl_signal_nbits)
+
+  new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_action_nbits}_" \
+             f"{ctrl_addr_nbits}_{ctrl_signal_nbits}"
+
+  def str_func(s):
+    return f"{s.src}>{s.dst}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+           f"{s.ctrl_signal}"
+
+  return mk_bitstruct(new_name, {
+      'src': IdType,
+      'dst': IdType,
+      'opaque': OpqType,
+      'ctrl_action': CtrlActionType,
+      'ctrl_addr': CtrlAddrType,
+      'ctrl_signal': CtrlSignalType,
+    },
+    namespace = {'__str__': str_func}
+  )
 
 #=========================================================================
 # Crossbar (tiles <-> SRAM) packet
