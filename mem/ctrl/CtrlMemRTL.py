@@ -79,7 +79,7 @@ class CtrlMemRTL( Component ):
     #
     num_fu_in = len(s.reg_file.regs[0].fu_in)
     # num_inports = len(s.reg_file.regs[0].predicate_in)
-    num_outports = len(s.reg_file.regs[0].outport)
+    num_outports = len(s.reg_file.regs[0].outport if hasattr(s.reg_file.regs[0], 'outport') else [])
     num_direction_ports = num_outports - num_fu_in
     reg_dicts = [ dict(data.__dict__) for data in s.reg_file.regs ]
     for reg_dict in reg_dicts:
