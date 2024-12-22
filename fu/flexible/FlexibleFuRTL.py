@@ -116,9 +116,11 @@ class FlexibleFuRTL( Component ):
 
   def line_trace( s ):
     # for clk n
-    # recv: opt+rdy(if ready to receive opt) and [rdy(if ready to receive data) and msg(data) for each inport(total 4 for now)]
-    # ? what is recv_const for ?
+    # recv:
+    #   1. OPT: opt+rdy(if ready to receive opt)
+    #   2. Data: [rdy(if ready to receive data) and msg(data) for each inport(total 4 for now)]
     # out: [en(if data is sent out) and msg for each outport(total 2 for now)]
+    # ? what is recv_const for ?
     opt_ctrl = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
     opt_rdy = s.recv_opt.rdy
 
@@ -141,11 +143,11 @@ class FlexibleFuRTL( Component ):
     out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
 
     return (f'## class: {s.__class__.__name__}\n'
-            f'- recv:\n'
-            f'  opt: {opt_ctrl}, opt_rdy: {opt_rdy}\n'
-            f'  data:'
+            f'- FU recv:\n'
+            f'  FU opt: {opt_ctrl}, opt_rdy: {opt_rdy}\n'
+            f'  FU data:'
             f'{recv_md}\n'
             f'===>\n'
-            f'- out:'
+            f'- FU out:'
             f'{out_md}\n')
 

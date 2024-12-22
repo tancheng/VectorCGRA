@@ -6,9 +6,6 @@ TileRTL.py
 Author : Cheng Tan
   Date : Dec 11, 2019
 """
-import json
-
-
 from pymtl3 import *
 
 from .TileRTL_constant import tile_port_direction_dict
@@ -130,40 +127,37 @@ class TileRTL( Component ):
 
   # Line trace
   def line_trace( s ):
-    # recv_str    = f'[{", ".join([ str(x.msg.__dict__) for x in s.recv_data ])}]'
-    recv_data = [ x.msg.__dict__ for x in s.recv_data ]
+    # recv:
+    #   1. rdy (if ready to receive data), if en and rdy: then data has been transferred (val, rdy are new type(protocol))
+    #   2. data
+    #   [3. opt will show in FU trace]
+    # FU:
+    #   FlexibleFuRTL.py
+    # tile out:
+    #   1. en (is data transferred)
+    recv_data = [x for x in s.recv_data]
     recv_list = []
     for idx, data in enumerate(recv_data):
-      port_direction = tile_port_direction_dict[idx]
-      dict_with_direction = {"port_direction": port_direction}
-      dict_with_direction.update(data)
-      recv_list.append(dict_with_direction)
+        msg_dict = data.msg.__dict__
+        tile_inport_dict = {"tile_inport_direction": tile_port_direction_dict[idx], "rdy": data.rdy}
+        tile_inport_dict.update(msg_dict)
+        recv_list.append(tile_inport_dict)
     recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-    recv_opt_msg_dict = dict(s.crossbar.recv_opt.msg.__dict__)
-    recv_opt_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_opt_msg_dict['ctrl']]
-    recv_opt_msg_dict['fu_in'] = [int(fi) for fi in recv_opt_msg_dict['fu_in']]
-    recv_opt_msg_dict['outport'] = [int(op) for op in recv_opt_msg_dict['outport']]
-    recv_opt_msg_dict['predicate_in'] = [int(pi) for pi in recv_opt_msg_dict['predicate_in']]
-    recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
 
-    channel_recv_md = markdown_table([ x.recv.msg.__dict__ for x in s.channel ]).set_params(quote=False).get_markdown()
-    channel_send_md = markdown_table([ x.send.msg.__dict__ for x in s.channel ]).set_params(quote=False).get_markdown()
-    out_md  = markdown_table([ dict(send_msg_payload=x.msg.payload, send_msg_predicate=x.msg.predicate) for x in s.send_data ]).set_params(quote=False).get_markdown()
+    out_data = [x for x in s.send_data]
+    out_list = []
+    for idx, data in enumerate(out_data):
+        msg_dict = data.msg.__dict__
+        tile_outport_dict = {"tile_outport_direction": tile_port_direction_dict[idx], "en": data.en}
+        tile_outport_dict.update(msg_dict)
+        out_list.append(tile_outport_dict)
+    out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
     return (f"\n## class[{s.__class__.__name__}]:\n"
-            f"- recv:"
+            f"- Tile recv:"
             f"{recv_md}\n"
-            f"===>\n"
-            f"- recv_opt_msg:\n"
-            f"{recv_opt_msg}\n"
-            f"- element:\n"
+            f"- FU element:\n"
             f"{s.element.line_trace()}\n"
             f"===>\n"
-            f"- channel_recv:\n"
-            f"{channel_recv_md}\n"
-            f"===>\n"
-            f"- channel_send:"
-            f"{channel_send_md}\n"
-            f"===>\n"
-            f"- out:"
+            f"- Tile out:"
             f"{out_md}\n")
 

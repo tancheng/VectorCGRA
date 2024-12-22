@@ -198,7 +198,7 @@ class TileSeparateCrossbarRTL(Component):
     recv_list = []
     for idx, data in enumerate(recv_data):
       port_direction = tile_port_direction_dict[idx]
-      dict_with_direction = {"port_direction": port_direction}
+      dict_with_direction = {"inport_direction": port_direction}
       dict_with_direction.update(data)
       recv_list.append(dict_with_direction)
     recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
@@ -225,7 +225,7 @@ class TileSeparateCrossbarRTL(Component):
     tile_out_channel_recv_data_list = []
     for idx, data in enumerate(tile_out_channel_recv_data):
         port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"port_direction": port_direction}
+        dict_with_direction = {"inport_direction": port_direction}
         dict_with_direction.update(data)
         tile_out_channel_recv_data_list.append(dict_with_direction)
     tile_out_channel_recv_md = markdown_table(tile_out_channel_recv_data_list).set_params(quote=False).get_markdown()
@@ -234,7 +234,7 @@ class TileSeparateCrossbarRTL(Component):
     tile_out_channel_send_data_list = []
     for idx, data in enumerate(tile_out_channel_send_data):
         port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"port_direction": port_direction}
+        dict_with_direction = {"outport_direction": port_direction}
         dict_with_direction.update(data)
         tile_out_channel_send_data_list.append(dict_with_direction)
     tile_out_channel_send_md = markdown_table(tile_out_channel_send_data_list).set_params(quote=False).get_markdown()
@@ -243,7 +243,7 @@ class TileSeparateCrossbarRTL(Component):
     fu_in_channel_recv_data_list = []
     for idx, data in enumerate(fu_in_channel_recv_data):
         port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"port_direction": port_direction}
+        dict_with_direction = {"inport_direction": port_direction}
         dict_with_direction.update(data)
         fu_in_channel_recv_data_list.append(dict_with_direction)
     fu_in_channel_recv_md = markdown_table(fu_in_channel_recv_data_list).set_params(quote=False).get_markdown()
@@ -252,7 +252,7 @@ class TileSeparateCrossbarRTL(Component):
     fu_in_channel_send_data_list = []
     for idx, data in enumerate(fu_in_channel_send_data):
         port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"port_direction": port_direction}
+        dict_with_direction = {"outport_direction": port_direction}
         dict_with_direction.update(data)
         fu_in_channel_send_data_list.append(dict_with_direction)
     fu_in_channel_send_md = markdown_table(fu_in_channel_send_data_list).set_params(quote=False).get_markdown()
@@ -261,7 +261,7 @@ class TileSeparateCrossbarRTL(Component):
     tile_outports_data_list = []
     for idx, data in enumerate(tile_outports_data):
         port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"port_direction": port_direction}
+        dict_with_direction = {"outport_direction": port_direction}
         dict_with_direction.update(data)
         tile_outports_data_list.append(dict_with_direction)
     tile_outports_md = markdown_table(tile_outports_data_list).set_params(quote=False).get_markdown()

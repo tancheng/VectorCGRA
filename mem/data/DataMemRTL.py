@@ -98,17 +98,41 @@ class DataMemRTL( Component ):
         s.recv_wdata[i].rdy @= Bits1( 1 )
 
   def line_trace(s):
-    recv_raddr_str = f'[{", ".join([str(data.msg) for data in s.recv_raddr])}]'
-    recv_waddr_str = f'[{", ".join([str(data.msg) for data in s.recv_waddr])}]'
-    recv_wdata_dicts = [dict(data.msg.__dict__) for data in s.recv_wdata]
-    recv_wdata_md = markdown_table(recv_wdata_dicts).set_params(quote=False).get_markdown()
+    # data memory: mem size, reg
+    # recv_raddr(rdy, msg), send_rdata(en, msg), recv_waddr(rdy, msg), recv_wdata, tile #
     reg_dicts = [dict(data.__dict__) for data in s.reg_file.regs]
-    reg_md = markdown_table(reg_dicts).set_params(quote=False).get_markdown()
-    send_rdata_dicts = [dict(data.msg.__dict__) for data in s.send_rdata]
-    send_rdata_md = markdown_table(send_rdata_dicts).set_params(quote=False).get_markdown()
+    reg_list = []
+    for idx, data in enumerate(reg_dicts):
+      reg_dict = {"addr": f"addr {idx}"}
+      reg_dict.update(data)
+      reg_list.append(reg_dict)
+    reg_md = markdown_table(reg_list).set_params(quote=False).get_markdown()
+
+    rw_ports_max_count = max(len(s.recv_raddr), len(s.recv_waddr))
+    mem_list = []
+    for idx in range(rw_ports_max_count):
+      recv_raddr_rdy, recv_raddr = None, None
+      send_rdata_en, send_rdata = None, None
+      recv_waddr_rdy, recv_waddr = None, None
+      recv_wdata = None
+      if idx <= len(s.recv_raddr) - 1:
+        recv_raddr_rdy = s.recv_raddr[idx].rdy
+        recv_raddr = s.recv_raddr[idx].msg
+        send_rdata_en = s.send_rdata[idx].en
+        send_rdata = s.send_rdata[idx].msg.payload
+      if idx <= len(s.recv_waddr) - 1:
+        recv_waddr_rdy = s.recv_waddr[idx].rdy
+        recv_waddr = s.recv_waddr[idx].msg
+        recv_wdata = s.recv_wdata[idx].msg.payload
+      mem_dict = {"recv_raddr(rdy, msg)": f"{recv_raddr_rdy}, {recv_raddr}",
+                  "send_rdata(en, msg)": f"{send_rdata_en}, {send_rdata}",
+                  "recv_waddr(rdy, msg)": f"{recv_waddr_rdy}, {recv_waddr}",
+                  "recv_wdata": f"{recv_wdata}",
+                  "Tiles in Col0": "<--- Tile"}
+      mem_list.append(mem_dict)
+    mem_md = markdown_table(mem_list).set_params(quote=False).get_markdown()
+
     return (f'\nclass: {s.__class__.__name__}\n'
-            f'- recv_raddr: {recv_raddr_str}\n'
-            f'- recv_waddr: {recv_waddr_str}\n'
-            f'- recv_wdata: {recv_wdata_md}\n'
-            f'- regs: {reg_md}\n'
-            f'- send_rdata: {send_rdata_md}')
+            f'- regs(mem size: {len(reg_dicts)}): {reg_md}\n'
+            f'- mem_r/w:'
+            f'{mem_md}')

@@ -151,10 +151,6 @@ class CGRAKingMeshRTL( Component ):
 
   # Line trace
   def line_trace( s ):
-    # str = "||".join([ x.element.line_trace() for x in s.tile ])
-    # str += " :: [" + s.data_mem.line_trace() + "]"
-    # res = "||\n".join([ (("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
-    #                           for (i,x) in enumerate(s.tile) ])
     res = ''
     for (i, x) in enumerate(s.tile):
       res += "# [tile"+str(i)+"]: " + x.line_trace() + x.ctrl_mem.line_trace() + '\n'
