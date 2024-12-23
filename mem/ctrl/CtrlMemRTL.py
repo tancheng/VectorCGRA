@@ -79,6 +79,8 @@ class CtrlMemRTL( Component ):
     # num_inports = len(s.reg_file.regs[0].predicate_in)
     num_outports = len(s.reg_file.regs[0].outport if hasattr(s.reg_file.regs[0], 'outport') else [])
     num_direction_ports = num_outports - num_fu_in
+
+    # reg
     reg_dicts = [ dict(data.__dict__) for data in s.reg_file.regs ]
     reg_sub_header = {}
     for reg_dict in reg_dicts:
@@ -132,76 +134,130 @@ class CtrlMemRTL( Component ):
         reg_dict['fu_xbar_outport'] = [ int(fxop) for fxop in  reg_dict['fu_xbar_outport']]
       if 'routing_predicate_in' in reg_dict:
         reg_dict['routing_predicate_in'] = [ int(rpi) for rpi in  reg_dict['routing_predicate_in']]
-
     reg_dicts.insert(0, reg_sub_header)
     reg_md  = markdown_table(reg_dicts).set_params(quote=False).get_markdown()
 
-    # recv_opt_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_opt_msg_dict.items()])
+    # recv_ctrl
     recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
+    recv_ctrl_sub_header = {}
+    for key in recv_ctrl_msg_dict.keys():
+      recv_ctrl_sub_header[key] = ''
+    recv_ctrl_msg_list = []
     recv_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_ctrl_msg_dict['ctrl']]
     recv_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  recv_ctrl_msg_dict['fu_in']]
+    fu_in_header = []
+    for idx, val in enumerate(recv_ctrl_msg_dict['fu_in']):
+      fu_in_header.append(idx)
+    fu_in_header_str = "|".join([f"{hd : ^3}" for hd in fu_in_header])
+    recv_ctrl_msg_dict['fu_in'] = "|".join([f"{v : ^3}" for v in recv_ctrl_msg_dict['fu_in']])
+    recv_ctrl_sub_header['fu_in'] = fu_in_header_str
+
     if 'outport' in recv_ctrl_msg_dict:
       recv_ctrl_msg_dict['outport'] = [ int(op) for op in  recv_ctrl_msg_dict['outport']]
       fu_reg_num = 1
+      outport_sub_header = []
       for idx, val in enumerate(recv_ctrl_msg_dict['outport']):
         # to directions
         if idx <= num_direction_ports - 1:
-          recv_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[idx]}({tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'})"
+          outport_sub_header.append(tile_port_direction_dict_short_desc[idx])
+          recv_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'}"
         # to fu regs
         else:
-          recv_ctrl_msg_dict['outport'][idx] = f"fu_reg_{fu_reg_num}({tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'})"
+          outport_sub_header.append(f"fu_reg_{fu_reg_num}")
+          recv_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'}"
           fu_reg_num += 1
+      outport_sub_header_str = "|".join([f"{hd : ^8}" for hd in outport_sub_header])
+      recv_ctrl_msg_dict['outport'] = "|".join([f"{v : ^8}" for v in recv_ctrl_msg_dict['outport']])
+      recv_ctrl_sub_header['outport'] = outport_sub_header_str
     if 'predicate_in' in recv_ctrl_msg_dict:
       recv_ctrl_msg_dict['predicate_in'] = [ int(pi) for pi in  recv_ctrl_msg_dict['predicate_in']]
       fu_out_num = 1
+      predicate_in_sub_header = []
       for idx, val in enumerate(recv_ctrl_msg_dict['predicate_in']):
         # from directions
         if idx <= num_direction_ports - 1:
-          recv_ctrl_msg_dict['predicate_in'][idx] = f"{tile_port_direction_dict_short_desc[idx]}({val})"
+          predicate_in_sub_header.append(tile_port_direction_dict_short_desc[idx])
+          recv_ctrl_msg_dict['predicate_in'][idx] = f"{val}"
         # from fu
         else:
-          recv_ctrl_msg_dict['predicate_in'][idx] = f"fu_out_{fu_out_num}({val})"
+          predicate_in_sub_header.append(f"fu_out_{fu_out_num}")
+          recv_ctrl_msg_dict['predicate_in'][idx] = f"{val}"
           fu_out_num += 1
-    recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_ctrl_msg_dict.items()])
+      predicate_in_sub_header_str = "|".join([f"{hd : ^8}" for hd in predicate_in_sub_header])
+      recv_ctrl_msg_dict['predicate_in'] = "|".join([f"{v : ^8}" for v in recv_ctrl_msg_dict['predicate_in']])
+      recv_ctrl_sub_header['predicate_in'] = predicate_in_sub_header_str
+    recv_ctrl_msg_list.append(recv_ctrl_sub_header)
+    recv_ctrl_msg_list.append(recv_ctrl_msg_dict)
+    send_ctrl_md = markdown_table(recv_ctrl_msg_list).set_params(quote=False).get_markdown()
+    # recv_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in recv_ctrl_msg_dict.items()])
 
+
+    # send_ctrl
     send_ctrl_msg_dict = dict(s.send_ctrl.msg.__dict__)
+    send_ctrl_sub_header = {}
+    for key in send_ctrl_msg_dict.keys():
+      send_ctrl_sub_header[key] = ''
+    send_ctrl_msg_list = []
     send_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[send_ctrl_msg_dict['ctrl']]
     if 'predicate' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['predicate'] = int(send_ctrl_msg_dict['predicate'])
     send_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in  send_ctrl_msg_dict['fu_in']]
+    fu_in_header = []
+    for idx, val in enumerate(send_ctrl_msg_dict['fu_in']):
+      fu_in_header.append(idx)
+    fu_in_header_str = "|".join([f"{hd : ^3}" for hd in fu_in_header])
+    send_ctrl_msg_dict['fu_in'] = "|".join([f"{v : ^3}" for v in send_ctrl_msg_dict['fu_in']])
+    send_ctrl_sub_header['fu_in'] = fu_in_header_str
+
     if 'outport' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['outport'] = [int(op) for op in send_ctrl_msg_dict['outport']]
       fu_reg_num = 1
+      outport_sub_header = []
       for idx, val in enumerate(send_ctrl_msg_dict['outport']):
         # to directions
         if idx <= num_direction_ports - 1:
-          send_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[idx]}({tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'})"
+          outport_sub_header.append(tile_port_direction_dict_short_desc[idx])
+          send_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'}"
         # to fu regs
         else:
-          send_ctrl_msg_dict['outport'][idx] = f"fu_reg_{fu_reg_num}({tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'})"
+          outport_sub_header.append(f"fu_reg_{fu_reg_num}")
+          send_ctrl_msg_dict['outport'][idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-'}"
           fu_reg_num += 1
+      outport_sub_header_str = "|".join([f"{hd : ^8}" for hd in outport_sub_header])
+      send_ctrl_msg_dict['outport'] = "|".join([f"{v : ^8}" for v in send_ctrl_msg_dict['outport']])
+      send_ctrl_sub_header['outport'] = outport_sub_header_str
     if 'predicate_in' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['predicate_in'] = [int(pi) for pi in send_ctrl_msg_dict['predicate_in']]
       fu_out_num = 1
+      predicate_in_sub_header = []
       for idx, val in enumerate(send_ctrl_msg_dict['predicate_in']):
         # from directions
         if idx <= num_direction_ports - 1:
-          send_ctrl_msg_dict['predicate_in'][idx] = f"{tile_port_direction_dict_short_desc[idx]}({val})"
+          predicate_in_sub_header.append(tile_port_direction_dict_short_desc[idx])
+          send_ctrl_msg_dict['predicate_in'][idx] = f"{val}"
         # from fu
         else:
-          send_ctrl_msg_dict['predicate_in'][idx] = f"fu_out_{fu_out_num}({val})"
+          predicate_in_sub_header.append(f"fu_out_{fu_out_num}")
+          send_ctrl_msg_dict['predicate_in'][idx] = f"{val}"
           fu_out_num += 1
+      predicate_in_sub_header_str = "|".join([f"{hd : ^8}" for hd in predicate_in_sub_header])
+      send_ctrl_msg_dict['predicate_in'] = "|".join([f"{v : ^8}" for v in send_ctrl_msg_dict['predicate_in']])
+      send_ctrl_sub_header['predicate_in'] = predicate_in_sub_header_str
     if 'routing_xbar_outport' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['routing_xbar_outport'] = [int(rxop) for rxop in send_ctrl_msg_dict['routing_xbar_outport']]
     if 'fu_xbar_outport' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['fu_xbar_outport'] = [int(fxop) for fxop in send_ctrl_msg_dict['fu_xbar_outport']]
     if 'routing_predicate_in' in send_ctrl_msg_dict:
       send_ctrl_msg_dict['routing_predicate_in'] = [int(rpi) for rpi in send_ctrl_msg_dict['routing_predicate_in']]
-    send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
+
+    send_ctrl_msg_list.append(send_ctrl_sub_header)
+    send_ctrl_msg_list.append(send_ctrl_msg_dict)
+    send_ctrl_md = markdown_table(send_ctrl_msg_list).set_params(quote=False).get_markdown()
+    # send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
     return (f'\n## class: {s.__class__.__name__}\n'
             f'- recv_ctrl_msg:\n'
-            f'{recv_ctrl_msg}\n\n'
-            f'- send_ctrl_msg:\n'
-            f'{send_ctrl_msg}\n\n'
+            f'{send_ctrl_md}\n\n'
+            f'- send_ctrl_msg:'
+            f'{send_ctrl_md}\n\n'
             f'- regs: {reg_md}\n')
 
