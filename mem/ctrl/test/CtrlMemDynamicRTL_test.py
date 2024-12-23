@@ -62,23 +62,23 @@ class TestHarness( Component ):
     return s.src_data0.done() and s.src_data1.done() and \
            s.src_pkt.done() and s.sink_out.done()
 
-  def line_trace( s ):
+  def line_trace(s):
     return s.alu.line_trace() + " || " +s.ctrl_mem.line_trace()
 
-def run_sim( test_harness, max_cycles=20 ):
+def run_sim(test_harness, max_cycles = 20):
   test_harness.elaborate()
-  test_harness.apply( DefaultPassGroup() )
+  test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
   # Run simulation
 
   ncycles = 0
   print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+  print("{}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+    print( "{}:{}".format(ncycles, test_harness.line_trace()))
 
   # Check timeout
 

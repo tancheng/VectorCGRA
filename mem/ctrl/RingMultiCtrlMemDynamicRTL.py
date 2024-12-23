@@ -19,38 +19,20 @@ from ...cgra.CGRAWithCrossbarDataMemRTL import CGRAWithCrossbarDataMemRTL
 from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 
 class RingMultiCtrlMemDynamicRTL(Component):
-
   def construct(s, CtrlPktType, CtrlSignalType, width, height,
                 ctrl_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports,
                 ctrl_count_per_iter = 4, total_ctrl_steps = 4):
-
     # Constant
     num_terminals = width * height
     CtrlRingPos = mk_ring_pos(num_terminals)
     s.num_terminals = width * height
-    # CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-    # ControllerIdType = mk_bits(clog2(num_terminals))
 
     # Interface
-    # # Request from/to CPU.
-    # s.recv_from_cpu = RecvIfcRTL(CGRADataType)
-    # s.send_to_cpu = SendIfcRTL(CGRADataType)
-    # s.recv_waddr = [[RecvIfcRTL(CtrlAddrType) for _ in range(s.num_tiles)]
-    #                 for _ in range(s.num_terminals)]
-    # s.recv_wopt = [[RecvIfcRTL(CtrlType)  for _ in range(s.num_tiles)]
-    #                for _ in range(s.num_terminals)]
     s.send_ctrl = [SendIfcRTL(CtrlSignalType) for _ in range(s.num_terminals)]
     s.recv_pkt_from_controller = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Components
-    # s.cgra = [CGRAWithCrossbarDataMemRTL(
-    #     CGRADataType, PredicateType, CtrlType, NocPktType, CmdType,
-    #     ControllerIdType, terminal_id, width, height, ctrl_mem_size,
-    #     data_mem_size_global, data_mem_size_per_bank, num_banks_per_cgra,
-    #     num_ctrl, total_steps, FunctionUnit, FuList, controller2addr_map,
-    #     preload_data = None, preload_const = None)
-    #   for terminal_id in range(s.num_terminals)]
     s.ctrl_memories = [
         CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType, ctrl_mem_size,
                           num_fu_inports, num_fu_outports, num_tile_inports,
