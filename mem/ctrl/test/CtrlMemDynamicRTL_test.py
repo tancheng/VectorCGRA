@@ -13,6 +13,7 @@ from ..CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ....fu.single.AdderRTL import AdderRTL
 from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
 from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 from ....lib.messages import *
 from ....lib.cmd_type import *
 from ....lib.opt_type import *
@@ -35,7 +36,7 @@ class TestHarness( Component ):
     s.src_data1 = TestSrcRTL(DataType, src1_msgs)
     # s.src_waddr = TestSrcRTL(AddrType, ctrl_waddr )
     # s.src_wdata = TestSrcRTL(ConfigType, ctrl_msgs  )
-    s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
+    s.src_pkt = ValRdyTestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.alu = AdderRTL(DataType, PredicateType, CtrlSignalType, 2, 2,
@@ -121,11 +122,11 @@ def test_Ctrl():
   src_data0 = [DataType(1, 1), DataType(5, 1), DataType(7, 1), DataType(6, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1), DataType(2, 1), DataType(3, 1)]
 
-  src_ctrl_pkt = [CtrlPktType(0, 1, 0, CMD_CONFIG, 0, OPT_ADD, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, CMD_CONFIG, 1, OPT_SUB, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, CMD_CONFIG, 2, OPT_SUB, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, CMD_CONFIG, 3, OPT_ADD, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, CMD_LAUNCH, 0, OPT_ADD, b1(0), pickRegister)]
+  src_ctrl_pkt = [CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 0, OPT_ADD, b1(0), pickRegister),
+                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 1, OPT_SUB, b1(0), pickRegister),
+                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 2, OPT_SUB, b1(0), pickRegister),
+                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 3, OPT_ADD, b1(0), pickRegister),
+                  CtrlPktType(0, 1, 0, 0, CMD_LAUNCH, 0, OPT_ADD, b1(0), pickRegister)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,

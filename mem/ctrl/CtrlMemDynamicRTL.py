@@ -10,9 +10,11 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.dstruct.queues import NormalQueue
+# from pymtl3.stdlib.dstruct.queues import NormalQueue
 from pymtl3.stdlib.primitive import RegisterFile
-from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.en_rdy.ifcs import SendIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
+from ...lib.basic.val_rdy.queues import NormalQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
 
@@ -37,47 +39,52 @@ class CtrlMemDynamicRTL(Component):
 
     # Interface
     s.send_ctrl = SendIfcRTL(CtrlSignalType)
-    s.recv_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_pkt = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Component
     s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
-    s.recv_pkt_queue = NormalQueue(CtrlPktType)
+    # FIXME: valrdy normal queue RTL?
+    s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
-    s.recv_pkt.rdy //= s.recv_pkt_queue.enq_rdy
+    # s.recv_pkt.rdy //= s.recv_pkt_queue.enq_rdy
+    s.recv_pkt //= s.recv_pkt_queue.recv
 
     @update
     def update_msg():
 
-      s.recv_pkt_queue.enq_en @= s.recv_pkt.en & s.recv_pkt_queue.enq_rdy
-      s.recv_pkt_queue.enq_msg @= CtrlPktType()
+      # s.recv_pkt_queue.enq_en @= s.recv_pkt.en & s.recv_pkt_queue.enq_rdy
+      # s.recv_pkt_queue.enq_msg @= CtrlPktType()
+      s.reg_file.wen[0] @= 0
       s.reg_file.wdata[0] @= CtrlSignalType()
-      if s.recv_pkt.en:
-        s.recv_pkt_queue.enq_msg @= s.recv_pkt.msg
+      s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
 
-      if s.recv_pkt_queue.deq_msg.ctrl_action == CMD_CONFIG:
+      # if s.recv_pkt.en:
+      #   s.recv_pkt_queue.enq_msg @= s.recv_pkt.msg
+
+      if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
         s.reg_file.wen[0] @= 1 # s.recv_pkt_queue.deq_en
-        s.reg_file.waddr[0] @= s.recv_pkt_queue.deq_msg.ctrl_addr
+        s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
         # Fills the fields of the control signal.
-        s.reg_file.wdata[0].ctrl @= s.recv_pkt_queue.deq_msg.ctrl_operation
-        s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.deq_msg.ctrl_predicate
+        s.reg_file.wdata[0].ctrl @= s.recv_pkt_queue.send.msg.ctrl_operation
+        s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.ctrl_predicate
         for i in range(num_fu_inports):
-          s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.deq_msg.ctrl_fu_in[i]
+          s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_in[i]
         for i in range(num_routing_outports):
-          s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.deq_msg.ctrl_routing_xbar_outport[i]
-          s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.deq_msg.ctrl_fu_xbar_outport[i]
+          s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[i]
+          s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[i]
         for i in range(num_tile_inports):
-          s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.deq_msg.ctrl_routing_predicate_in[i]
+          s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_predicate_in[i]
 
       # @yo96? depending on data, causing combinational loop or not?
-      if (s.recv_pkt_queue.deq_msg.ctrl_action == CMD_CONFIG) | \
-         (s.recv_pkt_queue.deq_msg.ctrl_action == CMD_LAUNCH) | \
-         (s.recv_pkt_queue.deq_msg.ctrl_action == CMD_TERMINATE) | \
-         (s.recv_pkt_queue.deq_msg.ctrl_action == CMD_PAUSE):
-        s.recv_pkt_queue.deq_en @= 1
+      if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE):
+        s.recv_pkt_queue.send.rdy @= 1
       # TODO: Extend for the other commands. Maybe another queue to
       # handle complicated actions.
       # else:
@@ -93,20 +100,20 @@ class CtrlMemDynamicRTL(Component):
         else:
           s.send_ctrl.en @= s.send_ctrl.rdy
       # @yo96? What would happen if we overwrite? ok?
-      if s.recv_pkt_queue.deq_rdy & \
-         ((s.recv_pkt_queue.deq_msg.ctrl_action == CMD_PAUSE) | \
-          (s.recv_pkt_queue.deq_msg.ctrl_action == CMD_TERMINATE)):
+      if s.recv_pkt_queue.send.val & \
+         ((s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
+          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE)):
         s.send_ctrl.en @= b1(0)
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
-      if s.recv_pkt_queue.deq_rdy:
+      if s.recv_pkt_queue.send.val:
         # @yo96? data is still there, not released yet?
-        if s.recv_pkt_queue.deq_msg.ctrl_action == CMD_LAUNCH:
+        if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
           s.start_iterate_ctrl <<= 1
-        elif s.recv_pkt_queue.deq_msg.ctrl_action == CMD_TERMINATE:
+        elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE:
           s.start_iterate_ctrl <<= 0
-        elif s.recv_pkt_queue.deq_msg.ctrl_action == CMD_PAUSE:
+        elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE:
           s.start_iterate_ctrl <<= 0
       # else:
       #   s.start_iterate_ctrl <<= 1

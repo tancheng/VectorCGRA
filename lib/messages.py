@@ -321,6 +321,7 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(1)
+  VcIdType = mk_bits(1)
 
   new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
@@ -363,6 +364,7 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   field_dict['src'] = IdType
   field_dict['dst'] = IdType
   field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
   field_dict['ctrl_action'] = CtrlActionType
   field_dict['ctrl_addr'] = CtrlAddrType
   field_dict['ctrl_operation'] = CtrlOperationType
