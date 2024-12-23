@@ -37,10 +37,9 @@ from ..rf.RegisterRTL import RegisterRTL
 class TileSeparateCrossbarRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports,
-                num_tile_inports, num_tile_outports,
-                Fu = FlexibleFuRTL,
+                ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
+                num_fu_inports, num_fu_outports, num_tile_inports,
+                num_tile_outports, Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
                           MemUnitRTL], const_list = None):
 

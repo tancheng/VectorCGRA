@@ -13,6 +13,7 @@ from pymtl3.stdlib.primitive import RegisterFile
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL as ValRdySendIfcRTL
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as ValRdyRecvIfcRTL
+from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ..lib.cmd_type import *
@@ -20,7 +21,7 @@ from ..lib.opt_type import *
 
 class ControllerRTL(Component):
 
-  def construct(s, ControllerIdType, CmdType, NocPktType,
+  def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
                 CGRADataType, CGRAAddrType, controller_id,
                 controller2addr_map):
 
@@ -28,6 +29,9 @@ class ControllerRTL(Component):
     # Request from/to other CGRA via NoC.
     s.recv_from_noc = ValRdyRecvIfcRTL(NocPktType)
     s.send_to_noc = ValRdySendIfcRTL(NocPktType)
+
+    s.recv_from_cpu_ctrl_pkt = ValRdyRecvIfcRTL(CtrlPktType)
+    s.send_to_ctrl_ring_ctrl_pkt = ValRdySendIfcRTL(CtrlPktType)
 
     # Request from/to master.
     s.recv_from_master_load_request_pkt = RecvIfcRTL(NocPktType)
@@ -59,6 +63,8 @@ class ControllerRTL(Component):
     # TODO: Include other cmd requests, e.g., dynamic rescheduling,
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 3, 1)
+
+    s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -103,6 +109,10 @@ class ControllerRTL(Component):
     s.send_to_master_load_response_data_queue.send //= s.send_to_master_load_response_data
     s.send_to_master_store_request_addr_queue.send //= s.send_to_master_store_request_addr
     s.send_to_master_store_request_data_queue.send //= s.send_to_master_store_request_data
+
+    # For control signals delivery from CPU to tiles.
+    s.recv_from_cpu_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
+    s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
 
     @update
     def update_received_msg():
