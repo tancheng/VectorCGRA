@@ -56,14 +56,9 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_msg():
 
-      # s.recv_pkt_queue.enq_en @= s.recv_pkt.en & s.recv_pkt_queue.enq_rdy
-      # s.recv_pkt_queue.enq_msg @= CtrlPktType()
       s.reg_file.wen[0] @= 0
       s.reg_file.wdata[0] @= CtrlSignalType()
       s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
-
-      # if s.recv_pkt.en:
-      #   s.recv_pkt_queue.enq_msg @= s.recv_pkt.msg
 
       if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
         s.reg_file.wen[0] @= 1 # s.recv_pkt_queue.deq_en
@@ -79,7 +74,6 @@ class CtrlMemDynamicRTL(Component):
         for i in range(num_tile_inports):
           s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_predicate_in[i]
 
-      # @yo96? depending on data, causing combinational loop or not?
       if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE) | \
@@ -99,7 +93,6 @@ class CtrlMemDynamicRTL(Component):
           s.send_ctrl.en @= b1(0)
         else:
           s.send_ctrl.en @= s.send_ctrl.rdy
-      # @yo96? What would happen if we overwrite? ok?
       if s.recv_pkt_queue.send.val & \
          ((s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE)):
@@ -120,9 +113,7 @@ class CtrlMemDynamicRTL(Component):
 
     @update_ff
     def update_raddr():
-      # if s.reg_file.rdata[0].ctrl != OPT_START:
       if s.start_iterate_ctrl == b1(1):
-        # @yo96? There is no else, what would happen on the s.times and raddr[0]?
         if (total_ctrl_steps == 0) | \
            (s.times < TimeType(total_ctrl_steps)):
           s.times <<= s.times + TimeType(1)
