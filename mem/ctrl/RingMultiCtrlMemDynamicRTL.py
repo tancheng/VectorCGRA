@@ -14,9 +14,8 @@ from .CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
 from ...lib.opt_type import *
-from ...noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
-from ...cgra.CGRAWithCrossbarDataMemRTL import CGRAWithCrossbarDataMemRTL
 from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
+from ...noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 
 class RingMultiCtrlMemDynamicRTL(Component):
   def construct(s, CtrlPktType, CtrlSignalType, width, height,

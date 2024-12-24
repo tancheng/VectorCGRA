@@ -10,7 +10,6 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-# from pymtl3.stdlib.dstruct.queues import NormalQueue
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
