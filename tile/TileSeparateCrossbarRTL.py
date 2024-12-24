@@ -191,101 +191,115 @@ class TileSeparateCrossbarRTL(Component):
                                   s.routing_crossbar.recv_opt.rdy & \
                                   s.fu_crossbar.recv_opt.rdy
 
+  # verbose trace if verbosity > 0
+  def verbose_trace(s, verbosity=1):
+      recv_data = [x.msg.__dict__ for x in s.recv_data]
+      recv_list = []
+      for idx, data in enumerate(recv_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"inport_direction": port_direction}
+          dict_with_direction.update(data)
+          recv_list.append(dict_with_direction)
+      recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
 
+      routing_crossbar_dict = dict(s.routing_crossbar.recv_opt.msg.__dict__)
+      routing_crossbar_dict['ctrl'] = OPT_SYMBOL_DICT[routing_crossbar_dict['ctrl']]
+      routing_crossbar_dict['predicate'] = int(routing_crossbar_dict['predicate'])
+      routing_crossbar_dict['fu_in'] = [int(fi) for fi in routing_crossbar_dict['fu_in']]
+      routing_crossbar_dict['fu_xbar_outport'] = [int(fxop) for fxop in routing_crossbar_dict['fu_xbar_outport']]
+      routing_crossbar_dict['routing_predicate_in'] = [int(rpi) for rpi in
+                                                       routing_crossbar_dict['routing_predicate_in']]
+      routing_crossbar_dict['routing_xbar_outport'] = [int(rxop) for rxop in
+                                                       routing_crossbar_dict['routing_xbar_outport']]
+      routing_crossbar_str = "\n".join([(key + ": " + str(value)) for key, value in routing_crossbar_dict.items()])
+
+      fu_crossbar_dict = dict(s.fu_crossbar.recv_opt.msg.__dict__)
+      fu_crossbar_dict['ctrl'] = OPT_SYMBOL_DICT[fu_crossbar_dict['ctrl']]
+      fu_crossbar_dict['predicate'] = int(fu_crossbar_dict['predicate'])
+      fu_crossbar_dict['fu_in'] = [int(fi) for fi in fu_crossbar_dict['fu_in']]
+      fu_crossbar_dict['fu_xbar_outport'] = [int(fxop) for fxop in fu_crossbar_dict['fu_xbar_outport']]
+      fu_crossbar_dict['routing_predicate_in'] = [int(rpi) for rpi in fu_crossbar_dict['routing_predicate_in']]
+      fu_crossbar_dict['routing_xbar_outport'] = [int(rxop) for rxop in fu_crossbar_dict['routing_xbar_outport']]
+      fu_crossbar_str = "\n".join([(key + ": " + str(value)) for key, value in fu_crossbar_dict.items()])
+
+      tile_out_channel_recv_data = [x.recv.msg.__dict__ for x in s.tile_out_channel]
+      tile_out_channel_recv_data_list = []
+      for idx, data in enumerate(tile_out_channel_recv_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"inport_direction": port_direction}
+          dict_with_direction.update(data)
+          tile_out_channel_recv_data_list.append(dict_with_direction)
+      tile_out_channel_recv_md = markdown_table(tile_out_channel_recv_data_list).set_params(quote=False).get_markdown()
+
+      tile_out_channel_send_data = [x.send.msg.__dict__ for x in s.tile_out_channel]
+      tile_out_channel_send_data_list = []
+      for idx, data in enumerate(tile_out_channel_send_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"outport_direction": port_direction}
+          dict_with_direction.update(data)
+          tile_out_channel_send_data_list.append(dict_with_direction)
+      tile_out_channel_send_md = markdown_table(tile_out_channel_send_data_list).set_params(quote=False).get_markdown()
+
+      fu_in_channel_recv_data = [x.recv.msg.__dict__ for x in s.fu_in_channel]
+      fu_in_channel_recv_data_list = []
+      for idx, data in enumerate(fu_in_channel_recv_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"inport_direction": port_direction}
+          dict_with_direction.update(data)
+          fu_in_channel_recv_data_list.append(dict_with_direction)
+      fu_in_channel_recv_md = markdown_table(fu_in_channel_recv_data_list).set_params(quote=False).get_markdown()
+
+      fu_in_channel_send_data = [x.send.msg.__dict__ for x in s.fu_in_channel]
+      fu_in_channel_send_data_list = []
+      for idx, data in enumerate(fu_in_channel_send_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"outport_direction": port_direction}
+          dict_with_direction.update(data)
+          fu_in_channel_send_data_list.append(dict_with_direction)
+      fu_in_channel_send_md = markdown_table(fu_in_channel_send_data_list).set_params(quote=False).get_markdown()
+
+      tile_outports_data = [x.msg.__dict__ for x in s.send_data]
+      tile_outports_data_list = []
+      for idx, data in enumerate(tile_outports_data):
+          port_direction = tile_port_direction_dict[idx]
+          dict_with_direction = {"outport_direction": port_direction}
+          dict_with_direction.update(data)
+          tile_outports_data_list.append(dict_with_direction)
+      tile_outports_md = markdown_table(tile_outports_data_list).set_params(quote=False).get_markdown()
+
+      return (f'\n## class: {s.__class__.__name__}\n'
+              f'- tile_inports:\n'
+              f'{recv_md}\n'
+              f'===>\n'
+              f'- routing_crossbar:\n'
+              f'{routing_crossbar_str}\n'
+              f'- fu_crossbar:\n'
+              f'{fu_crossbar_str}\n'
+              f'- element:\n'
+              f'{s.element.line_trace()}\n'
+              f'- tile_out_channels_recv:\n'
+              f'{tile_out_channel_recv_md}\n'
+              f'===>\n'
+              f'- tile_out_channel_send:\n'
+              f'{tile_out_channel_send_md}\n'
+              f'- fu_in_channels_recv:\n'
+              f'{fu_in_channel_recv_md}\n'
+              f'===>\n'
+              f'- fu_in_channels_send:\n'
+              f'{fu_in_channel_send_md}\n'
+              f'===>\n'
+              f'- tile_outports:\n'
+              f'{tile_outports_md}\n')
   # Line trace
-  def line_trace( s ):
-    recv_data = [x.msg.__dict__ for x in s.recv_data]
-    recv_list = []
-    for idx, data in enumerate(recv_data):
-      port_direction = tile_port_direction_dict[idx]
-      dict_with_direction = {"inport_direction": port_direction}
-      dict_with_direction.update(data)
-      recv_list.append(dict_with_direction)
-    recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-
-    routing_crossbar_dict = dict(s.routing_crossbar.recv_opt.msg.__dict__)
-    routing_crossbar_dict['ctrl'] = OPT_SYMBOL_DICT[routing_crossbar_dict['ctrl']]
-    routing_crossbar_dict['predicate'] = int(routing_crossbar_dict['predicate'])
-    routing_crossbar_dict['fu_in'] = [int(fi) for fi in routing_crossbar_dict['fu_in']]
-    routing_crossbar_dict['fu_xbar_outport'] = [int(fxop) for fxop in routing_crossbar_dict['fu_xbar_outport']]
-    routing_crossbar_dict['routing_predicate_in'] = [int(rpi) for rpi in routing_crossbar_dict['routing_predicate_in']]
-    routing_crossbar_dict['routing_xbar_outport'] = [int(rxop) for rxop in routing_crossbar_dict['routing_xbar_outport']]
-    routing_crossbar_str = "\n".join([(key + ": " + str(value)) for key, value in routing_crossbar_dict.items()])
-
-    fu_crossbar_dict = dict(s.fu_crossbar.recv_opt.msg.__dict__)
-    fu_crossbar_dict['ctrl'] = OPT_SYMBOL_DICT[fu_crossbar_dict['ctrl']]
-    fu_crossbar_dict['predicate'] = int(fu_crossbar_dict['predicate'])
-    fu_crossbar_dict['fu_in'] = [int(fi) for fi in fu_crossbar_dict['fu_in']]
-    fu_crossbar_dict['fu_xbar_outport'] = [int(fxop) for fxop in fu_crossbar_dict['fu_xbar_outport']]
-    fu_crossbar_dict['routing_predicate_in'] = [int(rpi) for rpi in fu_crossbar_dict['routing_predicate_in']]
-    fu_crossbar_dict['routing_xbar_outport'] = [int(rxop) for rxop in fu_crossbar_dict['routing_xbar_outport']]
-    fu_crossbar_str = "\n".join([(key + ": " + str(value)) for key, value in fu_crossbar_dict.items()])
-
-    tile_out_channel_recv_data = [x.recv.msg.__dict__ for x in s.tile_out_channel]
-    tile_out_channel_recv_data_list = []
-    for idx, data in enumerate(tile_out_channel_recv_data):
-        port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"inport_direction": port_direction}
-        dict_with_direction.update(data)
-        tile_out_channel_recv_data_list.append(dict_with_direction)
-    tile_out_channel_recv_md = markdown_table(tile_out_channel_recv_data_list).set_params(quote=False).get_markdown()
-
-    tile_out_channel_send_data = [x.send.msg.__dict__ for x in s.tile_out_channel]
-    tile_out_channel_send_data_list = []
-    for idx, data in enumerate(tile_out_channel_send_data):
-        port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"outport_direction": port_direction}
-        dict_with_direction.update(data)
-        tile_out_channel_send_data_list.append(dict_with_direction)
-    tile_out_channel_send_md = markdown_table(tile_out_channel_send_data_list).set_params(quote=False).get_markdown()
-
-    fu_in_channel_recv_data = [x.recv.msg.__dict__ for x in s.fu_in_channel]
-    fu_in_channel_recv_data_list = []
-    for idx, data in enumerate(fu_in_channel_recv_data):
-        port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"inport_direction": port_direction}
-        dict_with_direction.update(data)
-        fu_in_channel_recv_data_list.append(dict_with_direction)
-    fu_in_channel_recv_md = markdown_table(fu_in_channel_recv_data_list).set_params(quote=False).get_markdown()
-
-    fu_in_channel_send_data = [x.send.msg.__dict__ for x in s.fu_in_channel]
-    fu_in_channel_send_data_list = []
-    for idx, data in enumerate(fu_in_channel_send_data):
-        port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"outport_direction": port_direction}
-        dict_with_direction.update(data)
-        fu_in_channel_send_data_list.append(dict_with_direction)
-    fu_in_channel_send_md = markdown_table(fu_in_channel_send_data_list).set_params(quote=False).get_markdown()
-
-    tile_outports_data = [x.msg.__dict__ for x in s.send_data]
-    tile_outports_data_list = []
-    for idx, data in enumerate(tile_outports_data):
-        port_direction = tile_port_direction_dict[idx]
-        dict_with_direction = {"outport_direction": port_direction}
-        dict_with_direction.update(data)
-        tile_outports_data_list.append(dict_with_direction)
-    tile_outports_md = markdown_table(tile_outports_data_list).set_params(quote=False).get_markdown()
-
-    return (f'\n## class: {s.__class__.__name__}\n'
-            f'- tile_inports:\n'
-            f'{recv_md}\n'
-            f'===>\n'
-            f'- routing_crossbar:\n'
-            f'{routing_crossbar_str}\n'
-            f'- fu_crossbar:\n'
-            f'{fu_crossbar_str}\n'
-            f'- element:\n'
-            f'{s.element.line_trace()}\n'
-            f'- tile_out_channels_recv:\n'
-            f'{tile_out_channel_recv_md}\n'
-            f'===>\n'
-            f'- tile_out_channel_send:\n'
-            f'{tile_out_channel_send_md}\n'
-            f'- fu_in_channels_recv:\n'
-            f'{fu_in_channel_recv_md}\n'
-            f'===>\n'
-            f'- fu_in_channels_send:\n'
-            f'{fu_in_channel_send_md}\n'
-            f'===>\n'
-            f'- tile_outports:\n'
-            f'{tile_outports_md}\n')
+  def line_trace( s, verbosity=0 ):
+    if verbosity == 0:
+        recv_str = "|".join([str(x.msg) for x in s.recv_data])
+        tile_out_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_out_channel])
+        tile_out_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_out_channel])
+        fu_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.fu_in_channel])
+        fu_in_channel_send_str = "|".join([str(x.send.msg) for x in s.fu_in_channel])
+        out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
+        return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} ## "
+        # return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+    else:
+        return s.verbose_trace(verbosity=verbosity)

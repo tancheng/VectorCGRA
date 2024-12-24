@@ -124,40 +124,50 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
+  # verbose trace if verbosity > 0
+  def verbose_trace(s, verbosity=1):
+      # recv:
+      #   1. rdy (if ready to receive data), if en and rdy: then data has been transferred (val, rdy are new type(protocol))
+      #   2. data
+      #   [3. opt will show in FU trace]
+      # FU:
+      #   FlexibleFuRTL.py
+      # tile out:
+      #   1. en (is data transferred)
+      recv_data = [x for x in s.recv_data]
+      recv_list = []
+      for idx, data in enumerate(recv_data):
+          msg_dict = data.msg.__dict__
+          tile_inport_dict = {"tile_inport_direction": tile_port_direction_dict[idx], "rdy": data.rdy}
+          tile_inport_dict.update(msg_dict)
+          recv_list.append(tile_inport_dict)
+      recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
+
+      out_data = [x for x in s.send_data]
+      out_list = []
+      for idx, data in enumerate(out_data):
+          msg_dict = data.msg.__dict__
+          tile_outport_dict = {"tile_outport_direction": tile_port_direction_dict[idx], "en": data.en}
+          tile_outport_dict.update(msg_dict)
+          out_list.append(tile_outport_dict)
+      out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
+      return (f"\n## class[{s.__class__.__name__}]:\n"
+              f"- Tile recv:"
+              f"{recv_md}\n"
+              f"- FU element:\n"
+              f"{s.element.line_trace(verbosity=verbosity)}\n"
+              f"===>\n"
+              f"- Tile out:"
+              f"{out_md}\n")
 
   # Line trace
-  def line_trace( s ):
-    # recv:
-    #   1. rdy (if ready to receive data), if en and rdy: then data has been transferred (val, rdy are new type(protocol))
-    #   2. data
-    #   [3. opt will show in FU trace]
-    # FU:
-    #   FlexibleFuRTL.py
-    # tile out:
-    #   1. en (is data transferred)
-    recv_data = [x for x in s.recv_data]
-    recv_list = []
-    for idx, data in enumerate(recv_data):
-        msg_dict = data.msg.__dict__
-        tile_inport_dict = {"tile_inport_direction": tile_port_direction_dict[idx], "rdy": data.rdy}
-        tile_inport_dict.update(msg_dict)
-        recv_list.append(tile_inport_dict)
-    recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-
-    out_data = [x for x in s.send_data]
-    out_list = []
-    for idx, data in enumerate(out_data):
-        msg_dict = data.msg.__dict__
-        tile_outport_dict = {"tile_outport_direction": tile_port_direction_dict[idx], "en": data.en}
-        tile_outport_dict.update(msg_dict)
-        out_list.append(tile_outport_dict)
-    out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
-    return (f"\n## class[{s.__class__.__name__}]:\n"
-            f"- Tile recv:"
-            f"{recv_md}\n"
-            f"- FU element:\n"
-            f"{s.element.line_trace()}\n"
-            f"===>\n"
-            f"- Tile out:"
-            f"{out_md}\n")
+  def line_trace( s, verbosity=0 ):
+      if verbosity == 0:
+          recv_str = "|".join([str(x.msg) for x in s.recv_data])
+          channel_recv_str = "|".join([str(x.recv.msg) for x in s.channel])
+          channel_send_str = "|".join([str(x.send.msg) for x in s.channel])
+          out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
+          return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+      else:
+          return s.verbose_trace(verbosity=verbosity)
 

@@ -113,8 +113,8 @@ class FlexibleFuRTL( Component ):
           s.fu_recv_in_rdy_vector[port][i] @= s.fu[i].recv_in[port].rdy
         s.recv_in[port].rdy @= reduce_or( s.fu_recv_in_rdy_vector[port] )
 
-
-  def line_trace( s ):
+  # verbose trace if verbosity > 0
+  def verbose_trace(s, verbosity=1):
     # for clk n
     # recv:
     #   1. OPT: opt+rdy(if ready to receive opt)
@@ -151,3 +151,13 @@ class FlexibleFuRTL( Component ):
             f'- FU out:'
             f'{out_md}\n')
 
+  def line_trace( s, verbosity=0 ):
+    if verbosity == 0:
+      opt_str = " #"
+      if s.recv_opt.en:
+        opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      out_str = ",".join([str(x.msg) for x in s.send_out])
+      recv_str = ",".join([str(x.msg) for x in s.recv_in])
+      return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, en: {s.recv_const.en}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.en: {s.recv_opt.en}, send[0].en: {s.send_out[0].en}) '
+    else:
+      return s.verbose_trace(verbosity=verbosity)
