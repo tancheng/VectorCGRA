@@ -1,11 +1,14 @@
 """
 =========================================================================
-CGRAMemBottomRTL.py
+CgraMemRightAndBottomRTL.py
 =========================================================================
-The scrachpad memory is connected to the bottom (first row) tiles.
+Two scrachpad memories are connected to the bottom (first row) and the
+last column (except the one on the first row) tiles. For example, in a
+3x3 CGRA, the bottom 3 tiles are connected to the south SPM while right-
+most 2 tlies (from top to bottom) are connected to the east SPM.
 
 Author : Cheng Tan
-  Date : Nov 18, 2024
+  Date : Nov 19, 2024
 """
 
 from pymtl3 import *
@@ -21,8 +24,7 @@ from ..noc.ChannelRTL import ChannelRTL
 from ..noc.CrossbarRTL import CrossbarRTL
 from ..tile.TileRTL import TileRTL
 
-class CGRAMemBottomRTL(Component):
-
+class CgraMemRightAndBottomRTL(Component):
   def construct(s, DataType, PredicateType, CtrlType, width, height,
                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 FunctionUnit, FuList, preload_data = None,
@@ -45,10 +47,17 @@ class CGRAMemBottomRTL(Component):
                       s.num_mesh_ports, Fu = FunctionUnit,
                       FuList = FuList, const_list = preload_const[i])
                       for i in range(s.num_tiles)]
-    s.data_mem = DataMemRTL(DataType, data_mem_size, height, height,
-                            preload_data)
 
-    s.send_data = [SendIfcRTL(DataType) for _ in range (height - 1)]
+    s.data_mem_south = DataMemRTL(DataType, data_mem_size,
+                                  rd_ports = width, wr_ports = width,
+                                  preload_data = preload_data)
+
+    s.data_mem_east = DataMemRTL(DataType, data_mem_size,
+                                 rd_ports = height - 1,
+                                 wr_ports = height - 1,
+                                 preload_data = None)
+
+    # s.send_data = [SendIfcRTL(DataType) for _ in range (height - 1)]
 
     # Connections
     for i in range(s.num_tiles):
@@ -83,22 +92,30 @@ class CGRAMemBottomRTL(Component):
         s.tile[i].recv_data[PORT_WEST].msg //= DataType(0, 0)
 
       if i % width == width - 1:
-        if i // width != 0:
-          # Connects the send ports to the right-most tiles (except the
-          # ones on the first row).
-          s.tile[i].send_data[PORT_EAST] //= s.send_data[i // width - 1]
-          s.tile[i].recv_data[PORT_EAST].en //= 0
-          s.tile[i].recv_data[PORT_EAST].msg //= DataType(0, 0)
-        else:
-          s.tile[i].send_data[PORT_EAST].rdy //= 0
-          s.tile[i].recv_data[PORT_EAST].en //= 0
-          s.tile[i].recv_data[PORT_EAST].msg //= DataType(0, 0)
+        # if i // width != 0:
+        #   # Connects the send ports to the right-most tiles (except the
+        #   # ones on the first row).
+        #   s.tile[i].send_data[PORT_EAST] //= s.send_data[i // width - 1]
+        #   s.tile[i].recv_data[PORT_EAST].en //= 0
+        #   s.tile[i].recv_data[PORT_EAST].msg //= DataType(0, 0)
+        # else:
+        s.tile[i].send_data[PORT_EAST].rdy //= 0
+        s.tile[i].recv_data[PORT_EAST].en //= 0
+        s.tile[i].recv_data[PORT_EAST].msg //= DataType(0, 0)
 
       if i // width == 0:
-        s.tile[i].to_mem_raddr //= s.data_mem.recv_raddr[i % width]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[i % width]
-        s.tile[i].to_mem_waddr //= s.data_mem.recv_waddr[i % width]
-        s.tile[i].to_mem_wdata //= s.data_mem.recv_wdata[i % width]
+        # Connects the bottom tiles to the south SPM. 
+        s.tile[i].to_mem_raddr //= s.data_mem_south.recv_raddr[i % width]
+        s.tile[i].from_mem_rdata //= s.data_mem_south.send_rdata[i % width]
+        s.tile[i].to_mem_waddr //= s.data_mem_south.recv_waddr[i % width]
+        s.tile[i].to_mem_wdata //= s.data_mem_south.recv_wdata[i % width]
+      elif i // width != 0 and i % width == width - 1:
+        # Connects the right-most tiles (except the bottom ones) to the east
+        # SPM.
+        s.tile[i].to_mem_raddr //= s.data_mem_east.recv_raddr[i // width - 1]
+        s.tile[i].from_mem_rdata //= s.data_mem_east.send_rdata[i // width - 1]
+        s.tile[i].to_mem_waddr //= s.data_mem_east.recv_waddr[i // width - 1]
+        s.tile[i].to_mem_wdata //= s.data_mem_east.recv_wdata[i // width - 1]
       else:
         s.tile[i].to_mem_raddr.rdy //= 0
         s.tile[i].from_mem_rdata.en //= 0
@@ -112,5 +129,6 @@ class CGRAMemBottomRTL(Component):
     # str += " :: [" + s.data_mem.line_trace() + "]"
     res = "||\n".join([(("[tile" + str(i) + "]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
-    res += "\n :: Mem [" + s.data_mem.line_trace() + "]    \n"
+    res += "\n :: SouthMem [" + s.data_mem_south.line_trace() + "]    \n"
+    res += "\n :: EastMem [" + s.data_mem_east.line_trace() + "]    \n"
     return res
