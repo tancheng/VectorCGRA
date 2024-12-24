@@ -32,12 +32,12 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                num_terminals, width, height, ctrl_mem_size,
+                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, src_ctrl_pkt, ctrl_steps,
                 controller2addr_map):
 
-    s.num_terminals = num_terminals
+    s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
     # CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -50,7 +50,7 @@ class TestHarness(Component):
     #                 for i in range(s.num_terminals)]
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, num_terminals, width, height,
+                NocPktType, CmdType, cgra_rows, cgra_columns, height, width,
                 ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, ctrl_steps, ctrl_steps,
                 FunctionUnit, FuList, controller2addr_map)
@@ -93,7 +93,9 @@ def test_homo_2x2(cmdline_opts):
   data_mem_size_global = 32
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
-  num_terminals = 4
+  cgra_rows = 2
+  cgra_columns = 2
+  num_terminals = cgra_rows * cgra_columns
   width = 2
   height = 2
   num_ctrl_actions = 6
@@ -203,10 +205,10 @@ def test_homo_2x2(cmdline_opts):
     src_ctrl_pkt.extend(opt_per_tile)
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, CtrlPktType,
-                   CtrlSignalType, NocPktType, CmdType, num_terminals, width, height,
-                   ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
-                   num_banks_per_cgra, src_ctrl_pkt, ctrl_mem_size,
-                   controller2addr_map)
+                   CtrlSignalType, NocPktType, CmdType, cgra_rows, cgra_columns,
+                   width, height, ctrl_mem_size, data_mem_size_global,
+                   data_mem_size_per_bank, num_banks_per_cgra, src_ctrl_pkt,
+                   ctrl_mem_size, controller2addr_map)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

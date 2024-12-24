@@ -31,7 +31,6 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
-
   def construct(s, DUT, FunctionUnit, FuList, DataType,
                 PredicateType, CtrlPktType, CtrlSignalType, NocPktType,
                 CmdType, ControllerIdType, controller_id, width, height,
@@ -51,11 +50,29 @@ class TestHarness(Component):
                 controller2addr_map)
 
     # Connections
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+
     s.dut.send_to_noc.rdy //= 0
     s.dut.recv_from_noc.val //= 0
     s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
 
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    for tile_col in range(width):
+      s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
+      s.dut.recv_data_on_boundary_north[tile_col].en //= 0
+      s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
+
+      s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
+      s.dut.recv_data_on_boundary_south[tile_col].en //= 0
+      s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
+
+    for tile_row in range(height):
+      s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
+      s.dut.recv_data_on_boundary_west[tile_row].en //= 0
+      s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
+
+      s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
+      s.dut.recv_data_on_boundary_east[tile_row].en //= 0
+      s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
     return s.src_ctrl_pkt.done()
