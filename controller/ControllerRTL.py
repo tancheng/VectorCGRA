@@ -111,6 +111,12 @@ class ControllerRTL(Component):
     s.send_to_master_store_request_data_queue.send //= s.send_to_master_store_request_data
 
     # For control signals delivery from CPU to tiles.
+    # TODO: https://github.com/tancheng/VectorCGRA/issues/11 -- The request needs
+    # to go through the crossbar for arbitration as well. The packet targeting local
+    # tiles can be delivered via thr ring within the CGRA; The packet targetting
+    # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
+    # format can be in a universal fashion to support both data and config. Later
+    # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
     s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
 
