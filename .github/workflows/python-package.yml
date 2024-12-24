@@ -79,6 +79,5 @@ jobs:
         # CGRAs are interconnected with ring topology. The CGRA contains
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for
         # multi-bank), and controller.
-        pytest --tb=short -sv ../scale_out/translate/RingMultiCGRARTL_test.py --test-verilog --dump-vtb --dump-vcd
         pytest --tb=short -sv ../scale_out/translate/RingMultiCgraRingCtrlMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
 
