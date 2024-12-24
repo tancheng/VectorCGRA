@@ -75,7 +75,7 @@ jobs:
         pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py --tb=short -sv
         # CGRA with separate crossbars (for tiles and FUs), crossbar-based data
         # memory (for multi-bank), ring-based control memories, and controller.
-        pytest --tb=short -sv ../systolic/translate/CgraCrossbarDataMemRingCtrlMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        pytest --tb=short -sv ../cgra/translate/CgraCrossbarDataMemRingCtrlMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
         # CGRAs are interconnected with ring topology. The CGRA contains
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for
         # multi-bank), and controller.
