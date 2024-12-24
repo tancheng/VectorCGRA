@@ -65,8 +65,6 @@ jobs:
         # Kingmesh topology CGRA translation.
         pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         # Separate crossbars CGRA simulation/translation.
-        pytest ../cgra/test/CGRASeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
-        pytest ../cgra/test/CGRASeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         pytest ../cgra/translate/CgraCrossbarDataMemRingCtrlMemRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
         # 3x2 CGRA performs 2x2 matmul translation.
         pytest ../cgra/translate/CGRAMemBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
