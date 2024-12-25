@@ -29,8 +29,8 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, ControllerIdType, CmdType, MsgType, AddrType, PktType,
-                controller_id,
+  def construct(s, ControllerIdType, CtrlPktType, CmdType, MsgType,
+                AddrType, PktType, controller_id,
                 from_master_load_request_pkt_msgs,
                 from_master_load_response_pkt_msgs,
                 from_master_store_request_pkt_msgs,
@@ -56,8 +56,9 @@ class TestHarness(Component):
     s.src_from_noc_val_rdy = TestValRdySrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
 
-    s.dut = ControllerRTL(ControllerIdType, CmdType, PktType, MsgType,
-                          AddrType, controller_id, controller2addr_map)
+    s.dut = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+                          PktType, MsgType, AddrType, controller_id,
+                          controller2addr_map)
 
     # Connections
     s.src_from_master_load_request_pkt_en_rdy.send //= s.dut.recv_from_master_load_request_pkt
@@ -71,6 +72,10 @@ class TestHarness(Component):
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
+
+    s.dut.recv_from_cpu_ctrl_pkt.val //= 0
+    s.dut.recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
+    s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
 
   def done(s):
     return s.src_from_master_load_request_pkt_en_rdy.done() and \
@@ -137,6 +142,13 @@ DataType = mk_data(data_nbits, predicate_nbits)
 nterminals = 4
 CmdType = mk_bits(4)
 ControllerIdType = mk_bits(clog2(nterminals))
+num_ctrl_actions = 8
+ctrl_mem_size = 16
+num_ctrl_operations = 64
+num_fu_inports = 2
+num_fu_outports = 2
+num_tile_inports = 4
+num_tile_outports = 4
 data_mem_size_global = 16
 addr_nbits = clog2(data_mem_size_global)
 AddrType = mk_bits(addr_nbits)
@@ -149,6 +161,15 @@ controller2addr_map = {
         2: [8, 11],
         3: [12, 15],
 }
+
+CtrlPktType = mk_ring_across_tiles_pkt(nterminals,
+                                       num_ctrl_actions,
+                                       ctrl_mem_size,
+                                       num_ctrl_operations,
+                                       num_fu_inports,
+                                       num_fu_outports,
+                                       num_tile_inports,
+                                       num_tile_outports)
 
 Pkt = mk_ring_multi_cgra_pkt(nterminals,
                              addr_nbits = addr_nbits,
@@ -212,7 +233,8 @@ expected_to_noc_pkts = [
 
 def test_simple():
   print("controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType, CmdType, DataType,
+  th = TestHarness(ControllerIdType, CtrlPktType,
+                   CmdType, DataType,
                    AddrType, Pkt, controller_id,
                    from_master_load_request_pkts,
                    from_master_load_response_pkts,

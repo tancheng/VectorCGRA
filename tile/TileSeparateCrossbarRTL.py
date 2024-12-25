@@ -26,8 +26,9 @@ from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
-from ..mem.ctrl.CtrlMemRTL import CtrlMemRTL
+from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..noc.LinkOrRTL import LinkOrRTL
@@ -36,11 +37,10 @@ from ..rf.RegisterRTL import RegisterRTL
 
 class TileSeparateCrossbarRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
-                ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports,
-                num_tile_inports, num_tile_outports,
-                Fu = FlexibleFuRTL,
+  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
+                ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
+                num_fu_inports, num_fu_outports, num_tile_inports,
+                num_tile_outports, Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
                           MemUnitRTL], const_list = None):
 
@@ -61,8 +61,9 @@ class TileSeparateCrossbarRTL(Component):
         num_tile_outports)]
 
     # Ctrl.
-    s.recv_waddr = RecvIfcRTL(CtrlAddrType)
-    s.recv_wopt = RecvIfcRTL(CtrlType)
+    # s.recv_waddr = RecvIfcRTL(CtrlAddrType)
+    # s.recv_wopt = RecvIfcRTL(CtrlSignalType)
+    s.recv_ctrl_pkt = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Data.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
@@ -71,18 +72,20 @@ class TileSeparateCrossbarRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, PredicateType, CtrlType,
+    s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, FuList)
     s.const_queue = ConstQueueRTL(DataType, const_list if const_list != None else [DataType(0)])
-    s.routing_crossbar = CrossbarSeparateRTL(DataType, PredicateType, CtrlType,
-                                     num_routing_xbar_inports,
-                                     num_routing_xbar_outports)
-    s.fu_crossbar = CrossbarSeparateRTL(DataType, PredicateType, CtrlType,
-                                num_fu_xbar_inports,
-                                num_fu_xbar_outports)
-    s.ctrl_mem = CtrlMemRTL(CtrlType, ctrl_mem_size, num_ctrl,
-                            total_steps)
+    s.routing_crossbar = CrossbarSeparateRTL(DataType, PredicateType, CtrlSignalType,
+                                             num_routing_xbar_inports,
+                                             num_routing_xbar_outports)
+    s.fu_crossbar = CrossbarSeparateRTL(DataType, PredicateType, CtrlSignalType,
+                                        num_fu_xbar_inports,
+                                        num_fu_xbar_outports)
+    s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType, ctrl_mem_size,
+                                   num_fu_inports, num_fu_outports,
+                                   num_tile_inports, num_tile_outports,
+                                   num_ctrl, total_steps)
     # The `tile_out_channel` indicates the outport channels that are
     # connected to the next tiles.
     s.tile_out_channel = [ChannelNormalRTL(DataType) for _ in range(
@@ -106,8 +109,9 @@ class TileSeparateCrossbarRTL(Component):
 
     # Connections.
     # Ctrl.
-    s.ctrl_mem.recv_waddr //= s.recv_waddr
-    s.ctrl_mem.recv_ctrl //= s.recv_wopt
+    # s.ctrl_mem.recv_waddr //= s.recv_waddr
+    # s.ctrl_mem.recv_ctrl //= s.recv_wopt
+    s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
 
     # Constant queue.
     s.element.recv_const //= s.const_queue.send_const

@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CGRAMemBottomRTL_matmul_2x2_test.py
+CgraMemBottomRTL_matmul_2x2_test.py
 ==========================================================================
 Translation for 3x2 CGRA. The provided test is only used for a 2x2 matmul.
 
@@ -13,7 +13,7 @@ from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from ..CGRAMemBottomRTL import CGRAMemBottomRTL
+from ..CgraMemBottomRTL import CgraMemBottomRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -30,7 +30,6 @@ from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 
-
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -38,7 +37,6 @@ from ...lib.opt_type import *
 kMaxCycles = 20
 
 class TestHarness(Component):
-
   def construct(s, DUT, FunctionUnit, fu_list, DataType, PredicateType,
                 CtrlType, width, height, ctrl_mem_size, data_mem_size,
                 src_opt, ctrl_waddr, preload_data, preload_const,
@@ -110,13 +108,11 @@ def test_CGRA_systolic(cmdline_opts):
   AddrType = mk_bits(clog2(ctrl_mem_size))
   num_tiles = width * height
   num_fu_in = 4
-  DUT = CGRAMemBottomRTL
+  DUT = CgraMemBottomRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
-  #  FuList = [ SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
-  #  DataType = mk_data(16, 1)
   CtrlType = mk_ctrl(num_fu_in, num_xbar_inports, num_xbar_outports)
   FuInType = mk_bits(clog2( num_fu_in + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_in)]
@@ -301,7 +297,7 @@ def test_CGRA_systolic(cmdline_opts):
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                      f'CGRARTL')
+                      f'CgraMemBottomRTL')
   # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
   #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
   #                    'ALWCOMBORDER'] )

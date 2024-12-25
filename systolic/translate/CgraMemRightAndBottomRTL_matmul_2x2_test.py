@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CGRARightAndBottomRTL_matmul_2x2_test.py
+CgraRightAndBottomRTL_matmul_2x2_test.py
 ==========================================================================
 Translation for 3x3 CGRA. The provided test is only used for a 2x2 matmul.
 
@@ -13,7 +13,7 @@ from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from ..CGRAMemRightAndBottomRTL import CGRAMemRightAndBottomRTL
+from ..CgraMemRightAndBottomRTL import CgraMemRightAndBottomRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -30,7 +30,6 @@ from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 
-
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -38,7 +37,6 @@ from ...lib.opt_type import *
 kMaxCycles = 12
 
 class TestHarness(Component):
-
   def construct(s, DUT, FunctionUnit, fu_list, DataType, PredicateType,
                 CtrlType, width, height, ctrl_mem_size, data_mem_size,
                 src_opt, ctrl_waddr, preload_data, preload_const,
@@ -58,12 +56,6 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size, kMaxCycles,
                 kMaxCycles, FunctionUnit, fu_list, preload_data,
                 preload_const)
-
-    # s.sink_out = [TestSinkRTL(DataType, sink_out[i])
-    #               for i in range(height - 1)]
-
-    # for i in range(height - 1):
-    #   connect(s.dut.send_data[i], s.sink_out[i].recv)
 
     for i in range(s.num_tiles):
       connect(s.src_opt[i].send, s.dut.recv_wopt[i])
@@ -134,13 +126,11 @@ def test_CGRA_systolic(cmdline_opts):
   AddrType = mk_bits(clog2(ctrl_mem_size))
   num_tiles = width * height
   num_fu_in = 4
-  DUT = CGRAMemRightAndBottomRTL
+  DUT = CgraMemRightAndBottomRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
-  #  FuList = [ SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL ]
-  #  DataType = mk_data(16, 1)
   CtrlType = mk_ctrl(num_fu_in, num_xbar_inports, num_xbar_outports)
   FuInType = mk_bits(clog2( num_fu_in + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_in)]
@@ -403,7 +393,7 @@ def test_CGRA_systolic(cmdline_opts):
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                      f'CGRAMemRightAndBottomRTL')
+                      f'CgraMemRightAndBottomRTL')
   # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
   #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
   #                    'ALWCOMBORDER'] )
