@@ -80,69 +80,6 @@ class CtrlMemRTL( Component ):
     num_outports = len(s.reg_file.regs[0].outport if hasattr(s.reg_file.regs[0], 'outport') else [])
     num_direction_ports = num_outports - num_fu_in
 
-    # reg
-    reg_dicts = [dict(data.__dict__) for data in s.reg_file.regs]
-    reg_sub_header = {}
-    for reg_dict in reg_dicts:
-      for key in reg_dict.keys():
-        reg_sub_header[key] = ''
-      reg_dict['ctrl'] = OPT_SYMBOL_DICT[reg_dict['ctrl']]
-      reg_dict['fu_in'] = [int(fi) for fi in reg_dict['fu_in']]
-      fu_in_header = []
-      for idx, val in enumerate(reg_dict['fu_in']):
-        fu_in_header.append(idx)
-      fu_in_header_str = "|".join([f"{hd : ^3}" for hd in fu_in_header])
-      reg_dict['fu_in'] = "|".join([f"{v : ^3}" for v in reg_dict['fu_in']])
-      reg_sub_header['fu_in'] = fu_in_header_str
-      if 'outport' in reg_dict:
-        reg_dict['outport'] = [int(op) for op in reg_dict['outport']]
-        fu_reg_num = 1
-        outport_sub_header = []
-        for idx, val in enumerate(reg_dict['outport']):
-          # to directions
-          if idx <= num_direction_ports - 1:
-            hd = tile_port_direction_dict_short_desc[idx]
-            outport_sub_header.append(f"{hd : ^{len(hd) + 2}}")
-            reg_dict['outport'][
-              idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
-          # to fu regs
-          else:
-            hd = f"fu_reg_{fu_reg_num}"
-            outport_sub_header.append(f"{hd : ^{len(hd)}}")
-            reg_dict['outport'][
-              idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd)}}"
-            fu_reg_num += 1
-        outport_sub_header_str = "|".join([hd for hd in outport_sub_header])
-        reg_dict['outport'] = "|".join([v for v in reg_dict['outport']])
-        reg_sub_header['outport'] = outport_sub_header_str
-      if 'predicate_in' in reg_dict:
-        reg_dict['predicate_in'] = [int(pi) for pi in reg_dict['predicate_in']]
-        fu_out_num = 1
-        predicate_in_sub_header = []
-        for idx, val in enumerate(reg_dict['predicate_in']):
-          # from directions
-          if idx <= num_direction_ports - 1:
-            hd = tile_port_direction_dict_short_desc[idx]
-            predicate_in_sub_header.append(f"{hd : ^{len(hd) + 2}}")
-            reg_dict['predicate_in'][idx] = f"{val : ^{len(hd) + 2}}"
-          # from fu
-          else:
-            hd = f"fu_out_{fu_out_num}"
-            predicate_in_sub_header.append(f"{hd : ^{len(hd)}}")
-            reg_dict['predicate_in'][idx] = f"{val : ^{len(hd)}}"
-            fu_out_num += 1
-        predicate_in_sub_header_str = "|".join([hd for hd in predicate_in_sub_header])
-        reg_dict['predicate_in'] = "|".join([v for v in reg_dict['predicate_in']])
-        reg_sub_header['predicate_in'] = predicate_in_sub_header_str
-      if 'routing_xbar_outport' in reg_dict:
-        reg_dict['routing_xbar_outport'] = [int(rxop) for rxop in reg_dict['routing_xbar_outport']]
-      if 'fu_xbar_outport' in reg_dict:
-        reg_dict['fu_xbar_outport'] = [int(fxop) for fxop in reg_dict['fu_xbar_outport']]
-      if 'routing_predicate_in' in reg_dict:
-        reg_dict['routing_predicate_in'] = [int(rpi) for rpi in reg_dict['routing_predicate_in']]
-    reg_dicts.insert(0, reg_sub_header)
-    reg_md = markdown_table(reg_dicts).set_params(quote=False).get_markdown()
-
     # recv_ctrl
     recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
     recv_ctrl_sub_header = {}
@@ -271,12 +208,82 @@ class CtrlMemRTL( Component ):
     send_ctrl_msg_list.append(send_ctrl_msg_dict)
     send_ctrl_md = markdown_table(send_ctrl_msg_list).set_params(quote=False).get_markdown()
     # send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
-    return (f'\n## class: {s.__class__.__name__}\n'
-            f'- recv_ctrl_msg:\n'
-            f'{send_ctrl_md}\n\n'
-            f'- send_ctrl_msg:'
-            f'{send_ctrl_md}\n\n'
-            f'- ctrl_memory: {reg_md}\n')
+
+    if verbosity==1:
+      return (f'\n## class: {s.__class__.__name__}\n'
+              f'- recv_ctrl_msg:\n'
+              f'{send_ctrl_md}\n\n'
+              f'- send_ctrl_msg:'
+              f'{send_ctrl_md}\n\n')
+    else:
+      # reg
+      reg_dicts = [dict(data.__dict__) for data in s.reg_file.regs]
+      reg_sub_header = {}
+      for reg_dict in reg_dicts:
+        for key in reg_dict.keys():
+          reg_sub_header[key] = ''
+        reg_dict['ctrl'] = OPT_SYMBOL_DICT[reg_dict['ctrl']]
+        reg_dict['fu_in'] = [int(fi) for fi in reg_dict['fu_in']]
+        fu_in_header = []
+        for idx, val in enumerate(reg_dict['fu_in']):
+          fu_in_header.append(idx)
+        fu_in_header_str = "|".join([f"{hd : ^3}" for hd in fu_in_header])
+        reg_dict['fu_in'] = "|".join([f"{v : ^3}" for v in reg_dict['fu_in']])
+        reg_sub_header['fu_in'] = fu_in_header_str
+        if 'outport' in reg_dict:
+          reg_dict['outport'] = [int(op) for op in reg_dict['outport']]
+          fu_reg_num = 1
+          outport_sub_header = []
+          for idx, val in enumerate(reg_dict['outport']):
+            # to directions
+            if idx <= num_direction_ports - 1:
+              hd = tile_port_direction_dict_short_desc[idx]
+              outport_sub_header.append(f"{hd : ^{len(hd) + 2}}")
+              reg_dict['outport'][
+                idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
+            # to fu regs
+            else:
+              hd = f"fu_reg_{fu_reg_num}"
+              outport_sub_header.append(f"{hd : ^{len(hd)}}")
+              reg_dict['outport'][
+                idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd)}}"
+              fu_reg_num += 1
+          outport_sub_header_str = "|".join([hd for hd in outport_sub_header])
+          reg_dict['outport'] = "|".join([v for v in reg_dict['outport']])
+          reg_sub_header['outport'] = outport_sub_header_str
+        if 'predicate_in' in reg_dict:
+          reg_dict['predicate_in'] = [int(pi) for pi in reg_dict['predicate_in']]
+          fu_out_num = 1
+          predicate_in_sub_header = []
+          for idx, val in enumerate(reg_dict['predicate_in']):
+            # from directions
+            if idx <= num_direction_ports - 1:
+              hd = tile_port_direction_dict_short_desc[idx]
+              predicate_in_sub_header.append(f"{hd : ^{len(hd) + 2}}")
+              reg_dict['predicate_in'][idx] = f"{val : ^{len(hd) + 2}}"
+            # from fu
+            else:
+              hd = f"fu_out_{fu_out_num}"
+              predicate_in_sub_header.append(f"{hd : ^{len(hd)}}")
+              reg_dict['predicate_in'][idx] = f"{val : ^{len(hd)}}"
+              fu_out_num += 1
+          predicate_in_sub_header_str = "|".join([hd for hd in predicate_in_sub_header])
+          reg_dict['predicate_in'] = "|".join([v for v in reg_dict['predicate_in']])
+          reg_sub_header['predicate_in'] = predicate_in_sub_header_str
+        if 'routing_xbar_outport' in reg_dict:
+          reg_dict['routing_xbar_outport'] = [int(rxop) for rxop in reg_dict['routing_xbar_outport']]
+        if 'fu_xbar_outport' in reg_dict:
+          reg_dict['fu_xbar_outport'] = [int(fxop) for fxop in reg_dict['fu_xbar_outport']]
+        if 'routing_predicate_in' in reg_dict:
+          reg_dict['routing_predicate_in'] = [int(rpi) for rpi in reg_dict['routing_predicate_in']]
+      reg_dicts.insert(0, reg_sub_header)
+      reg_md = markdown_table(reg_dicts).set_params(quote=False).get_markdown()
+      return (f'\n## class: {s.__class__.__name__}\n'
+              f'- recv_ctrl_msg:\n'
+              f'{send_ctrl_md}\n\n'
+              f'- send_ctrl_msg:'
+              f'{send_ctrl_md}\n\n'
+              f'- ctrl_memory: {reg_md}\n')
 
 
   def line_trace( s, verbosity=0 ):
