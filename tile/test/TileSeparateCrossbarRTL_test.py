@@ -81,6 +81,7 @@ class TestHarness(Component):
     return True
 
   def line_trace(s):
+    # return s.dut.verbose_trace(verbosity = 2)
     return s.dut.line_trace()
 
 def test_tile_alu(cmdline_opts):
