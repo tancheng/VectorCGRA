@@ -80,6 +80,7 @@ class TestHarness(Component):
     return True
 
   def line_trace(s):
+    # return s.dut.verbose_trace(verbosity = 2)
     return s.dut.line_trace()
 
 def run_sim(test_harness, enable_verification_pymtl,
