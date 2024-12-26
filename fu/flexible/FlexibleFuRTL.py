@@ -109,6 +109,22 @@ class FlexibleFuRTL( Component ):
           s.fu_recv_in_rdy_vector[port][i] @= s.fu[i].recv_in[port].rdy
         s.recv_in[port].rdy @= reduce_or( s.fu_recv_in_rdy_vector[port] )
 
+
+  def verbose_trace_md_formatter( self, data_type, data ):
+      assert data_type in [ "recv", "send" ]
+      data_list = [ x for x in data ]
+      result_list = []
+      for idx, fu_data in enumerate(data_list):
+        msg_dict = fu_data.msg.__dict__
+        if data_type is "recv":
+          fu_port_dict = { "fu_inport_idx": idx, "rdy": fu_data.rdy }
+        else:
+          fu_port_dict = { "fu_outport_idx": idx, "en": fu_data.en }
+        fu_port_dict.update(msg_dict)
+        result_list.append(fu_port_dict)
+      result_md = markdown_table(result_list).set_params(quote = False).get_markdown()
+      return result_md
+
   # verbose trace if verbosity > 0
   def verbose_trace( s, verbosity = 1 ):
     # for clk n
@@ -118,24 +134,8 @@ class FlexibleFuRTL( Component ):
     # out: [en(if data is sent out) and msg for each outport(total 2 for now)]
     opt_ctrl = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
     opt_rdy = s.recv_opt.rdy
-
-    recv_data = [ x for x in s.recv_in ]
-    recv_list = []
-    for idx, data in enumerate(recv_data):
-      msg_dict = data.msg.__dict__
-      fu_inport_dict = {"fu_inport_idx": idx, "rdy": data.rdy}
-      fu_inport_dict.update(msg_dict)
-      recv_list.append(fu_inport_dict)
-    recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-
-    out_data = [ x for x in s.send_out ]
-    out_list = []
-    for idx, data in enumerate(out_data):
-      msg_dict = data.msg.__dict__
-      fu_outport_dict = {"fu_outport_idx": idx, "en": data.en}
-      fu_outport_dict.update(msg_dict)
-      out_list.append(fu_outport_dict)
-    out_md = markdown_table(out_list).set_params(quote = False).get_markdown()
+    recv_md = s.verbose_trace_md_formatter("recv", s.recv_in)
+    send_md = s.verbose_trace_md_formatter("send", s.send_out)
 
     return (f'## class: {s.__class__.__name__}\n'
             f'- FU recv:\n'
@@ -144,7 +144,7 @@ class FlexibleFuRTL( Component ):
             f'{recv_md}\n'
             f'===>\n'
             f'- FU out:'
-            f'{out_md}\n')
+            f'{send_md}')
 
   def line_trace( s ):
     opt_str = " #"

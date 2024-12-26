@@ -154,7 +154,7 @@ class CGRAKingMeshRTL( Component ):
     res = ''
     for (i, x) in enumerate(s.tile):
       res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(verbosity = verbosity) + '\n'
-    res += f"\ndata_mem: {s.data_mem.verbose_trace(verbosity = verbosity)}"
+    res += f"data_mem: {s.data_mem.verbose_trace(verbosity = verbosity)}"
     res += "------\n\n"
     return res
 

@@ -125,6 +125,21 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
+  def verbose_trace_md_formatter( self, data_type, data ):
+      assert data_type in [ "recv", "send" ]
+      data_list = [ x for x in data ]
+      result_list = []
+      for idx, port_data in enumerate(data_list):
+          msg_dict = port_data.msg.__dict__
+          if data_type is "recv":
+            tile_port_dict = { "tile_inport_direction": TILE_PORT_DIRECTION_DICT[idx], "rdy": port_data.rdy }
+          else:
+            tile_port_dict = { "tile_outport_direction": TILE_PORT_DIRECTION_DICT[idx], "en": port_data.en }
+          tile_port_dict.update(msg_dict)
+          result_list.append(tile_port_dict)
+      result_md = markdown_table(result_list).set_params(quote = False).get_markdown()
+      return result_md
+
   # verbose trace
   def verbose_trace( s, verbosity = 1 ):
       # recv:
@@ -135,31 +150,16 @@ class TileRTL( Component ):
       #   FlexibleFuRTL.py
       # tile out:
       #   1. en (is data transferred)
-      recv_data = [ x for x in s.recv_data ]
-      recv_list = []
-      for idx, data in enumerate(recv_data):
-          msg_dict = data.msg.__dict__
-          tile_inport_dict = {"tile_inport_direction": TILE_PORT_DIRECTION_DICT[idx], "rdy": data.rdy}
-          tile_inport_dict.update(msg_dict)
-          recv_list.append(tile_inport_dict)
-      recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
-
-      out_data = [ x for x in s.send_data ]
-      out_list = []
-      for idx, data in enumerate(out_data):
-          msg_dict = data.msg.__dict__
-          tile_outport_dict = {"tile_outport_direction": TILE_PORT_DIRECTION_DICT[idx], "en": data.en}
-          tile_outport_dict.update(msg_dict)
-          out_list.append(tile_outport_dict)
-      out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
+      recv_md = s.verbose_trace_md_formatter("recv", s.recv_data)
+      send_md = s.verbose_trace_md_formatter("send", s.send_data)
       return (f"\n## class[{s.__class__.__name__}]:\n"
               f"- Tile recv:"
-              f"{recv_md}\n"
+              f"{recv_md}\n\n"
               f"- FU element:\n"
-              f"{s.element.line_trace(verbosity=verbosity)}\n"
+              f"{s.element.verbose_trace(verbosity=verbosity)}\n"
               f"===>\n"
               f"- Tile out:"
-              f"{out_md}\n")
+              f"{send_md}\n")
 
   # Line trace
   def line_trace( s ):

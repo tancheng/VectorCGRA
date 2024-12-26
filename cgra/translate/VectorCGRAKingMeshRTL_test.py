@@ -68,7 +68,7 @@ class TestHarness( Component ):
 
   def line_trace( s ):
     # verbose trace (test without verilog)
-    # verbosity = 1
+    # verbosity = 2
     # return s.dut.verbose_trace(verbosity = verbosity)
     return s.dut.line_trace()
 
