@@ -7,9 +7,9 @@ Data memory for CGRA.
 Author : Cheng Tan
   Date : Dec 20, 2019
 """
-from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
+from py_markdown_table.markdown_table import markdown_table
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
 

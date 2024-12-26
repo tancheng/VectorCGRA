@@ -7,9 +7,9 @@ Control memory for CGRA.
 Author : Cheng Tan
   Date : Dec 21, 2019
 """
-from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
+from py_markdown_table.markdown_table import markdown_table
 
 from ...tile.TileRTL_constant import tile_port_direction_dict_short_desc
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL

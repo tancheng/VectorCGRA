@@ -13,8 +13,8 @@ Detailed in: https://github.com/tancheng/VectorCGRA/issues/13 (Option 2).
 Author : Cheng Tan
   Date : Nov 26, 2024
 """
-from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
+from py_markdown_table.markdown_table import markdown_table
 
 from .TileRTL_constant import tile_port_direction_dict
 from ..lib.opt_type import OPT_SYMBOL_DICT

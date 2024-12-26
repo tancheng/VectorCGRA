@@ -8,8 +8,8 @@ Author : Cheng Tan
   Date : Dec 24, 2019
 
 """
-from py_markdown_table.markdown_table import markdown_table
 from pymtl3 import *
+from py_markdown_table.markdown_table import markdown_table
 
 from ...tile.TileRTL_constant import tile_port_direction_dict
 from ...fu.single.MemUnitRTL import MemUnitRTL

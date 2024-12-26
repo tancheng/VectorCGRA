@@ -7,6 +7,7 @@ Author : Cheng Tan
   Date : Dec 11, 2019
 """
 from pymtl3 import *
+from py_markdown_table.markdown_table import markdown_table
 
 from .TileRTL_constant import tile_port_direction_dict
 from ..lib.opt_type import OPT_SYMBOL_DICT
@@ -24,7 +25,6 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
 # from ..noc.BypassChannelRTL      import BypassChannelRTL
-from py_markdown_table.markdown_table import markdown_table
 
 class TileRTL( Component ):
 
