@@ -124,8 +124,8 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
-  # verbose trace if verbosity > 0
-  def verbose_trace(s, verbosity=1):
+  # verbose trace
+  def verbose_trace( s, verbosity = 1 ):
       # recv:
       #   1. rdy (if ready to receive data), if en and rdy: then data has been transferred (val, rdy are new type(protocol))
       #   2. data
@@ -134,7 +134,7 @@ class TileRTL( Component ):
       #   FlexibleFuRTL.py
       # tile out:
       #   1. en (is data transferred)
-      recv_data = [x for x in s.recv_data]
+      recv_data = [ x for x in s.recv_data ]
       recv_list = []
       for idx, data in enumerate(recv_data):
           msg_dict = data.msg.__dict__
@@ -143,7 +143,7 @@ class TileRTL( Component ):
           recv_list.append(tile_inport_dict)
       recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
 
-      out_data = [x for x in s.send_data]
+      out_data = [ x for x in s.send_data ]
       out_list = []
       for idx, data in enumerate(out_data):
           msg_dict = data.msg.__dict__
@@ -161,13 +161,10 @@ class TileRTL( Component ):
               f"{out_md}\n")
 
   # Line trace
-  def line_trace( s, verbosity=0 ):
-      if verbosity == 0:
-          recv_str = "|".join([str(x.msg) for x in s.recv_data])
-          channel_recv_str = "|".join([str(x.recv.msg) for x in s.channel])
-          channel_send_str = "|".join([str(x.send.msg) for x in s.channel])
-          out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
-          return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
-      else:
-          return s.verbose_trace(verbosity=verbosity)
+  def line_trace( s ):
+      recv_str = "|".join([str(x.msg) for x in s.recv_data])
+      channel_recv_str = "|".join([str(x.recv.msg) for x in s.channel])
+      channel_send_str = "|".join([str(x.send.msg) for x in s.channel])
+      out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
+      return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
 

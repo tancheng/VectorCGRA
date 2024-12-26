@@ -68,7 +68,7 @@ class TestHarness( Component ):
 
   def line_trace( s ):
     verbosity = 1
-    return s.dut.line_trace(verbosity=verbosity)
+    return s.dut.verbose_trace(verbosity = verbosity)
 
 def test_homo_4x4( cmdline_opts ):
   num_tile_inports  = 8

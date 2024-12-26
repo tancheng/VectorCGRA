@@ -73,8 +73,8 @@ class CtrlMemRTL( Component ):
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
-  # verbose trace if verbosity > 0
-  def verbose_trace(s, verbosity=1):
+  # verbose trace
+  def verbose_trace( s, verbosity = 1 ):
     num_fu_in = len(s.reg_file.regs[0].fu_in)
     # num_inports = len(s.reg_file.regs[0].predicate_in)
     num_outports = len(s.reg_file.regs[0].outport if hasattr(s.reg_file.regs[0], 'outport') else [])
@@ -87,7 +87,7 @@ class CtrlMemRTL( Component ):
       recv_ctrl_sub_header[key] = ''
     recv_ctrl_msg_list = []
     recv_ctrl_msg_dict['ctrl'] = OPT_SYMBOL_DICT[recv_ctrl_msg_dict['ctrl']]
-    recv_ctrl_msg_dict['fu_in'] = [int(fi) for fi in recv_ctrl_msg_dict['fu_in']]
+    recv_ctrl_msg_dict['fu_in'] = [ int(fi) for fi in recv_ctrl_msg_dict['fu_in'] ]
     fu_in_header = []
     for idx, val in enumerate(recv_ctrl_msg_dict['fu_in']):
       fu_in_header.append(idx)
@@ -96,7 +96,7 @@ class CtrlMemRTL( Component ):
     recv_ctrl_sub_header['fu_in'] = fu_in_header_str
 
     if 'outport' in recv_ctrl_msg_dict:
-      recv_ctrl_msg_dict['outport'] = [int(op) for op in recv_ctrl_msg_dict['outport']]
+      recv_ctrl_msg_dict['outport'] = [ int(op) for op in recv_ctrl_msg_dict['outport'] ]
       fu_reg_num = 1
       outport_sub_header = []
       for idx, val in enumerate(recv_ctrl_msg_dict['outport']):
@@ -209,7 +209,7 @@ class CtrlMemRTL( Component ):
     send_ctrl_md = markdown_table(send_ctrl_msg_list).set_params(quote=False).get_markdown()
     # send_ctrl_msg = "\n".join([(key + ": " + str(value)) for key, value in send_ctrl_msg_dict.items()])
 
-    if verbosity==1:
+    if verbosity == 1:
       return (f'\n## class: {s.__class__.__name__}\n'
               f'- recv_ctrl_msg:\n'
               f'{send_ctrl_md}\n\n'
@@ -286,11 +286,8 @@ class CtrlMemRTL( Component ):
               f'- ctrl_memory: {reg_md}\n')
 
 
-  def line_trace( s, verbosity=0 ):
-    if verbosity == 0:
-      out_str = "||".join([str(data) for data in s.reg_file.regs])
-      return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
-    else:
-      return s.verbose_trace(verbosity=verbosity)
+  def line_trace( s ):
+    out_str = "||".join([str(data) for data in s.reg_file.regs])
+    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
 
 

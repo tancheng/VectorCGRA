@@ -114,17 +114,16 @@ class FlexibleFuRTL( Component ):
         s.recv_in[port].rdy @= reduce_or( s.fu_recv_in_rdy_vector[port] )
 
   # verbose trace if verbosity > 0
-  def verbose_trace(s, verbosity=1):
+  def verbose_trace( s, verbosity = 1 ):
     # for clk n
     # recv:
     #   1. OPT: opt+rdy(if ready to receive opt)
     #   2. Data: [rdy(if ready to receive data) and msg(data) for each inport(total 4 for now)]
     # out: [en(if data is sent out) and msg for each outport(total 2 for now)]
-    # ? what is recv_const for ?
     opt_ctrl = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
     opt_rdy = s.recv_opt.rdy
 
-    recv_data = [x for x in s.recv_in]
+    recv_data = [ x for x in s.recv_in ]
     recv_list = []
     for idx, data in enumerate(recv_data):
       msg_dict = data.msg.__dict__
@@ -133,14 +132,14 @@ class FlexibleFuRTL( Component ):
       recv_list.append(fu_inport_dict)
     recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
 
-    out_data = [x for x in s.send_out]
+    out_data = [ x for x in s.send_out ]
     out_list = []
     for idx, data in enumerate(out_data):
       msg_dict = data.msg.__dict__
       fu_outport_dict = {"fu_outport_idx": idx, "en": data.en}
       fu_outport_dict.update(msg_dict)
       out_list.append(fu_outport_dict)
-    out_md = markdown_table(out_list).set_params(quote=False).get_markdown()
+    out_md = markdown_table(out_list).set_params(quote = False).get_markdown()
 
     return (f'## class: {s.__class__.__name__}\n'
             f'- FU recv:\n'
@@ -151,13 +150,10 @@ class FlexibleFuRTL( Component ):
             f'- FU out:'
             f'{out_md}\n')
 
-  def line_trace( s, verbosity=0 ):
-    if verbosity == 0:
-      opt_str = " #"
-      if s.recv_opt.en:
-        opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
-      out_str = ",".join([str(x.msg) for x in s.send_out])
-      recv_str = ",".join([str(x.msg) for x in s.recv_in])
-      return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, en: {s.recv_const.en}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.en: {s.recv_opt.en}, send[0].en: {s.send_out[0].en}) '
-    else:
-      return s.verbose_trace(verbosity=verbosity)
+  def line_trace( s ):
+    opt_str = " #"
+    if s.recv_opt.en:
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+    out_str = ",".join([str(x.msg) for x in s.send_out])
+    recv_str = ",".join([str(x.msg) for x in s.recv_in])
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, en: {s.recv_const.en}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.en: {s.recv_opt.en}, send[0].en: {s.send_out[0].en}) '
