@@ -6,11 +6,9 @@ TileRTL.py
 Author : Cheng Tan
   Date : Dec 11, 2019
 """
-from pymtl3 import *
 from py_markdown_table.markdown_table import markdown_table
+from pymtl3 import *
 
-from .TileRTL_constant import tile_port_direction_dict
-from ..lib.opt_type import OPT_SYMBOL_DICT
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
@@ -19,11 +17,14 @@ from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.util.common import TILE_PORT_DIRECTION_DICT
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..mem.ctrl.CtrlMemRTL import CtrlMemRTL
-from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.ChannelRTL import ChannelRTL
+from ..noc.CrossbarRTL import CrossbarRTL
 from ..rf.RegisterRTL import RegisterRTL
+
+
 # from ..noc.BypassChannelRTL      import BypassChannelRTL
 
 class TileRTL( Component ):
@@ -138,7 +139,7 @@ class TileRTL( Component ):
       recv_list = []
       for idx, data in enumerate(recv_data):
           msg_dict = data.msg.__dict__
-          tile_inport_dict = {"tile_inport_direction": tile_port_direction_dict[idx], "rdy": data.rdy}
+          tile_inport_dict = {"tile_inport_direction": TILE_PORT_DIRECTION_DICT[idx], "rdy": data.rdy}
           tile_inport_dict.update(msg_dict)
           recv_list.append(tile_inport_dict)
       recv_md = markdown_table(recv_list).set_params(quote=False).get_markdown()
@@ -147,7 +148,7 @@ class TileRTL( Component ):
       out_list = []
       for idx, data in enumerate(out_data):
           msg_dict = data.msg.__dict__
-          tile_outport_dict = {"tile_outport_direction": tile_port_direction_dict[idx], "en": data.en}
+          tile_outport_dict = {"tile_outport_direction": TILE_PORT_DIRECTION_DICT[idx], "en": data.en}
           tile_outport_dict.update(msg_dict)
           out_list.append(tile_outport_dict)
       out_md = markdown_table(out_list).set_params(quote=False).get_markdown()

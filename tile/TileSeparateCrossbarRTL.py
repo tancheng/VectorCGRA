@@ -16,23 +16,25 @@ Author : Cheng Tan
 from pymtl3 import *
 from py_markdown_table.markdown_table import markdown_table
 
-from .TileRTL_constant import tile_port_direction_dict
-from ..lib.opt_type import OPT_SYMBOL_DICT
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
-from ..fu.single.PhiRTL import PhiRTL
 from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
+from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
+from ..lib.opt_type import OPT_SYMBOL_DICT
+from ..lib.util.common import TILE_PORT_DIRECTION_DICT
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
-from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
+from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..rf.RegisterRTL import RegisterRTL
+
+
 # from ..noc.BypassChannelRTL      import BypassChannelRTL
 
 class TileSeparateCrossbarRTL(Component):
@@ -200,7 +202,7 @@ class TileSeparateCrossbarRTL(Component):
       recv_data = [ x.msg.__dict__ for x in s.recv_data ]
       recv_list = []
       for idx, data in enumerate(recv_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"inport_direction": port_direction}
           dict_with_direction.update(data)
           recv_list.append(dict_with_direction)
@@ -229,7 +231,7 @@ class TileSeparateCrossbarRTL(Component):
       tile_out_channel_recv_data = [x.recv.msg.__dict__ for x in s.tile_out_channel]
       tile_out_channel_recv_data_list = []
       for idx, data in enumerate(tile_out_channel_recv_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"inport_direction": port_direction}
           dict_with_direction.update(data)
           tile_out_channel_recv_data_list.append(dict_with_direction)
@@ -238,7 +240,7 @@ class TileSeparateCrossbarRTL(Component):
       tile_out_channel_send_data = [x.send.msg.__dict__ for x in s.tile_out_channel]
       tile_out_channel_send_data_list = []
       for idx, data in enumerate(tile_out_channel_send_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"outport_direction": port_direction}
           dict_with_direction.update(data)
           tile_out_channel_send_data_list.append(dict_with_direction)
@@ -247,7 +249,7 @@ class TileSeparateCrossbarRTL(Component):
       fu_in_channel_recv_data = [x.recv.msg.__dict__ for x in s.fu_in_channel]
       fu_in_channel_recv_data_list = []
       for idx, data in enumerate(fu_in_channel_recv_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"inport_direction": port_direction}
           dict_with_direction.update(data)
           fu_in_channel_recv_data_list.append(dict_with_direction)
@@ -256,7 +258,7 @@ class TileSeparateCrossbarRTL(Component):
       fu_in_channel_send_data = [x.send.msg.__dict__ for x in s.fu_in_channel]
       fu_in_channel_send_data_list = []
       for idx, data in enumerate(fu_in_channel_send_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"outport_direction": port_direction}
           dict_with_direction.update(data)
           fu_in_channel_send_data_list.append(dict_with_direction)
@@ -265,7 +267,7 @@ class TileSeparateCrossbarRTL(Component):
       tile_outports_data = [x.msg.__dict__ for x in s.send_data]
       tile_outports_data_list = []
       for idx, data in enumerate(tile_outports_data):
-          port_direction = tile_port_direction_dict[idx]
+          port_direction = TILE_PORT_DIRECTION_DICT[idx]
           dict_with_direction = {"outport_direction": port_direction}
           dict_with_direction.update(data)
           tile_outports_data_list.append(dict_with_direction)

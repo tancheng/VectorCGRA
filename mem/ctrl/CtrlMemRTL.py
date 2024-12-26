@@ -7,13 +7,12 @@ Control memory for CGRA.
 Author : Cheng Tan
   Date : Dec 21, 2019
 """
-from pymtl3 import *
-from pymtl3.stdlib.primitive import RegisterFile
 from py_markdown_table.markdown_table import markdown_table
+from pymtl3.stdlib.primitive import RegisterFile
 
-from ...tile.TileRTL_constant import tile_port_direction_dict_short_desc
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ...lib.opt_type import *
+from ...lib.util.common import TILE_PORT_DIRECTION_DICT_SHORT_DESC
 
 
 class CtrlMemRTL( Component ):
@@ -102,16 +101,16 @@ class CtrlMemRTL( Component ):
       for idx, val in enumerate(recv_ctrl_msg_dict['outport']):
         # to directions
         if idx <= num_direction_ports - 1:
-          hd = tile_port_direction_dict_short_desc[idx]
+          hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
           outport_sub_header.append(f"{hd : ^{len(hd) + 2}}")
           recv_ctrl_msg_dict['outport'][
-            idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
+            idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
         # to fu regs
         else:
           hd = f"fu_reg_{fu_reg_num}"
           outport_sub_header.append(f"{hd : ^{len(hd)}}")
           recv_ctrl_msg_dict['outport'][
-            idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd)}}"
+            idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd)}}"
           fu_reg_num += 1
       outport_sub_header_str = "|".join([hd for hd in outport_sub_header])
       recv_ctrl_msg_dict['outport'] = "|".join([v for v in recv_ctrl_msg_dict['outport']])
@@ -123,7 +122,7 @@ class CtrlMemRTL( Component ):
       for idx, val in enumerate(recv_ctrl_msg_dict['predicate_in']):
         # from directions
         if idx <= num_direction_ports - 1:
-          hd = tile_port_direction_dict_short_desc[idx]
+          hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
           predicate_in_sub_header.append(f"{hd : ^{len(hd) + 2}}")
           recv_ctrl_msg_dict['predicate_in'][idx] = f"{val : ^{len(hd) + 2}}"
         # from fu
@@ -164,16 +163,16 @@ class CtrlMemRTL( Component ):
       for idx, val in enumerate(send_ctrl_msg_dict['outport']):
         # to directions
         if idx <= num_direction_ports - 1:
-          hd = tile_port_direction_dict_short_desc[idx]
+          hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
           outport_sub_header.append(f"{hd : ^{len(hd) + 2}}")
           send_ctrl_msg_dict['outport'][
-            idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
+            idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
         # to fu regs
         else:
           hd = f"fu_reg_{fu_reg_num}"
           outport_sub_header.append(f"{hd : ^{len(hd)}}")
           send_ctrl_msg_dict['outport'][
-            idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd)}}"
+            idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd)}}"
           fu_reg_num += 1
       outport_sub_header_str = "|".join([hd for hd in outport_sub_header])
       send_ctrl_msg_dict['outport'] = "|".join([v for v in send_ctrl_msg_dict['outport']])
@@ -185,7 +184,7 @@ class CtrlMemRTL( Component ):
       for idx, val in enumerate(send_ctrl_msg_dict['predicate_in']):
         # from directions
         if idx <= num_direction_ports - 1:
-          hd = tile_port_direction_dict_short_desc[idx]
+          hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
           predicate_in_sub_header.append(f"{hd : ^{len(hd) + 2}}")
           send_ctrl_msg_dict['predicate_in'][idx] = f"{val : ^{len(hd) + 2}}"
         # from fu
@@ -237,16 +236,16 @@ class CtrlMemRTL( Component ):
           for idx, val in enumerate(reg_dict['outport']):
             # to directions
             if idx <= num_direction_ports - 1:
-              hd = tile_port_direction_dict_short_desc[idx]
+              hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
               outport_sub_header.append(f"{hd : ^{len(hd) + 2}}")
               reg_dict['outport'][
-                idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
+                idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd) + 2}}"
             # to fu regs
             else:
               hd = f"fu_reg_{fu_reg_num}"
               outport_sub_header.append(f"{hd : ^{len(hd)}}")
               reg_dict['outport'][
-                idx] = f"{tile_port_direction_dict_short_desc[val - 1] if val != 0 else '-' : ^{len(hd)}}"
+                idx] = f"{TILE_PORT_DIRECTION_DICT_SHORT_DESC[val - 1] if val != 0 else '-' : ^{len(hd)}}"
               fu_reg_num += 1
           outport_sub_header_str = "|".join([hd for hd in outport_sub_header])
           reg_dict['outport'] = "|".join([v for v in reg_dict['outport']])
@@ -258,7 +257,7 @@ class CtrlMemRTL( Component ):
           for idx, val in enumerate(reg_dict['predicate_in']):
             # from directions
             if idx <= num_direction_ports - 1:
-              hd = tile_port_direction_dict_short_desc[idx]
+              hd = TILE_PORT_DIRECTION_DICT_SHORT_DESC[idx]
               predicate_in_sub_header.append(f"{hd : ^{len(hd) + 2}}")
               reg_dict['predicate_in'][idx] = f"{val : ^{len(hd) + 2}}"
             # from fu
