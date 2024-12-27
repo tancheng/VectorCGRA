@@ -195,9 +195,7 @@ class CgraCrossbarDataMemRingCtrlMemRTL(Component):
   def verbose_trace( self, verbosity = 1 ):
     res = ''
     for (i, x) in enumerate(self.tile):
-      # todo
-      # CtrlMemDynamicRTL verbose_trace
-      res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.line_trace() + '\n'
+      res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(verbosity = verbosity) + '\n'
     # todo
     # no verbose_trace for DataMemWithCrossbarRTL yet
     res += f"data_mem: {self.data_mem.line_trace()}"
