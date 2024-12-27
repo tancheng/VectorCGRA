@@ -123,15 +123,6 @@ class CgraMemRightAndBottomRTL(Component):
         s.tile[i].to_mem_waddr.rdy //= 0
         s.tile[i].to_mem_wdata.rdy //= 0
 
-  def verbose_trace( s, verbosity = 1 ):
-    res = ''
-    for (i, x) in enumerate(s.tile):
-      res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(verbosity = verbosity) + '\n'
-    res += f"# SouthMem: {s.data_mem_south.verbose_trace(verbosity = verbosity)}"
-    res += f"# EastMem: {s.data_mem_east.verbose_trace(verbosity = verbosity)}"
-    res += "------\n\n"
-    return res
-
   # Line trace
   def line_trace( s ):
     # str = "||".join([ x.element.line_trace() for x in s.tile ])
@@ -140,4 +131,14 @@ class CgraMemRightAndBottomRTL(Component):
                        for (i,x) in enumerate(s.tile)])
     res += "\n :: SouthMem [" + s.data_mem_south.line_trace() + "]    \n"
     res += "\n :: EastMem [" + s.data_mem_east.line_trace() + "]    \n"
+    return res
+
+
+  def verbose_trace( s, verbosity = 1 ):
+    res = ''
+    for (i, x) in enumerate(s.tile):
+      res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(verbosity = verbosity) + '\n'
+    res += f"# SouthMem: {s.data_mem_south.verbose_trace(verbosity = verbosity)}"
+    res += f"# EastMem: {s.data_mem_east.verbose_trace(verbosity = verbosity)}"
+    res += "------\n\n"
     return res

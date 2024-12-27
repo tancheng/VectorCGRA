@@ -17,7 +17,7 @@ from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
-from ..lib.util.common import TILE_PORT_DIRECTION_DICT
+from ..lib.util.common import TILE_PORT_DIRECTION_DICT_DESC
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..mem.ctrl.CtrlMemRTL import CtrlMemRTL
 from ..noc.ChannelRTL import ChannelRTL
@@ -125,6 +125,15 @@ class TileRTL( Component ):
       s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & s.crossbar.recv_opt.rdy
 
+  # Line trace
+  def line_trace( s ):
+      recv_str = "|".join([str(x.msg) for x in s.recv_data])
+      channel_recv_str = "|".join([str(x.recv.msg) for x in s.channel])
+      channel_send_str = "|".join([str(x.send.msg) for x in s.channel])
+      out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
+      return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+
+
   def verbose_trace_md_formatter( self, data_type, data ):
       assert data_type in [ "recv", "send" ]
       data_list = [ x for x in data ]
@@ -132,9 +141,9 @@ class TileRTL( Component ):
       for idx, port_data in enumerate(data_list):
           msg_dict = port_data.msg.__dict__
           if data_type is "recv":
-            tile_port_dict = { "tile_inport_direction": TILE_PORT_DIRECTION_DICT[idx], "rdy": port_data.rdy }
+            tile_port_dict = { "tile_inport_direction": TILE_PORT_DIRECTION_DICT_DESC[idx], "rdy": port_data.rdy }
           else:
-            tile_port_dict = { "tile_outport_direction": TILE_PORT_DIRECTION_DICT[idx], "en": port_data.en }
+            tile_port_dict = { "tile_outport_direction": TILE_PORT_DIRECTION_DICT_DESC[idx], "en": port_data.en }
           tile_port_dict.update(msg_dict)
           result_list.append(tile_port_dict)
       result_md = markdown_table(result_list).set_params(quote = False).get_markdown()
@@ -160,12 +169,3 @@ class TileRTL( Component ):
               f"===>\n"
               f"- Tile out:"
               f"{send_md}\n")
-
-  # Line trace
-  def line_trace( s ):
-      recv_str = "|".join([str(x.msg) for x in s.recv_data])
-      channel_recv_str = "|".join([str(x.recv.msg) for x in s.channel])
-      channel_send_str = "|".join([str(x.send.msg) for x in s.channel])
-      out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
-      return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
-

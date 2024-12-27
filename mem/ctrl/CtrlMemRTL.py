@@ -72,6 +72,11 @@ class CtrlMemRTL( Component ):
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
+  def line_trace( s ):
+    out_str = "||".join([str(data) for data in s.reg_file.regs])
+    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
+
+
   def verbose_trace_normal_processor( self, data_dict ):
     data_dict['ctrl'] = OPT_SYMBOL_DICT[ data_dict['ctrl'] ]
     if 'predicate' in data_dict:
@@ -154,13 +159,13 @@ class CtrlMemRTL( Component ):
     # recv_ctrl
     recv_ctrl_msg_dict = dict(s.recv_ctrl.msg.__dict__)
     recv_ctrl_sub_header = s.verbose_trace_data_processor(recv_ctrl_msg_dict, num_direction_ports)
-    recv_ctrl_msg_list = [ recv_ctrl_sub_header, recv_ctrl_msg_dict ]
+    recv_ctrl_msg_list = [recv_ctrl_sub_header, recv_ctrl_msg_dict]
     recv_ctrl_md = markdown_table(recv_ctrl_msg_list).set_params(quote=False).get_markdown()
 
     # send_ctrl
     send_ctrl_msg_dict = dict(s.send_ctrl.msg.__dict__)
     send_ctrl_sub_header = s.verbose_trace_data_processor(send_ctrl_msg_dict, num_direction_ports)
-    send_ctrl_msg_list = [ send_ctrl_sub_header, send_ctrl_msg_dict ]
+    send_ctrl_msg_list = [send_ctrl_sub_header, send_ctrl_msg_dict]
     send_ctrl_md = markdown_table(send_ctrl_msg_list).set_params(quote=False).get_markdown()
 
     if verbosity == 1:
@@ -183,10 +188,3 @@ class CtrlMemRTL( Component ):
               f'- send_ctrl_msg:'
               f'{send_ctrl_md}\n\n'
               f'- ctrl_memory: {reg_md}\n')
-
-
-  def line_trace( s ):
-    out_str = "||".join([str(data) for data in s.reg_file.regs])
-    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
-
-
