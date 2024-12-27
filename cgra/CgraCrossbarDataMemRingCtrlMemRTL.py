@@ -182,6 +182,15 @@ class CgraCrossbarDataMemRingCtrlMemRTL(Component):
         s.tile[i].to_mem_waddr.rdy //= 0
         s.tile[i].to_mem_wdata.rdy //= 0
 
+  # Line trace
+  def line_trace( s ):
+    # str = "||".join([ x.element.line_trace() for x in s.tile ])
+    # str += " :: [" + s.data_mem.line_trace() + "]"
+    res = "||\n".join([ (("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
+                              for (i,x) in enumerate(s.tile) ])
+    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
+    return res
+
 
   def verbose_trace( self, verbosity = 1 ):
     res = ''
@@ -194,13 +203,3 @@ class CgraCrossbarDataMemRingCtrlMemRTL(Component):
     res += f"data_mem: {self.data_mem.line_trace()}"
     res += "------\n\n"
     return res
-
-  # Line trace
-  def line_trace( s ):
-    # str = "||".join([ x.element.line_trace() for x in s.tile ])
-    # str += " :: [" + s.data_mem.line_trace() + "]"
-    res = "||\n".join([ (("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
-                              for (i,x) in enumerate(s.tile) ])
-    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
-    return res
-
