@@ -97,7 +97,7 @@ class DataMemRTL( Component ):
         s.recv_waddr[i].rdy @= Bits1( 1 )
         s.recv_wdata[i].rdy @= Bits1( 1 )
 
-  def line_trace( s ):
+  def line_trace(s):
     recv_raddr_str = "recv_read_addr: " + "|".join([str(data.msg) for data in s.recv_raddr])
     recv_waddr_str = "recv_write_addr: " + "|".join([str(data.msg) for data in s.recv_waddr])
     recv_wdata_str = "recv_write_data: " + "|".join([str(data.msg) for data in s.recv_wdata])
