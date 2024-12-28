@@ -77,7 +77,7 @@ class CtrlMemRTL( Component ):
     return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
 
 
-  def verbose_trace_normal_processor( self, data_dict ):
+  def verbose_trace_normal_processor(self, data_dict):
     data_dict['ctrl'] = OPT_SYMBOL_DICT[ data_dict['ctrl'] ]
     if 'predicate' in data_dict:
       data_dict['predicate'] = int(data_dict['predicate'])
@@ -88,7 +88,7 @@ class CtrlMemRTL( Component ):
     if 'routing_predicate_in' in data_dict:
       data_dict['routing_predicate_in'] = [ int(rpi) for rpi in data_dict['routing_predicate_in'] ]
 
-  def verbose_trace_fu_in_processor( self, data_dict, sub_header ):
+  def verbose_trace_fu_in_processor(self, data_dict, sub_header):
     data_dict['fu_in'] = [ int(fi) for fi in data_dict['fu_in'] ]
     fu_in_header = []
     for idx, val in enumerate(data_dict['fu_in']):
@@ -97,7 +97,7 @@ class CtrlMemRTL( Component ):
     data_dict['fu_in'] = "|".join([ f"{v : ^3}" for v in data_dict['fu_in'] ])
     sub_header['fu_in'] = fu_in_header_str
 
-  def verbose_trace_outport_processor( self, data_dict, sub_header, num_direction_ports ):
+  def verbose_trace_outport_processor(self, data_dict, sub_header, num_direction_ports):
     if 'outport' in data_dict:
       data_dict['outport'] = [ int(op) for op in data_dict['outport'] ]
       fu_reg_num = 1
@@ -118,7 +118,7 @@ class CtrlMemRTL( Component ):
       data_dict['outport'] = "|".join([ v for v in data_dict['outport'] ])
       sub_header['outport'] = outport_sub_header_str
 
-  def verbose_trace_predicate_in_processor( self, data_dict, sub_header, num_direction_ports ):
+  def verbose_trace_predicate_in_processor(self, data_dict, sub_header, num_direction_ports):
     if 'predicate_in' in data_dict:
       data_dict['predicate_in'] = [ int(pi) for pi in data_dict['predicate_in'] ]
       fu_out_num = 1
@@ -139,7 +139,7 @@ class CtrlMemRTL( Component ):
       data_dict['predicate_in'] = "|".join([ v for v in data_dict['predicate_in'] ])
       sub_header['predicate_in'] = predicate_in_sub_header_str
 
-  def verbose_trace_data_processor( self, data_dict, num_direction_ports ):
+  def verbose_trace_data_processor(self, data_dict, num_direction_ports):
     sub_header = {}
     for key in data_dict.keys():
       sub_header[key] = ''
@@ -150,7 +150,7 @@ class CtrlMemRTL( Component ):
     return sub_header
 
   # verbose trace
-  def verbose_trace( s, verbosity = 1 ):
+  def verbose_trace(s, verbosity = 1):
     num_fu_in = len(s.reg_file.regs[0].fu_in)
     # num_inports = len(s.reg_file.regs[0].predicate_in)
     num_outports = len(s.reg_file.regs[0].outport if hasattr(s.reg_file.regs[0], 'outport') else [])

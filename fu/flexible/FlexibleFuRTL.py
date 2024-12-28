@@ -118,7 +118,7 @@ class FlexibleFuRTL( Component ):
     return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, en: {s.recv_const.en}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.en: {s.recv_opt.en}, send[0].en: {s.send_out[0].en}) '
 
 
-  def verbose_trace_md_formatter( self, data_type, data ):
+  def verbose_trace_md_formatter(self, data_type, data):
       assert data_type in [ "recv", "send" ]
       data_list = [ x for x in data ]
       result_list = []
@@ -134,7 +134,7 @@ class FlexibleFuRTL( Component ):
       return result_md
 
   # verbose trace if verbosity > 0
-  def verbose_trace( s, verbosity = 1 ):
+  def verbose_trace(s, verbosity = 1):
     # for clk n
     # recv:
     #   1. OPT: opt+rdy(if ready to receive opt)

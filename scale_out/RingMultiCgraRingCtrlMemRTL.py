@@ -105,7 +105,7 @@ class RingMultiCgraRingCtrlMemRTL(Component):
     return res
 
 
-  def verbose_trace( self, verbosity = 1 ):
+  def verbose_trace(self, verbosity = 1):
     res = ''
     for (i, x) in enumerate(self.cgra):
       res += "# [cgra" + str(i) + "]:\n" + x.verbose_trace(verbosity = verbosity) + '\n'

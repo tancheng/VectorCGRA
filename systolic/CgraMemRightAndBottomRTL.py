@@ -134,7 +134,7 @@ class CgraMemRightAndBottomRTL(Component):
     return res
 
 
-  def verbose_trace( s, verbosity = 1 ):
+  def verbose_trace(s, verbosity = 1):
     res = ''
     for (i, x) in enumerate(s.tile):
       res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(verbosity = verbosity) + '\n'

@@ -134,7 +134,7 @@ class TileRTL( Component ):
       return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
 
 
-  def verbose_trace_md_formatter( self, data_type, data ):
+  def verbose_trace_md_formatter(self, data_type, data):
       assert data_type in [ "recv", "send" ]
       data_list = [ x for x in data ]
       result_list = []
@@ -150,7 +150,7 @@ class TileRTL( Component ):
       return result_md
 
   # verbose trace
-  def verbose_trace( s, verbosity = 1 ):
+  def verbose_trace(s, verbosity = 1):
       # recv:
       #   1. rdy (if ready to receive data), if en and rdy: then data has been transferred (val, rdy are new type(protocol))
       #   2. data

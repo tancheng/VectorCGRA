@@ -209,7 +209,7 @@ class TileSeparateCrossbarRTL(Component):
     # return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
 
 
-  def verbose_trace_str_formatter( self, crossbar_dict ):
+  def verbose_trace_str_formatter(self, crossbar_dict):
       crossbar_dict['ctrl'] = OPT_SYMBOL_DICT[crossbar_dict['ctrl']]
       crossbar_dict['predicate'] = int(crossbar_dict['predicate'])
       crossbar_dict['fu_in'] = [ int(fi) for fi in crossbar_dict['fu_in'] ]
@@ -219,7 +219,7 @@ class TileSeparateCrossbarRTL(Component):
       crossbar_str = "\n".join([(key + ": " + str(value)) for key, value in crossbar_dict.items()])
       return crossbar_str
 
-  def verbose_trace_md_formatter( self, header_str, data_dict ):
+  def verbose_trace_md_formatter(self, header_str, data_dict):
       result_list = []
       for idx, data in enumerate(data_dict):
           port_direction = TILE_PORT_DIRECTION_DICT_DESC[idx]
@@ -230,7 +230,7 @@ class TileSeparateCrossbarRTL(Component):
       return result_md
 
   # verbose trace
-  def verbose_trace( s, verbosity = 1 ):
+  def verbose_trace(s, verbosity = 1):
       recv_data = [ x.msg.__dict__ for x in s.recv_data ]
       recv_md = s.verbose_trace_md_formatter("inport_direction", recv_data)
 
