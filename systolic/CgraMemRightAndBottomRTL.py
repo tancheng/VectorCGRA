@@ -124,7 +124,7 @@ class CgraMemRightAndBottomRTL(Component):
         s.tile[i].to_mem_wdata.rdy //= 0
 
   # Line trace
-  def line_trace( s ):
+  def line_trace(s):
     # str = "||".join([ x.element.line_trace() for x in s.tile ])
     # str += " :: [" + s.data_mem.line_trace() + "]"
     res = "||\n".join([(("[tile" + str(i) + "]: ") + x.line_trace() + x.ctrl_mem.line_trace())
