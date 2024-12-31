@@ -7,23 +7,22 @@ Author : Cheng Tan
   Date : Dec 28, 2019
 """
 
-
 from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..mem.ctrl.CtrlMemCL import CtrlMemCL
 from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..noc.ChannelRTL import ChannelRTL
 from ..noc.CrossbarRTL import CrossbarRTL
 from ..rf.RegisterRTL import RegisterRTL
 
+class TileCL(Component):
 
-class TileCL( Component ):
-
-  def construct( s, Fu, FuList, DataType, PredicateType, CtrlType,
-                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
-                 const_list, opt_list, id=0 ):
+  def construct(s, Fu, FuList, DataType, PredicateType, CtrlType,
+                ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
+                const_list, opt_list, id=0):
 
     # Constant
     num_xbar_inports  = 6
@@ -32,18 +31,18 @@ class TileCL( Component ):
     num_fu_outports   = 2
     num_mesh_ports    = 4
     bypass_point      = 4
-    CtrlAddrType      = mk_bits( clog2( ctrl_mem_size ) )
-    DataAddrType      = mk_bits( clog2( data_mem_size ) )
+    CtrlAddrType      = mk_bits(clog2(ctrl_mem_size))
+    DataAddrType      = mk_bits(clog2(data_mem_size))
 
     # Interfaces
-    s.recv_data    = [ RecvIfcRTL( DataType ) for _ in range ( num_mesh_ports ) ]
-    s.send_data    = [ SendIfcRTL( DataType ) for _ in range ( num_mesh_ports ) ]
+    s.recv_data = [RecvIfcRTL(DataType) for _ in range (num_mesh_ports)]
+    s.send_data = [SendIfcRTL(DataType) for _ in range (num_mesh_ports)]
 
     # Data
-    s.to_mem_raddr   = SendIfcRTL( DataAddrType )
-    s.from_mem_rdata = RecvIfcRTL( DataType )
-    s.to_mem_waddr   = SendIfcRTL( DataAddrType )
-    s.to_mem_wdata   = SendIfcRTL( DataType )
+    s.to_mem_raddr   = SendIfcRTL(DataAddrType)
+    s.from_mem_rdata = RecvIfcRTL(DataType)
+    s.to_mem_waddr   = SendIfcRTL(DataAddrType)
+    s.to_mem_wdata   = SendIfcRTL(DataType)
 
     # Components
     s.element     = FlexibleFuRTL( DataType, PredicateType, CtrlType, num_fu_inports,
@@ -71,7 +70,7 @@ class TileCL( Component ):
         s.to_mem_wdata   //= s.element.to_mem_wdata[i]
       else:
         s.element.to_mem_raddr[i].rdy   //= 0
-        s.element.from_mem_rdata[i].en  //= 0
+        s.element.from_mem_rdata[i].val //= 0
         s.element.from_mem_rdata[i].msg //= DataType( 0, 0 )
         s.element.to_mem_waddr[i].rdy   //= 0
         s.element.to_mem_wdata[i].rdy   //= 0
@@ -91,7 +90,6 @@ class TileCL( Component ):
 
     for i in range( num_fu_inports ):
       s.channel[num_mesh_ports+i].send  //= s.element.recv_in[i]
-      s.channel[num_mesh_ports+i].count //= s.element.recv_in_count[i]
 
     for i in range( num_fu_outports ):
       s.element.send_out[i] //= s.crossbar.recv_data[num_mesh_ports+i]
@@ -100,8 +98,8 @@ class TileCL( Component ):
     def update_opt():
       s.element.recv_opt.msg   @= s.ctrl_mem.send_ctrl.msg
       s.crossbar.recv_opt.msg  @= s.ctrl_mem.send_ctrl.msg
-      s.element.recv_opt.en    @= s.ctrl_mem.send_ctrl.en
-      s.crossbar.recv_opt.en   @= s.ctrl_mem.send_ctrl.en
+      s.element.recv_opt.val   @= s.ctrl_mem.send_ctrl.val
+      s.crossbar.recv_opt.val  @= s.ctrl_mem.send_ctrl.val
       s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy or s.crossbar.recv_opt.rdy
 
   # Line trace

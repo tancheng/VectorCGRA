@@ -27,8 +27,8 @@ class CGRAKingMeshRTL( Component ):
                  FunctionUnit, FuList, preload_data = None,
                  preload_const = None ):
 
-    s.num_tiles = width * height
     s.num_mesh_ports = 8
+    s.num_tiles = width * height
     AddrType = mk_bits( clog2( ctrl_mem_size ) )
 
     # Interfaces

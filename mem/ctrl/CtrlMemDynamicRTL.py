@@ -12,7 +12,7 @@ Author : Cheng Tan
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL, ValRdySendIfcRTL
 from ...lib.basic.val_rdy.queues import NormalQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
@@ -37,7 +37,7 @@ class CtrlMemDynamicRTL(Component):
     num_routing_outports = num_tile_outports + num_fu_inports
 
     # Interface
-    s.send_ctrl = SendIfcRTL(CtrlSignalType)
+    s.send_ctrl = ValRdySendIfcRTL(CtrlSignalType)
     s.recv_pkt = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Component
@@ -96,23 +96,24 @@ class CtrlMemDynamicRTL(Component):
 
     @update
     def update_send_out_signal():
-      s.send_ctrl.en @= 0
+      s.send_ctrl.val @= 0
       if s.start_iterate_ctrl == b1(1):
         if ((total_ctrl_steps > 0) & \
              (s.times == TimeType(total_ctrl_steps))) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
-          s.send_ctrl.en @= b1(0)
+          s.send_ctrl.val @= b1(0)
         else:
-          s.send_ctrl.en @= s.send_ctrl.rdy
+          s.send_ctrl.val @= 1
       if s.recv_pkt_queue.send.val & \
          ((s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE)):
-        s.send_ctrl.en @= b1(0)
+        s.send_ctrl.val @= b1(0)
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
       if s.recv_pkt_queue.send.val:
-        # @yo96? data is still there, not released yet?
+        # if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
+        #    (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
         if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
           s.start_iterate_ctrl <<= 1
         elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE:

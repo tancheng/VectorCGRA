@@ -1,18 +1,19 @@
-#=========================================================================
-# ChannelNormalRTL_test.py
-#=========================================================================
-# Simple test for ChannelNormalRTL. There is no bypass functionality in
-# the channel.
-#
-# Author : Cheng Tan
-#   Date : Nov 26, 2024
+"""
+=========================================================================
+ChannelNormalRTL_test.py
+=========================================================================
+Simple test for ChannelNormalRTL. There is no bypass functionality in
+the channel.
+
+Author : Cheng Tan
+  Date : Nov 26, 2024
+"""
 
 import pytest
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import TestVectorSimulator
-
-from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ..ChannelNormalRTL import ChannelNormalRTL
 
@@ -20,45 +21,45 @@ from ..ChannelNormalRTL import ChannelNormalRTL
 # TestHarness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
-  def construct( s, MsgType, src_msgs, sink_msgs, latency ):
+  def construct(s, MsgType, src_msgs, sink_msgs, latency):
 
-    s.src  = TestSrcRTL ( MsgType, src_msgs  )
-    s.sink = TestSinkRTL( MsgType, sink_msgs )
-    s.dut  = ChannelNormalRTL( MsgType, latency )
+    s.src = TestSrcRTL(MsgType, src_msgs)
+    s.sink = TestSinkRTL(MsgType, sink_msgs)
+    s.dut = ChannelNormalRTL(MsgType, latency)
 
     # Connections
     s.src.send //= s.dut.recv
     s.dut.send //= s.sink.recv
 
-  def done( s ):
+  def done(s):
     return s.src.done() and s.sink.done()
 
-  def line_trace( s ):
+  def line_trace(s):
     # return s.src.line_trace() + "-> | " + s.dut.line_trace()
     return s.src.line_trace() + "-> | " + s.dut.line_trace() + \
-                               " | -> " + s.sink.line_trace()
+        " | -> " + s.sink.line_trace()
 
 #-------------------------------------------------------------------------
 # run_rtl_sim
 #-------------------------------------------------------------------------
 
-def run_sim( test_harness, max_cycles=100 ):
+def run_sim(test_harness, max_cycles = 100):
 
   # Create a simulator
   test_harness.elaborate()
-  test_harness.apply( DefaultPassGroup() )
+  test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
   # Run simulation
   ncycles = 0
   print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+  print("{}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+    print("{}:{}".format( ncycles, test_harness.line_trace()))
     # if ncycles >= 6:
     #   test_harness.dut.send.rdy @= 1
 
@@ -79,10 +80,10 @@ sink_msgs = [ DataType(7,1,1), DataType(4,1), DataType(1,1), DataType(2,1), Data
 
 def test_simple():
   latency = 1
-  th = TestHarness( DataType, test_msgs, sink_msgs, latency)
-  run_sim( th )
+  th = TestHarness(DataType, test_msgs, sink_msgs, latency)
+  run_sim(th)
 
 def test_latency():
   latency = 2
-  th = TestHarness( DataType, test_msgs, sink_msgs, latency)
-  run_sim( th )
+  th = TestHarness(DataType, test_msgs, sink_msgs, latency)
+  run_sim(th)

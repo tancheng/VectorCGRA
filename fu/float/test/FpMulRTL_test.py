@@ -8,7 +8,6 @@ Author : Cheng Tan
   Date : August 10, 2023
 """
 
-
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
@@ -21,8 +20,7 @@ from ....lib.messages import *
 from ....lib.opt_type import *
 from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
-
-round_near_even   = 0b000
+round_near_even = 0b000
 
 def test_elaborate( cmdline_opts ):
   DataType      = mk_data( 16, 1 )
@@ -66,9 +64,6 @@ class TestHarness( Component ):
     s.dut = FunctionUnit( DataType, PredicateType, ConfigType,
                           num_inports, num_outports, data_mem_size )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
-
     connect( s.src_in0.send,       s.dut.recv_in[0]         )
     connect( s.src_in1.send,       s.dut.recv_in[1]         )
     connect( s.src_predicate.send, s.dut.recv_predicate     )
@@ -76,11 +71,11 @@ class TestHarness( Component ):
     connect( s.src_opt.send,       s.dut.recv_opt           )
     connect( s.dut.send_out[0],    s.sink_out.recv          )
 
-  def done( s ):
+  def done(s):
     return s.src_in0.done() and s.src_in1.done() and \
            s.src_opt.done() and s.sink_out.done()
 
-  def line_trace( s ):
+  def line_trace(s):
     return s.dut.line_trace()
 
 def mk_float_to_bits_fn( DataType, exp_nbits = 4, sig_nbits = 11 ):

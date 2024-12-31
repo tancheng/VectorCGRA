@@ -10,9 +10,8 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
-from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
-from ..lib.basic.val_rdy.ifcs import SendIfcRTL as ValRdySendIfcRTL
-from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as ValRdyRecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import SendIfcRTL as SendIfcRTL
+from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..noc.ChannelNormalRTL import ChannelNormalRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
@@ -27,11 +26,11 @@ class ControllerRTL(Component):
 
     # Interface
     # Request from/to other CGRA via NoC.
-    s.recv_from_noc = ValRdyRecvIfcRTL(NocPktType)
-    s.send_to_noc = ValRdySendIfcRTL(NocPktType)
+    s.recv_from_noc = RecvIfcRTL(NocPktType)
+    s.send_to_noc = SendIfcRTL(NocPktType)
 
-    s.recv_from_cpu_ctrl_pkt = ValRdyRecvIfcRTL(CtrlPktType)
-    s.send_to_ctrl_ring_ctrl_pkt = ValRdySendIfcRTL(CtrlPktType)
+    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
 
     # Request from/to master.
     s.recv_from_master_load_request_pkt = RecvIfcRTL(NocPktType)
@@ -127,7 +126,7 @@ class ControllerRTL(Component):
       kStoreRequestInportIdx = 2
 
       # For the load request from master.
-      s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_master_load_request_pkt_queue.send.en
+      s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_master_load_request_pkt_queue.send.val
       s.recv_from_master_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
           NocPktType(controller_id,
@@ -140,7 +139,7 @@ class ControllerRTL(Component):
                      1)
 
       # For the store request from master.
-      s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_master_store_request_pkt_queue.send.en
+      s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_master_store_request_pkt_queue.send.val
       s.recv_from_master_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
           NocPktType(controller_id,
@@ -154,7 +153,7 @@ class ControllerRTL(Component):
 
       # For the load response (i.e., the data towards other) from master.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
-          s.recv_from_master_load_response_pkt_queue.send.en
+          s.recv_from_master_load_response_pkt_queue.send.val
       s.recv_from_master_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
       s.crossbar.recv[kLoadResponseInportIdx].msg @= \
           NocPktType(controller_id,
@@ -174,10 +173,10 @@ class ControllerRTL(Component):
     # def update_received_msg_from_noc():
 
       # Initiates the signals.
-      s.send_to_master_load_request_addr_queue.recv.en @= 0
-      s.send_to_master_store_request_addr_queue.recv.en @= 0
-      s.send_to_master_store_request_data_queue.recv.en @= 0
-      s.send_to_master_load_response_data_queue.recv.en @= 0
+      s.send_to_master_load_request_addr_queue.recv.val @= 0
+      s.send_to_master_store_request_addr_queue.recv.val @= 0
+      s.send_to_master_store_request_data_queue.recv.val @= 0
+      s.send_to_master_load_response_data_queue.recv.val @= 0
       s.send_to_master_load_request_addr_queue.recv.msg @= CGRAAddrType()
       s.send_to_master_store_request_addr_queue.recv.msg @= CGRAAddrType()
       s.send_to_master_store_request_data_queue.recv.msg @= CGRADataType()
@@ -192,7 +191,7 @@ class ControllerRTL(Component):
             s.recv_from_noc.rdy @= 1
             s.send_to_master_load_request_addr_queue.recv.msg @= \
                 CGRAAddrType(received_pkt.addr)
-            s.send_to_master_load_request_addr_queue.recv.en @= 1
+            s.send_to_master_load_request_addr_queue.recv.val @= 1
 
         elif s.recv_from_noc.msg.cmd == CMD_STORE_REQUEST:
           if s.send_to_master_store_request_addr_queue.recv.rdy & \
@@ -202,15 +201,15 @@ class ControllerRTL(Component):
                 CGRAAddrType(received_pkt.addr)
             s.send_to_master_store_request_data_queue.recv.msg @= \
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
-            s.send_to_master_store_request_addr_queue.recv.en @= 1
-            s.send_to_master_store_request_data_queue.recv.en @= 1
+            s.send_to_master_store_request_addr_queue.recv.val @= 1
+            s.send_to_master_store_request_data_queue.recv.val @= 1
 
         elif s.recv_from_noc.msg.cmd == CMD_LOAD_RESPONSE:
           if s.send_to_master_load_response_data_queue.recv.rdy:
             s.recv_from_noc.rdy @= 1
             s.send_to_master_load_response_data_queue.recv.msg @= \
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
-            s.send_to_master_load_response_data_queue.recv.en @= 1
+            s.send_to_master_load_response_data_queue.recv.val @= 1
 
         # else:
         #   # TODO: Handle other cmd types.
@@ -231,8 +230,6 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.addr,
                      s.crossbar.send[0].msg.data,
                      s.crossbar.send[0].msg.predicate)
-
-
 
   def line_trace(s):
     recv_from_master_load_request_pkt_str = "recv_from_master_load_request_pkt: " + str(s.recv_from_master_load_request_pkt.msg)

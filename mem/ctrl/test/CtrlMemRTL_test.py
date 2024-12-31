@@ -8,16 +8,14 @@ Author : Cheng Tan
   Date : Dec 21, 2019
 """
 
-
 from pymtl3 import *
 from ..CtrlMemCL import CtrlMemCL
 from ..CtrlMemRTL import CtrlMemRTL
 from ....fu.single.AdderRTL import AdderRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
-
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -41,9 +39,6 @@ class TestHarness( Component ):
                             data_mem_size )
     s.ctrl_mem  = MemUnit( ConfigType, ctrl_mem_size, len( ctrl_msgs ),
                            len( ctrl_msgs ) )
-
-    s.alu.recv_in_count[0] //= 1
-    s.alu.recv_in_count[1] //= 1
 
     connect( s.alu.recv_opt,   s.ctrl_mem.send_ctrl  )
 

@@ -8,15 +8,13 @@ Author : Cheng Tan
   Date : March 13, 2022
 """
 
-
-from pymtl3                       import *
-from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
-
-from ..VectorMulRTL             import VectorMulRTL
-from ....mem.const.ConstQueueRTL  import ConstQueueRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
+from pymtl3 import *
+from ..VectorMulRTL import VectorMulRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.opt_type import *
+from ....lib.messages import *
+from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -41,19 +39,16 @@ class TestHarness( Component ):
                           num_inports, num_outports,
                           data_mem_size )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
-
     s.src_in0.send.rdy //= s.dut.recv_in[0].rdy
-    s.src_in0.send.en  //= s.dut.recv_in[0].en
+    s.src_in0.send.val //= s.dut.recv_in[0].val
     s.src_in0.send.msg //= s.dut.recv_in[0].msg[0:bandwidth]
 
     s.src_in1.send.rdy //= s.dut.recv_in[1].rdy
-    s.src_in1.send.en  //= s.dut.recv_in[1].en
+    s.src_in1.send.val //= s.dut.recv_in[1].val
     s.src_in1.send.msg //= s.dut.recv_in[1].msg[0:bandwidth]
 
     s.const_queue.send_const.rdy //= s.dut.recv_const.rdy
-    s.const_queue.send_const.en  //= s.dut.recv_const.en
+    s.const_queue.send_const.val //= s.dut.recv_const.val
     s.const_queue.send_const.msg //= s.dut.recv_const.msg[0:bandwidth]
 
     # connect( s.src_in0.send,       s.dut.recv_in[0]         )

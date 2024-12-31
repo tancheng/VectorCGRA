@@ -15,14 +15,14 @@ from pymtl3.stdlib.test_utils import (run_sim,
 from ..FpAddRTL import FpAddRTL
 from ...pymtl3_hardfloat.HardFloat.converter_funcs import (floatToFN,
                                                            fNToFloat)
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
 from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 
-round_near_even   = 0b000
+round_near_even = 0b000
 
 def test_elaborate( cmdline_opts ):
   DataType      = mk_data( 16, 1 )
@@ -65,9 +65,6 @@ class TestHarness( Component ):
     s.const_queue = ConstQueueRTL( DataType, src_const )
     s.dut = FunctionUnit( DataType, PredicateType, ConfigType,
                           num_inports, num_outports, data_mem_size )
-
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
 
     connect( s.src_in0.send,       s.dut.recv_in[0]         )
     connect( s.src_in1.send,       s.dut.recv_in[1]         )

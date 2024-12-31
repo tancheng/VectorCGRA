@@ -11,9 +11,9 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
-from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
-
 
 class RegFile( Component ):
 
@@ -47,7 +47,7 @@ class RegFile( Component ):
       s.recv_raddr.rdy @= s.send_rdata.rdy
       s.recv_waddr.rdy @= s.send_rdata.rdy
       s.recv_wdata.rdy @= s.send_rdata.rdy
-      s.send_rdata.en  @= s.recv_raddr.en
+      s.send_rdata.val @= s.recv_raddr.val
 
   def line_trace( s ):
     out_str = "|".join([ str(data) for data in s.reg_file.regs ])

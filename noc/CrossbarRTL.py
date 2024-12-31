@@ -9,15 +9,17 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 
-class CrossbarRTL( Component ):
+class CrossbarRTL(Component):
 
-  def construct( s, DataType, PredicateType, CtrlType,
-                 num_inports=5, num_outports=5, bypass_point=4, id=0 ):
+  def construct(s, DataType, PredicateType, CtrlType,
+                num_inports = 5, num_outports = 5, bypass_point = 4,
+                id = 0):
 
-    InType     = mk_bits( clog2( num_inports + 1 ) )
+    InType = mk_bits(clog2(num_inports + 1))
     s.bypass_point = bypass_point
 
     # Interface
@@ -46,7 +48,7 @@ class CrossbarRTL( Component ):
     def update_signal():
       s.out_rdy_vector        @= 0
       s.recv_predicate_vector @= 0
-      s.send_predicate.en     @= 0
+      s.send_predicate.val    @= 0
       s.recv_blocked_vector   @= 0
       s.send_predicate.msg    @= PredicateType()
       for i in range( num_inports ):
@@ -54,7 +56,7 @@ class CrossbarRTL( Component ):
       for i in range( num_outports ):
         s.in_dir[i]        @= 0
         s.in_dir_local[i]  @= 0
-        s.send_data[i].en  @= 0
+        s.send_data[i].val @= 0
         s.send_data[i].msg @= DataType()
 
       # For predication register update. 'predicate' and 'predicate_in' no need
@@ -68,8 +70,8 @@ class CrossbarRTL( Component ):
       if s.recv_opt.msg.ctrl != OPT_START:
         for i in range( num_inports ):
           # Set predicate once the recv_data is stable (i.e., en == true).
-          if s.recv_opt.msg.predicate_in[i] & s.recv_data[i].en:
-            s.send_predicate.en @= b1( 1 )
+          if s.recv_opt.msg.predicate_in[i] & s.recv_data[i].val:
+            s.send_predicate.val @= b1( 1 )
             s.send_predicate.msg.payload @= b1( 1 )
             s.recv_predicate_vector[i] @= s.recv_data[i].msg.predicate
 
@@ -103,8 +105,8 @@ class CrossbarRTL( Component ):
                     ~s.recv_but_block_by_others[s.in_dir_local[i]] & \
                     ~s.send_but_block_by_others[i]
 
-            s.send_data[i].en @= s.recv_data[s.in_dir_local[i]].en
-            if s.send_data[i].en & s.recv_data[s.in_dir_local[i]].rdy:
+            s.send_data[i].val @= s.recv_data[s.in_dir_local[i]].val
+            if s.send_data[i].val & s.recv_data[s.in_dir_local[i]].rdy:
               s.send_data[i].msg.payload   @= s.recv_data[s.in_dir_local[i]].msg.payload
               s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local[i]].msg.predicate
               s.send_data[i].msg.bypass    @= s.recv_data[s.in_dir_local[i]].msg.bypass
@@ -120,11 +122,11 @@ class CrossbarRTL( Component ):
               else:
                 s.send_data[i].msg.bypass @= b1( 0 )
           else:
-            s.send_data[i].en  @= b1( 0 )
+            s.send_data[i].val @= b1( 0 )
 
       else:
         for i in range( num_outports ):
-          s.send_data[i].en @= b1( 0 )
+          s.send_data[i].val @= b1( 0 )
       s.recv_opt.rdy @= reduce_and( s.out_rdy_vector ) & ~reduce_or( s.recv_blocked_vector )
       s.send_predicate.msg.predicate @= reduce_or( s.recv_predicate_vector )
 
@@ -141,7 +143,6 @@ class CrossbarRTL( Component ):
           s.send_but_block_by_others[i] <<= 1
         elif reduce_and( s.out_rdy_vector ):
           s.send_but_block_by_others[i] <<= 0
-
 
   # Line trace
   def line_trace( s ):

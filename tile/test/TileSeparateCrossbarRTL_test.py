@@ -10,7 +10,6 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
-
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
@@ -20,11 +19,11 @@ from ..TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
+from ...fu.single.NahRTL import NahRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
 from ...lib.messages import *
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
@@ -45,9 +44,9 @@ class TestHarness(Component):
     s.num_tile_outports = num_tile_outports
 
     s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.src_data = [TestSrcRTL(DataType, src_data[i])
+    s.src_data = [ValRdyTestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
-    s.sink_out = [TestSinkRTL(DataType, sink_out[i])
+    s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
@@ -64,7 +63,7 @@ class TestHarness(Component):
 
     if MemUnitRTL in FuList:
       s.dut.to_mem_raddr.rdy //= 0
-      s.dut.from_mem_rdata.en //= 0
+      s.dut.from_mem_rdata.val //= 0
       s.dut.from_mem_rdata.msg //= DataType(0, 0)
       s.dut.to_mem_waddr.rdy //= 0
       s.dut.to_mem_wdata.rdy //= 0

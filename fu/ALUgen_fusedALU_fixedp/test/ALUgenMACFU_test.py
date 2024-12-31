@@ -12,8 +12,8 @@ from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from ..ALUgenMACFU import ALUgenMACFU
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
 from ....mem.const.ConstQueueRTL import ConstQueueRTL
@@ -63,9 +63,6 @@ class TestHarness( Component ):
     s.dut = FunctionUnit( DataType, PredicateType, ConfigType,
                           num_inports, num_outports, data_mem_size )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
-
     connect( s.src_in0.send,       s.dut.recv_in[0]         )
     connect( s.src_in1.send,       s.dut.recv_in[1]         )
     connect( s.src_in2.send,       s.dut.recv_in[2]         )
@@ -99,13 +96,13 @@ def test_add_basic(cmdline_opts):
   src_predicate = [ PredicateType(1, 1), PredicateType(1, 1), PredicateType(1, 1) ]
   src_const     = [ DataType(1, 1), DataType(2, 1), DataType(3, 1) ]
   sink_out      = [ DataType(2, 1), DataType(0, 1), DataType(0, 1),DataType(1, 1),DataType(0, 1),DataType(1, 1), DataType(20, 1), DataType(12, 1) ]
-  src_opt       = [ ConfigType( OPT_ADD, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_SUB, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_LT, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_LTE, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_GT, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_GTE, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_MUL, b1( 1 ), pickRegister ),
+  src_opt       = [ ConfigType( OPT_ADD,     b1( 1 ), pickRegister ),
+                    ConfigType( OPT_SUB,     b1( 1 ), pickRegister ),
+                    ConfigType( OPT_LT,      b1( 1 ), pickRegister ),
+                    ConfigType( OPT_LTE,     b1( 1 ), pickRegister ),
+                    ConfigType( OPT_GT,      b1( 1 ), pickRegister ),
+                    ConfigType( OPT_GTE,     b1( 1 ), pickRegister ),
+                    ConfigType( OPT_MUL,     b1( 1 ), pickRegister ),
                     ConfigType( OPT_MUL_ADD, b1( 1 ), pickRegister ) ]
   th = TestHarness( FU, DataType, PredicateType, ConfigType,
                     num_inports, num_outports, data_mem_size,

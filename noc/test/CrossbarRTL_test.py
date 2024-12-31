@@ -9,11 +9,10 @@ Author : Cheng Tan
 
 """
 
-from pymtl3            import *
-from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ...lib.basic.en_rdy.test_srcs  import TestSrcRTL
-
-from ..CrossbarRTL   import CrossbarRTL
+from pymtl3 import *
+from ..CrossbarRTL import CrossbarRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.opt_type import *
 from ...lib.messages import *
 
