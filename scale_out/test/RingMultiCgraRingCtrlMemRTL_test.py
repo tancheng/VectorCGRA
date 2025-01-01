@@ -81,7 +81,6 @@ class TestHarness(Component):
     # return True
 
   def line_trace(s):
-    # return s.dut.verbose_trace(verbosity = 2)
     return s.dut.line_trace()
 
 def test_homo_2x2(cmdline_opts):
@@ -210,6 +209,8 @@ def test_homo_2x2(cmdline_opts):
                    width, height, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra, src_ctrl_pkt,
                    ctrl_mem_size, controller2addr_map)
+  th.set_param('top.dut.line_trace', verbosity = 1)
+
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

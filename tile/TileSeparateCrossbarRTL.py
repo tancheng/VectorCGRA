@@ -198,15 +198,18 @@ class TileSeparateCrossbarRTL(Component):
                                   s.fu_crossbar.recv_opt.rdy
 
   # Line trace
-  def line_trace( s ):
-    recv_str = "|".join([str(x.msg) for x in s.recv_data])
-    tile_out_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_out_channel])
-    tile_out_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_out_channel])
-    fu_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.fu_in_channel])
-    fu_in_channel_send_str = "|".join([str(x.send.msg) for x in s.fu_in_channel])
-    out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
-    return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} ## "
-    # return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+  def line_trace(s, verbosity = 0):
+    if verbosity == 0:
+        recv_str = "|".join([str(x.msg) for x in s.recv_data])
+        tile_out_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_out_channel])
+        tile_out_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_out_channel])
+        fu_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.fu_in_channel])
+        fu_in_channel_send_str = "|".join([str(x.send.msg) for x in s.fu_in_channel])
+        out_str = "|".join(["(" + str(x.msg.payload) + "," + str(x.msg.predicate) + ")" for x in s.send_data])
+        return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} ## "
+        # return f"{recv_str} => [{s.crossbar.recv_opt.msg}] ({s.element.line_trace()}) => {channel_recv_str} => {channel_send_str} => {out_str}"
+    else:
+        return s.verbose_trace(verbosity = verbosity)
 
 
   def verbose_trace_str_formatter(self, crossbar_dict):

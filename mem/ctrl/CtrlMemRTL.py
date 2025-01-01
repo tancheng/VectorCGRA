@@ -72,9 +72,12 @@ class CtrlMemRTL( Component ):
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType( 1 )
 
-  def line_trace( s ):
-    out_str = "||".join([str(data) for data in s.reg_file.regs])
-    return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
+  def line_trace(s, verbosity = 0):
+    if verbosity == 0:
+      out_str = "||".join([str(data) for data in s.reg_file.regs])
+      return f'{s.recv_ctrl.msg} : [{out_str}] : {s.send_ctrl.msg}'
+    else:
+      return s.verbose_trace(verbosity = verbosity)
 
 
   def verbose_trace_normal_processor(self, data_dict):

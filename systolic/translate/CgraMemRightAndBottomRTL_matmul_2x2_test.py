@@ -80,7 +80,6 @@ class TestHarness(Component):
     return True
 
   def line_trace(s):
-    # return s.dut.verbose_trace(verbosity = 2)
     return s.dut.line_trace()
 
 def run_sim(test_harness, enable_verification_pymtl,
@@ -391,6 +390,7 @@ def test_CGRA_systolic(cmdline_opts):
                    CtrlType, width, height, ctrl_mem_size, data_mem_size,
                    src_opt, ctrl_waddr, preload_mem, preload_const,
                    expected_out)
+  th.set_param('top.dut.line_trace', verbosity = 1)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
