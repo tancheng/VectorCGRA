@@ -98,9 +98,19 @@ class RingMultiCgraRingCtrlMemRTL(Component):
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].en //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CGRADataType()
 
-  def line_trace(s):
-    res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())
-                       for (i,x) in enumerate(s.cgra)])
-    res += " ## ring: " + s.ring.line_trace()
-    return res
+  def line_trace(s, verbosity = 0):
+    if verbosity == 0:
+      res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())
+                         for (i,x) in enumerate(s.cgra)])
+      res += " ## ring: " + s.ring.line_trace()
+      return res
+    else:
+      return s.verbose_trace(verbosity = verbosity)
 
+
+  def verbose_trace(self, verbosity = 1):
+    res = ''
+    for (i, x) in enumerate(self.cgra):
+      res += "# [cgra" + str(i) + "]:\n" + x.verbose_trace(verbosity = verbosity) + '\n'
+    res += f"## ring: {self.ring.line_trace()}"
+    return res

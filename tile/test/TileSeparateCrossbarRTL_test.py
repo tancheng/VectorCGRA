@@ -165,6 +165,8 @@ def test_tile_alu(cmdline_opts):
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports, src_data,
                    src_ctrl_pkt, sink_out)
+  th.set_param('top.dut.line_trace', verbosity = 1)
+
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

@@ -131,6 +131,7 @@ def test_homo_4x4( cmdline_opts ):
       else:
         print( f' - set tile[{idx}] to scalar')
         th.set_param( f'top.dut.tile[{idx}].construct', FuList=scalar_list  )
+  th.set_param('top.dut.line_trace', verbosity = 1)
 
   th.elaborate()
   th.dut.set_metadata( VerilogTranslationPass.explicit_module_name,

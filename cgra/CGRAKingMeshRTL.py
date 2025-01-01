@@ -150,10 +150,23 @@ class CGRAKingMeshRTL( Component ):
         s.tile[i].to_mem_wdata.rdy //= 0
 
   # Line trace
-  def line_trace( s ):
-    # str = "||".join([ x.element.line_trace() for x in s.tile ])
-    # str += " :: [" + s.data_mem.line_trace() + "]"
-    res = "||\n".join([ (("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
-                              for (i,x) in enumerate(s.tile) ])
-    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
+  def line_trace(s, verbosity = 0):
+    if verbosity == 0:
+      # str = "||".join([ x.element.line_trace() for x in s.tile ])
+      # str += " :: [" + s.data_mem.line_trace() + "]"
+      res = "||\n".join([(("[tile" + str(i) + "]: ") + x.line_trace() + x.ctrl_mem.line_trace())
+                         for (i, x) in enumerate(s.tile)])
+      res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
+      return res
+    else:
+      return s.verbose_trace(verbosity)
+
+  # verbose trace
+  def verbose_trace(s, verbosity = 1):
+    res = ''
+    for (i, x) in enumerate(s.tile):
+      res += "# [tile" + str(i) + "]: " + x.verbose_trace(verbosity = verbosity) + x.ctrl_mem.verbose_trace(
+        verbosity = verbosity) + '\n'
+    res += f"data_mem: {s.data_mem.verbose_trace(verbosity = verbosity)}"
+    res += "------\n\n"
     return res

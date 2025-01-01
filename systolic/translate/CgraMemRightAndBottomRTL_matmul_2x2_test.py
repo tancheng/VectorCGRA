@@ -390,6 +390,7 @@ def test_CGRA_systolic(cmdline_opts):
                    CtrlType, width, height, ctrl_mem_size, data_mem_size,
                    src_opt, ctrl_waddr, preload_mem, preload_const,
                    expected_out)
+  th.set_param('top.dut.line_trace', verbosity = 1)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
