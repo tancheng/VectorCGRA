@@ -26,6 +26,7 @@ class FpAddRTL(Fu):
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size, exp_nbits = 4,
                 sig_nbits = 11):
+
     super(FpAddRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
                                  data_mem_size)
@@ -36,6 +37,7 @@ class FpAddRTL(Fu):
     num_entries = 2
     FuInType    = mk_bits(clog2(num_inports + 1))
     CountType   = mk_bits(clog2(num_entries + 1))
+
     # TODO: parameterize rounding mode
     s.rounding_mode = 0b000
     s.FLOATING_ONE = concat(
@@ -43,17 +45,17 @@ class FpAddRTL(Fu):
         mk_bits(sig_nbits)() )
 
     # Components
-    s.fadd = AddFN( exp_nbits+1, sig_nbits )
+    s.fadd = AddFN(exp_nbits + 1, sig_nbits)
     s.fadd.roundingMode //= s.rounding_mode
     s.fadd.subOp //= lambda: s.recv_opt.msg.ctrl == OPT_FSUB
 
     # Wires
-    s.in0 = Wire( FuInType )
-    s.in1 = Wire( FuInType )
+    s.in0 = Wire(FuInType)
+    s.in1 = Wire(FuInType)
 
-    idx_nbits = clog2( num_inports )
-    s.in0_idx = Wire( idx_nbits )
-    s.in1_idx = Wire( idx_nbits )
+    idx_nbits = clog2(num_inports)
+    s.in0_idx = Wire(idx_nbits)
+    s.in1_idx = Wire(idx_nbits)
 
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]

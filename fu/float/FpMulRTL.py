@@ -42,7 +42,7 @@ class FpMulRTL(Fu):
     s.rounding_mode = 0b000
 
     # Components
-    s.fmul = MulFN(exp_nbits+1, sig_nbits)
+    s.fmul = MulFN(exp_nbits + 1, sig_nbits)
     s.fmul.roundingMode //= s.rounding_mode
 
     # Wires
@@ -61,28 +61,26 @@ class FpMulRTL(Fu):
     @update
     def comb_logic():
 
+      s.recv_all_val @= 0
       # For pick input register
       s.in0 @= 0
       s.in1 @= 0
-      for i in range( num_inports ):
+      for i in range(num_inports):
         s.recv_in[i].rdy @= b1(0)
 
-      for i in range( num_outports ):
-        s.send_out[i].en  @= s.recv_opt.en
+      for i in range(num_outports):
+        s.send_out[i].val @= 0
         s.send_out[i].msg @= DataType()
 
       s.recv_const.rdy @= 0
       s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
-      if s.recv_opt.en:
+      if s.recv_opt.val & s.send_out[0].rdy:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
         if s.recv_opt.msg.fu_in[1] != 0:
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
-
-      s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
-                                     s.recv_in[s.in1_idx].msg.predicate
 
       if s.recv_opt.val:
         if s.recv_opt.msg.ctrl == OPT_FMUL:
@@ -105,16 +103,16 @@ class FpMulRTL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
                                           s.recv_predicate.msg.predicate)
-          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:
-          for j in range( num_outports ):
-            s.send_out[j].val @= b1( 0 )
+          for j in range(num_outports):
+            s.send_out[j].val @= b1(0)
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
