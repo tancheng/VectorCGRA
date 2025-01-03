@@ -29,27 +29,27 @@ class TestHarness(Component):
 
   def construct(s, ControllerIdType, CtrlPktType, CmdType, MsgType,
                 AddrType, PktType, controller_id,
-                from_master_load_request_pkt_msgs,
-                from_master_load_response_pkt_msgs,
-                from_master_store_request_pkt_msgs,
-                expected_to_master_load_request_addr_msgs,
-                expected_to_master_load_response_data_msgs,
-                expected_to_master_store_request_addr_msgs,
-                expected_to_master_store_request_data_msgs,
+                from_tile_load_request_pkt_msgs,
+                from_tile_load_response_pkt_msgs,
+                from_tile_store_request_pkt_msgs,
+                expected_to_tile_load_request_addr_msgs,
+                expected_to_tile_load_response_data_msgs,
+                expected_to_tile_store_request_addr_msgs,
+                expected_to_tile_store_request_data_msgs,
                 from_noc_pkts,
                 expected_to_noc_pkts,
                 controller2addr_map):
 
     cmp_func = lambda a, b : a == b # a.data == b.data
 
-    s.src_from_master_load_request_pkt_en_rdy = TestSrcRTL(PktType, from_master_load_request_pkt_msgs)
-    s.src_from_master_load_response_pkt_en_rdy = TestSrcRTL(PktType, from_master_load_response_pkt_msgs)
-    s.src_from_master_store_request_pkt_en_rdy = TestSrcRTL(PktType, from_master_store_request_pkt_msgs)
+    s.src_from_tile_load_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_request_pkt_msgs)
+    s.src_from_tile_load_response_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
+    s.src_from_tile_store_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_store_request_pkt_msgs)
 
-    s.sink_to_master_load_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_master_load_request_addr_msgs)
-    s.sink_to_master_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_master_load_response_data_msgs)
-    s.sink_to_master_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_master_store_request_addr_msgs)
-    s.sink_to_master_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_master_store_request_data_msgs)
+    s.sink_to_tile_load_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_tile_load_request_addr_msgs)
+    s.sink_to_tile_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_tile_load_response_data_msgs)
+    s.sink_to_tile_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_tile_store_request_addr_msgs)
+    s.sink_to_tile_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_tile_store_request_data_msgs)
 
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
@@ -59,14 +59,14 @@ class TestHarness(Component):
                           controller2addr_map)
 
     # Connections
-    s.src_from_master_load_request_pkt_en_rdy.send //= s.dut.recv_from_master_load_request_pkt
-    s.src_from_master_load_response_pkt_en_rdy.send //= s.dut.recv_from_master_load_response_pkt
-    s.src_from_master_store_request_pkt_en_rdy.send //= s.dut.recv_from_master_store_request_pkt
+    s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_tile_load_request_pkt
+    s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
+    s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
 
-    s.dut.send_to_master_load_request_addr //= s.sink_to_master_load_request_addr_en_rdy.recv
-    s.dut.send_to_master_load_response_data //= s.sink_to_master_load_response_data_en_rdy.recv
-    s.dut.send_to_master_store_request_addr //= s.sink_to_master_store_request_addr_en_rdy.recv
-    s.dut.send_to_master_store_request_data //= s.sink_to_master_store_request_data_en_rdy.recv
+    s.dut.send_to_tile_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
+    s.dut.send_to_tile_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
+    s.dut.send_to_tile_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
+    s.dut.send_to_tile_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
@@ -76,13 +76,13 @@ class TestHarness(Component):
     s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
 
   def done(s):
-    return s.src_from_master_load_request_pkt_en_rdy.done() and \
-           s.src_from_master_load_response_pkt_en_rdy.done() and \
-           s.src_from_master_store_request_pkt_en_rdy.done() and \
-           s.sink_to_master_load_request_addr_en_rdy.done() and \
-           s.sink_to_master_load_response_data_en_rdy.done() and \
-           s.sink_to_master_store_request_addr_en_rdy.done() and \
-           s.sink_to_master_store_request_data_en_rdy.done() and \
+    return s.src_from_tile_load_request_pkt_en_rdy.done() and \
+           s.src_from_tile_load_response_pkt_en_rdy.done() and \
+           s.src_from_tile_store_request_pkt_en_rdy.done() and \
+           s.sink_to_tile_load_request_addr_en_rdy.done() and \
+           s.sink_to_tile_load_response_data_en_rdy.done() and \
+           s.sink_to_tile_store_request_addr_en_rdy.done() and \
+           s.sink_to_tile_store_request_data_en_rdy.done() and \
            s.src_from_noc_val_rdy.done() and \
            s.sink_to_noc_val_rdy.done()
 
@@ -173,32 +173,32 @@ Pkt = mk_ring_multi_cgra_pkt(nterminals,
                              data_nbits = data_nbits,
                              predicate_nbits = predicate_nbits)
 
-from_master_load_request_pkts = [
+from_tile_load_request_pkts = [
     #   src  dst opq vc cmd                addr data predicate
     Pkt(0,   0,  0,  0, CMD_LOAD_REQUEST,  1,   0,   1),
     Pkt(0,   0,  0,  0, CMD_LOAD_REQUEST,  8,   0,   1),
     Pkt(0,   0,  0,  0, CMD_LOAD_REQUEST,  13,  0,   1),
 ]
 
-from_master_load_response_pkts = [
+from_tile_load_response_pkts = [
     #   src  dst opq vc cmd                addr data predicate
     Pkt(0,   0,  0,  0, CMD_LOAD_RESPONSE, 11,  11,  1),
     Pkt(0,   0,  0,  0, CMD_LOAD_RESPONSE, 14,  14,  1),
     Pkt(0,   0,  0,  0, CMD_LOAD_RESPONSE, 12,  12,  1),
 ]
 
-from_master_store_request_pkts = [
+from_tile_store_request_pkts = [
     #   src  dst opq vc cmd                 addr data predicate
     Pkt(0,   0,  0,  0, CMD_STORE_REQUEST,  11,  110, 1),
     Pkt(0,   0,  0,  0, CMD_STORE_REQUEST,  3,   300, 1),
     Pkt(0,   0,  0,  0, CMD_STORE_REQUEST,  15,  150, 1),
 ]
 
-expected_to_master_load_request_addr_msgs =  [AddrType(2)]
-expected_to_master_load_response_addr_msgs = [AddrType(8),     AddrType(9)]
-expected_to_master_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
-expected_to_master_store_request_addr_msgs = [AddrType(5)]
-expected_to_master_store_request_data_msgs = [DataType(50, 1)]
+expected_to_tile_load_request_addr_msgs =  [AddrType(2)]
+expected_to_tile_load_response_addr_msgs = [AddrType(8),     AddrType(9)]
+expected_to_tile_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
+expected_to_tile_store_request_addr_msgs = [AddrType(5)]
+expected_to_tile_store_request_data_msgs = [DataType(50, 1)]
 
 from_noc_pkts = [
     #   src  dst opq vc cmd                addr data predicate
@@ -228,16 +228,16 @@ def test_simple():
   th = TestHarness(ControllerIdType, CtrlPktType,
                    CmdType, DataType,
                    AddrType, Pkt, controller_id,
-                   from_master_load_request_pkts,
-                   from_master_load_response_pkts,
-                   from_master_store_request_pkts,
-                   # from_master_load_response_data_msgs,
-                   # from_master_store_request_addr_msgs,
-                   # from_master_store_request_data_msgs,
-                   expected_to_master_load_request_addr_msgs,
-                   expected_to_master_load_response_data_msgs,
-                   expected_to_master_store_request_addr_msgs,
-                   expected_to_master_store_request_data_msgs,
+                   from_tile_load_request_pkts,
+                   from_tile_load_response_pkts,
+                   from_tile_store_request_pkts,
+                   # from_tile_load_response_data_msgs,
+                   # from_tile_store_request_addr_msgs,
+                   # from_tile_store_request_data_msgs,
+                   expected_to_tile_load_request_addr_msgs,
+                   expected_to_tile_load_response_data_msgs,
+                   expected_to_tile_store_request_addr_msgs,
+                   expected_to_tile_store_request_data_msgs,
                    from_noc_pkts,
                    expected_to_noc_pkts,
                    controller2addr_map)

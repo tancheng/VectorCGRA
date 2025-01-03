@@ -1,10 +1,10 @@
 """
 ==========================================================================
-TileSeparateCrossbarRTL_test.py
+TileRTL_test.py
 ==========================================================================
-Test cases for TileSeparateCrossbarRTL.
+Test cases for TileRTL.
 Command:
-pytest TileSeparateCrossbarRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+pytest TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
 
 Author : Cheng Tan
   Date : Nov 26, 2024
@@ -15,8 +15,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-from ..TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
-
+from ..TileRTL import TileRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
@@ -35,7 +34,6 @@ from ...fu.single.BranchRTL               import BranchRTL
 from ...fu.single.NahRTL                  import NahRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
-
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
 from ...lib.messages import *
@@ -110,9 +108,9 @@ def test_tile_alu(cmdline_opts):
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  pickRegister0 = [FuInType(0) for x in range(num_fu_inports)]
-  pickRegister1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
-  DUT = TileSeparateCrossbarRTL
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
+  DUT = TileRTL
   FunctionUnit = FlexibleFuRTL
   # FuList = [AdderRTL, MulRTL, MemUnitRTL]
   FuList = [AdderRTL,
@@ -145,28 +143,28 @@ def test_tile_alu(cmdline_opts):
                        num_tile_outports)
   src_ctrl_pkt = [
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pickRegister0,
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pickRegister1,
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pickRegister1,
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pickRegister1,
+      CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],

@@ -10,7 +10,7 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from ..CrossbarSeparateRTL import CrossbarSeparateRTL
+from ..CrossbarRTL import CrossbarRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.opt_type import *
@@ -82,7 +82,7 @@ def run_sim(test_harness, max_cycles = 20):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-FU = CrossbarSeparateRTL
+FU = CrossbarRTL
 num_fu_inports = 2
 num_fu_outports = 2
 num_tile_inports = 3
@@ -98,10 +98,7 @@ CtrlType = \
     mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
                      num_fu_outports, num_tile_inports,
                      num_tile_outports)
-# CtrlType      = mk_ctrl( num_fu_in, num_inports, num_outports )
 pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
-# RouteType     = mk_bits( clog2( num_inports + 1 ) )
-# src_opt       = [ CtrlType( OPT_ADD, b1(0), pickRegister, [RouteType(2), RouteType(3), RouteType(1)]) ]
 
 def test_crossbar():
   src_opt  = [CtrlType(OPT_ADD, b1(0), pickRegister,

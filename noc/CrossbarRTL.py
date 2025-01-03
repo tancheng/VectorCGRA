@@ -14,7 +14,7 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 
-class CrossbarSeparateRTL(Component):
+class CrossbarRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
                 num_outports = 5, id = 0, crossbar_type = "None"):

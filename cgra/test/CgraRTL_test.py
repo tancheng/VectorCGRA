@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CgraCrossbarDataMemRingCtrlMemRTL_test.py
+CgraRTL_test.py
 ==========================================================================
 Test cases for CGRA with crossbar-based data memory and ring-based control
 memory of each tile.
@@ -14,7 +14,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-from ..CgraCrossbarDataMemRingCtrlMemRTL import CgraCrossbarDataMemRingCtrlMemRTL
+from ..CgraRTL import CgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -113,7 +113,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
   AddrType = mk_bits(addr_nbits)
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   num_tiles = width * height
-  DUT = CgraCrossbarDataMemRingCtrlMemRTL
+  DUT = CgraRTL
   FunctionUnit = FlexibleFuRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)

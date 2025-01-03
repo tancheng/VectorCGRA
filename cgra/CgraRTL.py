@@ -1,6 +1,6 @@
 """
 =========================================================================
-CgraCrossbarDataMemRingCtrlMemRTL.py
+CgraRTL.py
 =========================================================================
 
 Author : Cheng Tan
@@ -17,13 +17,11 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
-from ..noc.ChannelNormalRTL import ChannelNormalRTL
-from ..noc.CrossbarSeparateRTL import CrossbarSeparateRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
-from ..tile.TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
+from ..tile.TileRTL import TileRTL
 
-class CgraCrossbarDataMemRingCtrlMemRTL(Component):
+class CgraRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, controller_id,
@@ -68,11 +66,13 @@ class CgraCrossbarDataMemRingCtrlMemRTL(Component):
     # Components
     if preload_const == None:
       preload_const = [[DataType(0, 0)] for _ in range(s.num_tiles)]
-    s.tile = [TileSeparateCrossbarRTL(
-        DataType, PredicateType, CtrlPktType, CtrlSignalType, ctrl_mem_size,
-        data_mem_size_global, num_ctrl, total_steps, 4, 2,
-        s.num_mesh_ports, s.num_mesh_ports,
-        const_list = preload_const[i]) for i in range(s.num_tiles)]
+    s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
+                      CtrlSignalType, ctrl_mem_size,
+                      data_mem_size_global, num_ctrl,
+                      total_steps, 4, 2, s.num_mesh_ports,
+                      s.num_mesh_ports,
+                      const_list = preload_const[i])
+              for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
@@ -86,13 +86,13 @@ class CgraCrossbarDataMemRingCtrlMemRTL(Component):
 
     # Connections
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[height] //= s.controller.send_to_master_load_request_addr
-    s.data_mem.recv_waddr[height] //= s.controller.send_to_master_store_request_addr
-    s.data_mem.recv_wdata[height] //= s.controller.send_to_master_store_request_data
-    s.data_mem.recv_from_noc_rdata //= s.controller.send_to_master_load_response_data
-    s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_master_load_request_pkt
-    s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_master_load_response_pkt
-    s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_master_store_request_pkt
+    s.data_mem.recv_raddr[height] //= s.controller.send_to_tile_load_request_addr
+    s.data_mem.recv_waddr[height] //= s.controller.send_to_tile_store_request_addr
+    s.data_mem.recv_wdata[height] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
+    s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
+    s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
+    s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
     s.recv_from_noc //= s.controller.recv_from_noc
     s.send_to_noc //= s.controller.send_to_noc
