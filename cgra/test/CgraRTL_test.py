@@ -163,58 +163,22 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
                   #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
       CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
                   pick_register, tile_in_code, fu_out_code),
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  
+ 
       CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
                   pick_register, tile_in_code, fu_out_code),
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  
+ 
       CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
                   pick_register, tile_in_code, fu_out_code),
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  
+ 
       CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
                   pick_register, tile_in_code, fu_out_code),
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  
+ 
       CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
                   pick_register, tile_in_code, fu_out_code),
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  
+ 
       # This last one is for launching kernel.
       CtrlPktType(0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
                   pick_register, tile_in_code, fu_out_code)
-                  # pickRegister,
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)])
       ] for i in range(num_tiles)]
   
   src_ctrl_pkt = []

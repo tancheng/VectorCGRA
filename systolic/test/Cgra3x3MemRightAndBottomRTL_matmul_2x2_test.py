@@ -170,13 +170,6 @@ def test_CGRA_systolic(cmdline_opts):
   CmdType = mk_bits(4)
   ControllerIdType = mk_bits(clog2(num_terminals))
   controller_id = 0
-  # controller2addr_map = {
-  #         0: [0,  3 ],
-  #         1: [4,  7 ],
-  #         2: [8,  11],
-  #         3: [12, 15],
-  # }
-
   controller2addr_map = {
           0: [0,  15],
           1: [16, 31],
@@ -203,29 +196,6 @@ def test_CGRA_systolic(cmdline_opts):
                                       data_nbits = 32,
                                       predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  # tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
-  # fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
-
-  # src_opt_per_tile = [
-  #              # src dst vc_id opq cmd_type    addr operation predicate
-  #     [CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
-  #                  pick_register, tile_in_code, fu_out_code),
-  #                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-  #                  #  # TODO: make below as TileInType(5) to double check.
-  #                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
- 
-  #                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-  #                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-  #      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
-  #                 pick_register, tile_in_code, fu_out_code),
-  #                 # pick_register,
-  #                 # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-  #                 #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-  #                 # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-  #                 #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-
-
 
   src_opt_per_tile = [
       # On tile 0 ([0, 0]).
@@ -241,26 +211,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_LD_CONST, b1(0),    pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 3,   OPT_LD_CONST, b1(0),    pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 4,   OPT_NAH,      b1(0),    pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 5,   OPT_NAH,      b1(0),    pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -270,11 +220,6 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 1 ([0, 1]).
                  # src dst vc_id opq cmd_type    addr operation     predicate
       [
-       # CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -285,21 +230,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 3,   OPT_LD_CONST, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 4,   OPT_LD_CONST, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 5,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -312,31 +242,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 1,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 2,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 3,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 4,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 5,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -359,22 +264,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 3,   OPT_MUL_CONST, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-
-       # CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 4,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 5,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -383,11 +272,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 4 ([1, 1]).
       [
-       # CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
@@ -403,16 +287,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 3,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 4,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -421,16 +295,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 5 ([1, 2]).
       [
-       # CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 1,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
@@ -446,11 +310,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 3,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -459,11 +318,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 6 ([2, 0]).
       [
-       # CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -479,16 +333,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 3,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 4,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -497,16 +341,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 7 ([2, 1]).
       [
-       # CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 1,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
@@ -522,16 +356,6 @@ def test_CGRA_systolic(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 3,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 4,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -540,21 +364,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 8 ([2, 2]).
       [
-       # CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 1,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       # CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 2,   OPT_NAH, b1(0), pick_register,
-       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
        CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
@@ -635,14 +444,6 @@ def test_CGRA_systolic(cmdline_opts):
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
   # read) continue.
-  # ctrl_waddr = [[AddrType(0), AddrType(1), AddrType(2), AddrType(3),
-  #                AddrType(4), AddrType(5)] for _ in range(num_tiles)]
-
-  # th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-  #                  CtrlPktType, width, height, ctrl_mem_size, data_mem_size,
-  #                  src_opt, ctrl_waddr, preload_mem, preload_const,
-  #                  expected_out)
-
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, NocPktType, CmdType,
                    ControllerIdType, controller_id, width, height,
@@ -655,9 +456,6 @@ def test_CGRA_systolic(cmdline_opts):
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
                       f'CgraSystolicArrayRTL')
-  # th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
-  #                   ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-  #                    'ALWCOMBORDER'] )
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
   enable_verification_pymtl = not (cmdline_opts['test_verilog'] or \
