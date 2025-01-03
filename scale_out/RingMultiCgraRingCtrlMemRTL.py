@@ -44,7 +44,7 @@ class RingMultiCgraRingCtrlMemRTL(Component):
         NocPktType, CmdType, ControllerIdType, terminal_id,
         tile_columns, tile_rows, ctrl_mem_size, data_mem_size_global,
         data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
-        total_steps, FunctionUnit, FuList, controller2addr_map,
+        total_steps, FunctionUnit, FuList, "Mesh", controller2addr_map,
         preload_data = None, preload_const = None)
       for terminal_id in range(s.num_terminals)]
     s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_terminals, 0)
@@ -71,13 +71,13 @@ class RingMultiCgraRingCtrlMemRTL(Component):
         else:
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_south[tile_col].rdy //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].en //= 0
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].val //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CGRADataType()
 
         if cgra_row == cgra_rows - 1:
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_north[tile_col].rdy //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].en //= 0
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].val //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CGRADataType()
 
         if cgra_col != 0:
@@ -89,13 +89,13 @@ class RingMultiCgraRingCtrlMemRTL(Component):
         else:
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].rdy //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].en //= 0
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].val //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CGRADataType()
 
         if cgra_col == cgra_columns - 1:
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_east[tile_row].rdy //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].en //= 0
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].val //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CGRADataType()
 
   def line_trace(s):
