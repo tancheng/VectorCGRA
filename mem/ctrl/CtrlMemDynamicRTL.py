@@ -12,7 +12,8 @@ Author : Cheng Tan
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL, ValRdySendIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import NormalQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
@@ -37,12 +38,11 @@ class CtrlMemDynamicRTL(Component):
     num_routing_outports = num_tile_outports + num_fu_inports
 
     # Interface
-    s.send_ctrl = ValRdySendIfcRTL(CtrlSignalType)
-    s.recv_pkt = ValRdyRecvIfcRTL(CtrlPktType)
+    s.send_ctrl = SendIfcRTL(CtrlSignalType)
+    s.recv_pkt = RecvIfcRTL(CtrlPktType)
 
     # Component
     s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
-    # FIXME: valrdy normal queue RTL?
     s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
@@ -139,5 +139,5 @@ class CtrlMemDynamicRTL(Component):
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'{s.recv_pkt.msg} || config_mem: [{config_mem_str}] || out: {s.send_ctrl.msg}'
+    return f'{s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}'
 

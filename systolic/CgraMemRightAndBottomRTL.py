@@ -20,33 +20,32 @@ from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..mem.data.DataMemRTL import DataMemRTL
 from ..mem.data.DataMemCL import DataMemCL
-from ..noc.ChannelRTL import ChannelRTL
 from ..noc.CrossbarRTL import CrossbarRTL
-from ..tile.TileRTL import TileRTL
+from ..tile.TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
 
 class CgraMemRightAndBottomRTL(Component):
-  def construct(s, DataType, PredicateType, CtrlType, width, height,
-                ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
-                FunctionUnit, FuList, preload_data = None,
+  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
+                width, height, ctrl_mem_size, data_mem_size, num_ctrl,
+                total_steps, FunctionUnit, FuList, preload_data = None,
                 preload_const = None):
 
-    s.num_tiles = width * height
     s.num_mesh_ports = 4
+    s.num_tiles = width * height
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
     # Interfaces
     s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(s.num_tiles)]
-    s.recv_wopt = [RecvIfcRTL(CtrlType) for _ in range(s.num_tiles)]
+    s.recv_wopt = [RecvIfcRTL(CtrlSignalType) for _ in range(s.num_tiles)]
 
     # Components
     if preload_const == None:
       preload_const = [[DataType(0, 0)] for _ in range(width * height)]
-    s.tile = [TileRTL(DataType, PredicateType, CtrlType,
-                      ctrl_mem_size, data_mem_size, num_ctrl,
-                      total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, Fu = FunctionUnit,
-                      FuList = FuList, const_list = preload_const[i])
-                      for i in range(s.num_tiles)]
+    s.tile = [TileSeparateCrossbarRTL(
+        DataType, PredicateType, CtrlPktType, CtrlPktType,
+        CtrlSignalType, ctrl_mem_size, data_mem_size, num_ctrl,
+        total_steps, 4, 2, s.num_mesh_ports, s.num_mesh_ports,
+        Fu = FunctionUnit, FuList = FuList,
+        const_list = preload_const[i]) for i in range(s.num_tiles)]
 
     s.data_mem_south = DataMemRTL(DataType, data_mem_size,
                                   rd_ports = width, wr_ports = width,

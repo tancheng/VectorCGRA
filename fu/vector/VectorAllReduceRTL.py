@@ -32,7 +32,6 @@ class VectorAllReduceRTL(Component):
 
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
-    s.recv_in_count  = [ InPort( CountType ) for _ in range( num_inports ) ]
     s.recv_const     = RecvIfcRTL( DataType )
     s.recv_predicate = RecvIfcRTL( PredicateType )
     s.recv_opt       = RecvIfcRTL( CtrlType )

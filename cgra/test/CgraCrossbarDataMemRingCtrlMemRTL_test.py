@@ -37,6 +37,7 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
+
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
                 ControllerIdType, controller_id, width, height,

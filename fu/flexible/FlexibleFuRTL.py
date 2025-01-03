@@ -116,7 +116,7 @@ class FlexibleFuRTL(Component):
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
-    out_str = ",".join([str(x.msg) for x in s.send_out])
-    recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, val: {s.recv_const.val}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
+    out_str = " | ".join([(str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy)) for x in s.send_out])
+    recv_str = " | ".join([str(x.msg) for x in s.recv_in])
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, val: {s.recv_const.val}, rdy: {s.recv_const.rdy}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
 

@@ -26,7 +26,6 @@ class TwoSeqCombo(Component):
 
     # Interface
     s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_in_count  = [InPort(CountType) for _ in range(num_inports)]
     s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const     = RecvIfcRTL(DataType)
     s.recv_opt       = RecvIfcRTL(CtrlType)
@@ -54,14 +53,10 @@ class TwoSeqCombo(Component):
 
     @update
     def update_signal():
-      all_rdy = s.Fu0.recv_in[0].rdy & \
-                s.Fu0.recv_in[1].rdy & \
-                s.Fu1.recv_in[0].rdy & \
-                s.Fu1.recv_in[1].rdy
 
-      s.recv_in[0].rdy  @= all_rdy
-      s.recv_in[1].rdy  @= all_rdy
-      s.recv_in[2].rdy  @= all_rdy
+      s.recv_in[0].rdy  @= s.Fu0.recv_in[0].rdy
+      s.recv_in[1].rdy  @= s.Fu0.recv_in[1].rdy
+      s.recv_in[2].rdy  @= s.Fu1.recv_in[1].rdy
 
       s.Fu0.recv_in[0].val @= s.recv_in[0].val
       s.Fu0.recv_in[1].val @= s.recv_in[1].val
@@ -71,7 +66,7 @@ class TwoSeqCombo(Component):
       s.Fu0.recv_opt.val @= s.recv_opt.val
       s.Fu1.recv_opt.val @= s.recv_opt.val
 
-      s.recv_opt.rdy @= s.Fu0.recv_opt.rdy & s.Fu1.recv_opt.rdy & all_rdy
+      s.recv_opt.rdy @= s.Fu0.recv_opt.rdy & s.Fu1.recv_opt.rdy
 
       s.send_out[0].val @= s.Fu1.send_out[0].val
 
@@ -84,8 +79,7 @@ class TwoSeqCombo(Component):
       s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
 
       s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy & \
-                                  s.Fu1.recv_predicate.rdy & \
-                                  all_rdy
+                                  s.Fu1.recv_predicate.rdy
 
       s.Fu0.recv_predicate.val @= s.recv_predicate.val
       s.Fu1.recv_predicate.val @= s.recv_predicate.val

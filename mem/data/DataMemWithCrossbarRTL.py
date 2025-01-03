@@ -333,7 +333,7 @@ class DataMemWithCrossbarRTL(Component):
     recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
     # send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
     # send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
-    send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ";"
+    send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ", val: " + str(s.send_to_noc_store_pkt.val) + ";"
 
     recv_raddr_str += "}"
     send_rdata_str += "}"

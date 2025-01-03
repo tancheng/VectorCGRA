@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CGRAFL_test.py
+CgraFL_test.py
 ==========================================================================
 Test cases for HLS in terms of accelerator design.
 
@@ -9,13 +9,11 @@ Author : Cheng Tan
 
 """
 
-
 from pymtl3 import *
 from ...lib.messages import *
-from ..CGRAFL import CGRAFL
+from ..CgraFL import CgraFL
 from ...lib.util.dfg_helper import *
 import os
-
 
 def test_fl():
   target_json = "dfg_fir.json"
@@ -34,6 +32,6 @@ def test_fl():
 
   print( "----------------- FL test ------------------" )
   # FL golden reference
-  CGRAFL( fu_dfg, DataType, CtrlType, const_data )#, data_spm )
+  CgraFL( fu_dfg, DataType, CtrlType, const_data )#, data_spm )
   print()
 

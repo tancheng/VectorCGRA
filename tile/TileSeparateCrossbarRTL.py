@@ -38,7 +38,7 @@ class TileSeparateCrossbarRTL(Component):
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
-                          MemUnitRTL], const_list = None):
+                    MemUnitRTL], const_list = None, id = 0):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -78,7 +78,8 @@ class TileSeparateCrossbarRTL(Component):
     s.fu_crossbar = CrossbarSeparateRTL(DataType, PredicateType,
                                         CtrlSignalType,
                                         num_fu_xbar_inports,
-                                        num_fu_xbar_outports)
+                                        num_fu_xbar_outports, id,
+                                        "fu")
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
@@ -102,6 +103,11 @@ class TileSeparateCrossbarRTL(Component):
 
     # Additional one register for partial predication
     s.reg_predicate = RegisterRTL(PredicateType)
+
+    # Signals indicating whether certain modules already done their jobs.
+    s.element_done = Wire(1)
+    s.fu_crossbar_done = Wire(1)
+    s.routing_crossbar_done = Wire(1)
 
     # Connections.
     # Ctrl.
@@ -180,22 +186,44 @@ class TileSeparateCrossbarRTL(Component):
       s.routing_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.fu_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
 
-      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val
-      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val
-      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val
+      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
+      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
+      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
 
-      s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & \
-                                  s.routing_crossbar.recv_opt.rdy & \
-                                  s.fu_crossbar.recv_opt.rdy
+      # s.ctrl_mem.send_ctrl.rdy @= s.element.recv_opt.rdy & \
+      #                             s.routing_crossbar.recv_opt.rdy & \
+      #                             s.fu_crossbar.recv_opt.rdy
+
+      # FIXME: yo96, rename ctrl.rdy to ctrl.proceed or sth similar.
+      # Allows either the FU-related go out first or routing-xbar go out first. And only
+      # allows the ctrl signal proceed till all the sub-modules done their own job (once).
+      s.ctrl_mem.send_ctrl.rdy @= (s.element.recv_opt.rdy | s.element_done) & \
+                                  (s.routing_crossbar.recv_opt.rdy | s.routing_crossbar_done) & \
+                                  (s.fu_crossbar.recv_opt.rdy | s.fu_crossbar_done)
+
+    # Updates the signals indicating whether certain modules already done their jobs.
+    @update_ff
+    def already_done():
+      if s.reset | s.ctrl_mem.send_ctrl.rdy:
+        s.element_done <<= 0
+        s.fu_crossbar_done <<= 0
+        s.routing_crossbar_done <<= 0
+      else:
+        if s.element.recv_opt.rdy:
+          s.element_done <<= 1
+        elif s.fu_crossbar.recv_opt.rdy:
+          s.fu_crossbar_done <<= 1
+        elif s.routing_crossbar.recv_opt.rdy:
+          s.routing_crossbar_done <<= 1
 
   # Line trace
-  def line_trace( s ):
-    recv_str    = "|".join([ str(x.msg) for x in s.recv_data ])
+  def line_trace(s):
+    recv_str = "|".join(["(" + str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.recv_data])
     tile_out_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_out_channel])
     tile_out_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_out_channel])
     fu_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.fu_in_channel])
     fu_in_channel_send_str = "|".join([str(x.send.msg) for x in s.fu_in_channel])
-    out_str  = "|".join([ "("+str(x.msg.payload)+","+str(x.msg.predicate)+",val:"+str(x.val)+",rdy:"+str(x.rdy)+")" for x in s.send_data ])
+    out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
-    return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} || ctrl_mem: {ctrl_mem} ## "
+    return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
 

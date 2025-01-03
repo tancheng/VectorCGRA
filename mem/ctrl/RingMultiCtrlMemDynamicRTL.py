@@ -24,8 +24,8 @@ class RingMultiCtrlMemDynamicRTL(Component):
                 ctrl_count_per_iter = 4, total_ctrl_steps = 4):
     # Constant
     num_terminals = width * height
-    CtrlRingPos = mk_ring_pos(num_terminals)
     s.num_terminals = width * height
+    CtrlRingPos = mk_ring_pos(num_terminals)
 
     # Interface
     s.send_ctrl = [SendIfcRTL(CtrlSignalType) for _ in range(s.num_terminals)]

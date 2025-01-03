@@ -1,8 +1,8 @@
 """
 =========================================================================
-CGRAFL.py
+CgraFL.py
 =========================================================================
-CGRAFL -- running DFG nodes one by one.
+CgraFL -- running DFG nodes one by one.
 
 Author : Cheng Tan
   Date : Feb 13, 2020
@@ -15,7 +15,7 @@ from ..lib.messages import *
 #------------------------------------------------------------------------
 # Assuming that the elements in FuDFG are already ordered well.
 #------------------------------------------------------------------------
-def CGRAFL( FuDFG, DataType, CtrlType, src_const ):#, data_spm ):
+def CgraFL( FuDFG, DataType, CtrlType, src_const ):#, data_spm ):
 
   live_out_val  = DataType( 0, 0 )
   live_out_ctrl = DataType( 0, 0 )

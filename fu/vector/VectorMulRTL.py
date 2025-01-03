@@ -36,7 +36,6 @@ class VectorMulRTL(Component):
 
     # Interface
     s.recv_in       = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_in_count = [InPort(CountType) for _ in range(num_inports)]
     s.recv_const    = RecvIfcRTL(DataType)
     s.recv_opt      = RecvIfcRTL(CtrlType)
     s.send_out      = [SendIfcRTL(DataType) for _ in range(num_outports)]

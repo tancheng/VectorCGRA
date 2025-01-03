@@ -15,8 +15,9 @@ from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 
 class CrossbarSeparateRTL(Component):
+
   def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
-                num_outports = 5, bypass_point = 4, id = 0):
+                num_outports = 5, id = 0, crossbar_type = "None"):
 
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2
@@ -76,15 +77,17 @@ class CrossbarSeparateRTL(Component):
 
         for i in range(num_outports):
           s.send_data[i].val @= reduce_and(s.recv_valid_vector) & \
-                                reduce_and(s.send_rdy_vector) & \
                                 s.send_required_vector[i]
+                                # FIXME: Valid shouldn't depend on rdy.
+                                # reduce_and(s.send_rdy_vector) & \
           if reduce_and(s.recv_valid_vector) & \
              reduce_and(s.send_rdy_vector) & \
              s.send_required_vector[i]:
             s.send_data[i].msg.payload @= s.recv_data[s.in_dir_local[i]].msg.payload
             s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local[i]].msg.predicate
-      s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
-      s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
+
+        s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
+        s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
 
     @update
     def update_valid_rdy_vector():

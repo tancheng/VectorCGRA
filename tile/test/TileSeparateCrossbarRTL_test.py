@@ -16,12 +16,26 @@ from pymtl3.stdlib.test_utils import (run_sim,
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
 from ..TileSeparateCrossbarRTL import TileSeparateCrossbarRTL
-from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.MemUnitRTL import MemUnitRTL
-from ...fu.single.MulRTL import MulRTL
-from ...fu.single.NahRTL import NahRTL
+
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
+from ...fu.vector.VectorMulComboRTL       import VectorMulComboRTL
+from ...fu.vector.VectorAdderComboRTL     import VectorAdderComboRTL
+from ...fu.vector.VectorAllReduceRTL      import VectorAllReduceRTL
+from ...fu.single.AdderRTL                import AdderRTL
+from ...fu.single.MemUnitRTL              import MemUnitRTL
+from ...fu.single.MulRTL                  import MulRTL
+from ...fu.single.SelRTL                  import SelRTL
+from ...fu.single.ShifterRTL              import ShifterRTL
+from ...fu.single.LogicRTL                import LogicRTL
+from ...fu.single.PhiRTL                  import PhiRTL
+from ...fu.single.CompRTL                 import CompRTL
+from ...fu.single.BranchRTL               import BranchRTL
+from ...fu.single.NahRTL                  import NahRTL
+from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
+
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
 from ...lib.messages import *
@@ -86,7 +100,7 @@ def test_tile_alu(cmdline_opts):
   num_tile_inports = 4
   num_tile_outports = 4
   num_fu_inports = 4
-  num_fu_outports = 1
+  num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
   data_mem_size = 8
@@ -100,8 +114,21 @@ def test_tile_alu(cmdline_opts):
   pickRegister1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
   DUT = TileSeparateCrossbarRTL
   FunctionUnit = FlexibleFuRTL
-  FuList = [AdderRTL, MulRTL, MemUnitRTL]
-  DataType = mk_data(16, 1)
+  # FuList = [AdderRTL, MulRTL, MemUnitRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            ThreeMulAdderShifterRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  # 64-bit to satisfy the default bitwidth of vector FUs.
+  DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
   CtrlPktType = \
       mk_ring_across_tiles_pkt(num_terminals,

@@ -232,6 +232,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.predicate)
 
   def line_trace(s):
+    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)
     recv_from_master_load_request_pkt_str = "recv_from_master_load_request_pkt: " + str(s.recv_from_master_load_request_pkt.msg)
     recv_from_master_load_response_pkt_str = "recv_from_master_load_response_pkt: " + str(s.recv_from_master_load_response_pkt.msg)
     recv_from_master_store_request_pkt_str = "recv_from_master_store_request_pkt: " + str(s.recv_from_master_store_request_pkt.msg)
@@ -241,5 +242,5 @@ class ControllerRTL(Component):
     send_to_master_store_request_data_str = "send_to_master_store_request_data: " + str(s.send_to_master_store_request_data.msg)
     recv_from_noc_str = "recv_from_noc_pkt: " + str(s.recv_from_noc.msg)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
-    return f'{recv_from_master_load_request_pkt_str} || {recv_from_master_load_response_pkt_str} || {recv_from_master_store_request_pkt_str} || {crossbar_str} || {send_to_master_load_request_addr_str} || {send_to_master_store_request_addr_str} || {send_to_master_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
+    return f'{send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_master_load_request_pkt_str} || {recv_from_master_load_response_pkt_str} || {recv_from_master_store_request_pkt_str} || {crossbar_str} || {send_to_master_load_request_addr_str} || {send_to_master_store_request_addr_str} || {send_to_master_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
 

@@ -114,7 +114,7 @@ class FpMulRTL(Fu):
 
         else:
           for j in range( num_outports ):
-            s.send_out[j].en @= b1( 0 )
+            s.send_out[j].val @= b1( 0 )
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
