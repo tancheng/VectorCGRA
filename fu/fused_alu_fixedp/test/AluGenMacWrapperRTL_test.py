@@ -2,17 +2,15 @@
 # Unit testing for AddFNRTL PyMTL wrapper module
 #=========================================================================
 
-
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import run_test_vector_sim, TestVectorSimulator
 from pymtl3.passes.backends.verilog import *
 from hypothesis import given
 from hypothesis import settings
 from hypothesis import strategies as st
-from ..ALUgenMACRTL import ALUgenMAC
+from ..AluGenMacWrapperRTL import AluGenMacWrapperRTL
 import hypothesis
 import random
-
 
 # =========================== Helper functions ===========================
 def abs( x ):
@@ -77,7 +75,7 @@ def test_add_ones(cmdline_opts):
   c = 99
   out = a + b
 
-  run_tv_test( ALUgenMAC(), [[a, b, c, 0, out]], tolerance)
+  run_tv_test( AluGenMacWrapperRTL(), [[a, b, c, 0, out]], tolerance)
 
 def test_sub(cmdline_opts):
   tolerance = 0.00
@@ -87,7 +85,7 @@ def test_sub(cmdline_opts):
   c = 99
   out = a - b
 
-  run_tv_test( ALUgenMAC(), [[a, b, c, 1, out]], tolerance)
+  run_tv_test( AluGenMacWrapperRTL(), [[a, b, c, 1, out]], tolerance)
 
 def test_gte(cmdline_opts):
   tolerance = 0.00
@@ -97,7 +95,7 @@ def test_gte(cmdline_opts):
   c = 99
   out = 1
 
-  run_tv_test( ALUgenMAC(), [[a, b, c, 7, out]], tolerance)
+  run_tv_test( AluGenMacWrapperRTL(), [[a, b, c, 7, out]], tolerance)
 
 def test_mul(cmdline_opts):
   tolerance = 0.00
@@ -107,7 +105,7 @@ def test_mul(cmdline_opts):
   c = 99
   out = a * b
 
-  run_tv_test( ALUgenMAC(), [[a, b, c, 16, out]], tolerance)
+  run_tv_test( AluGenMacWrapperRTL(), [[a, b, c, 16, out]], tolerance)
 
 def test_mac(cmdline_opts):
   tolerance = 0.00
@@ -117,5 +115,5 @@ def test_mac(cmdline_opts):
   c = 99
   out = a * b + c
 
-  run_tv_test( ALUgenMAC(), [[a, b, c, 48, out]], tolerance)
+  run_tv_test( AluGenMacWrapperRTL(), [[a, b, c, 48, out]], tolerance)
 

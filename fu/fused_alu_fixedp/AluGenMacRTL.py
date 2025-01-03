@@ -1,6 +1,6 @@
 """
 ==========================================================================
-ALUgenMACFU.py
+AluGenMacRTL.py
 ==========================================================================
 Floating point add unit.
 
@@ -10,25 +10,27 @@ Author : Yanghui Ou & Ron Jokai
 
 from pymtl3 import *
 from ..basic.Fu import Fu
-from ..pymtl3_fusedALU_fixedp.ALUgenMACRTL import ALUgenMAC
+from .AluGenMacWrapperRTL import AluGenMacWrapperRTL
 from ...lib.opt_type import *
 
-class ALUgenMACFU(Fu):
+class AluGenMacRTL(Fu):
+
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size):
-    super(ALUgenMACFU, s).construct(DataType, PredicateType, CtrlType,
-                                    num_inports, num_outports,
-                                    data_mem_size)
+
+    super(AluGenMacRTL, s).construct(DataType, PredicateType, CtrlType,
+                                     num_inports, num_outports,
+                                     data_mem_size)
 
     # Local parameters
     assert DataType.get_field_type('payload').nbits == 16
 
     num_entries = 3
-    FuInType    = mk_bits( clog2( num_inports + 1 ) )
-    CountType   = mk_bits( clog2( num_entries + 1 ) )
+    FuInType    = mk_bits(clog2(num_inports + 1))
+    CountType   = mk_bits(clog2(num_entries + 1))
 
     # Components
-    s.fALU = ALUgenMAC()
+    s.fALU = AluGenMacWrapperRTL()
     s.fALU.rhs_2 //= lambda:   0 if s.recv_opt.msg.ctrl == OPT_ADD     else \
                              ( 1 if s.recv_opt.msg.ctrl == OPT_SUB     else \
                              ( 3 if s.recv_opt.msg.ctrl == OPT_LT      else \
@@ -109,6 +111,7 @@ class ALUgenMACFU(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in2_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+          # FIXME: @RJ, what is the following for?
           #elif s.recv_opt.msg.ctrl == OPT_FADD_CONST:
           #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
           #  s.fadd.rhs_1 @= s.recv_const.msg.payload
