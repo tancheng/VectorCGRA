@@ -1,8 +1,9 @@
 """
 ==========================================================================
-CgraRightAndBottomRTL_matmul_2x2_test.py
+Cgra3x3MemRightAndBottomRTL_matmul_2x2_test.py
 ==========================================================================
-Translation for 3x3 CGRA. The provided test is only used for a 2x2 matmul.
+Simulation/translation for 3x3 CGRA. The provided test is only used for a
+2x2 matmul, but is extendable/scalable to larger test.
 
 Author : Cheng Tan
   Date : Nov 19, 2024

@@ -61,12 +61,12 @@ jobs:
         # Simulation across all tests.
         pytest .. -v
         # Tile translation.
-        pytest ../tile/test/TileSeparateCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
         # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
-        pytest ../cgra/test/CgraCrossbarDataMemRingCtrlMemRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # 3x3 CGRA performs 2x2 matmul simulation/translation.
         pytest ../systolic/test/Cgra3x3MemRightAndBottomRTL_matmul_2x2_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Ring network simulation.
@@ -74,5 +74,5 @@ jobs:
         # CGRAs are interconnected with ring topology. The CGRA contains
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for
         # multi-bank), and controller.
-        pytest ../scale_out/test/RingMultiCgraRingCtrlMemRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../scale_out/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 

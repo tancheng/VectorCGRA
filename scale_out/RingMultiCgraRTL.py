@@ -10,7 +10,7 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
-from ..cgra.CgraCrossbarDataMemRingCtrlMemRTL import CgraCrossbarDataMemRingCtrlMemRTL
+from ..cgra.CgraRTL import CgraRTL
 from ..lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL
 from ..lib.opt_type import *
@@ -18,7 +18,7 @@ from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 
-class RingMultiCgraRingCtrlMemRTL(Component):
+class RingMultiCgraRTL(Component):
   def construct(s, CGRADataType, PredicateType, CtrlPktType,
                 CtrlSignalType, NocPktType, CmdType, cgra_rows,
                 cgra_columns, tile_rows, tile_columns, ctrl_mem_size,
@@ -39,14 +39,15 @@ class RingMultiCgraRingCtrlMemRTL(Component):
     s.recv_from_cpu_ctrl_pkt = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Components
-    s.cgra = [CgraCrossbarDataMemRingCtrlMemRTL(
-        CGRADataType, PredicateType, CtrlPktType, CtrlSignalType,
-        NocPktType, CmdType, ControllerIdType, terminal_id,
-        tile_columns, tile_rows, ctrl_mem_size, data_mem_size_global,
-        data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
-        total_steps, FunctionUnit, FuList, "Mesh", controller2addr_map,
-        preload_data = None, preload_const = None)
-      for terminal_id in range(s.num_terminals)]
+    s.cgra = [CgraRTL(CGRADataType, PredicateType, CtrlPktType,
+                      CtrlSignalType, NocPktType, CmdType,
+                      ControllerIdType, terminal_id, tile_columns,
+                      tile_rows, ctrl_mem_size, data_mem_size_global,
+                      data_mem_size_per_bank, num_banks_per_cgra,
+                      num_ctrl, total_steps, FunctionUnit, FuList,
+                      "Mesh", controller2addr_map, preload_data = None,
+                      preload_const = None)
+              for terminal_id in range(s.num_terminals)]
     s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_terminals, 0)
 
     # Connections

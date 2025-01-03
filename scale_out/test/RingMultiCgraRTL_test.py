@@ -1,6 +1,6 @@
 """
 ==========================================================================
-RingMultiCgraRingCtrlMemRTL_test.py
+RingMultiCgraRTL_test.py
 ==========================================================================
 Test cases for CGRA with controller.
 
@@ -14,7 +14,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-from ..RingMultiCgraRingCtrlMemRTL import RingMultiCgraRingCtrlMemRTL
+from ..RingMultiCgraRTL import RingMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -22,8 +22,7 @@ from ...fu.single.ShifterRTL import ShifterRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.cmd_type import *
-from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -39,15 +38,8 @@ class TestHarness(Component):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
-    # CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
-    # s.src_opt = [[TestSrcRTL(CtrlType, src_opt[j])
-    #               for j in range(s.num_tiles)]
-    #              for i in range(s.num_terminals)]
-    s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    # s.ctrl_waddr = [[TestSrcRTL(CtrlAddrType, ctrl_waddr[j])
-    #                  for j in range(s.num_tiles)]
-    #                 for i in range(s.num_terminals)]
+    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns, height, width,
@@ -56,29 +48,10 @@ class TestHarness(Component):
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
-    # s.dut.data_mem.recv_from_noc.rdy //= 0
-    # s.dut.data_mem.send_to_noc.msg //= DataType(0, 0)
-    # s.dut.data_mem.send_to_noc.en //= 0
-    # s.src_val_rdy.send //= s.dut.recv_from_other
-    # s.dut.send_to_other //= s.sink_val_rdy.recv
-
-    # s.dut.recv_towards_controller.en //= 0
-    # s.dut.recv_towards_controller.msg //= DataType(0, 0)
-    # s.dut.send_from_controller.rdy //= 0
-
-    # for i in range(num_terminals):
-    #   for j in range(s.num_tiles):
-    #     connect(s.src_opt[i][j].send, s.dut.recv_wopt[i][j])
-    #     connect(s.ctrl_waddr[i][j].send, s.dut.recv_waddr[i][j])
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
 
   def done(s):
     return s.src_ctrl_pkt.done()
-    # for i in range(s.num_terminals):
-    #   for j in range(s.num_tiles):
-    #     if not s.src_opt[i][j].done():
-    #       return False
-    # return True
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -108,7 +81,7 @@ def test_homo_2x2(cmdline_opts):
   data_addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(clog2(data_mem_size_global))
   num_tiles = width * height
-  DUT = RingMultiCgraRingCtrlMemRTL
+  DUT = RingMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
   DataType = mk_data(32, 1)
