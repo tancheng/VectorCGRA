@@ -9,14 +9,12 @@ Author : Cheng Tan
   Date : November 29, 2019
 """
 
-
 from pymtl3 import *
-from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
-
-from ..ThreeMulAdderShifterRTL    import ThreeMulAdderShifterRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
+from ..ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.opt_type import *
+from ....lib.messages import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -29,21 +27,16 @@ class TestHarness( Component ):
                  src1_msgs, src2_msgs, src3_msgs, src_predicate,
                  ctrl_msgs, sink_msgs ):
 
-    s.src_in0       = TestSrcRTL( DataType,      src0_msgs     )
-    s.src_in1       = TestSrcRTL( DataType,      src1_msgs     )
-    s.src_in2       = TestSrcRTL( DataType,      src2_msgs     )
-    s.src_in3       = TestSrcRTL( DataType,      src3_msgs     )
-    s.src_predicate = TestSrcRTL( PredicateType, src_predicate )
-    s.src_opt       = TestSrcRTL( CtrlType,      ctrl_msgs     )
+    s.src_in0       = TestSrcRTL ( DataType,      src0_msgs     )
+    s.src_in1       = TestSrcRTL ( DataType,      src1_msgs     )
+    s.src_in2       = TestSrcRTL ( DataType,      src2_msgs     )
+    s.src_in3       = TestSrcRTL ( DataType,      src3_msgs     )
+    s.src_predicate = TestSrcRTL ( PredicateType, src_predicate )
+    s.src_opt       = TestSrcRTL ( CtrlType,      ctrl_msgs     )
     s.sink_out      = TestSinkRTL( DataType,      sink_msgs     )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size )
-
-    s.dut.recv_in_count[0] //= 1
-    s.dut.recv_in_count[1] //= 1
-    s.dut.recv_in_count[2] //= 1
-    s.dut.recv_in_count[3] //= 1
 
     connect( s.src_in0.send,       s.dut.recv_in[0] )
     connect( s.src_in1.send,       s.dut.recv_in[1] )
@@ -53,27 +46,27 @@ class TestHarness( Component ):
     connect( s.src_opt.send ,      s.dut.recv_opt   )
     connect( s.dut.send_out[0],    s.sink_out.recv  )
 
-  def done( s ):
-    return s.src_in0.done()  and s.src_in1.done()  and\
-           s.src_in2.done()  and s.src_in3.done()  and\
-           s.src_opt.done()  and s.sink_out.done()
+  def done(s):
+    return s.src_in0.done() and s.src_in1.done()  and \
+           s.src_in2.done() and s.src_in3.done()  and \
+           s.src_opt.done() and s.sink_out.done()
 
-  def line_trace( s ):
+  def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=1000 ):
+def run_sim(test_harness, max_cycles= 20):
   test_harness.elaborate()
-  test_harness.apply( DefaultPassGroup() )
+  test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
   # Run simulation
   ncycles = 0
   print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+  print("{}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+    print("{}:{}".format( ncycles, test_harness.line_trace()))
 
   # Check timeout
   assert ncycles < max_cycles
@@ -92,7 +85,7 @@ def test_mul_alu_shifter():
   CtrlType      = mk_ctrl( num_fu_in=num_inports )
 
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
+  pickRegister  = [ FuInType(x + 1) for x in range(num_inports) ]
 
   src_in0       = [ DataType(1, 1), DataType(2, 1),  DataType(4, 1) ]
   src_in1       = [ DataType(2, 1), DataType(3, 1),  DataType(3, 1) ]

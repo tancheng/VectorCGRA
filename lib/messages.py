@@ -327,7 +327,6 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
              f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
 
-
   def str_func(s):
     out_str = '(ctrl_operation)' + str(s.ctrl_operation)
     out_str += '|(ctrl_fu_in)'

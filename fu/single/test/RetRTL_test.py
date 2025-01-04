@@ -8,65 +8,57 @@ Author : Cheng Tan
   Date : September 21, 2021
 """
 
-from pymtl3                       import *
-
-from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
-
-from ..RetRTL                     import RetRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
-
+from pymtl3 import *
+from ..RetRTL import RetRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.opt_type import *
+from ....lib.messages import *
 
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
-  def construct( s, FunctionUnit, DataType, PredicateType, CtrlType,
-                 num_inports, num_outports, data_mem_size,
-                 src_in, src_predicate, src_opt, sink ):
+  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+                num_inports, num_outports, data_mem_size, src_in,
+                src_predicate, src_opt, sink):
 
-    s.src_in        = TestSrcRTL( DataType,      src_in        )
-    s.src_predicate = TestSrcRTL( PredicateType, src_predicate )
-    s.src_opt       = TestSrcRTL( CtrlType,      src_opt       )
-    s.sink          = TestSinkRTL( DataType,      sink          )
+    s.src_in = TestSrcRTL(DataType, src_in)
+    s.src_predicate = TestSrcRTL(PredicateType, src_predicate)
+    s.src_opt = TestSrcRTL(CtrlType, src_opt)
+    s.sink = TestSinkRTL(DataType, sink)
 
-    s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
-                          num_inports, num_outports, data_mem_size )
+    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
+                         num_outports, data_mem_size )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
+    s.src_in.send //= s.dut.recv_in[0]
+    s.src_predicate.send //= s.dut.recv_predicate
+    s.src_opt.send //= s.dut.recv_opt
+    s.dut.send_out[0] //= s.sink.recv
 
-    connect( s.src_in.send,        s.dut.recv_in[0]     )
-    connect( s.src_predicate.send, s.dut.recv_predicate )
-    connect( s.src_opt.send,       s.dut.recv_opt       )
-    connect( s.dut.send_out[0],    s.sink.recv          )
-
-  def done( s ):
+  def done(s):
     return s.src_opt.done() and s.sink.done()
 
-  def line_trace( s ):
+  def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=100 ):
+def run_sim(test_harness, max_cycles = 20):
   test_harness.elaborate()
-  test_harness.apply( DefaultPassGroup() )
+  test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
   # Run simulation
-
   ncycles = 0
   print()
-  print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+  print("{}:{}".format( ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    print( "{}:{}".format( ncycles, test_harness.line_trace() ))
+    print("{}:{}".format(ncycles, test_harness.line_trace()))
 
   # Check timeout
-
   assert ncycles < max_cycles
 
   test_harness.sim_tick()
@@ -74,22 +66,22 @@ def run_sim( test_harness, max_cycles=100 ):
   test_harness.sim_tick()
 
 def test_Ret():
-  FU            = RetRTL
-  DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
-  num_inports   = 2
-  num_outports  = 2
+  FU = RetRTL
+  DataType = mk_data(16, 1)
+  PredicateType = mk_predicate(1, 1)
+  CtrlType = mk_ctrl()
+  num_inports = 2
+  num_outports = 2
   data_mem_size = 8
-  FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  src_in        = [ DataType(1, 1), DataType(2, 1), DataType(3, 1) ]
-  src_predicate = [ PredicateType(1, 0), PredicateType(1,0), PredicateType(1,1) ]
-  src_opt       = [ CtrlType( OPT_RET, b1( 1 ), [FuInType(1), FuInType(0)] ),
-                    CtrlType( OPT_RET, b1( 0 ), [FuInType(1), FuInType(0)] ),
-                    CtrlType( OPT_RET, b1( 1 ), [FuInType(1), FuInType(0)] ) ]
-  sink          = [ DataType(1, 0), DataType(2, 0), DataType(3, 0) ]
-  th = TestHarness( FU, DataType, PredicateType, CtrlType,
-                    num_inports, num_outports, data_mem_size,
-                    src_in, src_predicate, src_opt, sink )
-  run_sim( th )
+  FuInType = mk_bits(clog2(num_inports + 1))
+  src_in = [DataType(1, 1), DataType(2, 1), DataType(3, 1)]
+  src_predicate = [PredicateType(1, 0), PredicateType(1,0), PredicateType(1,1)]
+  src_opt = [CtrlType(OPT_RET, b1(1), [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET, b1(0), [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET, b1(1), [FuInType(1), FuInType(0)])]
+  sink = [DataType(1, 0), DataType(2, 1), DataType(3, 0)]
+  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
+                   num_outports, data_mem_size, src_in, src_predicate,
+                   src_opt, sink)
+  run_sim(th)
 

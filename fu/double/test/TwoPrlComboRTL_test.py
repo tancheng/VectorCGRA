@@ -8,11 +8,10 @@ Author : Cheng Tan
   Date : November 29, 2019
 """
 
-
 from pymtl3 import *
 from ..PrlMulAdderRTL import PrlMulAdderRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
 
@@ -20,27 +19,24 @@ from ....lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
-  def construct( s, FunctionUnit, DataType, PredicateType, CtrlType,
-                 num_inports, num_outports, data_mem_size,
-                 src0_msgs, src1_msgs, src2_msgs, src3_msgs, src_predicate,
-                 ctrl_msgs, sink_msgs0, sink_msgs1 ):
+  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+                num_inports, num_outports, data_mem_size, src0_msgs,
+                src1_msgs, src2_msgs, src3_msgs, src_predicate,
+                ctrl_msgs, sink_msgs0, sink_msgs1):
 
-    s.src_in0       = TestSrcRTL( DataType,      src0_msgs     )
-    s.src_in1       = TestSrcRTL( DataType,      src1_msgs     )
-    s.src_in2       = TestSrcRTL( DataType,      src2_msgs     )
-    s.src_in3       = TestSrcRTL( DataType,      src3_msgs     )
-    s.src_predicate = TestSrcRTL( PredicateType, src_predicate )
-    s.src_opt       = TestSrcRTL( CtrlType,      ctrl_msgs     )
+    s.src_in0       = TestSrcRTL ( DataType,      src0_msgs     )
+    s.src_in1       = TestSrcRTL ( DataType,      src1_msgs     )
+    s.src_in2       = TestSrcRTL ( DataType,      src2_msgs     )
+    s.src_in3       = TestSrcRTL ( DataType,      src3_msgs     )
+    s.src_predicate = TestSrcRTL ( PredicateType, src_predicate )
+    s.src_opt       = TestSrcRTL ( CtrlType,      ctrl_msgs     )
     s.sink_out0     = TestSinkRTL( DataType,      sink_msgs0    )
     s.sink_out1     = TestSinkRTL( DataType,      sink_msgs1    )
 
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size )
-
-    s.dut.recv_in_count[0] //= 1
-    s.dut.recv_in_count[1] //= 1
 
     connect( s.src_in0.send,       s.dut.recv_in[0]     )
     connect( s.src_in1.send,       s.dut.recv_in[1]     )
@@ -59,7 +55,7 @@ class TestHarness( Component ):
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=1000 ):
+def run_sim( test_harness, max_cycles=40 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()

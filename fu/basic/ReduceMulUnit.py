@@ -13,9 +13,7 @@ Author : Yanghui Ou
   Date : Jul 30, 2023
 '''
 
-
 from pymtl3 import *
-
 
 class ReduceMulUnit( Component ):
 

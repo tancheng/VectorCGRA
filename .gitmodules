@@ -2,7 +2,7 @@
 	path = fu/pymtl3_hardfloat
 	url = https://github.com/pymtl/pymtl3-hardfloat.git
 [submodule "fu/dp_fpfma"]
-	path = fu/dp_fpfma
+	path = fu/fused_alu_fixedp/dp_fpfma
 	url = https://github.com/tancheng/dp_fpfma
 [submodule "noc/PyOCN"]
 	path = noc/PyOCN

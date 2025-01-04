@@ -59,25 +59,20 @@ jobs:
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         # Simulation across all tests.
-        pytest .. -v --tb=short
+        pytest .. -v
         # Tile translation.
-        pytest ../tile/translate/TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
-        # Kingmesh topology CGRA translation.
-        pytest ../cgra/translate/VectorCGRAKingMeshRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
-        # Separate crossbars CGRA simulation/translation.
-        pytest ../cgra/translate/CgraCrossbarDataMemRingCtrlMemRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
-        # 3x2 CGRA performs 2x2 matmul translation.
-        pytest ../systolic/translate/CgraMemBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # CGRA template translation.
+        pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
+        # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
+        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # 3x3 CGRA performs 2x2 matmul simulation/translation.
-        pytest ../systolic/translate/CgraMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short
-        pytest ../systolic/translate/CgraMemRightAndBottomRTL_matmul_2x2_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
+        pytest ../systolic/test/Cgra3x3MemRightAndBottomRTL_matmul_2x2_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Ring network simulation.
-        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py --tb=short -sv
-        # CGRA with separate crossbars (for tiles and FUs), crossbar-based data
-        # memory (for multi-bank), ring-based control memories, and controller.
-        pytest --tb=short -sv ../cgra/translate/CgraCrossbarDataMemRingCtrlMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
         # CGRAs are interconnected with ring topology. The CGRA contains
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for
         # multi-bank), and controller.
-        pytest --tb=short -sv ../scale_out/translate/RingMultiCgraRingCtrlMemRTL_test.py --test-verilog --dump-vtb --dump-vcd
+        pytest ../scale_out/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 

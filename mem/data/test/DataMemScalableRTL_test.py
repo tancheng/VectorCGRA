@@ -8,20 +8,18 @@ Author : Cheng Tan
   Date : Dec 6, 2024
 """
 
-
 from pymtl3 import *
 from ..DataMemScalableRTL import DataMemScalableRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
-
 
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
   def construct(s, DataType, AddrType, data_mem_size, read_addr,
                 read_data, write_addr, write_data, preloadData):
@@ -72,8 +70,8 @@ def run_sim(test_harness, max_cycles=20):
 def test_const_queue():
   DataType = mk_data(16, 1)
   data_mem_size = 20
-  AddrType = mk_bits( clog2( data_mem_size) )
-  preloadData = [ DataType(i, 1) for i in range( data_mem_size ) ]
+  AddrType = mk_bits(clog2(data_mem_size))
+  preloadData = [DataType(i, 1) for i in range(data_mem_size)]
 
   read_addr = [AddrType(2), AddrType(3), AddrType(0), AddrType(12)]
   read_data = [DataType(2, 1), DataType(3, 1), DataType(0, 1), DataType(13, 1)]
@@ -84,3 +82,4 @@ def test_const_queue():
   th = TestHarness(DataType, AddrType, data_mem_size, read_addr,
                    read_data, write_addr, write_data, preloadData)
   run_sim(th)
+
