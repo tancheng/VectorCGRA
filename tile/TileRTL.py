@@ -154,13 +154,10 @@ class TileRTL(Component):
     s.reg_predicate.send //= s.element.recv_predicate
 
     # Connects the FU's inport channels with the corresponding FU.
-    # FIXME: change element to use val/rdy ifcs.
     for i in range(num_fu_inports):
       s.fu_in_channel[i].send //= s.element.recv_in[i]
-      # s.fu_in_channel[i].count //= s.element.recv_in_count[i]
 
     # Connections on the `fu_crossbar`.
-    # FIXME: change element to use val/rdy ifcs.
     for i in range(num_fu_outports):
       s.element.send_out[i] //= s.fu_crossbar.recv_data[i]
 

@@ -51,7 +51,7 @@
 
 //`ifdef VCS
 /* verilator lint_off COMBDLY */
-`include "../../dp_fpfma/DW02_multp.v"
+`include "../dp_fpfma/DW02_multp.v"
 /* verilator lint_on COMBDLY */
 //`endif
 

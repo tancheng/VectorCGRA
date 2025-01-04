@@ -28,8 +28,8 @@ class FlexibleFuRTL(Component):
     if NahRTL not in FuList:
       FuList.append(NahRTL)
     s.fu_list_size = len(FuList)
-    CountType = mk_bits(clog2( num_entries + 1))
-    AddrType = mk_bits(clog2( data_mem_size))
+    CountType = mk_bits(clog2(num_entries + 1))
+    AddrType = mk_bits(clog2(data_mem_size))
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -87,7 +87,7 @@ class FlexibleFuRTL(Component):
 
         # send_out connection
         for j in range(num_outports):
-          # FIXME: need reduce_or here: https://github.com/tancheng/VectorCGRA/issues/51
+          # FIXME: need reduce_or here: https://github.com/tancheng/VectorCGRA/issues/51.
           if s.fu[i].send_out[j].val:
             s.send_out[j].msg @= s.fu[i].send_out[j].msg
             s.send_out[j].val @= s.fu[i].send_out[j].val
@@ -95,9 +95,9 @@ class FlexibleFuRTL(Component):
 
       s.recv_const.rdy @= reduce_or(s.fu_recv_const_rdy_vector)
       s.recv_predicate.rdy @= reduce_or(s.fu_recv_predicate_rdy_vector)
-      # FIXME: Operation might be performed more than once due to the set of
-      # recv_opt.rdy is done separately: https://github.com/tancheng/VectorCGRA/issues/10 &
-      # https://github.com/tancheng/VectorCGRA/issues/53.
+      # Operation (especially mem access) won't perform more than once, because once the
+      # operation is performance (i.e., the recv_opt.rdy would be set), the `element_done`
+      # register would be set and be respected.
       s.recv_opt.rdy @= reduce_or(s.fu_recv_opt_rdy_vector)
 
       for j in range(num_inports):
