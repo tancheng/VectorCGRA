@@ -89,7 +89,7 @@ class ControllerRTL(Component):
     for src_controller_id, address_range in controller2addr_map.items():
       begin_addr, end_addr = address_range[0], address_range[1]
       address_length = end_addr - begin_addr + 1
-      assert (address_length & (address_length - 1)) == 0, f"{adderss_length} is not a power of 2."
+      assert (address_length & (address_length - 1)) == 0, f"{address_length} is not a power of 2."
       addr_offset_nbits = clog2(address_length)
       addr_base = begin_addr >> addr_offset_nbits
       assert addr2controller_vector[addr_base] == -1, f"address range [{begin_addr}, {end_addr}] overlaps with others."
@@ -103,7 +103,7 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt_queue.recv //= s.recv_from_tile_load_response_pkt
     s.recv_from_tile_store_request_pkt_queue.recv //= s.recv_from_tile_store_request_pkt
 
-    # Reqeusts towards local from others, 1 cycle delay to improve timing.
+    # Requests towards local from others, 1 cycle delay to improve timing.
     s.send_to_tile_load_request_addr_queue.send //= s.send_to_tile_load_request_addr
     s.send_to_tile_load_response_data_queue.send //= s.send_to_tile_load_response_data
     s.send_to_tile_store_request_addr_queue.send //= s.send_to_tile_store_request_addr
@@ -112,7 +112,7 @@ class ControllerRTL(Component):
     # For control signals delivery from CPU to tiles.
     # TODO: https://github.com/tancheng/VectorCGRA/issues/11 -- The request needs
     # to go through the crossbar for arbitration as well. The packet targeting local
-    # tiles can be delivered via thr ring within the CGRA; The packet targetting
+    # tiles can be delivered via the ring within the CGRA; The packet targeting
     # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
