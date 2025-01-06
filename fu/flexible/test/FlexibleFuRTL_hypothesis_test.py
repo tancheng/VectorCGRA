@@ -19,16 +19,14 @@ from ...single.CompRTL import CompRTL
 from ...single.LogicRTL import LogicRTL
 from ...single.MemUnitRTL import MemUnitRTL
 from ...single.MulRTL import MulRTL
+from ...single.NahRTL import NahRTL
 from ...single.PhiRTL import PhiRTL
 from ...single.ShifterRTL import ShifterRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.opt_type import *
 from ....lib.messages import *
 import hypothesis
-
-
-#from pymtl3.passes.backends.verilog import TranslationImportPass
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -52,9 +50,6 @@ class TestHarness( Component ):
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size, FuList )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
-
     connect( s.src_const.send,     s.dut.recv_const     )
     connect( s.src_in0.send,       s.dut.recv_in[0]     )
     connect( s.src_in1.send,       s.dut.recv_in[1]     )
@@ -68,20 +63,20 @@ class TestHarness( Component ):
     s.to_mem_waddr   = [ TestSinkRTL( AddrType, [] ) for _ in FuList ]
     s.to_mem_wdata   = [ TestSinkRTL( DataType, [] ) for _ in FuList ]
 
-    for i in range( len( FuList ) ):
+    for i in range( s.dut.fu_list_size ):
       s.to_mem_raddr[i].recv   //= s.dut.to_mem_raddr[i]
       s.from_mem_rdata[i].send //= s.dut.from_mem_rdata[i]
       s.to_mem_waddr[i].recv   //= s.dut.to_mem_waddr[i]
       s.to_mem_wdata[i].recv   //= s.dut.to_mem_wdata[i]
 
   def done( s ):
-    return s.src_in0.done()   and s.src_in1.done()   and\
-           s.src_opt.done()   and s.sink_out0.done()
+    return s.src_in0.done() and s.src_in1.done()   and \
+           s.src_opt.done() and s.sink_out0.done()
 
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=100 ):
+def run_sim( test_harness, max_cycles=20 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()
@@ -104,6 +99,7 @@ def run_sim( test_harness, max_cycles=100 ):
 
 
 func_opt = { AdderRTL : OPT_ADD,
+             NahRTL   : OPT_ADD,
              MulRTL   : OPT_MUL }
 
 @st.composite
@@ -115,7 +111,7 @@ def inputs_strat( draw, functions ):
 
 @hypothesis.settings( deadline=None, max_examples=50 )
 @hypothesis.given(
-  functions = st.sampled_from( [ [AdderRTL], [ AdderRTL, MulRTL ]] ),
+  functions = st.sampled_from( [ [ AdderRTL], [ AdderRTL, MulRTL ]] ),
   inputs = st.data(),
 )
 def test_hypothesis( functions, inputs ):

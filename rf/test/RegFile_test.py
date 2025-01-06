@@ -1,21 +1,19 @@
 """
 ==========================================================================
-Phi_test.py
+RegFile_test.py
 ==========================================================================
-Test cases for functional unit Phi.
+Test cases for RegFile.
 
 Author : Cheng Tan
   Date : November 27, 2019
 """
 
-
 from pymtl3 import *
 from ..RegFile import RegFile
-from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-
 
 #-------------------------------------------------------------------------
 # Test harness

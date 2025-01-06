@@ -26,26 +26,23 @@ Author : Cheng Tan
   Date : Dec 5, 2024
 """
 
-
 from pymtl3 import *
-from pymtl3.stdlib.dstruct.queues import BypassQueue
 from pymtl3.stdlib.primitive import RegisterFile
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
-from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.basic.val_rdy.queues import BypassQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
 from ...lib.messages import *
 
-
 class DataMemWithCrossbarRTL(Component):
 
-  def construct(s, NocPktType, DataType,
-                data_mem_size_global, data_mem_size_per_bank,
-                num_banks = 4, num_rd_tiles = 4, num_wr_tiles = 4,
-                preload_data_per_bank = None):
+  def construct(s, NocPktType, DataType, data_mem_size_global,
+                data_mem_size_per_bank, num_banks = 4, num_rd_tiles = 4,
+                num_wr_tiles = 4, preload_data_per_bank = None):
 
     # Constant
-
     global_addr_nbits = clog2(data_mem_size_global)
     per_bank_addr_nbits = clog2(data_mem_size_per_bank)
     assert(2 ** global_addr_nbits == data_mem_size_global)
@@ -113,7 +110,7 @@ class DataMemWithCrossbarRTL(Component):
     s.rd_pkt = [Wire(TileSramXbarRdPktType) for _ in range(num_xbar_in_rd_ports)]
     s.wr_pkt = [Wire(TileSramXbarWrPktType) for _ in range(num_xbar_in_wr_ports)]
 
-    s.recv_wdata_bypass_q = [BypassQueue(DataType) for _ in range(num_xbar_in_wr_ports)]
+    s.recv_wdata_bypass_q = [BypassQueueRTL(DataType, 1) for _ in range(num_xbar_in_wr_ports)]
 
     s.send_to_noc_load_pending = Wire(b1)
 
@@ -160,15 +157,15 @@ class DataMemWithCrossbarRTL(Component):
       for i in range(num_xbar_in_rd_ports):
         s.recv_raddr[i].rdy @= 0
         s.recv_waddr[i].rdy @= 0
-        s.recv_wdata_bypass_q[i].deq_en @= 0
+        s.recv_wdata_bypass_q[i].send.rdy @= 0
 
       for i in range(num_rd_tiles):
-        s.send_rdata[i].en @= 0
-      s.send_to_noc_load_response_pkt.en @= 0
+        s.send_rdata[i].val @= 0
+      s.send_to_noc_load_response_pkt.val @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.recv_wdata[i].rdy @= 0
-        s.recv_wdata_bypass_q[i].enq_en @= 0
+        s.recv_wdata_bypass_q[i].recv.val @= 0
 
       if s.init_mem_done == b1(0):
         for b in range(num_banks):
@@ -178,17 +175,17 @@ class DataMemWithCrossbarRTL(Component):
 
       else:
         for i in range(num_xbar_in_wr_ports):
-          s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].enq_rdy
-          s.recv_wdata_bypass_q[i].enq_en @= s.recv_wdata[i].en
-          s.recv_wdata_bypass_q[i].enq_msg @= s.recv_wdata[i].msg
+          s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].recv.rdy
+          s.recv_wdata_bypass_q[i].recv.val @= s.recv_wdata[i].val
+          s.recv_wdata_bypass_q[i].recv.msg @= s.recv_wdata[i].msg
 
         for i in range(num_xbar_in_rd_ports):
-          s.read_crossbar.recv[i].val @= s.recv_raddr[i].en
+          s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
           s.read_crossbar.recv[i].msg @= s.rd_pkt[i]
           s.recv_raddr[i].rdy @= s.read_crossbar.recv[i].rdy
   
         for i in range(num_xbar_in_wr_ports):
-          s.write_crossbar.recv[i].val @= s.recv_waddr[i].en
+          s.write_crossbar.recv[i].val @= s.recv_waddr[i].val
           s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
           s.recv_waddr[i].rdy @= s.write_crossbar.recv[i].rdy
 
@@ -202,7 +199,7 @@ class DataMemWithCrossbarRTL(Component):
              (s.read_crossbar.packet_on_input_units[i].dst < num_banks):
             if i <= s.num_rd_tiles:
               s.send_rdata[RdTileIdType(i)].msg @= s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0]
-              s.send_rdata[RdTileIdType(i)].en @= s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
+              s.send_rdata[RdTileIdType(i)].val @= s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
             # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
             else:
               s.send_to_noc_load_response_pkt.msg @= \
@@ -212,7 +209,7 @@ class DataMemWithCrossbarRTL(Component):
                       s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
                       s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate
                   )
-              s.send_to_noc_load_response_pkt.en @= \
+              s.send_to_noc_load_response_pkt.val @= \
                   s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
 
           # Handles the case the load requests going through the NoC towards remote SRAMs.
@@ -224,9 +221,9 @@ class DataMemWithCrossbarRTL(Component):
             # assert(i < num_banks)
             s.send_rdata[RdTileIdType(i)].msg @= s.recv_from_noc_rdata.msg
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
-            s.send_rdata[RdTileIdType(i)].en @= \
+            s.send_rdata[RdTileIdType(i)].val @= \
                 s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val & \
-                s.recv_from_noc_rdata.en
+                s.recv_from_noc_rdata.val
                 # FIXME: The msg would come back one by one in order, so no
                 # need to check the src_tile, which can be improved.
                 # s.recv_from_noc_rdata.en & \
@@ -244,9 +241,10 @@ class DataMemWithCrossbarRTL(Component):
                        0, # data
                        1) # predicate
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
-        s.send_to_noc_load_request_pkt.en @= s.read_crossbar.send[num_banks].val & \
-                                             s.send_to_noc_load_request_pkt.rdy & \
-                                             ~s.send_to_noc_load_pending
+        s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks].val & \
+                                              s.recv_from_noc_rdata.val
+                                              # ~s.send_to_noc_load_pending
+                                              # s.send_to_noc_load_request_pkt.rdy & \
         # Outstanding remote read access would block the inport (for read request) of the NoC. 
         # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
         # 'val` indicates the data is arbitrated successfully.
@@ -254,18 +252,20 @@ class DataMemWithCrossbarRTL(Component):
         # Only allows releasing the pending request until the required load data is back,
         # i.e., though the request already sent out to NoC (the port is still blocked until
         # response is back).
-        s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.en
+        s.read_crossbar.send[num_banks].rdy @= s.recv_from_noc_rdata.val
 
         # Connects the write ports towards SRAM and NoC from the xbar.
         for b in range(num_banks):
           s.reg_file[b].wen[0] @= b1(0)
           s.reg_file[b].waddr[0] @= trunc(s.write_crossbar.send[b].msg.addr % data_mem_size_per_bank, PerBankAddrType)
-          s.reg_file[b].wdata[0] @= s.recv_wdata_bypass_q[s.write_crossbar.send[b].msg.src].deq_msg
+          s.reg_file[b].wdata[0] @= s.recv_wdata_bypass_q[s.write_crossbar.send[b].msg.src].send.msg
           s.write_crossbar.send[b].rdy @= 1
           s.reg_file[b].wen[0] @= s.write_crossbar.send[b].val
 
         for i in range(num_xbar_in_wr_ports):
-          s.recv_wdata_bypass_q[i].deq_en @= s.recv_wdata_bypass_q[i].deq_rdy & \
+          # s.recv_wdata_bypass_q[i].deq_en @= s.recv_wdata_bypass_q[i].deq_rdy & \
+          #         s.write_crossbar.send[s.write_crossbar.packet_on_input_units[i].dst].val
+          s.recv_wdata_bypass_q[i].send.rdy @= \
                   s.write_crossbar.send[s.write_crossbar.packet_on_input_units[i].dst].val
 
         # Handles the one connecting to the NoC.
@@ -276,9 +276,9 @@ class DataMemWithCrossbarRTL(Component):
                        0, # vc_id
                        CMD_STORE_REQUEST,
                        s.write_crossbar.send[num_banks].msg.addr,
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.payload,
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].deq_msg.predicate)
-        s.send_to_noc_store_pkt.en @= s.write_crossbar.send[num_banks].val & s.send_to_noc_store_pkt.rdy
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload,
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate)
+        s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks].val # & s.send_to_noc_store_pkt.rdy
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
 
     if preload_data_per_bank != None:
@@ -301,7 +301,7 @@ class DataMemWithCrossbarRTL(Component):
     # Indicates whether the remote (towards others via NoC) load is pending on response.
     @update_ff
     def update_remote_load_pending():
-      s.send_to_noc_load_pending <<= s.recv_from_noc_rdata.en
+      s.send_to_noc_load_pending <<= s.recv_from_noc_rdata.val
 
   def line_trace(s):
     recv_raddr_str = "recv_from_tile_read_addr: {"
@@ -324,7 +324,8 @@ class DataMemWithCrossbarRTL(Component):
       recv_waddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_waddr]) + ";"
       recv_wdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_wdata]) + ";"
       content_str +=  " bank[" + str(b) + "]: " + "|".join([str(data) for data in s.reg_file[b].regs]) + ";"
-      send_to_noc_load_request_pkt_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
+      send_rdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
+      # send_to_noc_load_request_pkt_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
 
     # send_to_noc_raddr_str += str(s.send_to_noc_raddr.msg) + ";"
     send_to_noc_load_request_pkt_str += str(s.send_to_noc_load_request_pkt.msg) + ";"
@@ -332,7 +333,7 @@ class DataMemWithCrossbarRTL(Component):
     recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
     # send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
     # send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
-    send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ";"
+    send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ", val: " + str(s.send_to_noc_store_pkt.val) + ";"
 
     recv_raddr_str += "}"
     send_rdata_str += "}"

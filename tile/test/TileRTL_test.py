@@ -2,14 +2,13 @@
 ==========================================================================
 TileRTL_test.py
 ==========================================================================
-Test cases for Tile.
+Test cases for TileRTL.
 Command:
 pytest TileRTL_test.py -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
 
 Author : Cheng Tan
-  Date : Dec 11, 2019
+  Date : Nov 26, 2024
 """
-
 
 from pymtl3 import *
 from pymtl3.stdlib.test_utils import (run_sim,
@@ -17,140 +16,183 @@ from pymtl3.stdlib.test_utils import (run_sim,
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
 from ..TileRTL import TileRTL
-from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.MemUnitRTL import MemUnitRTL
-from ...fu.single.MulRTL import MulRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ...lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
+from ...fu.vector.VectorMulComboRTL       import VectorMulComboRTL
+from ...fu.vector.VectorAdderComboRTL     import VectorAdderComboRTL
+from ...fu.vector.VectorAllReduceRTL      import VectorAllReduceRTL
+from ...fu.single.AdderRTL                import AdderRTL
+from ...fu.single.MemUnitRTL              import MemUnitRTL
+from ...fu.single.MulRTL                  import MulRTL
+from ...fu.single.SelRTL                  import SelRTL
+from ...fu.single.ShifterRTL              import ShifterRTL
+from ...fu.single.LogicRTL                import LogicRTL
+from ...fu.single.PhiRTL                  import PhiRTL
+from ...fu.single.CompRTL                 import CompRTL
+from ...fu.single.BranchRTL               import BranchRTL
+from ...fu.single.NahRTL                  import NahRTL
+from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
 from ...lib.messages import *
+from ...lib.cmd_type import *
 from ...lib.opt_type import *
 from ...mem.ctrl.CtrlMemRTL import CtrlMemRTL
-
 
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
-  def construct( s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                 CtrlType, ctrl_mem_size, data_mem_size,
-                 num_fu_inports, num_fu_outports,
-                 src_data, src_opt, opt_waddr, sink_out ):
+  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
+                CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
+                num_fu_inports, num_fu_outports, num_tile_inports,
+                num_tile_outports, src_data, src_ctrl_pkt, sink_out):
 
-    AddrType        = mk_bits( clog2( ctrl_mem_size ) )
+    s.num_tile_inports = num_tile_inports
+    s.num_tile_outports = num_tile_outports
 
-    # s.src_predicate = TestSrcRTL( b1, src_predicate )
-    s.src_opt       = TestSrcRTL( CtrlType, src_opt )
-    s.opt_waddr     = TestSrcRTL( AddrType, opt_waddr )
-    s.src_data      = [ TestSrcRTL( DataType, src_data[i]  )
-                      for i in range( 4 ) ]#num_tile_inports  ) ]
-    s.sink_out      = [ TestSinkRTL( DataType, sink_out[i] )
-                      for i in range( 4 ) ]#num_tile_outports ) ]
+    s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_data = [ValRdyTestSrcRTL(DataType, src_data[i])
+                  for i in range(num_tile_inports)]
+    s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
+                  for i in range(num_tile_outports)]
 
-    s.dut           = DUT( DataType, PredicateType, CtrlType,
-                           ctrl_mem_size, data_mem_size, len(src_opt),
-                           len(src_opt), num_fu_inports, num_fu_outports,
-                           4, 4, FunctionUnit, FuList )
+    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
+                ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
+                num_fu_inports, num_fu_outports, num_tile_inports,
+                num_tile_outports, FunctionUnit, FuList)
 
-    # connect( s.src_predicate.send, s.dut.reg_predicate )
-    connect( s.src_opt.send,       s.dut.recv_wopt     )
-    connect( s.opt_waddr.send,     s.dut.recv_waddr    )
+    connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
 
-    for i in range( 4 ):#num_tile_inports ):
-      connect( s.src_data[i].send, s.dut.recv_data[i] )
-    for i in range( 4 ):#num_tile_outports ):
-      connect( s.dut.send_data[i],  s.sink_out[i].recv )
+    for i in range(num_tile_inports):
+      connect(s.src_data[i].send, s.dut.recv_data[i])
+    for i in range(num_tile_outports):
+      connect(s.dut.send_data[i], s.sink_out[i].recv)
 
     if MemUnitRTL in FuList:
-      s.dut.to_mem_raddr.rdy   //= 0
-      s.dut.from_mem_rdata.en  //= 0
-      s.dut.from_mem_rdata.msg //= DataType( 0, 0 )
-      s.dut.to_mem_waddr.rdy   //= 0
-      s.dut.to_mem_wdata.rdy   //= 0
+      s.dut.to_mem_raddr.rdy //= 0
+      s.dut.from_mem_rdata.val //= 0
+      s.dut.from_mem_rdata.msg //= DataType(0, 0)
+      s.dut.to_mem_waddr.rdy //= 0
+      s.dut.to_mem_wdata.rdy //= 0
 
-  def done( s ):
-    done = True
-    for i in range( 4 ):#s.num_tile_outports ):
-      if not s.sink_out[i].done():# and not s.src_data[i].done():
-        done = False
-        break
-    return done
+  def done(s):
+    for i in range(s.num_tile_inports):
+      if not s.src_data[i].done():
+        return False
 
-  def line_trace( s ):
+    for i in range(s.num_tile_outports):
+      if not s.sink_out[i].done():
+        return False
+
+    return True
+
+  def line_trace(s):
     return s.dut.line_trace()
 
-def test_tile_alu( cmdline_opts ):
-  num_connect_inports  = 4
-  num_connect_outports = 4
-  num_fu_inports    = 2
-  num_fu_outports   = 1
-  num_xbar_inports  = num_fu_outports + num_connect_inports
-  num_xbar_outports = num_fu_inports + num_connect_outports
-  ctrl_mem_size     = 3
-  data_mem_size     = 8
-  # number of inputs of FU is fixed inside the tile
-  num_fu_in         = 4
-  RouteType         = mk_bits( clog2( num_xbar_inports + 1 ) )
-  AddrType          = mk_bits( clog2( ctrl_mem_size ) )
-  FuInType          = mk_bits( clog2( num_fu_in + 1 ) )
-  pickRegister0     = [ FuInType( 0 ) for x in range( num_fu_in ) ]
-  pickRegister1     = [ FuInType( 1 ), FuInType( 2 ), FuInType( 0 ), FuInType( 0 ) ]
-  DUT               = TileRTL
-  FunctionUnit      = FlexibleFuRTL
-  FuList            = [AdderRTL, MulRTL, MemUnitRTL]
-  DataType          = mk_data( 16, 1 )
-  PredicateType     = mk_predicate( 1, 1 )
-  CtrlType          = mk_ctrl( num_fu_in, num_xbar_inports, num_xbar_outports )
-  opt_waddr         = [ AddrType( 0 ), AddrType( 1 ), AddrType( 2 ) ]
-  src_opt           = [ CtrlType( OPT_NAH, b1(0), pickRegister0, [
-                        RouteType(0), RouteType(0), RouteType(0), RouteType(0),
-                        RouteType(4), RouteType(3), RouteType(0), RouteType(0)] ),
-                        CtrlType( OPT_ADD, b1(0), pickRegister1, [
-                        RouteType(0), RouteType(0), RouteType(0), RouteType(5),
-                        RouteType(4), RouteType(1), RouteType(0), RouteType(0)] ),
-                        CtrlType( OPT_SUB, b1(0), pickRegister1, [
-                        RouteType(5), RouteType(0), RouteType(0), RouteType(5),
-                        RouteType(0), RouteType(0), RouteType(0), RouteType(0)] ) ]
-  src_data          = [ [DataType(2, 1)],# DataType( 3, 1)],
-                        [],#DataType(3, 1), DataType( 4, 1)],
-                        [DataType(4, 1)],# DataType( 5, 1)],
-                        [DataType(5, 1), DataType( 7, 1)] ]
-  # src_predicate    = [ b1( 0 ), b1( 0 ), b1( 0 ) ]
-  src_const         = [ DataType(5, 1), DataType(0, 0), DataType(7, 1) ]
-  sink_out          = [ [DataType(5, 1)],# DataType( 4, 1)],
-                        [],
-                        [],
-                        [DataType(9, 1), DataType( 5, 1)]]
-  """
-  src_opt      = [ CtrlType( OPT_NAH, [
-                   RouteType(4), RouteType(3), RouteType(2), RouteType(1),
-                   RouteType(4), RouteType(3), RouteType(2), RouteType(1)] ),
-                   CtrlType( OPT_ADD, [
-                   RouteType(3), RouteType(3), RouteType(3), RouteType(5),
-                   RouteType(4), RouteType(1), RouteType(1), RouteType(1)] ),
-                   CtrlType( OPT_SUB, [
-                   RouteType(5), RouteType(5), RouteType(2), RouteType(2),
-                   RouteType(1), RouteType(1), RouteType(1), RouteType(1)] ) ]
-  src_data     = [ [DataType(2, 1), DataType( 3, 1)],
-                   [DataType(3, 1), DataType( 4, 1)],
-                   [DataType(4, 1), DataType( 5, 1)],
-                   [DataType(5, 1), DataType( 6, 1)] ]
-  sink_out     = [ [DataType(5, 1), DataType( 5, 1), DataType( 3, 1)],
-                   [DataType(4, 1), DataType( 5, 1), DataType( 3, 1)],
-                   [DataType(3, 1), DataType( 5, 1)],
-                   [DataType(2, 1), DataType( 9, 1)] ]
-  """
-  th = TestHarness( DUT, FunctionUnit, FuList, DataType, PredicateType,
-                    CtrlType, ctrl_mem_size, data_mem_size,
-                    num_fu_inports, num_fu_outports,
-                    src_data, src_opt, opt_waddr, sink_out )
+def test_tile_alu(cmdline_opts):
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_fu_inports + num_tile_outports
+  ctrl_mem_size = 3
+  data_mem_size = 8
+  num_terminals = 4
+  num_ctrl_actions = 6
+  num_ctrl_operations = 64
+  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
+  DUT = TileRTL
+  FunctionUnit = FlexibleFuRTL
+  # FuList = [AdderRTL, MulRTL, MemUnitRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            ThreeMulAdderShifterRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  # 64-bit to satisfy the default bitwidth of vector FUs.
+  DataType = mk_data(64, 1)
+  PredicateType = mk_predicate(1, 1)
+  CtrlPktType = \
+      mk_ring_across_tiles_pkt(num_terminals,
+                               num_ctrl_actions,
+                               ctrl_mem_size,
+                               num_ctrl_operations,
+                               num_fu_inports,
+                               num_fu_outports,
+                               num_tile_inports,
+                               num_tile_outports)
+  CtrlSignalType = \
+      mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
+                       num_fu_outports, num_tile_inports,
+                       num_tile_outports)
+  src_ctrl_pkt = [
+                # src dst vc_id opq cmd_type    addr operation predicate
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
+                  # routing_xbar_output
+                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                   TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                  # fu_xbar_output
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
+                  # routing_xbar_output
+                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                   TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+                  # fu_xbar_output
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
+                  # routing_xbar_output
+                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                  # fu_xbar_output
+                  [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
+                  # routing_xbar_output
+                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                  # fu_xbar_output
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
+  src_data = [[DataType(3, 1)],
+              [],
+              [DataType(4, 1)],
+              [DataType(5, 1), DataType(7, 1)]]
+  src_const = [DataType(5, 1), DataType(0, 0), DataType(7, 1)]
+  sink_out = [
+              # 7 - 3 = 4.
+              [DataType(4, 1)],
+              [],
+              [],
+              # 5 + 4 = 9; 7 - 3 = 4.
+              [DataType(9, 1), DataType(4, 1)]]
+
+  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
+                   CtrlPktType, CtrlSignalType, ctrl_mem_size,
+                   data_mem_size, num_fu_inports, num_fu_outports,
+                   num_tile_inports, num_tile_outports, src_data,
+                   src_ctrl_pkt, sink_out)
   th.elaborate()
-  th.dut.set_metadata( VerilogVerilatorImportPass.vl_Wno_list,
-                    ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                     'ALWCOMBORDER'] )
-  th = config_model_with_cmdline_opts( th, cmdline_opts, duts=['dut'] )
-  run_sim( th )
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
 

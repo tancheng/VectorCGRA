@@ -11,9 +11,8 @@ Author : Cheng Tan
 from pymtl3 import *
 from ..RingMultiCtrlMemDynamicRTL import RingMultiCtrlMemDynamicRTL
 from ....fu.single.AdderRTL import AdderRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
-from ....lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.cmd_type import *
 from ....lib.opt_type import *
@@ -32,7 +31,7 @@ class TestHarness( Component ):
 
     s.width = width
     s.height = height
-    s.src_pkt = ValRdyTestSrcRTL(CtrlPktType, ctrl_pkts)
+    s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = [TestSinkRTL(CtrlSignalType, sink_msgs[i])
                   for i in range(width * height)]
 

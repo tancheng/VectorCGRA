@@ -13,29 +13,23 @@ from pymtl3 import *
 from ..basic.TwoPrlCombo import TwoPrlCombo
 from ..single.MulRTL import MulRTL
 from ..single.AdderRTL import AdderRTL
-from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 
+class PrlMulAdderRTL(TwoPrlCombo):
 
-class PrlMulAdderRTL( TwoPrlCombo ):
+  def construct(s, DataType, PredicateType, CtrlType,
+                num_inports, num_outports, data_mem_size):
 
-  def construct( s, DataType, PredicateType, CtrlType,
-                 num_inports, num_outports, data_mem_size ):
+    super(PrlMulAdderRTL, s).construct(DataType, PredicateType, CtrlType,
+                                       MulRTL, AdderRTL, num_inports,
+                                       num_outports, data_mem_size)
 
-    super( PrlMulAdderRTL, s ).construct( DataType, PredicateType, CtrlType,
-                                          MulRTL, AdderRTL, num_inports,
-                                          num_outports, data_mem_size )
-
-    FuInType = mk_bits( clog2( num_inports + 1 ) )
+    FuInType = mk_bits(clog2(num_inports + 1))
 
     @update
     def update_opt():
-#      if s.recv_opt.msg.ctrl == OPT_MUL_ADD:
-#        s.Fu0.recv_opt.msg = CtrlType( OPT_MUL, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
-#        s.Fu1.recv_opt.msg = CtrlType( OPT_ADD, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
-#      elif s.recv_opt.msg.ctrl == OPT_MUL_SUB:
-#        s.Fu0.recv_opt.msg = CtrlType( OPT_MUL, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
-#        s.Fu1.recv_opt.msg = CtrlType( OPT_SUB, s.recv_opt.msg.predicate, [ Bits2(1), Bits2(2) ] )
 
       s.Fu0.recv_opt.msg.fu_in[0] @= 1
       s.Fu0.recv_opt.msg.fu_in[1] @= 2

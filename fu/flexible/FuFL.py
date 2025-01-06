@@ -23,9 +23,10 @@ def FuFL( DataType, input_a, input_b, opt ):
   out_list = []
   for i in range( len( input_a ) ):
     if( opt[i].ctrl == OPT_ADD):
-      out = input_a[i].payload + input_b[i].payload
+      out_list.append(DataType(input_a[i].payload + input_b[i].payload))
+    elif( opt[i].ctrl == OPT_SUB):
+      out_list.append(DataType(input_a[i].payload - input_b[i].payload))
     elif( opt[i].ctrl == OPT_MUL):
-      out = input_a[i].payload * input_b[i].payload
-    out_list.append( DataType( out ) )
+      out_list.append(DataType(input_a[i].payload * input_b[i].payload))
   return out_list
 

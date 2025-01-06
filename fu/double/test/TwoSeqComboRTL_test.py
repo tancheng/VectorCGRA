@@ -8,15 +8,13 @@ Author : Cheng Tan
   Date : November 27, 2019
 """
 
-
 from pymtl3 import *
 from ..SeqMulAdderRTL import SeqMulAdderRTL
 from ..SeqMulShifterRTL import SeqMulShifterRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
-
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -40,11 +38,6 @@ class TestHarness( Component ):
     s.dut = FunctionUnit( DataType, PredicateType, CtrlType,
                           num_inports, num_outports, data_mem_size )
 
-    s.dut.recv_in_count[0] //= 1
-    s.dut.recv_in_count[1] //= 1
-    s.dut.recv_in_count[2] //= 1
-    s.dut.recv_in_count[3] //= 1
-
     connect( s.src_in0.send,       s.dut.recv_in[0]     )
     connect( s.src_in1.send,       s.dut.recv_in[1]     )
     connect( s.src_in2.send,       s.dut.recv_in[2]     )
@@ -54,13 +47,13 @@ class TestHarness( Component ):
     connect( s.dut.send_out[0],    s.sink_out.recv      )
 
   def done( s ):
-    return s.src_in0.done() and s.src_in1.done()  and s.src_in2.done() and\
+    return s.src_in0.done() and s.src_in1.done()  and s.src_in2.done() and \
            s.src_opt.done() and s.sink_out.done()
 
   def line_trace( s ):
     return s.dut.line_trace()
 
-def run_sim( test_harness, max_cycles=1000 ):
+def run_sim( test_harness, max_cycles = 30 ):
   test_harness.elaborate()
   test_harness.apply( DefaultPassGroup() )
   test_harness.sim_reset()

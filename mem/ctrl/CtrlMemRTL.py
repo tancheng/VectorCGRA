@@ -8,12 +8,11 @@ Author : Cheng Tan
   Date : Dec 21, 2019
 """
 
-
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
-from ...lib.basic.en_rdy.ifcs import SendIfcRTL, RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
-
 
 class CtrlMemRTL( Component ):
 
@@ -45,16 +44,16 @@ class CtrlMemRTL( Component ):
     s.send_ctrl.msg //= s.reg_file.rdata[0]
     s.reg_file.waddr[0] //= s.recv_waddr.msg
     s.reg_file.wdata[0] //= s.recv_ctrl.msg
-    s.reg_file.wen[0]   //= lambda: s.recv_ctrl.en & s.recv_waddr.en
+    s.reg_file.wen[0]   //= lambda: s.recv_ctrl.val & s.recv_waddr.val
 
     @update
     def update_signal():
       if ( ( total_ctrl_steps > 0 ) & \
            ( s.times == TimeType( total_ctrl_steps ) ) ) | \
          (s.reg_file.rdata[0].ctrl == OPT_START):
-        s.send_ctrl.en @= b1( 0 )
+        s.send_ctrl.val @= b1( 0 )
       else:
-        s.send_ctrl.en @= s.send_ctrl.rdy # s.recv_raddr[i].rdy
+        s.send_ctrl.val @= 1 # s.send_ctrl.rdy # s.recv_raddr[i].rdy
       s.recv_waddr.rdy @= b1( 1 )
       s.recv_ctrl.rdy @= b1( 1 )
 

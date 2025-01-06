@@ -9,14 +9,13 @@ Author : Cheng Tan
 """
 
 
-from pymtl3                       import *
-from ....lib.basic.en_rdy.test_sinks           import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs            import TestSrcRTL
-
-from ..VectorAdderRTL             import VectorAdderRTL
-from ....mem.const.ConstQueueRTL  import ConstQueueRTL
-from ....lib.opt_type             import *
-from ....lib.messages             import *
+from pymtl3 import *
+from ..VectorAdderRTL import VectorAdderRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.opt_type import *
+from ....lib.messages import *
+from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -41,24 +40,18 @@ class TestHarness( Component ):
                           num_inports, num_outports,
                           data_mem_size )
 
-    for i in range( num_inports ):
-      s.dut.recv_in_count[i] //= 1
-
     s.src_in0.send.rdy //= s.dut.recv_in[0].rdy
-    s.src_in0.send.en  //= s.dut.recv_in[0].en
+    s.src_in0.send.val //= s.dut.recv_in[0].val
     s.src_in0.send.msg //= s.dut.recv_in[0].msg[0:bandwidth]
 
     s.src_in1.send.rdy //= s.dut.recv_in[1].rdy
-    s.src_in1.send.en  //= s.dut.recv_in[1].en
+    s.src_in1.send.val //= s.dut.recv_in[1].val
     s.src_in1.send.msg //= s.dut.recv_in[1].msg[0:bandwidth]
 
     s.const_queue.send_const.rdy //= s.dut.recv_const.rdy
-    s.const_queue.send_const.en  //= s.dut.recv_const.en
+    s.const_queue.send_const.val //= s.dut.recv_const.val
     s.const_queue.send_const.msg //= s.dut.recv_const.msg[0:bandwidth]
 
-    # connect( s.src_in0.send,       s.dut.recv_in[0]         )
-    # connect( s.src_in1.send,       s.dut.recv_in[1]         )
-    # connect( s.dut.recv_const,     s.const_queue.send_const )
     connect( s.src_opt.send,       s.dut.recv_opt           )
     connect( s.dut.send_out[0],    s.sink_out.recv          )
 
@@ -103,9 +96,9 @@ def test_vadder():
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   src_in0       = [ InDataType(1),  InDataType(7),  InDataType(4) ]
-  src_in1       = [ InDataType(2),  InDataType(3),  InDataType(1) ]
-  src_const     = [ InDataType(5),  InDataType(0),  InDataType(7) ]
-  sink_out      = [ OutDataType(6), OutDataType(4), OutDataType(11) ]
+  src_in1       = [                 InDataType(2)                 ]
+  src_const     = [ InDataType(5),                  InDataType(7) ]
+  sink_out      = [ OutDataType(6), OutDataType(5), OutDataType(11) ]
   src_opt       = [ ConfigType( OPT_ADD_CONST, b1( 1 ), pickRegister ),
                     ConfigType( OPT_SUB,       b1( 1 ), pickRegister ),
                     ConfigType( OPT_ADD_CONST, b1( 1 ), pickRegister ) ]
