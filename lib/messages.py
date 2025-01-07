@@ -306,6 +306,7 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
                              ctrl_fu_outports = 4,
                              ctrl_tile_inports = 5,
                              ctrl_tile_outports = 5,
+                             
                              prefix="RingAcrossTilesPacket"):
 
   IdType = mk_bits(clog2(nrouters))
@@ -326,6 +327,7 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
              f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
+
 
   def str_func(s):
     out_str = '(ctrl_operation)' + str(s.ctrl_operation)
@@ -390,6 +392,31 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}
+  )
+  
+#=========================================================================
+# Ring for delivering data across SPM banks
+#=========================================================================
+
+def mk_ring_across_banks_pkt(num_cgras = 4,
+			      num_banks = 4,
+                             data_width = 32,
+                             prefix="RingAcrossSPMBanksPacket"):
+  CGRAsIDType   = mk_bits( clog2(num_cgras) )
+  BanksIDType   = mk_bits( clog2(num_banks) )
+  DataType = mk_bits( data_width )
+
+  new_name = f"{prefix}_{num_cgras}_{num_banks}_{data_width}"
+
+  def str_func( s ):
+    return f"{s.cgraID}.{s.bankID}.{s.data}"
+
+  return mk_bitstruct( new_name, {
+      'cgraID'  : CGRAsIDType,
+      'bankID'  : BanksIDType,
+      'data': DataType,
+    },
+    namespace = { '__str__': str_func }
   )
 
 #=========================================================================
