@@ -20,7 +20,7 @@ from ..lib.opt_type import *
 
 class ControllerRTL(Component):
 
-  def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
+  def construct(s, ControllerIdType, CmdType, CtrlPktType, SPMDataPktType, NocPktType,
                 CGRADataType, CGRAAddrType, controller_id,
                 controller2addr_map):
 
@@ -29,8 +29,14 @@ class ControllerRTL(Component):
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
-    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
-    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
+    # s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    # s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
+    s.recv_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.send_ctrl_pkt = SendIfcRTL(CtrlPktType)
+    s.send_to_local_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
+    s.recv_data_pkt = RecvIfcRTL(SPMDataPktType)
+    s.send_data_pkt = SendIfcRTL(SPMDataPktType)
+    s.send_to_local_data_ring_data_pkt = SendIfcRTL(SPMDataPktType)
 
     # Request from/to tiles.
     s.recv_from_tile_load_request_pkt = RecvIfcRTL(NocPktType)
@@ -63,7 +69,8 @@ class ControllerRTL(Component):
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 3, 1)
 
-    s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
+    #s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
+    s.recv_data_pkt_queue = NormalQueueRTL(SPMDataPktType)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -116,8 +123,8 @@ class ControllerRTL(Component):
     # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
-    s.recv_from_cpu_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
-    s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
+    #s.recv_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
+    s.recv_data_pkt //= s.recv_data_pkt_queue.recv
 
     @update
     def update_received_msg():
@@ -167,6 +174,20 @@ class ControllerRTL(Component):
                      s.recv_from_tile_load_response_pkt_queue.send.msg.data,
                      s.recv_from_tile_load_response_pkt_queue.send.msg.predicate)
       # TODO: For the other cmd types.
+      
+      # For the ctrl signal, always pass to next controller, may pass to local tiles if controller ID are the same
+      # For the data signal, always pass to next controller, may pass to local SPM if controller ID are the same
+      s.send_data_pkt.val @= s.recv_data_pkt_queue.send.val
+      s.send_data_pkt.msg @= s.recv_data_pkt_queue.send.msg
+      s.recv_data_pkt_queue.send.rdy @= s.send_data_pkt.val
+      if s.recv_data_pkt_queue.send.msg.cgraID == controller_id:
+      	s.send_to_local_data_ring_data_pkt.val @= s.recv_data_pkt_queue.send.val
+      	s.send_to_local_data_ring_data_pkt.msg @= s.recv_data_pkt_queue.send.msg
+      	s.recv_data_pkt_queue.send.rdy @= s.send_to_local_data_ring_data_pkt.rdy
+      else:
+      	s.send_to_local_data_ring_data_pkt.val @= 0     
+      	s.send_to_local_data_ring_data_pkt.msg @= SPMDataPktType()
+      	s.recv_data_pkt_queue.send.rdy @= 0
 
 
     # @update
@@ -232,7 +253,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.predicate)
 
   def line_trace(s):
-    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)
+    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_local_ctrl_ring_ctrl_pkt.msg)
     recv_from_tile_load_request_pkt_str = "recv_from_tile_load_request_pkt: " + str(s.recv_from_tile_load_request_pkt.msg)
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
     recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)

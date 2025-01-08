@@ -27,7 +27,7 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, ControllerIdType, CtrlPktType, CmdType, MsgType,
+  def construct(s, ControllerIdType, CtrlPktType, SPMDataPktType, CmdType, MsgType,
                 AddrType, PktType, controller_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
@@ -54,7 +54,7 @@ class TestHarness(Component):
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
 
-    s.dut = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+    s.dut = ControllerRTL(ControllerIdType, CmdType, CtrlPktType, SPMDataPktType,
                           PktType, MsgType, AddrType, controller_id,
                           controller2addr_map)
 
@@ -70,10 +70,16 @@ class TestHarness(Component):
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
-
-    s.dut.recv_from_cpu_ctrl_pkt.val //= 0
-    s.dut.recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
-    s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
+    
+    s.dut.recv_ctrl_pkt.val //= 0
+    s.dut.recv_ctrl_pkt.msg //= CtrlPktType()
+    s.dut.send_ctrl_pkt.rdy //= 0
+    s.dut.send_to_local_ctrl_ring_ctrl_pkt.rdy //= 0
+    
+    s.dut.recv_data_pkt.val //= 0
+    s.dut.recv_data_pkt.msg //= SPMDataPktType()
+    s.dut.send_data_pkt.rdy //= 0
+    s.dut.send_to_local_data_ring_data_pkt.rdy //= 0
 
   def done(s):
     return s.src_from_tile_load_request_pkt_en_rdy.done() and \
@@ -150,6 +156,8 @@ data_mem_size_global = 16
 addr_nbits = clog2(data_mem_size_global)
 AddrType = mk_bits(addr_nbits)
 
+num_banks = 4
+
 controller_id = 1
 
 controller2addr_map = {
@@ -167,6 +175,8 @@ CtrlPktType = mk_ring_across_tiles_pkt(nterminals,
                                        num_fu_outports,
                                        num_tile_inports,
                                        num_tile_outports)
+
+SPMDataPktType = mk_ring_across_banks_pkt(num_banks, data_nbits)                                      
 
 Pkt = mk_ring_multi_cgra_pkt(nterminals,
                              addr_nbits = addr_nbits,
@@ -225,7 +235,7 @@ expected_to_noc_pkts = [
 
 def test_simple():
   print("controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType, CtrlPktType,
+  th = TestHarness(ControllerIdType, CtrlPktType, SPMDataPktType,
                    CmdType, DataType,
                    AddrType, Pkt, controller_id,
                    from_tile_load_request_pkts,
