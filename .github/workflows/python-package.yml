@@ -59,7 +59,7 @@ jobs:
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         # Simulation across all tests.
-        pytest .. -v
+        pytest .. -v --tb=short
         # Tile translation.
         pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # CGRA template translation.
