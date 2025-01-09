@@ -75,4 +75,6 @@ jobs:
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for
         # multi-bank), and controller.
         pytest ../scale_out/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Multi-cgra with mesh topology.
+        pytest ../scale_out/test/MeshMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 

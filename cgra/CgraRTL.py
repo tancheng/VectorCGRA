@@ -24,20 +24,21 @@ from ..tile.TileRTL import TileRTL
 class CgraRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
-                width, height, ctrl_mem_size, data_mem_size_global,
+                NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
+                multi_cgra_columns, controller_id, width, height,
+                ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
-                total_steps, FunctionUnit, FuList, topology,
-                controller2addr_map, preload_data = None,
+                total_steps, FunctionUnit, FuList, cgra_topology,
+                controller2addr_map, idTo2d_map, preload_data = None,
                 preload_const = None):
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
-    assert(topology == "Mesh" or topology == "KingMesh")
+    assert(cgra_topology == "Mesh" or cgra_topology == "KingMesh")
     s.num_mesh_ports = 4
-    if topology == "Mesh":
+    if cgra_topology == "Mesh":
       s.num_mesh_ports = 4
-    elif topology == "KingMesh":
+    elif cgra_topology == "KingMesh":
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
@@ -81,7 +82,9 @@ class CgraRTL(Component):
                                         preload_data)
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
-                                 controller_id, controller2addr_map)
+                                 multi_cgra_rows, multi_cgra_columns,
+                                 controller_id, controller2addr_map,
+                                 idTo2d_map)
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 0)
 
     # Connections
@@ -123,7 +126,7 @@ class CgraRTL(Component):
       if i % width < width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
-      if topology == "KingMesh":
+      if cgra_topology == "KingMesh":
         if i % width > 0 and i // width < height - 1:
           s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
           s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]

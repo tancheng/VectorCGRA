@@ -28,8 +28,8 @@ class CgraTemplateRTL(Component):
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
-                dataSPM, controller2addr_map, preload_data = None,
-                preload_const = None):
+                dataSPM, controller2addr_map, idTo2d_map,
+                preload_data = None, preload_const = None):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)

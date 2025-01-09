@@ -21,8 +21,15 @@ from ..lib.opt_type import *
 class ControllerRTL(Component):
 
   def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
-                CGRADataType, CGRAAddrType, controller_id,
-                controller2addr_map):
+                CGRADataType, CGRAAddrType, multi_cgra_rows,
+                multi_cgra_columns, controller_id, controller2addr_map,
+                idTo2d_map):
+
+    assert(multi_cgra_columns >= multi_cgra_rows)
+
+    # Used for calculating the x/y position.
+    XType = mk_bits(max(clog2(multi_cgra_columns), 1))
+    YType = mk_bits(max(clog2(multi_cgra_rows), 1))
 
     # Interface
     # Request from/to other CGRA via NoC.
@@ -57,7 +64,7 @@ class ControllerRTL(Component):
     # s.send_to_other_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
 
     # Crossbar with 3 inports (load and store requests towards remote
-    # memory, and load response from master) and 1 outport (only
+    # memory, and load response from local memory) and 1 outport (only
     # allow one request be sent out per cycle).
     # TODO: Include other cmd requests, e.g., dynamic rescheduling,
     # termination).
@@ -97,6 +104,14 @@ class ControllerRTL(Component):
 
       s.addr2controller_lut[addr_base] //= ControllerIdType(src_controller_id)
 
+    # Constructs the idTo2d lut.
+    s.idTo2d_x_lut= [Wire(XType) for _ in range(multi_cgra_columns * multi_cgra_rows)]
+    s.idTo2d_y_lut= [Wire(YType) for _ in range(multi_cgra_columns * multi_cgra_rows)]
+    for cgra_id in idTo2d_map:
+      xy = idTo2d_map[cgra_id]
+      s.idTo2d_x_lut[cgra_id] //= XType(xy[0])
+      s.idTo2d_y_lut[cgra_id] //= YType(xy[1])
+
     # Connections
     # Requests towards others, 1 cycle delay to improve timing.
     s.recv_from_tile_load_request_pkt_queue.recv //= s.recv_from_tile_load_request_pkt
@@ -125,39 +140,56 @@ class ControllerRTL(Component):
       kLoadResponseInportIdx = 1
       kStoreRequestInportIdx = 2
 
-      # For the load request from master.
+      # For the load request from local tiles.
       s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
       s.recv_from_tile_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
+                     s.idTo2d_x_lut[controller_id], # src_x
+                     s.idTo2d_y_lut[controller_id], # src_y
+                     0, # dst_x
+                     0, # dst_y
                      0,
                      0,
                      CMD_LOAD_REQUEST,
                      s.recv_from_tile_load_request_pkt_queue.send.msg.addr,
                      0,
-                     1)
+                     1,
+                     0)
 
-      # For the store request from master.
+
+
+      # For the store request from local tiles.
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
       s.recv_from_tile_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
+                     s.idTo2d_x_lut[controller_id], # src_x
+                     s.idTo2d_y_lut[controller_id], # src_y
+                     0, # dst_x
+                     0, # dst_y
                      0,
                      0,
                      CMD_STORE_REQUEST,
                      s.recv_from_tile_store_request_pkt_queue.send.msg.addr,
                      s.recv_from_tile_store_request_pkt_queue.send.msg.data,
-                     s.recv_from_tile_store_request_pkt_queue.send.msg.predicate)
+                     s.recv_from_tile_store_request_pkt_queue.send.msg.predicate,
+                     0)
 
-      # For the load response (i.e., the data towards other) from master.
+
+      # For the load response (i.e., the data towards other) from local memory.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
       s.crossbar.recv[kLoadResponseInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
+                     s.idTo2d_x_lut[controller_id], # src_x
+                     s.idTo2d_y_lut[controller_id], # src_y
+                     0, # dst_x
+                     0, # dst_y
                      0,
                      0,
                      CMD_LOAD_RESPONSE,
@@ -165,7 +197,9 @@ class ControllerRTL(Component):
                      # The addr information is embedded in the message.
                      s.recv_from_tile_load_response_pkt_queue.send.msg.addr,
                      s.recv_from_tile_load_response_pkt_queue.send.msg.data,
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.predicate)
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.predicate,
+                     0)
+
       # TODO: For the other cmd types.
 
 
@@ -224,12 +258,17 @@ class ControllerRTL(Component):
       s.send_to_noc.msg @= \
           NocPktType(s.crossbar.send[0].msg.src,
                      addr_dst_id,
+                     s.crossbar.send[0].msg.src_x,
+                     s.crossbar.send[0].msg.src_y,
+                     s.idTo2d_x_lut[addr_dst_id],
+                     s.idTo2d_y_lut[addr_dst_id],
                      s.crossbar.send[0].msg.opaque,
                      s.crossbar.send[0].msg.vc_id,
                      s.crossbar.send[0].msg.cmd,
                      s.crossbar.send[0].msg.addr,
                      s.crossbar.send[0].msg.data,
-                     s.crossbar.send[0].msg.predicate)
+                     s.crossbar.send[0].msg.predicate,
+                     s.crossbar.send[0].msg.payload)
 
   def line_trace(s):
     send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)

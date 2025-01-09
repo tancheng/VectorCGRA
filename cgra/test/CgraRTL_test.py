@@ -43,16 +43,20 @@ class TestHarness(Component):
                 ControllerIdType, controller_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
-                src_ctrl_pkt, ctrl_steps, topology, controller2addr_map):
+                src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
+                idTo2d_map):
 
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
-                width, height, ctrl_mem_size, data_mem_size_global,
-                data_mem_size_per_bank, num_banks_per_cgra,
-                ctrl_steps, ctrl_steps, FunctionUnit, FuList,
-                topology, controller2addr_map)
+                NocPktType, CmdType, ControllerIdType,
+                # CGRA terminals on x/y. Assume in total 4, though this
+                # test is for single CGRA.
+                1, 4,
+                controller_id, width, height, ctrl_mem_size,
+                data_mem_size_global, data_mem_size_per_bank,
+                num_banks_per_cgra, ctrl_steps, ctrl_steps, FunctionUnit,
+                FuList, topology, controller2addr_map, idTo2d_map)
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
@@ -127,6 +131,13 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
           2: [8, 11],
           3: [12, 15],
   }
+
+  idTo2d_map = {
+          0: [0, 0],
+          1: [1, 0],
+          2: [2, 0],
+          3: [3, 0],
+  }
   
   CtrlPktType = \
       mk_ring_across_tiles_pkt(width * height,
@@ -144,10 +155,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
                        num_tile_inports,
                        num_tile_outports)
   
-  NocPktType = mk_ring_multi_cgra_pkt(nrouters = num_terminals,
-                                      addr_nbits = addr_nbits,
-                                      data_nbits = 32,
-                                      predicate_nbits = 1)
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+                                     nrows = 1,
+                                     addr_nbits = addr_nbits,
+                                     data_nbits = 32,
+                                     predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
@@ -191,7 +203,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    src_ctrl_pkt, ctrl_mem_size, topology,
-                   controller2addr_map)
+                   controller2addr_map, idTo2d_map)
   return th
 
 def test_homogeneous_2x2(cmdline_opts):
