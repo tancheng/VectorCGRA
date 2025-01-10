@@ -111,27 +111,6 @@ class AluGenMacRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in2_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
-          # FIXME: @RJ, what is the following for?
-          #elif s.recv_opt.msg.ctrl == OPT_FADD_CONST:
-          #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-          #  s.fadd.rhs_1 @= s.recv_const.msg.payload
-          #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
-
-          #elif s.recv_opt.msg.ctrl == OPT_FINC:
-          #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-          #  s.fadd.rhs_1 @= s.FLOATING_ONE
-          #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
-
-          #elif s.recv_opt.msg.ctrl == OPT_FSUB:
-          #  s.fadd.rhs_0 @= s.recv_in[s.in0_idx].msg.payload
-          #  s.fadd.rhs_1 @= s.recv_in[s.in1_idx].msg.payload
-          #  s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate
-          #  if s.recv_opt.en & ( (s.recv_in_count[s.in0_idx] == 0) | \
-          #                       (s.recv_in_count[s.in1_idx] == 0) ):
-          #    s.recv_in[s.in0_idx].rdy @= b1( 0 )
-          #    s.recv_in[s.in1_idx].rdy @= b1( 0 )
-          #    s.send_out[0].msg.predicate @= b1( 0 )
-
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)
