@@ -295,6 +295,76 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
     )
 
 #=========================================================================
+# Mesh multi-CGRA data/config/cmd packet
+#=========================================================================
+
+def mk_multi_cgra_noc_pkt(ncols = 2, nrows = 2, opaque_nbits = 8, vc = 2,
+                          cmd_nbits = 6, addr_nbits = 16,
+                          data_nbits = 16, predicate_nbits = 1,
+                          prefix="MeshMultiCGRAPacket"):
+
+  IdType = mk_bits(max(clog2(ncols * nrows), 1))
+  XType = mk_bits(max(clog2(ncols), 1))
+  YType = mk_bits(max(clog2(nrows), 1))
+  OpqType = mk_bits(opaque_nbits)
+  CmdType = mk_bits(cmd_nbits)
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  PredicateType = mk_bits(predicate_nbits)
+  PayloadType = mk_bits(1)
+
+  new_name = f"{prefix}_{ncols*nrows}_{ncols}x{nrows}_{vc}_{opaque_nbits}_" \
+             f"{cmd_nbits}_{addr_nbits}_{data_nbits}_{predicate_nbits}_1"
+
+  if vc > 1:
+    VcIdType = mk_bits(clog2(vc))
+
+    def str_func(s):
+      return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
+             f"{s.opaque}:{s.vc_id}:{s.cmd}.{s.addr}.{s.data}.{s.predicate}." \
+             f"{s.payload}"
+
+    return mk_bitstruct(new_name, {
+        'src': IdType,
+        'dst': IdType,
+        'src_x': XType,
+        'src_y': YType,
+        'dst_x': XType,
+        'dst_y': YType,
+        'opaque': OpqType,
+        'vc_id': VcIdType,
+        'cmd': CmdType,
+        'addr': AddrType,
+        'data': DataType,
+        'predicate': PredicateType,
+        'payload': PayloadType,
+      },
+      namespace = {'__str__': str_func}
+    )
+
+  else:
+    def str_func(s):
+      return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
+             f"{s.opaque}:{s.cmd}.{s.addr}.{s.data}.{s.predicate}.{s.payload}"
+
+    return mk_bitstruct(new_name, {
+        'src': IdType,
+        'dst': IdType,
+        'src_x': XType,
+        'src_y': YType,
+        'dst_x': XType,
+        'dst_y': YType,
+        'opaque': OpqType,
+        'cmd': CmdType,
+        'addr': AddrType,
+        'data': DataType,
+        'predicate': PredicateType,
+        'payload': PayloadType,
+      },
+      namespace = {'__str__': str_func}
+    )
+
+#=========================================================================
 # Ring for delivering ctrl signals and commands across tiles
 #=========================================================================
 

@@ -204,10 +204,11 @@ class DataMemWithCrossbarRTL(Component):
             else:
               s.send_to_noc_load_response_pkt.msg @= \
                   NocPktType(
-                      0, 0, 0, 0, CMD_LOAD_RESPONSE,
+                      0, 0, 0, 0, 0, 0, 0, 0, CMD_LOAD_RESPONSE,
                       s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr,
                       s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
-                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate
+                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate,
+                      0
                   )
               s.send_to_noc_load_response_pkt.val @= \
                   s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
@@ -234,12 +235,17 @@ class DataMemWithCrossbarRTL(Component):
         s.send_to_noc_load_request_pkt.msg @= \
             NocPktType(0, # src
                        0, # dst
+                       0, # src_x
+                       0, # src_y
+                       0, # dst_x
+                       0, # dst_y
                        0, # opaque
                        0, # vc_id
                        CMD_LOAD_REQUEST,
                        s.read_crossbar.send[num_banks].msg.addr,
                        0, # data
-                       1) # predicate
+                       1, # predicate
+                       0) # payload
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks].val & \
                                               s.recv_from_noc_rdata.val
@@ -272,12 +278,17 @@ class DataMemWithCrossbarRTL(Component):
         s.send_to_noc_store_pkt.msg @= \
             NocPktType(0, # src
                        0, # dst
+                       0, # src_x
+                       0, # src_y
+                       0, # dst_x
+                       0, # dst_y
                        0, # opaque
                        0, # vc_id
                        CMD_STORE_REQUEST,
                        s.write_crossbar.send[num_banks].msg.addr,
                        s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload,
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate)
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate,
+                       0)
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks].val # & s.send_to_noc_store_pkt.rdy
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
 

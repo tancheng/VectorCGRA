@@ -121,10 +121,10 @@ def test_const_queue(cmdline_opts):
   AddrType = mk_bits(addr_nbits)
 
   NocPktType = \
-      mk_ring_multi_cgra_pkt(nterminals,
-                             addr_nbits = addr_nbits,
-                             data_nbits = data_nbits,
-                             predicate_nbits = predicate_nbits)
+      mk_multi_cgra_noc_pkt(nterminals, 1,
+                            addr_nbits = addr_nbits,
+                            data_nbits = data_nbits,
+                            predicate_nbits = predicate_nbits)
 
   test_meta_data = [
       # addr:  0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15
@@ -169,8 +169,8 @@ def test_const_queue(cmdline_opts):
   # Input data.
   # noc_send_read_addr = [AddrType(42)]
   send_to_noc_load_request_pkt = [
-             #   src  dst opq vc cmd                addr data predicate
-      NocPktType(0,   0,  0,  0, CMD_LOAD_REQUEST,  42,  0,   1),
+             #   src  dst src_x src_y dst_x dst_y opq vc cmd                addr data predicate
+      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_LOAD_REQUEST,  42,  0,   1),
   ]
   noc_recv_load_data = [DataType(0xbbbb, 1)]
 
@@ -178,9 +178,9 @@ def test_const_queue(cmdline_opts):
   # noc_send_write_addr = [AddrType(40), AddrType(45)]
   # noc_send_write_data = [DataType(0xd040, 1), DataType(0xd545, 1)]
   send_to_noc_store_pkt = [
-             #   src  dst opq vc cmd                addr data    predicate
-      NocPktType(0,   0,  0,  0, CMD_STORE_REQUEST, 40,  0xd040, 1),
-      NocPktType(0,   0,  0,  0, CMD_STORE_REQUEST, 45,  0xd545, 1),
+             #   src  dst src_x src_y dst_x dst_y opq vc cmd                addr data    predicate
+      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_STORE_REQUEST, 40,  0xd040, 1),
+      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_STORE_REQUEST, 45,  0xd545, 1),
   ]
 
   th = TestHarness(NocPktType, DataType, AddrType, data_mem_size_global,

@@ -37,7 +37,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
                           num_fu_inports, num_fu_outports, num_tile_inports,
                           num_tile_outports, ctrl_count_per_iter,
                           total_ctrl_steps) for terminal_id in range(s.num_terminals)]
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, num_terminals, 0)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, num_terminals, 1)
 
     # Connections
     for i in range(s.num_terminals):

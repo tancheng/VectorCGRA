@@ -1,11 +1,11 @@
 """
 ==========================================================================
-RingMultiCgraRTL.py
+MeshMultiCgraRTL.py
 ==========================================================================
-Ring connecting multiple CGRAs, each CGRA contains one controller.
+Mesh connecting multiple CGRAs, each CGRA contains one controller.
 
 Author : Cheng Tan
-  Date : Dec 23, 2024
+  Date : Jan 8, 2025
 """
 
 from pymtl3 import *
@@ -14,10 +14,10 @@ from ..cgra.CgraRTL import CgraRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
-from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
-from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
+from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
+from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 
-class RingMultiCgraRTL(Component):
+class MeshMultiCgraRTL(Component):
   def construct(s, CGRADataType, PredicateType, CtrlPktType,
                 CtrlSignalType, NocPktType, CmdType, cgra_rows,
                 cgra_columns, tile_rows, tile_columns, ctrl_mem_size,
@@ -27,9 +27,11 @@ class RingMultiCgraRTL(Component):
                 preload_const = None):
 
     # Constant
-    idTo2d_map = {}
     s.num_terminals = cgra_rows * cgra_columns
-    RingPos = mk_ring_pos(s.num_terminals)
+    idTo2d_map = {}
+
+    # Mesh position takes column as argument first.
+    MeshPos = mk_mesh_pos(cgra_columns, cgra_rows)
     s.num_tiles = tile_rows * tile_columns
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     ControllerIdType = mk_bits(clog2(s.num_terminals))
@@ -39,15 +41,13 @@ class RingMultiCgraRTL(Component):
     s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
 
     # Components
-    # Constructs the topology as 1d.
-    for terminal_id in range(s.num_terminals):
-        idTo2d_map[terminal_id] = (terminal_id, 0)
+    for cgra_row in range(cgra_rows):
+      for cgra_col in range(cgra_columns):
+        idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
     s.cgra = [CgraRTL(CGRADataType, PredicateType, CtrlPktType,
                       CtrlSignalType, NocPktType, CmdType,
-                      ControllerIdType,
-                      # Constructs the topology as 1d.
-                      1, s.num_terminals,
+                      ControllerIdType, cgra_rows, cgra_columns,
                       terminal_id, tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
@@ -55,13 +55,14 @@ class RingMultiCgraRTL(Component):
                       "Mesh", controller2addr_map, idTo2d_map,
                       preload_data = None, preload_const = None)
               for terminal_id in range(s.num_terminals)]
-    s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_terminals, 1)
+    # Latency is 1.
+    s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
     # Connections
     s.recv_from_cpu_ctrl_pkt //= s.cgra[0].recv_from_cpu_ctrl_pkt
     for i in range(s.num_terminals):
-      s.ring.send[i] //= s.cgra[i].recv_from_noc
-      s.ring.recv[i] //= s.cgra[i].send_to_noc
+      s.mesh.send[i] //= s.cgra[i].recv_from_noc
+      s.mesh.recv[i] //= s.cgra[i].send_to_noc
 
     for i in range(1, s.num_terminals):
       s.cgra[i].recv_from_cpu_ctrl_pkt.val //= 0
@@ -109,6 +110,6 @@ class RingMultiCgraRTL(Component):
   def line_trace(s):
     res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())
                        for (i,x) in enumerate(s.cgra)])
-    res += " ## ring: " + s.ring.line_trace()
+    res += " ## mesh: " + s.mesh.line_trace()
     return res
 

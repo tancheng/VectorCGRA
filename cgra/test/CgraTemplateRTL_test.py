@@ -58,17 +58,21 @@ class TestHarness(Component):
                 ControllerIdType, controller_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, src_ctrl_pkt, ctrl_steps, TileList,
-                LinkList, dataSPM, controller2addr_map):
+                LinkList, dataSPM, controller2addr_map, idTo2d_map):
 
     s.num_tiles = len(TileList)
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
-                ctrl_mem_size, data_mem_size_global,
+                NocPktType, CmdType, ControllerIdType,
+                # CGRA terminals on x/y. Assume in total 4, though this
+                # test is for single CGRA.
+                1, 4,
+                controller_id, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 ctrl_steps, ctrl_steps, FunctionUnit, FuList,
-                TileList, LinkList, dataSPM, controller2addr_map)
+                TileList, LinkList, dataSPM, controller2addr_map,
+                idTo2d_map)
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
@@ -205,6 +209,13 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
           3: [12, 15],
   }
 
+  idTo2d_map = {
+          0: [0, 0],
+          1: [1, 0],
+          2: [2, 0],
+          3: [3, 0],
+  }
+
   CtrlPktType = \
       mk_ring_across_tiles_pkt(width * height,
                                num_ctrl_actions,
@@ -221,10 +232,11 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                        num_tile_inports,
                        num_tile_outports)
 
-  NocPktType = mk_ring_multi_cgra_pkt(nrouters = num_terminals,
-                                      addr_nbits = addr_nbits,
-                                      data_nbits = 32,
-                                      predicate_nbits = 1)
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+                                     nrows = 1,
+                                     addr_nbits = addr_nbits,
+                                     data_nbits = 32,
+                                     predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
@@ -376,7 +388,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    src_ctrl_pkt, ctrl_mem_size, tiles, links, dataSPM,
-                   controller2addr_map)
+                   controller2addr_map, idTo2d_map)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,

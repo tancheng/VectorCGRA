@@ -1,11 +1,11 @@
 """
 ==========================================================================
-RingMultiCgraRTL_test.py
+MeshMultiCgraRTL_test.py
 ==========================================================================
-Test cases for multi-CGRA with ring NoC.
+Test cases for multi-CGRA with mesh NoC.
 
 Author : Cheng Tan
-  Date : Dec 23, 2024
+  Date : Jan 8, 2024
 """
 
 from pymtl3 import *
@@ -13,7 +13,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
-from ..RingMultiCgraRTL import RingMultiCgraRTL
+from ..MeshMultiCgraRTL import MeshMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -41,10 +41,10 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, cgra_rows, cgra_columns, height, width,
-                ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, ctrl_steps, ctrl_steps,
-                FunctionUnit, FuList, controller2addr_map)
+                NocPktType, CmdType, cgra_rows, cgra_columns,
+                height, width, ctrl_mem_size, data_mem_size_global,
+                data_mem_size_per_bank, num_banks_per_cgra, ctrl_steps,
+                ctrl_steps, FunctionUnit, FuList, controller2addr_map)
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
@@ -80,7 +80,7 @@ def test_homo_2x2(cmdline_opts):
   data_addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(clog2(data_mem_size_global))
   num_tiles = width * height
-  DUT = RingMultiCgraRTL
+  DUT = MeshMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
   DataType = mk_data(32, 1)
@@ -108,10 +108,10 @@ def test_homo_2x2(cmdline_opts):
                        num_fu_outports,
                        num_tile_inports,
                        num_tile_outports)
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
-                                     nrows = 1,
-                                     addr_nbits = data_addr_nbits,
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
+                                     nrows = cgra_rows,
                                      cmd_nbits = cmd_nbits,
+                                     addr_nbits = data_addr_nbits,
                                      data_nbits = 32,
                                      predicate_nbits = 1)
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
