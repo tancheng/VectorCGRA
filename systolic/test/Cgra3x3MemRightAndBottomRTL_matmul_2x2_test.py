@@ -151,7 +151,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_banks_per_cgra = 4
   width = 3
   height = 3
-  num_terminals = 2
+  num_terminals = 1
   num_ctrl_actions = 6
   num_ctrl_operations = 64
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -168,7 +168,7 @@ def test_CGRA_systolic(cmdline_opts):
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
 
   CmdType = mk_bits(4)
-  ControllerIdType = mk_bits(clog2(num_terminals))
+  ControllerIdType = mk_bits(max(clog2(num_terminals), 1))
   controller_id = 0
   controller2addr_map = {
           0: [0,  15],
@@ -191,10 +191,11 @@ def test_CGRA_systolic(cmdline_opts):
                        num_tile_inports,
                        num_tile_outports)
 
-  NocPktType = mk_ring_multi_cgra_pkt(nrouters = num_terminals,
-                                      addr_nbits = addr_nbits,
-                                      data_nbits = 32,
-                                      predicate_nbits = 1)
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = 1,
+                                     nrows = 1,
+                                     addr_nbits = addr_nbits,
+                                     data_nbits = 32,
+                                     predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt_per_tile = [

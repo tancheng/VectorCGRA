@@ -303,7 +303,7 @@ def mk_multi_cgra_noc_pkt(ncols = 2, nrows = 2, opaque_nbits = 8, vc = 2,
                           data_nbits = 16, predicate_nbits = 1,
                           prefix="MeshMultiCGRAPacket"):
 
-  IdType = mk_bits(clog2(ncols * nrows))
+  IdType = mk_bits(max(clog2(ncols * nrows), 1))
   XType = mk_bits(max(clog2(ncols), 1))
   YType = mk_bits(max(clog2(nrows), 1))
   OpqType = mk_bits(opaque_nbits)

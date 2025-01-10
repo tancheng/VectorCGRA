@@ -77,10 +77,13 @@ class CgraSystolicArrayRTL(Component):
                                         # 4 read/write from tiles and 1 read/write from NoC.
                                         4, 4,
                                         preload_data)
+    idTo2d_map = {0: [0, 0]}
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
-                                 controller_id, controller2addr_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 0)
+                                 1, 1,
+                                 controller_id, controller2addr_map,
+                                 idTo2d_map)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
 
     # Connections
     # Connects data memory with controller.
