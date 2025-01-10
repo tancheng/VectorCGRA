@@ -24,7 +24,8 @@ from ..tile.TileRTL import TileRTL
 class CgraTemplateRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
+                NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
+                multi_cgra_columns, controller_id,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
@@ -77,8 +78,9 @@ class CgraTemplateRTL(Component):
                                         preload_data)
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
-                                 controller_id, controller2addr_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 0)
+                                 multi_cgra_rows, multi_cgra_columns,
+                                 controller_id, controller2addr_map, idTo2d_map)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
 
     # Connections
     # Connects data memory with controller.

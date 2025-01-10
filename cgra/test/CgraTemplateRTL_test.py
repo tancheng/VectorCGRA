@@ -212,8 +212,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   idTo2d_map = {
           0: [0, 0],
           1: [1, 0],
-          2: [0, 1],
-          3: [1, 1],
+          2: [2, 0],
+          3: [3, 0],
   }
 
   CtrlPktType = \
