@@ -55,6 +55,7 @@ class MeshMultiCgraRTL(Component):
                       "Mesh", controller2addr_map, idTo2d_map,
                       preload_data = None, preload_const = None)
               for terminal_id in range(s.num_terminals)]
+    # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
     # Connections
