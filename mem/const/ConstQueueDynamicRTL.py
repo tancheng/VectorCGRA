@@ -52,7 +52,7 @@ class ConstQueueDynamicRTL(Component):
         # if cur point to last element in mem
         # drop data for now
         if s.cur == AddrType(const_mem_size - 1):
-          print(f"Drop data as full const mem, siez: {const_mem_size}")
+          print(f"Drop data as full const mem, size: {const_mem_size}")
         else:
           s.cur <<= s.cur + AddrType(1)
           s.reg_file.waddr[0] <<= s.cur
