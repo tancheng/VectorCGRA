@@ -24,6 +24,7 @@ from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
 from ...fu.single.SelRTL import SelRTL
+from ...fu.single.RetRTL import RetRTL
 from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
@@ -208,7 +209,18 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL]):
 
 def test_homogeneous_2x2(cmdline_opts):
   topology = "Mesh"
-  FuList = [AdderRTL, MemUnitRTL]
+  # FuList = [AdderRTL, MemUnitRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            RetRTL,
+           ]
   th = init_param(topology, FuList)
 
   th.elaborate()
