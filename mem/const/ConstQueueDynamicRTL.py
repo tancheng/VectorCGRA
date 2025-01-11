@@ -56,7 +56,7 @@ class ConstQueueDynamicRTL(Component):
       # so will avoid receiving new data when regs full
       # can NOT do this by comparing cur > AddrType(const_mem_size - 1)
       # for example: mem size=8, cur will be Bits3(0x0) once it reaches Bits3(0x7) + AddrType(1) in loop
-      # and can NOT use bigger AddrType for cur as it will be used to update waddr: (s.reg_file.waddr[0] @= s.cur), waddr is binded with mem size
+      # and can NOT use bigger AddrType such as Bits4 for cur as it will be used to update waddr: (s.reg_file.waddr[0] @= s.cur), waddr is binded with mem size which will be Bits3 for mem size 8
       if s.cur == AddrType(const_mem_size - 1):
           s.recv_const.rdy @= 0
 
