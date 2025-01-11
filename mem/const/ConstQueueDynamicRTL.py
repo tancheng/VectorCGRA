@@ -2,7 +2,8 @@
 ==========================================================================
 ConstQueueDynamicRTL.py
 ==========================================================================
-Constant memory with regs used for simulation.
+Constant Queue with regs used for simulation.
+If queue is full, will stop receiving new data.
 
 Author : Yuqi Sun
   Date : Jan 11, 2025
@@ -23,9 +24,9 @@ class ConstQueueDynamicRTL(Component):
     # ConstMemAddrType is 3 bits
     # ConstMemAddrTyp(1) = 001
     # ConstMemAddrType(2) = 010
-    AddrType = mk_bits(clog2(const_mem_size))
+    AddrType = mk_bits(max(1, clog2(const_mem_size)))
 
-    # cur to record the current valid address
+    # cur to record the current valid address, max is const_mem_size - 1
     s.cur = Wire(AddrType)
 
     # Interface
@@ -41,23 +42,33 @@ class ConstQueueDynamicRTL(Component):
     # Connections
     s.send_const.msg //= s.reg_file.rdata[0]
 
-    @update_ff
-    def write_to_reg():
-      s.recv_const.rdy <<= 1
+
+    @update
+    def update_msg():
+      s.recv_const.rdy @= 1
       # check if there's a valid const to be written
       if s.recv_const.val:
-        # .wen: enable write
-        # wen=1 to enable write, port 0
-        # data can be written only if wen
-        s.reg_file.wen[0] <<= 1
-        # if cur point to last element in mem
-        # drop data for now
-        if s.cur == AddrType(const_mem_size - 1):
-          print(f"Drop data as full const mem, size: {const_mem_size}")
-        else:
+        s.reg_file.waddr[0] @= s.cur
+        s.reg_file.wdata[0] @= s.recv_const.msg
+        s.reg_file.wen[0] @= 1
+      # s.recv_const.rdy @= 0 will stop receive const from inport immediately
+      # so will avoid receiving new data when regs full
+      if s.cur == AddrType(const_mem_size - 1):
+          s.recv_const.rdy @= 0
+
+
+    @update_ff
+    def write_to_reg():
+      # move cur in @update_ff
+      # if producer val and consumer(self) rdy
+      if s.recv_const.val & s.recv_const.rdy:
+        # move cur only if cur lt const_mem_size - 1
+        # and cur will plug 1 in the last loop
+        # then will update the last element in @update
+        # after the last element insert, will not move cur and receive const from inport(as set rdy 0 in @update)
+        if s.cur < AddrType(const_mem_size - 1):
           s.cur <<= s.cur + AddrType(1)
-          s.reg_file.waddr[0] <<= s.cur
-          s.reg_file.wdata[0] <<= s.recv_const.msg
+
 
     @update_ff
     def update_raddr():
@@ -71,5 +82,5 @@ class ConstQueueDynamicRTL(Component):
 
   def line_trace(s):
     const_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'const_mem_str: {const_mem_str}'
+    return f'\nconst_mem_str: {const_mem_str}'
 
