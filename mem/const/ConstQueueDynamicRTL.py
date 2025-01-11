@@ -43,8 +43,9 @@ class ConstQueueDynamicRTL(Component):
 
     @update_ff
     def write_to_reg():
+      s.recv_const.rdy <<= 1
       # check if there's a valid const to be written
-      if s.recv_const.val == 1:
+      if s.recv_const.val:
         # .wen: enable write
         # wen=1 to enable write, port 0
         # data can be written only if wen
