@@ -47,12 +47,12 @@ class ConstQueueDynamicRTL(Component):
     @update
     def load_const():
       s.recv_const.rdy @= 1
-      # check if there's a valid const to be written
+      # check if there's a valid const(producer) to be written
       if s.recv_const.val:
         s.reg_file.waddr[0] @= s.cur
         s.reg_file.wdata[0] @= s.recv_const.msg
         s.reg_file.wen[0] @= 1
-      # s.recv_const.rdy @= 0 will stop receive const from inport immediately even there's rdy @= 1 in @update
+      # s.recv_const.rdy @= 0(consumer: self) will stop receive const from inport immediately even there's rdy @= 1(self) in @update
       # so will avoid receiving new data when regs full
       if s.cur == AddrType(const_mem_size - 1):
           s.recv_const.rdy @= 0
@@ -61,32 +61,35 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def move_cur():
       # move cur in @update_ff
-      # if producer val and consumer(self) rdy
+      # if producer(remote) val and consumer(self) rdy
       if s.recv_const.val & s.recv_const.rdy:
-        # move cur only if cur lt const_mem_size - 1
-        # and cur will plug 1 in the last loop
+        # move cur only if cur less than const_mem_size - 1
+        # and cur will plus 1 in the last loop
         # then will update the last element in @update
-        # after the last element insert, will not move cur and receive const from inport(as set rdy 0 in @update)
+        # after the last element insert, will not move cur and receive const from inport/producer(as set rdy 0 in @update)
         if s.cur < AddrType(const_mem_size - 1):
           s.cur <<= s.cur + AddrType(1)
 
-          # once there's value in regs, start to set self val 1
+          # once there's value in regs, start to set self val 1 to enable read
           s.send_const.val <<= 1
 
 
     @update_ff
     def update_raddr():
-      # check remote rdy and self val(val = 1 when all const saves to regs)
+      # check remote rdy and self val(val = 1 when there's const in regs)
       if s.send_const.rdy & s.send_const.val:
+        # Approach 1:
         # read to the last element in mem, reset to addr to read from addr 0
+        # read needs wait until write finish
         # if s.reg_file.raddr[0] == s.cur:
         #   s.reg_file.raddr[0] <<= AddrType(0)
         # else:
         #   s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
 
-        # will not reset addr to 0 when read to the last element in mem
-        # as this solution read/write simultaneously
-        # cur always equals to raddr[0] + 1
+        # Approach 2:
+        # will NOT reset addr to 0 when read to the last element in mem
+        # as this approach read/write simultaneously
+        # raddr[0] always equals to cur - 1
         # if wants to change to reset mode, can make read start after write finish
         s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
 
