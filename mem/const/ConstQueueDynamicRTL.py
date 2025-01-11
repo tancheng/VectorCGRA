@@ -78,10 +78,16 @@ class ConstQueueDynamicRTL(Component):
       # check remote rdy and self val(val = 1 when all const saves to regs)
       if s.send_const.rdy & s.send_const.val:
         # read to the last element in mem, reset to addr to read from addr 0
-        if s.reg_file.raddr[0] == s.cur:
-          s.reg_file.raddr[0] <<= AddrType(0)
-        else:
-          s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
+        # if s.reg_file.raddr[0] == s.cur:
+        #   s.reg_file.raddr[0] <<= AddrType(0)
+        # else:
+        #   s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
+
+        # will not reset addr to 0 when read to the last element in mem
+        # as this solution read/write simultaneously
+        # cur always equals to raddr[0] + 1
+        # if wants to change to reset mode, can make read start after write finish
+        s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
 
 
   def line_trace(s):
