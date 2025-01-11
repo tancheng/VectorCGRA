@@ -7,12 +7,11 @@ Test cases for constant queue with regs.
 Author : Yuqi Sun
   Date : Jan 11, 2025
 """
-from ....lib.basic.val_rdy.SinkRTL import SinkRTL
 from ..ConstQueueDynamicRTL import ConstQueueDynamicRTL
-# from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-# from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL
 from ....lib.messages import *
+
 
 #-------------------------------------------------------------------------
 # Test harness

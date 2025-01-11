@@ -9,11 +9,12 @@ Author : Yuqi Sun
   Date : Jan 11, 2025
 """
 
-from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
+
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
+
 
 class ConstQueueDynamicRTL(Component):
   def construct(s, DataType, const_mem_size):
