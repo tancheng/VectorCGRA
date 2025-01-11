@@ -44,7 +44,7 @@ class ConstQueueDynamicRTL(Component):
 
 
     @update
-    def update_msg():
+    def load_const():
       s.recv_const.rdy @= 1
       # check if there's a valid const to be written
       if s.recv_const.val:
@@ -58,7 +58,7 @@ class ConstQueueDynamicRTL(Component):
 
 
     @update_ff
-    def write_to_reg():
+    def move_cur():
       # move cur in @update_ff
       # if producer val and consumer(self) rdy
       if s.recv_const.val & s.recv_const.rdy:
@@ -69,10 +69,14 @@ class ConstQueueDynamicRTL(Component):
         if s.cur < AddrType(const_mem_size - 1):
           s.cur <<= s.cur + AddrType(1)
 
+          # once there's value in regs, start to set self val 1
+          s.send_const.val <<= 1
+
 
     @update_ff
     def update_raddr():
-      if s.send_const.rdy:
+      # check remote rdy and self val(val = 1 when all const saves to regs)
+      if s.send_const.rdy & s.send_const.val:
         # read to the last element in mem, reset to addr to read from addr 0
         if s.reg_file.raddr[0] == s.cur:
           s.reg_file.raddr[0] <<= AddrType(0)
@@ -82,5 +86,5 @@ class ConstQueueDynamicRTL(Component):
 
   def line_trace(s):
     const_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'\nconst_mem_str: {const_mem_str}'
+    return f'const_mem_str: {const_mem_str}'
 
