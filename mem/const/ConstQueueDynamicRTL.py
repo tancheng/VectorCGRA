@@ -51,7 +51,7 @@ class ConstQueueDynamicRTL(Component):
         s.reg_file.waddr[0] @= s.cur
         s.reg_file.wdata[0] @= s.recv_const.msg
         s.reg_file.wen[0] @= 1
-      # s.recv_const.rdy @= 0 will stop receive const from inport immediately
+      # s.recv_const.rdy @= 0 will stop receive const from inport immediately even there's rdy @= 1 in @update
       # so will avoid receiving new data when regs full
       if s.cur == AddrType(const_mem_size - 1):
           s.recv_const.rdy @= 0
