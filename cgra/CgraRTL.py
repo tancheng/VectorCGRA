@@ -72,6 +72,7 @@ class CgraRTL(Component):
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports,
+                      FuList = FuList,
                       const_list = preload_const[i])
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,

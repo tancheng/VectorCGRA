@@ -54,7 +54,7 @@ class ShifterRTL(Fu):
       s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
-      if s.recv_opt.val & s.send_out[0].rdy:
+      if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
         if s.recv_opt.msg.fu_in[1] != FuInType(0):
