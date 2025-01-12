@@ -230,35 +230,35 @@ def test_homogeneous_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-# def test_heterogeneous_king_mesh_2x2(cmdline_opts):
-#   topology = "KingMesh"
-#   th = init_param(topology)
-#   th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
-#
-# def test_vector_king_mesh_2x2(cmdline_opts):
-#   topology = "KingMesh"
-#   FuList = [AdderRTL,
-#             MulRTL,
-#             LogicRTL,
-#             ShifterRTL,
-#             PhiRTL,
-#             CompRTL,
-#             BranchRTL,
-#             MemUnitRTL,
-#             SelRTL,
-#             VectorMulComboRTL,
-#             VectorAdderComboRTL]
-#   th = init_param(topology, FuList)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
+def test_heterogeneous_king_mesh_2x2(cmdline_opts):
+  topology = "KingMesh"
+  th = init_param(topology)
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_vector_king_mesh_2x2(cmdline_opts):
+  topology = "KingMesh"
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  th = init_param(topology, FuList)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
 
