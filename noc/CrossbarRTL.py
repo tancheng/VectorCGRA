@@ -90,30 +90,60 @@ class CrossbarRTL(Component):
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
 
     @update
-    def update_valid_rdy_vector():
+    def update_in_dir_vector():
 
-      s.send_rdy_vector @= 0
-      s.recv_valid_vector @= 0
       for i in range(num_outports):
         s.in_dir[i] @= 0
         s.in_dir_local[i] @= 0
-        s.send_required_vector[i] @= 0
-
-      for i in range(num_inports):
-        s.recv_required_vector[i] @= 0
 
       for i in range(num_outports):
         s.in_dir[i]  @= s.crossbar_outport[i]
         if s.in_dir[i] > 0:
           s.in_dir_local[i] @= trunc(s.in_dir[i] - 1, NumInportType)
-          s.recv_valid_vector[i] @= s.recv_data[s.in_dir_local[i]].val
+
+    @update
+    def update_rdy_vector():
+
+      s.send_rdy_vector @= 0
+
+      for i in range(num_outports):
+        if s.in_dir[i] > 0:
           s.send_rdy_vector[i] @= s.send_data[i].rdy
-          # FIXME: @yo96, this might be a long critical path?
-          s.recv_required_vector[s.in_dir_local[i]] @= 1
-          s.send_required_vector[i] @= 1
+        else:
+          s.send_rdy_vector[i] @= 1
+
+    @update
+    def update_valid_vector():
+
+      s.recv_valid_vector @= 0
+
+      for i in range(num_outports):
+        if s.in_dir[i] > 0:
+          s.recv_valid_vector[i] @= s.recv_data[s.in_dir_local[i]].val
         else:
           s.recv_valid_vector[i] @= 1
-          s.send_rdy_vector[i] @= 1
+
+    @update
+    def update_recv_required_vector():
+
+      for i in range(num_inports):
+        s.recv_required_vector[i] @= 0
+
+      for i in range(num_outports):
+        if s.in_dir[i] > 0:
+          # FIXME: @yo96, this might be a long critical path?
+          s.recv_required_vector[s.in_dir_local[i]] @= 1
+
+    @update
+    def update_send_required_vector():
+
+      for i in range(num_outports):
+        s.send_required_vector[i] @= 0
+
+      for i in range(num_outports):
+        if s.in_dir[i] > 0:
+          s.send_required_vector[i] @= 1
+
 
   # Line trace
   def line_trace(s):
