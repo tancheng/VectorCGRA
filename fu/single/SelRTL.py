@@ -9,7 +9,8 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL, ValRdyRecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 
 class SelRTL(Component):
@@ -26,17 +27,17 @@ class SelRTL(Component):
     CountType = mk_bits(clog2(num_entries + 1))
 
     # Interface
-    s.recv_in = [ValRdyRecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = ValRdyRecvIfcRTL(PredicateType)
-    s.recv_const = ValRdyRecvIfcRTL(DataType)
-    s.recv_opt = ValRdyRecvIfcRTL(CtrlType)
-    s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
+    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_predicate = RecvIfcRTL(PredicateType)
+    s.recv_const = RecvIfcRTL(DataType)
+    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
     # Redundant interfaces for MemUnit
-    s.to_mem_raddr = ValRdySendIfcRTL(AddrType)
-    s.from_mem_rdata = ValRdyRecvIfcRTL(DataType)
-    s.to_mem_waddr = ValRdySendIfcRTL(AddrType)
-    s.to_mem_wdata = ValRdySendIfcRTL(DataType)
+    s.to_mem_raddr = SendIfcRTL(AddrType)
+    s.from_mem_rdata = RecvIfcRTL(DataType)
+    s.to_mem_waddr = SendIfcRTL(AddrType)
+    s.to_mem_wdata = SendIfcRTL(DataType)
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
@@ -83,7 +84,7 @@ class SelRTL(Component):
         s.send_out[i].val @= 0
         s.send_out[i].msg @= DataType()
 
-      if s.recv_opt.val & s.send_out[0].rdy:
+      if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
         if s.recv_opt.msg.fu_in[1] != FuInType(0):

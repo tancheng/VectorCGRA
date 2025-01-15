@@ -59,7 +59,7 @@ class AdderCL(Fu):
       s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
-      if s.recv_opt.val & s.send_out[0].rdy:
+      if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
         if s.recv_opt.msg.fu_in[1] != 0:
@@ -99,7 +99,7 @@ class AdderCL(Fu):
                                           s.recv_predicate.msg.predicate)
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
-          s.send_out[0].val @= s.recv_all_val & s.send_out[0].rdy
+          s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
@@ -125,7 +125,7 @@ class AdderCL(Fu):
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
-          s.send_out[0].val @= s.recv_all_val & s.send_out[0].rdy
+          s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 

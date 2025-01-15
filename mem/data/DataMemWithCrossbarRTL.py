@@ -167,7 +167,7 @@ class DataMemWithCrossbarRTL(Component):
         s.recv_wdata[i].rdy @= 0
         s.recv_wdata_bypass_q[i].recv.val @= 0
 
-      if s.init_mem_done == b1(0):
+      if s.init_mem_done == 0:
         for b in range(num_banks):
           s.reg_file[b].waddr[0] @= trunc(s.init_mem_addr, PerBankAddrType)
           s.reg_file[b].wdata[0] @= s.preload_data_per_bank[b][trunc(s.init_mem_addr, PreloadDataPerBankSizeType)]
