@@ -31,8 +31,7 @@ class TestHarness(Component):
     return self.src_const_pkt.done()
 
   def line_trace(s):
-    return s.const_queue.line_trace()
-
+    return s.const_queue.line_trace(verbosity = 1)
 
 def run_sim(test_harness, max_cycles = 20):
   test_harness.elaborate()
@@ -49,10 +48,23 @@ def run_sim(test_harness, max_cycles = 20):
   test_harness.sim_tick()
   print("\nmem: {}".format(test_harness.line_trace()))
 
-def test_const_queue():
+
+def test_const_num_lt_mem():
   MemUnit = ConstQueueDynamicRTL
   DataType = mk_data(4, 1)
   const_mem_size = 8
+
+  # number of source const less than mem size
+  src_const = [DataType(9, 1), DataType(8, 1), DataType(7, 1)]
+  read_data = [DataType(9, 1), DataType(8, 1), DataType(7, 1), DataType(0, 0)]
+  th = TestHarness(MemUnit, DataType, const_mem_size, src_const, read_data)
+  run_sim(th)
+
+def test_const_num_gt_mem():
+  MemUnit = ConstQueueDynamicRTL
+  DataType = mk_data(4, 1)
+  const_mem_size = 8
+
   # number of source const more than mem size
   src_const = [DataType(9, 1), DataType(8, 1), DataType(7, 1), DataType(6, 1),
                DataType(5, 1), DataType(4, 1), DataType(3, 1), DataType(2, 1),
@@ -60,10 +72,7 @@ def test_const_queue():
   read_data = [DataType(9, 1), DataType(8, 1), DataType(7, 1), DataType(6, 1),
                DataType(5, 1), DataType(4, 1), DataType(3, 1), DataType(2, 1),
                DataType(9, 1)]
-
-  # number of source const less than mem size
-  # src_const = [DataType(9, 1), DataType(8, 1), DataType(7, 1)]
-  # read_data = [DataType(9, 1), DataType(8, 1), DataType(7, 1), DataType(0, 0)]
   th = TestHarness(MemUnit, DataType, const_mem_size, src_const, read_data)
   run_sim(th)
+
 

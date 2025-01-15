@@ -8,6 +8,7 @@ If queue is full, will stop receiving new data.
 Author : Yuqi Sun
   Date : Jan 11, 2025
 """
+from py_markdown_table.markdown_table import markdown_table
 from pymtl3.stdlib.primitive import RegisterFile
 
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
@@ -62,7 +63,7 @@ class ConstQueueDynamicRTL(Component):
 
     @update_ff
     def update_wr_cur():
-      not_full = (s.wr_cur < const_mem_size)
+      not_full = (s.wr_cur < (const_mem_size - 1))
       # check if there's a valid const(producer) to be written
       # have to add bracket if there's & and compare, i.e. s.recv_const.val & (s.wr_cur < const_mem_size)
       if s.recv_const.val & not_full:
@@ -87,7 +88,25 @@ class ConstQueueDynamicRTL(Component):
           s.rd_cur <<= 0
 
 
-  def line_trace(s):
-    const_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'const_mem_str: {const_mem_str}'
+  def line_trace(s, verbosity = 0):
+    if verbosity == 0:
+      const_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
+      return f'const_mem_str: {const_mem_str}'
+    else:
+      return s.verbose_trace(verbosity = verbosity)
+
+
+  def verbose_trace(self, verbosity = 1):
+    reg_list = []
+    for addr, data in enumerate(self.reg_file.regs):
+      reg_dict = {
+        'addr': addr,
+        'payload': data.payload,
+        'predicate': data.predicate,
+        'wr_cur': '<-' if addr == self.wr_cur else '',
+        'rd_cur': '<-' if addr == self.rd_cur else ''
+      }
+      reg_list.append(reg_dict)
+    res_md = markdown_table(reg_list).set_params(quote = False).get_markdown()
+    return res_md
 
