@@ -8,7 +8,6 @@ If queue is full, will stop receiving new data.
 Author : Yuqi Sun
   Date : Jan 11, 2025
 """
-
 from pymtl3.stdlib.primitive import RegisterFile
 
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
@@ -27,74 +26,65 @@ class ConstQueueDynamicRTL(Component):
     # ConstMemAddrType(2) = 010
     AddrType = mk_bits(max(1, clog2(const_mem_size)))
 
-    # cur to record the current valid address, max is const_mem_size - 1
-    s.cur = Wire(AddrType)
+    # make Write cursor type 1 bit more than mem addr type as need compare if cursor > AddrType(const_mem_size - 1)
+    # otherwise, number will be back to 000 when 111 + 1
+    WrCurType = mk_bits(clog2(const_mem_size + 1))
+
+    # write cursor and read cursor
+    s.wr_cur = Wire(WrCurType)
+    s.rd_cur = Wire(AddrType)
 
     # Interface
     s.send_const = SendIfcRTL(DataType)
     s.recv_const = RecvIfcRTL(DataType)
 
     # Component
-    #                               Type,     nregs,     rd_ports, wr_ports
     # 1 rd_port: number of read port is 0
     # 1 wr_port: number of write port is 0
+    #                               Type,     nregs,          rd_ports, wr_ports
     s.reg_file = RegisterFile(DataType, const_mem_size, 1,        1)
 
     # Connections
     s.send_const.msg //= s.reg_file.rdata[0]
+    s.reg_file.raddr[0] //= s.rd_cur
 
 
     @update
     def load_const():
-      s.recv_const.rdy @= 1
-      # check if there's a valid const(producer) to be written
-      if s.recv_const.val:
-        s.reg_file.waddr[0] @= s.cur
+      not_full = s.wr_cur < const_mem_size
+      s.recv_const.rdy @= not_full
+      # check if there's a valid const(from producer) to be written
+      if s.recv_const.val & not_full:
+        s.reg_file.waddr[0] @= trunc(s.wr_cur, AddrType)
         s.reg_file.wdata[0] @= s.recv_const.msg
         s.reg_file.wen[0] @= 1
-      # s.recv_const.rdy @= 0(consumer: self) will stop receive const from inport immediately even there's rdy @= 1(self) in @update
-      # so will avoid receiving new data when regs full
-      # can NOT do this by comparing cur > AddrType(const_mem_size - 1)
-      # for example: mem size=8, cur will be Bits3(0x0) once it reaches Bits3(0x7) + AddrType(1) in loop
-      # and can NOT use bigger AddrType such as Bits4 for cur as it will be used to update waddr: (s.reg_file.waddr[0] @= s.cur), waddr is binded with mem size which will be Bits3 for mem size 8
-      if s.cur == AddrType(const_mem_size - 1):
-          s.recv_const.rdy @= 0
 
 
     @update_ff
-    def move_cur():
-      # move cur in @update_ff
-      # if producer(remote) val and consumer(self) rdy
-      if s.recv_const.val & s.recv_const.rdy:
-        # move cur only if cur less than const_mem_size - 1
-        # and cur will plus 1 in the last loop
-        # then will update the last element in @update
-        # after the last element insert, will not move cur and receive const from inport/producer(as set rdy 0 in @update)
-        if s.cur < AddrType(const_mem_size - 1):
-          s.cur <<= s.cur + AddrType(1)
+    def update_wr_cur():
+      not_full = (s.wr_cur < const_mem_size)
+      # check if there's a valid const(producer) to be written
+      # have to add bracket if there's & and compare, i.e. s.recv_const.val & (s.wr_cur < const_mem_size)
+      if s.recv_const.val & not_full:
+        s.wr_cur <<= s.wr_cur + 1
 
-          # once there's value in regs, start to set self val 1 to enable read
-          s.send_const.val <<= 1
+
+    @update
+    def update_send_val():
+      # rd_cur cannot be larger than wr_cur and there IS const in regs
+      if (zext(s.rd_cur, WrCurType) <= s.wr_cur) & (s.wr_cur > 0):
+        s.send_const.val @= 1
 
 
     @update_ff
-    def update_raddr():
-      # check remote rdy and self val(val = 1 when there's const in regs)
-      if s.send_const.rdy & s.send_const.val:
-        # Approach 1:
-        # read to the last element in mem, reset to addr to read from addr 0
-        # read needs wait until write finish
-        # if s.reg_file.raddr[0] == s.cur:
-        #   s.reg_file.raddr[0] <<= AddrType(0)
-        # else:
-        #   s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
-
-        # Approach 2:
-        # will NOT reset addr to 0 when read to the last element in mem
-        # as this approach read/write simultaneously
-        # raddr[0] always equals to cur - 1
-        # if wants to change to reset mode, can make read start after write finish
-        s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + AddrType(1)
+    def update_rd_cur():
+      # check remote rdy
+      if s.send_const.rdy:
+        if zext((s.rd_cur), WrCurType) < s.wr_cur:
+          # type of 1 can be inferred to AddrType(1)
+          s.rd_cur <<= s.rd_cur + 1
+        else:
+          s.rd_cur <<= 0
 
 
   def line_trace(s):
