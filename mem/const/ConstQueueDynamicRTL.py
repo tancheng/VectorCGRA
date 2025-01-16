@@ -27,7 +27,7 @@ class ConstQueueDynamicRTL(Component):
     # ConstMemAddrType(2) = 010
     AddrType = mk_bits(max(1, clog2(const_mem_size)))
 
-    # make Write cursor type 1 bit more than mem addr type as need compare if cursor > AddrType(const_mem_size - 1)
+    # Makes write cursor type 1 bit more than mem addr type as need compare if cursor > AddrType(const_mem_size - 1)
     # otherwise, number will be back to 000 when 111 + 1
     WrCurType = mk_bits(clog2(const_mem_size + 1))
 
@@ -42,7 +42,7 @@ class ConstQueueDynamicRTL(Component):
     # Component
     # 1 rd_port: number of read port is 0
     # 1 wr_port: number of write port is 0
-    #                               Type,     nregs,          rd_ports, wr_ports
+    #                         Type,     nregs,          rd_ports, wr_ports
     s.reg_file = RegisterFile(DataType, const_mem_size, 1,        1)
 
     # Connections
@@ -52,9 +52,9 @@ class ConstQueueDynamicRTL(Component):
 
     @update
     def load_const():
-      not_full = s.wr_cur < const_mem_size
+      not_full = (s.wr_cur < const_mem_size)
+      # Checks if there's a valid const(from producer) to be written
       s.recv_const.rdy @= not_full
-      # check if there's a valid const(from producer) to be written
       if s.recv_const.val & not_full:
         s.reg_file.waddr[0] @= trunc(s.wr_cur, AddrType)
         s.reg_file.wdata[0] @= s.recv_const.msg
@@ -64,25 +64,25 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def update_wr_cur():
       not_full = (s.wr_cur < (const_mem_size - 1))
-      # check if there's a valid const(producer) to be written
-      # have to add bracket if there's & and compare, i.e. s.recv_const.val & (s.wr_cur < const_mem_size)
+      # Checks if there's a valid const(producer) to be written
       if s.recv_const.val & not_full:
         s.wr_cur <<= s.wr_cur + 1
 
 
     @update
     def update_send_val():
-      # rd_cur cannot be larger than wr_cur and there IS const in regs
-      if (zext(s.rd_cur, WrCurType) <= s.wr_cur) & (s.wr_cur > 0):
+      # (rd_cur < wr_cur or read last const in mem) and wr_cur > 0
+      if ((zext(s.rd_cur, WrCurType) < s.wr_cur) | (s.rd_cur == const_mem_size - 1)) & (s.wr_cur > 0):
         s.send_const.val @= 1
+      else:
+        s.send_const.val @= 0
 
 
     @update_ff
     def update_rd_cur():
-      # check remote rdy
+      # Checks remote rdy
       if s.send_const.rdy:
         if zext((s.rd_cur), WrCurType) < s.wr_cur:
-          # type of 1 can be inferred to AddrType(1)
           s.rd_cur <<= s.rd_cur + 1
         else:
           s.rd_cur <<= 0
@@ -108,5 +108,5 @@ class ConstQueueDynamicRTL(Component):
       }
       reg_list.append(reg_dict)
     res_md = markdown_table(reg_list).set_params(quote = False).get_markdown()
-    return res_md
+    return f"send.val: {self.send_const.val}{res_md}"
 
