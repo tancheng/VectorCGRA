@@ -487,3 +487,14 @@ def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
     namespace = {'__str__': str_func}
   )
 
+def mk_cpu_pkt(datatype_id,
+               # DataType
+               payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
+               # CtrlPktType
+               nrouters = 4, ctrl_actions = 8, ctrl_mem_size = 4, ctrl_operations = 7, ctrl_fu_inports = 4, ctrl_fu_outports = 4, ctrl_tile_inports = 5, ctrl_tile_outports = 5,
+               prefix="CPUPkt"):
+
+    if datatype_id == 0:
+        return mk_data(payload_nbits, predicate_nbits, bypass_nbits)
+    else:
+        return mk_ring_across_tiles_pkt(nrouters, ctrl_actions, ctrl_mem_size, ctrl_operations, ctrl_fu_inports, ctrl_fu_outports, ctrl_tile_inports, ctrl_tile_outports)

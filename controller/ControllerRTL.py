@@ -20,7 +20,7 @@ from ..lib.opt_type import *
 
 class ControllerRTL(Component):
 
-  def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
+  def construct(s, ControllerIdType, CmdType, CpuPktType, NocPktType,
                 CGRADataType, CGRAAddrType, multi_cgra_rows,
                 multi_cgra_columns, controller_id, controller2addr_map,
                 idTo2d_map):
@@ -36,8 +36,8 @@ class ControllerRTL(Component):
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
-    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
-    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
+    s.send_to_ctrl_ring_pkt = SendIfcRTL(CpuPktType)
 
     # Request from/to tiles.
     s.recv_from_tile_load_request_pkt = RecvIfcRTL(NocPktType)
@@ -70,7 +70,7 @@ class ControllerRTL(Component):
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 3, 1)
 
-    s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
+    s.recv_pkt_queue = NormalQueueRTL(CpuPktType)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -102,6 +102,7 @@ class ControllerRTL(Component):
       assert addr2controller_vector[addr_base] == -1, f"address range [{begin_addr}, {end_addr}] overlaps with others."
       addr2controller_vector[addr_base] = ControllerIdType(src_controller_id)
 
+      # What does this do? Connect itself?
       s.addr2controller_lut[addr_base] //= ControllerIdType(src_controller_id)
 
     # Constructs the idTo2d lut.
@@ -131,8 +132,8 @@ class ControllerRTL(Component):
     # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
-    s.recv_from_cpu_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
-    s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
+    s.recv_from_cpu_pkt //= s.recv_pkt_queue.recv
+    s.recv_pkt_queue.send //= s.send_to_ctrl_ring_pkt
 
     @update
     def update_received_msg():
@@ -271,7 +272,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.payload)
 
   def line_trace(s):
-    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)
+    send_to_ctrl_ring_pkt_str = "send_to_ctrl_ring_pkt: " + str(s.send_to_ctrl_ring_pkt.msg)
     recv_from_tile_load_request_pkt_str = "recv_from_tile_load_request_pkt: " + str(s.recv_from_tile_load_request_pkt.msg)
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
     recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)
@@ -281,5 +282,5 @@ class ControllerRTL(Component):
     send_to_tile_store_request_data_str = "send_to_tile_store_request_data: " + str(s.send_to_tile_store_request_data.msg)
     recv_from_noc_str = "recv_from_noc_pkt: " + str(s.recv_from_noc.msg)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
-    return f'{send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
+    return f'{send_to_ctrl_ring_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
 
