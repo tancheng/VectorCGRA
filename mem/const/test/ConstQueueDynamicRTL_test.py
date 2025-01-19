@@ -42,10 +42,11 @@ def run_sim(test_harness, max_cycles = 20):
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    print("\n{}:{}".format(ncycles, test_harness.line_trace()))
-  test_harness.sim_tick()
-  test_harness.sim_tick()
-  test_harness.sim_tick()
+    print("\n{}: {}".format(ncycles, test_harness.line_trace()))
+
+  for i in range(3):
+    test_harness.sim_tick()
+    print("\nextra clk {}: {}".format(i, test_harness.line_trace()))
   print("\nmem: {}".format(test_harness.line_trace()))
 
 
