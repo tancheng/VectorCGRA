@@ -52,6 +52,7 @@ jobs:
         pip install -U git+https://github.com/tancheng/pymtl3.1@yo-struct-list-fix
         pip install hypothesis
         pip install pytest
+        pip install py-markdown-table
         pip list
         
     - name: Test and translate with pytest
@@ -77,4 +78,5 @@ jobs:
         pytest ../scale_out/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Multi-cgra with mesh topology.
         pytest ../scale_out/test/MeshMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-
+        # Const Queue
+        pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
