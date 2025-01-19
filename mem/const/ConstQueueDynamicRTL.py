@@ -63,15 +63,15 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def update_wr_cur():
       not_full = (s.wr_cur < const_mem_size)
-      # Checks if there's a valid const(from producer) to be written.
+      # Checks if there's a valid const (from producer) to be written.
       if s.recv_const.val & not_full:
         s.wr_cur <<= s.wr_cur + 1
 
 
     @update
     def update_send_val():
-      # Checks if read cursor is in front of write cursor and regs is not empty.
-      if (zext(s.rd_cur, WrCurType) < s.wr_cur) & (s.wr_cur > 0):
+      # Checks if read cursor is in front of write cursor.
+      if (zext(s.rd_cur, WrCurType) < s.wr_cur):
         s.send_const.val @= 1
       else:
         s.send_const.val @= 0
@@ -79,7 +79,8 @@ class ConstQueueDynamicRTL(Component):
 
     @update_ff
     def update_rd_cur():
-      # Checks remote rdy.
+      # Checks whether the "reader" successfully read the data at rd_cur,
+      # and proceed rd_cur accordingly.
       if s.send_const.rdy:
         if zext((s.rd_cur), WrCurType) < s.wr_cur:
           s.rd_cur <<= s.rd_cur + 1
