@@ -60,7 +60,7 @@ class TestHarness(Component):
                 controller2addr_map, preload_data, preload_const)
 
     # Connections.
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
     s.dut.send_to_noc.rdy //= 0
     s.dut.recv_from_noc.val //= 0

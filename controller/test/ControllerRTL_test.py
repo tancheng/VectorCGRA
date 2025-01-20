@@ -26,7 +26,7 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, ControllerIdType, CtrlPktType, CmdType, MsgType,
+  def construct(s, ControllerIdType, CpuPktType, CmdType, MsgType,
                 AddrType, PktType, controller_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
@@ -54,7 +54,7 @@ class TestHarness(Component):
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
 
-    s.dut = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+    s.dut = ControllerRTL(ControllerIdType, CmdType, CpuPktType,
                           PktType, MsgType, AddrType,
                           # Number of controllers globally (x/y dimension).
                           1, num_terminals,
@@ -75,9 +75,9 @@ class TestHarness(Component):
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
 
-    s.dut.recv_from_cpu_ctrl_pkt.val //= 0
-    s.dut.recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
-    s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
+    s.dut.recv_from_cpu_pkt.val //= 0
+    s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
+    s.dut.send_to_ctrl_ring_pkt.rdy //= 0
 
   def done(s):
     return s.src_from_tile_load_request_pkt_en_rdy.done() and \
@@ -170,14 +170,25 @@ controller2addr_map = {
         3: [12, 15],
 }
 
-CtrlPktType = mk_ring_across_tiles_pkt(nterminals,
-                                       num_ctrl_actions,
-                                       ctrl_mem_size,
-                                       num_ctrl_operations,
-                                       num_fu_inports,
-                                       num_fu_outports,
-                                       num_tile_inports,
-                                       num_tile_outports)
+# CtrlPktType = mk_ring_across_tiles_pkt(nterminals,
+#                                        num_ctrl_actions,
+#                                        ctrl_mem_size,
+#                                        num_ctrl_operations,
+#                                        num_fu_inports,
+#                                        num_fu_outports,
+#                                        num_tile_inports,
+#                                        num_tile_outports)
+# CpuPktType = mk_cpu_pkt(1,
+#                         nterminals,
+#                         num_ctrl_actions,
+#                         ctrl_mem_size,
+#                         num_ctrl_operations,
+#                         num_fu_inports,
+#                         num_fu_outports,
+#                         num_tile_inports,
+#                         num_tile_outports)
+
+CpuPktType = mk_cpu_pkt(0)
 
 Pkt = mk_multi_cgra_noc_pkt(nterminals, 1,
                             addr_nbits = addr_nbits,
@@ -236,7 +247,7 @@ expected_to_noc_pkts = [
 
 def test_simple():
   print("controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType, CtrlPktType,
+  th = TestHarness(ControllerIdType, CpuPktType,
                    CmdType, DataType,
                    AddrType, Pkt, controller_id,
                    from_tile_load_request_pkts,
