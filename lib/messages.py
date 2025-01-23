@@ -379,7 +379,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, opaque_nbits = 8, vc = 2,
 # Ring for preloading ctrl and data signals for different CGRAs
 #=========================================================================
 
-def mk_preloading_cgra_pkt(nrouters = 4,
+def mk_intra_cgra_pkt(nrouters = 4,
                       cmd_nbits = 4,
                       cgraId_nbits = 4,
                       ctrl_actions = 8,
