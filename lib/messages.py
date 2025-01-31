@@ -66,20 +66,24 @@ def mk_predicate( payload_nbits=1, predicate_nbits=1, prefix="CGRAData" ):
 def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
             prefix = "CGRAConfig"):
 
-  ctrl_nbits    = 6
-  CtrlType      = mk_bits( ctrl_nbits )
-  InportsType   = mk_bits( clog2( num_inports  + 1 ) )
-  OutportsType  = mk_bits( clog2( num_outports + 1 ) )
-  FuInType      = mk_bits( clog2( num_fu_in + 1 ) )
-  PredicateType = mk_bits( 1 )
+  ctrl_nbits = 6
+  CtrlType = mk_bits(ctrl_nbits)
+  InportsType = mk_bits(clog2(num_inports + 1))
+  OutportsType = mk_bits(clog2(num_outports + 1))
+  FuInType = mk_bits(clog2(num_fu_in + 1))
+  predicate_nbits = 1
+  PredicateType = mk_bits(predicate_nbits)
+  vector_factor_power_nbits = 3
+  VectorFactorPowerType = mk_bits(vector_factor_power_nbits)
 
   new_name = f"{prefix}_{ctrl_nbits}_{num_fu_in}_{num_inports}_" \
-             f"{num_outports}"
+             f"{num_outports}_{predicate_nbits}_" \
+             f"{vector_factor_power_nbits}"
 
-  def str_func( s ):
+  def str_func(s):
     out_str = '(in)'
 
-    for i in range( num_fu_in ):
+    for i in range(num_fu_in):
       if i != 0:
         out_str += '-'
       out_str += str(int(s.fu_in[i]))
@@ -88,16 +92,22 @@ def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
     out_str += str(int(s.predicate))
 
     out_str += '|(out)'
-    for i in range( num_outports ):
+    for i in range(num_outports):
       if i != 0:
         out_str += '-'
       out_str += str(int(s.outport[i]))
 
     out_str += '|(p_in)'
-    for i in range( num_inports ):
+    for i in range(num_inports):
       if i != 0:
         out_str += '-'
       out_str += str(int(s.predicate_in[i]))
+
+    out_str += '|(vector_factor_power)'
+    out_str += str(int(s.vector_factor_power))
+
+    out_str += '|(is_last_ctrl)'
+    out_str += str(int(s.is_last_ctrl))
 
     return f"(opt){s.ctrl}|{out_str}"
 
@@ -119,7 +129,11 @@ def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
   # predicate stored in the predicate register). This should be
   # guaranteed by the compiler.
   field_dict['predicate_in'] = [PredicateType for _ in range(
-      num_inports)]
+      num_inports)] 
+
+  field_dict['vector_factor_power'] = VectorFactorPowerType
+
+  field_dict['is_last_ctrl'] = b1
 
   # TODO: to support multiple predicate
   # field_dict[ 'predicate_in0' ] = ...
@@ -135,7 +149,7 @@ def mk_separate_ctrl(num_operations = 7,
                      num_fu_outports = 2,
                      num_tile_inports = 5,
                      num_tile_outports = 5,
-                     prefix = "CGRAConfig" ):
+                     prefix = "CGRAConfig"):
   operation_nbits = clog2(num_operations)
   OperationType = mk_bits(operation_nbits)
   TileInportsType = mk_bits(clog2(num_tile_inports  + 1))
@@ -144,11 +158,15 @@ def mk_separate_ctrl(num_operations = 7,
   RoutingOutportsType = mk_bits(clog2(num_routing_outports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  PredicateType = mk_bits(1)
+  predicate_nbits = 1
+  PredicateType = mk_bits(predicate_nbits)
+  vector_factor_power_nbits = 3
+  VectorFactorPowerType = mk_bits(vector_factor_power_nbits)
 
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}"
+             f"{num_tile_outports}_{predicate_nbits}_" \
+             f"{vector_factor_power_nbits}"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -184,6 +202,12 @@ def mk_separate_ctrl(num_operations = 7,
         out_str += '-'
       out_str += str(int(s.routing_predicate_in[i]))
 
+    out_str += '|(vector_factor_power)'
+    out_str += str(int(s.vector_factor_power))
+
+    out_str += '|(is_last_ctrl)'
+    out_str += str(int(s.is_last_ctrl))
+
     return f"(opt){s.ctrl}|{out_str}"
 
   field_dict = {}
@@ -208,6 +232,10 @@ def mk_separate_ctrl(num_operations = 7,
   # predicate register). This should be guaranteed by the compiler.
   field_dict['routing_predicate_in'] = [PredicateType for _ in range(
       num_tile_inports)]
+
+  field_dict['vector_factor_power'] = VectorFactorPowerType
+
+  field_dict['is_last_ctrl'] = b1
 
   # TODO: to support multiple predicate
   # field_dict[ 'predicate_in0' ] = ...
