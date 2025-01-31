@@ -116,7 +116,8 @@ class MemUnitRTL(Component):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.from_mem_rdata.msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
           if s.recv_opt.msg.predicate == 1:
             s.recv_predicate.rdy @= s.from_mem_rdata.val & s.send_out[0].rdy
@@ -134,7 +135,8 @@ class MemUnitRTL(Component):
           s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
                                          s.from_mem_rdata.msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
           if s.recv_opt.msg.predicate == 1:
             s.recv_predicate.rdy @= s.from_mem_rdata.val & s.send_out[0].rdy
@@ -150,8 +152,9 @@ class MemUnitRTL(Component):
           s.to_mem_wdata.msg @= s.recv_in[s.in1_idx].msg
           s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                           s.recv_in[s.in1_idx].msg.predicate & \
-                                         (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          (~s.recv_opt.msg.predicate | \
+                                           s.recv_predicate.msg.predicate) & \
+                                          s.reached_vector_factor
           s.to_mem_wdata.val @= s.recv_all_val
 
           # `send_out` is meaningless for store operation.
@@ -175,8 +178,9 @@ class MemUnitRTL(Component):
           s.to_mem_wdata.msg @= s.recv_in[s.in0_idx].msg
           s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                           s.recv_const.msg.predicate & \
-                                         (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          (~s.recv_opt.msg.predicate | \
+                                           s.recv_predicate.msg.predicate) & \
+                                          s.reached_vector_factor
           s.to_mem_wdata.val @= s.recv_all_val
 
           # `send_out` is meaningless for store operation.

@@ -66,12 +66,14 @@ class BranchRTL(Fu):
           s.send_out[1].msg @= DataType(ZeroType(0), b1(0), b1(0), b1(0))
           if s.recv_in[s.in0_idx].msg.payload == s.const_zero.payload:
             s.send_out[0].msg.predicate @= (~s.recv_opt.msg.predicate | \
-                                           s.recv_predicate.msg.predicate)
+                                            s.recv_predicate.msg.predicate) & \
+                                           s.reached_vector_factor
             s.send_out[1].msg.predicate @= Bits1(0)
           else:
             s.send_out[0].msg.predicate @= Bits1(0)
             s.send_out[1].msg.predicate @= (~s.recv_opt.msg.predicate | \
-                                           s.recv_predicate.msg.predicate)
+                                            s.recv_predicate.msg.predicate) & \
+                                           s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -85,11 +87,11 @@ class BranchRTL(Fu):
           # branch_start could be the entry of a function, which runs
           # only once.
           if s.first:
-            s.send_out[0].msg.predicate @= Bits1(1)
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
             s.send_out[1].msg.predicate @= Bits1(0)
           else:
             s.send_out[0].msg.predicate @= Bits1(0)
-            s.send_out[1].msg.predicate @= Bits1(1)
+            s.send_out[1].msg.predicate @= s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -113,7 +115,7 @@ class BranchRTL(Fu):
     def br_start_once():
       if s.reset:
         s.first <<= b1(1)
-      if s.recv_opt.msg.ctrl == OPT_BRH_START:
+      if (s.recv_opt.msg.ctrl == OPT_BRH_START) & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace( s ):

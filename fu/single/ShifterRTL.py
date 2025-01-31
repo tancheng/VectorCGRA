@@ -67,7 +67,8 @@ class ShifterRTL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -80,7 +81,8 @@ class ShifterRTL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
