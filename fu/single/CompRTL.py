@@ -15,10 +15,11 @@ from ...lib.opt_type import *
 class CompRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size):
+                num_outports, data_mem_size, vector_factor_power = 0):
 
     super(CompRTL, s).construct(DataType, PredicateType, CtrlType,
-                                num_inports, num_outports, data_mem_size)
+                                num_inports, num_outports, data_mem_size,
+                                1, vector_factor_power)
 
     num_entries = 2
     s.const_one = DataType(1, 0)

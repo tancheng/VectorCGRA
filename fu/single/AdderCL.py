@@ -15,11 +15,13 @@ from ...lib.opt_type import *
 class AdderCL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, latency = 1):
+                num_inports, num_outports, data_mem_size, latency = 1,
+                vector_factor_power = 0):
 
     super(AdderCL, s).construct(DataType, PredicateType, CtrlType,
                                 num_inports, num_outports,
-                                data_mem_size, latency)
+                                data_mem_size, latency,
+                                vector_factor_power)
 
     # Constant
     s.const_one = DataType(1, 1)
