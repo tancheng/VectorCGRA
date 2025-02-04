@@ -15,10 +15,12 @@ from ...lib.opt_type import *
 class MulRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size):
+                num_inports, num_outports, data_mem_size,
+                vector_factor_power = 0):
 
     super(MulRTL, s).construct(DataType, PredicateType, CtrlType,
-                               num_inports, num_outports, data_mem_size)
+                               num_inports, num_outports, data_mem_size,
+                               1, vector_factor_power)
 
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -65,7 +67,8 @@ class MulRTL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -77,7 +80,8 @@ class MulRTL(Fu):
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload * s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -90,7 +94,8 @@ class MulRTL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val

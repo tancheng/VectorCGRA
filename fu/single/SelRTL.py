@@ -16,7 +16,8 @@ from ...lib.opt_type import *
 class SelRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size = 4):
+                num_outports, data_mem_size = 4,
+                vector_factor_power = 0):
 
     # Constant
     num_entries = 2
@@ -25,6 +26,9 @@ class SelRTL(Component):
     s.true = DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
+    # 3 indicates at most 7, i.e., 2^7 vectorization factor -> 128
+    VectorFactorPowerType = mk_bits(3)
+    VectorFactorType = mk_bits(8)
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -54,6 +58,11 @@ class SelRTL(Component):
 
     # Components
     s.recv_all_val = Wire(1)
+    s.vector_factor_power = Wire(VectorFactorPowerType)
+    s.vector_factor_counter = Wire(VectorFactorType)
+    s.reached_vector_factor = Wire(1)
+
+    s.vector_factor_power //= vector_factor_power
 
     @update
     def update_mem():
@@ -102,7 +111,8 @@ class SelRTL(Component):
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          s.recv_in[s.in2_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             s.recv_in[s.in1_idx].val & \
                             s.recv_in[s.in2_idx].val & \
@@ -122,6 +132,31 @@ class SelRTL(Component):
 
         if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
           s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+    @update
+    def update_reached_vector_factor():
+      s.reached_vector_factor @= 0
+      if s.recv_opt.val & (s.vector_factor_counter + \
+                           (VectorFactorType(1) << zext(s.vector_factor_power, VectorFactorType)) >= \
+                           (VectorFactorType(1) << zext(s.recv_opt.msg.vector_factor_power, VectorFactorType))):
+        s.reached_vector_factor @= 1
+
+    @update_ff
+    def update_vector_factor_counter():
+      if s.reset:
+        s.vector_factor_counter <<= 0
+      else:
+        if s.recv_opt.val:
+          if s.recv_opt.msg.is_last_ctrl & \
+             (s.vector_factor_counter + \
+              (VectorFactorType(1) << zext(s.vector_factor_power, VectorFactorType)) < \
+             (VectorFactorType(1) << zext(s.recv_opt.msg.vector_factor_power, VectorFactorType))):
+            s.vector_factor_counter <<= s.vector_factor_counter + \
+                                        (VectorFactorType(1) << zext(s.vector_factor_power, \
+                                                                     VectorFactorType))
+          elif s.recv_opt.msg.is_last_ctrl & s.reached_vector_factor:
+            s.vector_factor_counter <<= 0
+
 
   def line_trace(s):
     opt_str = " #"

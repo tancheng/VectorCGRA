@@ -15,11 +15,13 @@ from ...lib.opt_type import *
 class AdderCL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, latency = 1):
+                num_inports, num_outports, data_mem_size, latency = 1,
+                vector_factor_power = 0):
 
     super(AdderCL, s).construct(DataType, PredicateType, CtrlType,
                                 num_inports, num_outports,
-                                data_mem_size, latency)
+                                data_mem_size, latency,
+                                vector_factor_power)
 
     # Constant
     s.const_one = DataType(1, 1)
@@ -71,7 +73,8 @@ class AdderCL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -83,7 +86,8 @@ class AdderCL(Fu):
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
@@ -96,7 +100,8 @@ class AdderCL(Fu):
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.const_one.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
@@ -108,7 +113,8 @@ class AdderCL(Fu):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
@@ -121,7 +127,8 @@ class AdderCL(Fu):
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate)
+                                          s.recv_predicate.msg.predicate) & \
+                                         s.reached_vector_factor
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
