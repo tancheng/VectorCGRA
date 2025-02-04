@@ -74,7 +74,7 @@ class VectorAdderRTL(Component):
       s.recv_opt.rdy @= 0
 
       s.carry_in_temp[0] @= s.carry_in
-      if s.recv_opt.val & s.send_out[0].rdy:
+      if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
         if s.recv_opt.msg.fu_in[1] != FuInType(0):
