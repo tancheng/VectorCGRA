@@ -326,9 +326,16 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 # Mesh multi-CGRA data/config/cmd packet
 #=========================================================================
 
-def mk_multi_cgra_noc_pkt(ncols = 2, nrows = 2, opaque_nbits = 8, vc = 2,
-                          cmd_nbits = 6, addr_nbits = 16,
+def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, opaque_nbits = 8, vc = 2,
+                          cmd_nbits = 4, addr_nbits = 16,
                           data_nbits = 16, predicate_nbits = 1,
+                          ctrl_actions = 8,
+                          ctrl_mem_size = 16,
+                          ctrl_operations = 64,
+                          ctrl_fu_inports = 2,
+                          ctrl_fu_outports = 2,
+                          ctrl_tile_inports = 4,
+                          ctrl_tile_outports = 4,
                           prefix="MeshMultiCGRAPacket"):
 
   IdType = mk_bits(max(clog2(ncols * nrows), 1))
@@ -341,85 +348,100 @@ def mk_multi_cgra_noc_pkt(ncols = 2, nrows = 2, opaque_nbits = 8, vc = 2,
   PredicateType = mk_bits(predicate_nbits)
   PayloadType = mk_bits(1)
 
-  new_name = f"{prefix}_{ncols*nrows}_{ncols}x{nrows}_{vc}_{opaque_nbits}_" \
-             f"{cmd_nbits}_{addr_nbits}_{data_nbits}_{predicate_nbits}_1"
-
-  if vc > 1:
-    VcIdType = mk_bits(clog2(vc))
-
-    def str_func(s):
-      return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
-             f"{s.opaque}:{s.vc_id}:{s.cmd}.{s.addr}.{s.data}.{s.predicate}." \
-             f"{s.payload}"
-
-    return mk_bitstruct(new_name, {
-        'src': IdType,
-        'dst': IdType,
-        'src_x': XType,
-        'src_y': YType,
-        'dst_x': XType,
-        'dst_y': YType,
-        'opaque': OpqType,
-        'vc_id': VcIdType,
-        'cmd': CmdType,
-        'addr': AddrType,
-        'data': DataType,
-        'predicate': PredicateType,
-        'payload': PayloadType,
-      },
-      namespace = {'__str__': str_func}
-    )
-
-  else:
-    def str_func(s):
-      return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
-             f"{s.opaque}:{s.cmd}.{s.addr}.{s.data}.{s.predicate}.{s.payload}"
-
-    return mk_bitstruct(new_name, {
-        'src': IdType,
-        'dst': IdType,
-        'src_x': XType,
-        'src_y': YType,
-        'dst_x': XType,
-        'dst_y': YType,
-        'opaque': OpqType,
-        'cmd': CmdType,
-        'addr': AddrType,
-        'data': DataType,
-        'predicate': PredicateType,
-        'payload': PayloadType,
-      },
-      namespace = {'__str__': str_func}
-    )
-
-#=========================================================================
-# Ring for delivering ctrl signals and commands across tiles
-#=========================================================================
-
-def mk_ring_across_tiles_pkt(nrouters = 4,
-                             ctrl_actions = 8,
-                             ctrl_mem_size = 4,
-                             ctrl_operations = 7,
-                             ctrl_fu_inports = 4,
-                             ctrl_fu_outports = 4,
-                             ctrl_tile_inports = 5,
-                             ctrl_tile_outports = 5,
-                             prefix="RingAcrossTilesPacket"):
-
-  IdType = mk_bits(clog2(nrouters))
-  opaque_nbits = 1
-  OpqType = mk_bits(opaque_nbits)
   CtrlActionType = mk_bits(clog2(ctrl_actions))
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   CtrlOperationType = mk_bits(clog2(ctrl_operations))
-  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports  + 1))
+  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports + 1))
   CtrlTileOutType = mk_bits(clog2(ctrl_tile_outports + 1))
   num_routing_outports = ctrl_tile_outports + ctrl_fu_inports
   CtrlRoutingOutType = mk_bits(clog2(num_routing_outports + 1))
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
-  CtrlPredicateType = mk_bits(1)
+  CtrlPredicateType = mk_bits(predicate_nbits)
+  VcIdType = mk_bits(clog2(vc))
+
+  new_name = f"{prefix}_{ncols*nrows}_{ncols}x{nrows}_{vc}_{opaque_nbits}_" \
+             f"{cmd_nbits}_{addr_nbits}_{data_nbits}_{predicate_nbits}_1"
+
+  field_dict = {}
+  field_dict['src'] = IdType
+  field_dict['dst'] = IdType
+  field_dict['src_x'] = XType
+  field_dict['src_y'] = YType
+  field_dict['dst_x'] = XType
+  field_dict['dst_y'] = YType
+  field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
+  field_dict['cmd'] = CmdType
+  field_dict['addr'] = AddrType
+  field_dict['data'] = DataType
+  field_dict['predicate'] = PredicateType
+  field_dict['payload'] = PayloadType
+  field_dict['ctrl_action'] = CtrlActionType
+  field_dict['ctrl_addr'] = CtrlAddrType
+  field_dict['ctrl_operation'] = CtrlOperationType
+  field_dict['ctrl_predicate'] = CtrlPredicateType
+  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)]
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
+
+  def str_func(s):
+    return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
+           f"{s.opaque}:{s.vc_id}:{s.cmd}.{s.addr}.{s.data}.{s.predicate}." \
+           f"{s.payload}"
+
+
+  if vc > 1:
+    return mk_bitstruct(new_name, field_dict,
+      namespace = {'__str__': str_func}
+    )
+  else:
+    del field_dict['vc_id']
+    return mk_bitstruct(new_name, field_dict,
+      namespace = {'__str__': str_func}
+    )
+
+
+#=========================================================================
+# Ring for delivering ctrl and data signals and commands across CGRAs
+#=========================================================================
+
+def mk_intra_cgra_pkt(nrouters = 4,
+                      cmd_nbits = 4,
+                      cgraId_nbits = 4,
+                      ctrl_actions = 8,
+                      ctrl_mem_size = 16,
+                      ctrl_operations = 64,
+                      ctrl_fu_inports = 2,
+                      ctrl_fu_outports = 2,
+                      ctrl_tile_inports = 4,
+                      ctrl_tile_outports = 4,
+                      addr_nbits = 16,
+                      data_nbits = 16,
+                      predicate_nbits = 1,
+                      prefix="PreloadCGRAsPacket"):
+
+  CgraIdType = mk_bits(cgraId_nbits)
+  TileIdType = mk_bits(clog2(nrouters))
+  opaque_nbits = 8
+  OpqType = mk_bits(opaque_nbits)
+  CtrlActionType = mk_bits(clog2(ctrl_actions))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  CtrlOperationType = mk_bits(clog2(ctrl_operations))
+  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports + 1))
+  CtrlTileOutType = mk_bits(clog2(ctrl_tile_outports + 1))
+  num_routing_outports = ctrl_tile_outports + ctrl_fu_inports
+  CtrlRoutingOutType = mk_bits(clog2(num_routing_outports + 1))
+  CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
+  CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
+  CtrlPredicateType = mk_bits(predicate_nbits)
   VcIdType = mk_bits(1)
+  CmdType = mk_bits(cmd_nbits)
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  DataPredicateType = mk_bits(predicate_nbits)
+
 
   new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
@@ -454,12 +476,13 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_routing_predicate_in[i]))
 
-    return f"{s.src}>{s.dst}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+    return f"{s.srcTile}>{s.dstTile}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
-  field_dict['src'] = IdType
-  field_dict['dst'] = IdType
+  field_dict['cgraId'] = CgraIdType
+  field_dict['srcTile'] = TileIdType
+  field_dict['dstTile'] = TileIdType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['ctrl_action'] = CtrlActionType
@@ -485,6 +508,10 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   # predicate register). This should be guaranteed by the compiler.
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
       ctrl_tile_inports)]
+  field_dict['cmd'] = CmdType
+  field_dict['addr'] = AddrType
+  field_dict['data'] = DataType
+  field_dict['data_predicate'] = DataPredicateType
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}
