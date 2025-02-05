@@ -130,7 +130,6 @@ class MemUnitRTL(Component):
           s.to_mem_raddr.msg @= AddrType(s.recv_const.msg.payload[0:AddrType.nbits])
           s.to_mem_raddr.val @= s.recv_all_val
           s.from_mem_rdata.rdy @= s.send_out[0].rdy
-          print("[cheng] for OPT_LD_CONST, recv_all_val: ", s.recv_all_val)
           s.send_out[0].val @= s.from_mem_rdata.val
           s.send_out[0].msg @= s.from_mem_rdata.msg
           s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
