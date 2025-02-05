@@ -233,6 +233,7 @@ class TileRTL(Component):
     recv_str = "|".join(["(" + str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.recv_data])
     tile_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_in_channel])
     tile_in_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_in_channel])
+    tile_in_channel_str = "|".join([str(x.line_trace()) for x in s.tile_in_channel])
     # tile_out_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_out_channel])
     # tile_out_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_out_channel])
     # fu_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.fu_in_channel])
@@ -240,5 +241,5 @@ class TileRTL(Component):
     out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
     # return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
-    return f"tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_recv_str} => {tile_in_channel_send_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
+    return f"tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
 
