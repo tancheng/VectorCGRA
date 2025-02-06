@@ -533,7 +533,7 @@ def mk_intra_cgra_pkt(nrouters = 4,
                       addr_nbits = 16,
                       data_nbits = 16,
                       predicate_nbits = 1,
-                      prefix="PreloadCGRAsPacket"):
+                      prefix="IntraCGRAPacket"):
 
   CgraIdType = mk_bits(cgraId_nbits)
   TileIdType = mk_bits(clog2(nrouters))

@@ -63,21 +63,21 @@ class TestHarness(Component):
                           idTo2d_map)
 
     # Connections
-    s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_tile_load_request_pkt
-    s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
-    s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
+    s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_local_cgra_load_request_pkt
+    s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_local_cgra_load_response_pkt
+    s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_local_cgra_store_request_pkt
 
-    s.dut.send_to_tile_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
-    s.dut.send_to_tile_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
-    s.dut.send_to_tile_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
-    s.dut.send_to_tile_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
+    s.dut.send_to_local_cgra_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
+    s.dut.send_to_local_cgra_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
+    s.dut.send_to_local_cgra_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
+    s.dut.send_to_local_cgra_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
 
     s.dut.recv_from_cpu_pkt.val //= 0
     s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
-    s.dut.send_to_ctrl_ring_pkt.rdy //= 0
+    s.dut.send_to_intra_cgra_pkt.rdy //= 0
 
   def done(s):
     return s.src_from_tile_load_request_pkt_en_rdy.done() and \
@@ -141,6 +141,10 @@ predicate_nbits = 1
 DataType = mk_data(data_nbits, predicate_nbits)
 
 nterminals = 4
+cmd_nbits = 4
+CmdType = mk_bits(cmd_nbits)
+cgraId_nbits = 4
+ControllerIdType = mk_bits(cgraId_nbits)
 CmdType = mk_bits(4)
 ControllerIdType = mk_bits(clog2(nterminals))
 num_ctrl_actions = 8
@@ -178,17 +182,20 @@ controller2addr_map = {
 #                                        num_fu_outports,
 #                                        num_tile_inports,
 #                                        num_tile_outports)
-# CpuPktType = mk_cpu_pkt(1,
-#                         nterminals,
-#                         num_ctrl_actions,
-#                         ctrl_mem_size,
-#                         num_ctrl_operations,
-#                         num_fu_inports,
-#                         num_fu_outports,
-#                         num_tile_inports,
-#                         num_tile_outports)
 
-CpuPktType = mk_cpu_pkt(0)
+CpuPktType = mk_intra_cgra_pkt(nterminals,
+                               cmd_nbits,
+                               cgraId_nbits,
+                               num_ctrl_actions,
+                               ctrl_mem_size,
+                               num_ctrl_operations,
+                               num_fu_inports,
+                               num_fu_outports,
+                               num_tile_inports,
+                               num_tile_outports,
+                               addr_nbits,
+                               data_nbits,
+                               predicate_nbits)
 
 Pkt = mk_multi_cgra_noc_pkt(nterminals, 1,
                             addr_nbits = addr_nbits,
