@@ -515,14 +515,117 @@ def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
     namespace = {'__str__': str_func}
   )
 
-def mk_cpu_pkt(datatype_id,
-               # DataType
-               payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
-               # CtrlPktType
-               nrouters = 4, ctrl_actions = 8, ctrl_mem_size = 4, ctrl_operations = 7, ctrl_fu_inports = 4, ctrl_fu_outports = 4, ctrl_tile_inports = 5, ctrl_tile_outports = 5,
-               prefix="CPUPkt"):
 
-    if datatype_id == 0:
-        return mk_data(payload_nbits, predicate_nbits, bypass_nbits)
-    else:
-        return mk_ring_across_tiles_pkt(nrouters, ctrl_actions, ctrl_mem_size, ctrl_operations, ctrl_fu_inports, ctrl_fu_outports, ctrl_tile_inports, ctrl_tile_outports)
+#=========================================================================
+# Ring for delivering ctrl and data signals and commands across CGRAs
+#=========================================================================
+
+def mk_intra_cgra_pkt(nrouters = 4,
+                      cmd_nbits = 4,
+                      cgraId_nbits = 4,
+                      ctrl_actions = 8,
+                      ctrl_mem_size = 16,
+                      ctrl_operations = 64,
+                      ctrl_fu_inports = 2,
+                      ctrl_fu_outports = 2,
+                      ctrl_tile_inports = 4,
+                      ctrl_tile_outports = 4,
+                      addr_nbits = 16,
+                      data_nbits = 16,
+                      predicate_nbits = 1,
+                      prefix="PreloadCGRAsPacket"):
+
+  CgraIdType = mk_bits(cgraId_nbits)
+  TileIdType = mk_bits(clog2(nrouters))
+  opaque_nbits = 8
+  OpqType = mk_bits(opaque_nbits)
+  CtrlActionType = mk_bits(clog2(ctrl_actions))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  CtrlOperationType = mk_bits(clog2(ctrl_operations))
+  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports + 1))
+  CtrlTileOutType = mk_bits(clog2(ctrl_tile_outports + 1))
+  num_routing_outports = ctrl_tile_outports + ctrl_fu_inports
+  CtrlRoutingOutType = mk_bits(clog2(num_routing_outports + 1))
+  CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
+  CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
+  CtrlPredicateType = mk_bits(predicate_nbits)
+  VcIdType = mk_bits(1)
+  CmdType = mk_bits(cmd_nbits)
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  DataPredicateType = mk_bits(predicate_nbits)
+
+
+  new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
+             f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
+             f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
+
+  def str_func(s):
+    out_str = '(ctrl_operation)' + str(s.ctrl_operation)
+    out_str += '|(ctrl_fu_in)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_fu_in[i]))
+
+    out_str += '|(ctrl_predicate)'
+    out_str += str(int(s.ctrl_predicate))
+
+    out_str += '|(ctrl_routing_xbar_out)'
+    for i in range(num_routing_outports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_routing_xbar_outport[i]))
+
+    out_str += '|(ctrl_fu_xbar_out)'
+    for i in range(num_routing_outports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_fu_xbar_outport[i]))
+
+    out_str += '|(ctrl_predicate_in)'
+    for i in range(ctrl_tile_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_routing_predicate_in[i]))
+
+    return f"{s.srcTile}>{s.dstTile}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+           f"{out_str}"
+
+  field_dict = {}
+  field_dict['cgraId'] = CgraIdType
+  field_dict['srcTile'] = TileIdType
+  field_dict['dstTile'] = TileIdType
+  field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
+  field_dict['ctrl_action'] = CtrlActionType
+  field_dict['ctrl_addr'] = CtrlAddrType
+  field_dict['ctrl_operation'] = CtrlOperationType
+  # TODO: need fix to pair `predicate` with specific operation.
+  # The 'predicate' indicates whether the current operation is based on
+  # the partial predication or not. Note that 'predicate' is different
+  # from the following 'predicate_in', which contributes to the 'predicate'
+  # at the next cycle.
+  field_dict['ctrl_predicate'] = CtrlPredicateType
+  # The fu_in indicates the input register ID (i.e., operands) for the
+  # operation.
+  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
+
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(
+      num_routing_outports)]
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(
+      num_routing_outports)]
+  # I assume one tile supports single predicate during the entire execution
+  # time, as it is hard to distinguish predication for different operations
+  # (we automatically update, i.e., 'or', the predicate stored in the
+  # predicate register). This should be guaranteed by the compiler.
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
+      ctrl_tile_inports)]
+  field_dict['cmd'] = CmdType
+  field_dict['addr'] = AddrType
+  field_dict['data'] = DataType
+  field_dict['data_predicate'] = DataPredicateType
+
+  return mk_bitstruct(new_name, field_dict,
+    namespace = {'__str__': str_func}
+  )
