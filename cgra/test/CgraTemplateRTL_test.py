@@ -57,7 +57,8 @@ class TestHarness(Component):
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
                 ControllerIdType, controller_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, src_ctrl_pkt, ctrl_steps, TileList,
+                num_banks_per_cgra, num_registers_per_reg_bank,
+                src_ctrl_pkt, ctrl_steps, TileList,
                 LinkList, dataSPM, controller2addr_map, idTo2d_map):
 
     s.num_tiles = len(TileList)
@@ -70,6 +71,7 @@ class TestHarness(Component):
                 1, 4,
                 controller_id, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps, FunctionUnit, FuList,
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map)
@@ -185,6 +187,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_terminals = 4
   num_ctrl_actions = 6
   num_ctrl_operations = 64
+  num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -226,11 +229,12 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                                num_tile_inports,
                                num_tile_outports)
   CtrlSignalType = \
-      mk_separate_ctrl(num_ctrl_operations,
-                       num_fu_inports,
-                       num_fu_outports,
-                       num_tile_inports,
-                       num_tile_outports)
+      mk_separate_reg_ctrl(num_ctrl_operations,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
@@ -387,6 +391,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                    ControllerIdType, controller_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
+                   num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size, tiles, links, dataSPM,
                    controller2addr_map, idTo2d_map)
 

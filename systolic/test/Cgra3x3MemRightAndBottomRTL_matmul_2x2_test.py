@@ -42,6 +42,7 @@ class TestHarness(Component):
                 ControllerIdType, controller_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, controller2addr_map,
                 preload_data, preload_const, expected_out):
 
@@ -54,6 +55,7 @@ class TestHarness(Component):
                 NocPktType, CmdType, ControllerIdType, controller_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank,
                 # FIXME: num_ctrl should be just 1, or support
                 # prologue: https://github.com/tancheng/VectorCGRA/issues/55.
                 kMaxCycles, kMaxCycles, FunctionUnit, FuList,
@@ -154,6 +156,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_terminals = 1
   num_ctrl_actions = 6
   num_ctrl_operations = 64
+  num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -185,11 +188,12 @@ def test_CGRA_systolic(cmdline_opts):
                                num_tile_inports,
                                num_tile_outports)
   CtrlSignalType = \
-      mk_separate_ctrl(num_ctrl_operations,
-                       num_fu_inports,
-                       num_fu_outports,
-                       num_tile_inports,
-                       num_tile_outports)
+      mk_separate_reg_ctrl(num_ctrl_operations,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = 1,
                                      nrows = 1,
@@ -639,6 +643,7 @@ def test_CGRA_systolic(cmdline_opts):
                    ControllerIdType, controller_id, width, height,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
+                   num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size,
                    controller2addr_map, preload_data_per_bank,
                    preload_const, expected_out)
