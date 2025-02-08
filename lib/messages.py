@@ -611,16 +611,13 @@ def mk_intra_cgra_pkt(nrouters = 4,
   # operation.
   field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
 
-  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(
-      num_routing_outports)]
-  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(
-      num_routing_outports)]
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)]
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
   # I assume one tile supports single predicate during the entire execution
   # time, as it is hard to distinguish predication for different operations
   # (we automatically update, i.e., 'or', the predicate stored in the
   # predicate register). This should be guaranteed by the compiler.
-  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
-      ctrl_tile_inports)]
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
   field_dict['cmd'] = CmdType
   field_dict['addr'] = AddrType
   field_dict['data'] = DataType

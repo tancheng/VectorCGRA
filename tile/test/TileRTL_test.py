@@ -128,49 +128,67 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
-  CpuPktType = \
-      mk_intra_cgra_pkt(num_terminals,
-                       num_ctrl_actions,
-                       ctrl_mem_size,
-                       num_ctrl_operations,
-                       num_fu_inports,
-                       num_fu_outports,
-                       num_tile_inports,
-                       num_tile_outports)
+  # mk_intra_cgra_pkt(nrouters = 4,
+  #                   cmd_nbits = 4,
+  #                   cgraId_nbits = 4,
+  #                   ctrl_actions = 8,
+  #                   ctrl_mem_size = 16,
+  #                   ctrl_operations = 64,
+  #                   ctrl_fu_inports = 2,
+  #                   ctrl_fu_outports = 2,
+  #                   ctrl_tile_inports = 4,
+  #                   ctrl_tile_outports = 4,
+  #                   addr_nbits = 16,
+  #                   data_nbits = 16,
+  #                   predicate_nbits = 1,
+  #                   prefix = "IntraCgraPacket"):
+  CpuPktType = mk_intra_cgra_pkt(nrouters=num_terminals,
+                                 ctrl_mem_size=ctrl_mem_size,
+                                 ctrl_fu_inports=num_fu_inports,
+                                 ctrl_fu_outports=num_fu_outports,
+                                 ctrl_tile_inports=num_tile_inports,
+                                 ctrl_tile_outports=num_tile_outports,
+                                 )
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
                        num_fu_outports, num_tile_inports,
                        num_tile_outports)
   src_cpu_pkt = [
-                # src dst vc_id opq cmd_type    addr operation predicate
-      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
-                  # routing_xbar_output
+               # cgraId, srcTile, dstTile, opaque, vc_id, ctrl_action, ctrl_addr,  ctrl_operation, ctrl_predicate,     ctrl_fu_in,
+      CpuPktType(     0,       0,       0,      0,     0,  CMD_CONFIG,         0,         OPT_NAH,          b1(0), pick_register0,
+                  # ctrl_routing_xbar_outport
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CpuPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  # ctrl_routing_predicate_in
+                  [b1(1), b1(1), b1(1), b1(1)],
+                  #     cmd, addr,  data,   data_predicate
+                  CMD_CONST,    0,     1,            b1(1)
+                ),
+      # CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      # CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      # CpuPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ]
   src_data = [[DataType(3, 1)],
               [],
               [DataType(4, 1)],

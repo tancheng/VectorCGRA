@@ -117,7 +117,7 @@ class TileRTL(Component):
 
     # Connections.
     # Ctrl.
-    s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
+    # s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
@@ -189,20 +189,20 @@ class TileRTL(Component):
       s.const_mem.recv_const.val @= 0
       s.recv_ctrl_pkt.rdy @= 0
 
-      if s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.cmd_action == CMD_CONFIG):
+      if s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG):
         s.ctrl_mem.recv_pkt.val @= 1
         s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
         s.recv_ctrl_pkt.rdy @= 1
 
-      elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.cmd_action == CMD_CONST):
-        s.const_mem.recv_pkt.val @= 1
+      elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
+        s.const_mem.recv_const.val @= 1
         s.const_mem.recv_const.msg @= DataType(s.recv_ctrl_pkt.msg.data)
         s.recv_ctrl_pkt.rdy @= 1
 
       # todo
       # Verify: Can reset be used to clear?
-      elif s.recv_ctrl_pkt.msg.cmd_action == CMD_CONST_CLEAR:
-        s.const_mem.reset()
+      # elif s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST_CLEAR:
+      #   s.const_mem.reset()
 
 
     # Updates the configuration memory related signals.
