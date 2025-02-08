@@ -48,25 +48,25 @@ from ...mem.ctrl.CtrlMemRTL import CtrlMemRTL
 class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
+                CpuPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, src_data, src_ctrl_pkt, sink_out):
+                num_tile_outports, src_data, src_cpu_pkt, sink_out):
 
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
 
-    s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_cpu_pkt = ValRdyTestSrcRTL(CpuPktType, src_cpu_pkt)
     s.src_data = [ValRdyTestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
     s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
+    s.dut = DUT(DataType, PredicateType, CpuPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, FunctionUnit, FuList)
 
-    connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
+    connect(s.src_cpu_pkt.send, s.dut.recv_ctrl_pkt)
 
     for i in range(num_tile_inports):
       connect(s.src_data[i].send, s.dut.recv_data[i])
@@ -128,43 +128,43 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlPktType = \
-      mk_ring_across_tiles_pkt(num_terminals,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+  CpuPktType = \
+      mk_intra_cgra_pkt(num_terminals,
+                       num_ctrl_actions,
+                       ctrl_mem_size,
+                       num_ctrl_operations,
+                       num_fu_inports,
+                       num_fu_outports,
+                       num_tile_inports,
+                       num_tile_outports)
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
                        num_fu_outports, num_tile_inports,
                        num_tile_outports)
-  src_ctrl_pkt = [
+  src_cpu_pkt = [
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
+      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
+      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
+      CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
+      CpuPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -185,10 +185,10 @@ def test_tile_alu(cmdline_opts):
               [DataType(9, 1), DataType(4, 1)]]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   CtrlPktType, CtrlSignalType, ctrl_mem_size,
+                   CpuPktType, CtrlSignalType, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports, src_data,
-                   src_ctrl_pkt, sink_out)
+                   src_cpu_pkt, sink_out)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

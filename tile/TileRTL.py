@@ -15,6 +15,9 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
+
+from lib.cmd_type import CMD_CONFIG, CMD_CONST, CMD_CONST_CLEAR
+from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
@@ -33,12 +36,12 @@ from ..rf.RegisterRTL import RegisterRTL
 
 class TileRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
+  def construct(s, DataType, PredicateType, CpuPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
-                    MemUnitRTL], const_list = None, id = 0):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
+                const_list = None, id = 0):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -57,7 +60,9 @@ class TileRTL(Component):
                    for _ in range (num_tile_outports)]
 
     # Ctrl.
-    s.recv_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    # todo
+    # Actually it contains both ctrl and const, change name later once component works.
+    s.recv_ctrl_pkt = RecvIfcRTL(CpuPktType)
 
     # Data.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
@@ -69,8 +74,8 @@ class TileRTL(Component):
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, FuList)
-    s.const_queue = ConstQueueRTL(DataType, const_list \
-        if const_list != None else [DataType(0)])
+    # s.const_queue = ConstQueueRTL(DataType, const_list \
+    #     if const_list != None else [DataType(0)])
     s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
@@ -80,11 +85,12 @@ class TileRTL(Component):
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports, id,
                                 "fu")
-    s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType,
+    s.ctrl_mem = CtrlMemDynamicRTL(CpuPktType, CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
                                    num_tile_inports, num_tile_outports,
                                    num_ctrl, total_steps)
+    s.const_mem = ConstQueueDynamicRTL(DataType, data_mem_size)
     # The `tile_out_channel` indicates the outport channels that are
     # connected to the next tiles.
     s.tile_out_channel = [ChannelRTL(DataType, latency = 1)
@@ -114,7 +120,7 @@ class TileRTL(Component):
     s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
 
     # Constant queue.
-    s.element.recv_const //= s.const_queue.send_const
+    s.element.recv_const //= s.const_mem.send_const
 
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
@@ -174,6 +180,30 @@ class TileRTL(Component):
       s.fu_crossbar.send_data[num_tile_outports + i] //= s.fu_in_or_link[i].recv_fu
       s.routing_crossbar.send_data[num_tile_outports + i] //= s.fu_in_or_link[i].recv_xbar
       s.fu_in_or_link[i].send //= s.fu_in_channel[i].recv
+
+    @update
+    def feed_pkt():
+      s.ctrl_mem.recv_pkt.msg @= CpuPktType(0)
+      s.const_mem.recv_const.msg @= DataType(0)
+      s.ctrl_mem.recv_pkt.val @= 0
+      s.const_mem.recv_const.val @= 0
+      s.recv_ctrl_pkt.rdy @= 0
+
+      if s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.cmd_action == CMD_CONFIG):
+        s.ctrl_mem.recv_pkt.val @= 1
+        s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
+        s.recv_ctrl_pkt.rdy @= 1
+
+      elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.cmd_action == CMD_CONST):
+        s.const_mem.recv_pkt.val @= 1
+        s.const_mem.recv_const.msg @= DataType(s.recv_ctrl_pkt.msg.data)
+        s.recv_ctrl_pkt.rdy @= 1
+
+      # todo
+      # Verify: Can reset be used to clear?
+      elif s.recv_ctrl_pkt.msg.cmd_action == CMD_CONST_CLEAR:
+        s.const_mem.reset()
+
 
     # Updates the configuration memory related signals.
     @update
