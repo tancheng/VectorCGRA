@@ -50,7 +50,8 @@ class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, src_data, src_ctrl_pkt, sink_out):
+                num_tile_outports, num_registers_per_reg_bank, src_data,
+                src_ctrl_pkt, sink_out):
 
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
@@ -64,7 +65,8 @@ class TestHarness(Component):
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, FunctionUnit, FuList)
+                num_tile_outports, num_registers_per_reg_bank,
+                FunctionUnit, FuList)
 
     connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
 
@@ -105,6 +107,7 @@ def test_tile_alu(cmdline_opts):
   num_terminals = 4
   num_ctrl_actions = 6
   num_ctrl_operations = 64
+  num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -138,9 +141,9 @@ def test_tile_alu(cmdline_opts):
                                num_tile_inports,
                                num_tile_outports)
   CtrlSignalType = \
-      mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
-                       num_fu_outports, num_tile_inports,
-                       num_tile_outports)
+      mk_separate_reg_ctrl(num_ctrl_operations, num_fu_inports,
+                           num_fu_outports, num_tile_inports,
+                           num_tile_outports, num_registers_per_reg_bank)
 #   src_ctrl_pkt = [
 #                 # src dst vc_id opq cmd_type    addr operation predicate
 #       CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
@@ -210,7 +213,8 @@ def test_tile_alu(cmdline_opts):
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
-                   num_tile_inports, num_tile_outports, src_data,
+                   num_tile_inports, num_tile_outports,
+                   num_registers_per_reg_bank, src_data,
                    src_ctrl_pkt, sink_out)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
