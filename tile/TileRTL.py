@@ -16,7 +16,7 @@ Author : Cheng Tan
 
 from pymtl3 import *
 
-from lib.cmd_type import CMD_CONFIG, CMD_CONST, CMD_CONST_CLEAR
+from ..lib.cmd_type import CMD_CONFIG, CMD_CONST, CMD_CONST_CLEAR
 from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
