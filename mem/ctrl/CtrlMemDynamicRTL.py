@@ -78,11 +78,17 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.ctrl_predicate
         for i in range(num_fu_inports):
           s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_in[i]
+          s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_from[i]
+          s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_idx[i]
+          s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_from[i]
+          s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_idx[i]
         for i in range(num_routing_outports):
           s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[i]
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[i]
         for i in range(num_tile_inports):
           s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_predicate_in[i]
+        s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.ctrl_vector_factor_power
+        s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.ctrl_is_last_ctrl
 
       if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
