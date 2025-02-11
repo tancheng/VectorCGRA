@@ -14,6 +14,7 @@ from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
+from ....lib.util.common import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -29,12 +30,12 @@ class TestHarness( Component ):
     s.reg_bank = RegisterBankRTL(DataType, ConfigType, reg_bank_id,
                                  num_registers)
 
-    s.reg_bank.inport_wdata[0] //= src_msgs[0]
-    s.reg_bank.inport_wdata[1] //= src_msgs[1]
-    s.reg_bank.inport_wdata[2] //= src_msgs[2]
-    s.reg_bank.inport_valid[0] //= 1
-    s.reg_bank.inport_valid[1] //= 1
-    s.reg_bank.inport_valid[2] //= 1
+    s.reg_bank.inport_wdata[PORT_ROUTING_CROSSBAR] //= src_msgs[PORT_ROUTING_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_FU_CROSSBAR] //= src_msgs[PORT_FU_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_CONST] //= src_msgs[PORT_CONST]
+    s.reg_bank.inport_valid[PORT_ROUTING_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_FU_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
     s.reg_bank.send_data_to_fu //= s.sink.recv
 
