@@ -27,7 +27,6 @@ from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..mem.const.ConstQueueRTL import ConstQueueRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
@@ -108,6 +107,8 @@ class TileRTL(Component):
     s.fu_in_or_link = [LinkOrRTL(DataType) for _ in range(num_fu_inports)]
 
     # Additional one register for partial predication
+    # todo
+    # what is this?
     s.reg_predicate = RegisterRTL(PredicateType)
 
     # Signals indicating whether certain modules already done their jobs.
@@ -121,6 +122,7 @@ class TileRTL(Component):
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
+
 
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
@@ -196,13 +198,10 @@ class TileRTL(Component):
 
       elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
         s.const_mem.recv_const.val @= 1
-        s.const_mem.recv_const.msg @= DataType(s.recv_ctrl_pkt.msg.data)
+        # todo
+        # input data with 64 bits not work?
+        s.const_mem.recv_const.msg.payload @= s.recv_ctrl_pkt.msg.data
         s.recv_ctrl_pkt.rdy @= 1
-
-      # todo
-      # Verify: Can reset be used to clear?
-      # elif s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST_CLEAR:
-      #   s.const_mem.reset()
 
 
     # Updates the configuration memory related signals.
@@ -252,5 +251,6 @@ class TileRTL(Component):
     fu_in_channel_send_str = "|".join([str(x.send.msg) for x in s.fu_in_channel])
     out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
-    return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
+    const_mem = s.const_mem.line_trace()
+    return f"tile_inports: {recv_str} => [routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || tile_out_channels: {tile_out_channel_recv_str} => {tile_out_channel_send_str} || fu_in_channels: {fu_in_channel_recv_str} => {fu_in_channel_send_str}]  => tile_outports: {out_str} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
 

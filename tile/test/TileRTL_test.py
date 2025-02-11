@@ -95,6 +95,7 @@ class TestHarness(Component):
     return s.dut.line_trace()
 
 def test_tile_alu(cmdline_opts):
+  cmdline_opts['max_cycles'] = 20
   num_tile_inports = 4
   num_tile_outports = 4
   num_fu_inports = 4
@@ -126,7 +127,8 @@ def test_tile_alu(cmdline_opts):
             VectorMulComboRTL,
             VectorAdderComboRTL]
   # 64-bit to satisfy the default bitwidth of vector FUs.
-  DataType = mk_data(64, 1)
+  data_nbits = 64
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   # mk_intra_cgra_pkt(nrouters = 4,
   #                   cmd_nbits = 4,
@@ -148,6 +150,7 @@ def test_tile_alu(cmdline_opts):
                                  ctrl_fu_outports=num_fu_outports,
                                  ctrl_tile_inports=num_tile_inports,
                                  ctrl_tile_outports=num_tile_outports,
+                                 data_nbits = data_nbits,
                                  )
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
@@ -157,16 +160,77 @@ def test_tile_alu(cmdline_opts):
                # cgraId, srcTile, dstTile, opaque, vc_id, ctrl_action, ctrl_addr,  ctrl_operation, ctrl_predicate,     ctrl_fu_in,
       CpuPktType(     0,       0,       0,      0,     0,  CMD_CONFIG,         0,         OPT_NAH,          b1(0), pick_register0,
                   # ctrl_routing_xbar_outport
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                  [# to fu
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                   # to tile
+                   # why this maps with tile_inports: (0000000000000003.1.0.0, val: 1, rdy: 0)|(0000000000000000.0.0.0, val: 0, rdy: 0)|(0000000000000004?
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                   # ctrl_routing_predicate_in
                   [b1(1), b1(1), b1(1), b1(1)],
-                  #     cmd, addr,  data,   data_predicate
-                  CMD_CONST,    0,     1,            b1(1)
+                  #     cmd, addr,           data,   data_predicate
+                  # todo
+                  # Shouldn't data use DataType?
+                        0,      0, 1,            b1(1)
                 ),
+      CpuPktType(0, 0, 0, 0, 0, CMD_CONFIG, 0, OPT_NAH, b1(0), pick_register0,
+                 # ctrl_routing_xbar_outport
+                 [  # to fu
+                     TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                     # to tile
+                     TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                 # fu_xbar_output
+                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                 # ctrl_routing_predicate_in
+                 [b1(1), b1(1), b1(1), b1(1)],
+                 #     cmd, addr,           data,   data_predicate
+                 0, 0, 2, b1(1)
+                 ),
+      CpuPktType(0, 0, 0, 0, 0, CMD_CONFIG, 1, OPT_ADD, b1(0), pick_register0,
+                 # ctrl_routing_xbar_outport
+                 [  # to fu
+                     TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                     # to tile
+                     TileInType(4), TileInType(7), TileInType(0), TileInType(0)],
+                 # fu_xbar_output
+                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                 # ctrl_routing_predicate_in
+                 [b1(1), b1(1), b1(1), b1(1)],
+                 #     cmd, addr,           data,   data_predicate
+                 0,    1, 0,   b1(1)
+                 ),
+      # CpuPktType(0, 0, 0, 0, 0, CMD_CONFIG, 2, OPT_SUB, b1(0), pick_register0,
+      #            # ctrl_routing_xbar_outport
+      #            [  # to fu
+      #                TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #                # to tile
+      #                TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #            # fu_xbar_output
+      #            [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+      #             FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+      #            # ctrl_routing_predicate_in
+      #            [b1(1), b1(1), b1(1), b1(1)],
+      #            #     cmd, addr,           data,   data_predicate
+      #            CMD_CONST,    1, DataType(3, 1),   b1(1)
+      #            ),
+      # CpuPktType(0, 0, 0, 0, 0, CMD_LAUNCH, 0, OPT_ADD, b1(0), pick_register0,
+      #            # ctrl_routing_xbar_outport
+      #            [  # to fu
+      #                TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #                # to tile
+      #                TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #            # fu_xbar_output
+      #            [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #             FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+      #            # ctrl_routing_predicate_in
+      #            [b1(1), b1(1), b1(1), b1(1)],
+      #            #     cmd, addr,           data,   data_predicate
+      #            CMD_CONST,    2, DataType(4, 1),   b1(1)
+      #            ),
       # CpuPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
       #             # routing_xbar_output
       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -212,5 +276,7 @@ def test_tile_alu(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
+  # todo
+  # cmdline_ops 不放在这里不起作用
+  run_sim(th, cmdline_opts)
 

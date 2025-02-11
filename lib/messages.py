@@ -539,8 +539,10 @@ def mk_intra_cgra_pkt(nrouters = 4,
   TileIdType = mk_bits(clog2(nrouters))
   opaque_nbits = 8
   OpqType = mk_bits(opaque_nbits)
+  # config or data or const
   CtrlActionType = mk_bits(clog2(ctrl_actions))
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  # add, sub ...
   CtrlOperationType = mk_bits(clog2(ctrl_operations))
   CtrlTileInType = mk_bits(clog2(ctrl_tile_inports + 1))
   CtrlTileOutType = mk_bits(clog2(ctrl_tile_outports + 1))
@@ -550,9 +552,12 @@ def mk_intra_cgra_pkt(nrouters = 4,
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
   VcIdType = mk_bits(1)
+  # todo
+  # If not for read data/config same time, what is CmdType for?
   CmdType = mk_bits(cmd_nbits)
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
+  # todo
   DataPredicateType = mk_bits(predicate_nbits)
 
 
@@ -621,6 +626,8 @@ def mk_intra_cgra_pkt(nrouters = 4,
   field_dict['cmd'] = CmdType
   field_dict['addr'] = AddrType
   field_dict['data'] = DataType
+  # todo
+  # predicate 用于控制是否有效？
   field_dict['data_predicate'] = DataPredicateType
 
   return mk_bitstruct(new_name, field_dict,
