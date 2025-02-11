@@ -245,6 +245,143 @@ def mk_separate_ctrl(num_operations = 7,
     namespace = { '__str__': str_func }
   )
 
+def mk_separate_reg_ctrl(num_operations = 7,
+                         num_fu_inports = 4,
+                         num_fu_outports = 2,
+                         num_tile_inports = 5,
+                         num_tile_outports = 5,
+                         num_registers_per_reg_bank = 16,
+                         prefix = "CGRAConfig"):
+  operation_nbits = clog2(num_operations)
+  OperationType = mk_bits(operation_nbits)
+  TileInportsType = mk_bits(clog2(num_tile_inports  + 1))
+  TileOutportsType = mk_bits(clog2(num_tile_outports + 1))
+  num_routing_outports = num_tile_outports + num_fu_inports
+  RoutingOutportsType = mk_bits(clog2(num_routing_outports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  predicate_nbits = 1
+  PredicateType = mk_bits(predicate_nbits)
+  vector_factor_power_nbits = 3
+  VectorFactorPowerType = mk_bits(vector_factor_power_nbits)
+  # 3 inports of register file bank.
+  RegFromType = mk_bits(2)
+  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
+
+  new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
+             f"{num_fu_outports}_{num_tile_inports}_" \
+             f"{num_tile_outports}_{predicate_nbits}_" \
+             f"{vector_factor_power_nbits}"
+
+  def str_func(s):
+    out_str = '(fu_in)'
+    for i in range(num_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.fu_in[i]))
+
+    # out_str = '|(fu_out)'
+    # for i in range(num_fu_out):
+    #   if i != 0:
+    #     out_str += '-'
+    #   out_str += str(int(s.fu_out[i]))
+
+    out_str += '|(predicate)'
+    out_str += str(int(s.predicate))
+
+    out_str += '|(routing_xbar_out)'
+    for i in range(num_routing_outports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.routing_xbar_outport[i]))
+
+    out_str += '|(fu_xbar_out)'
+    for i in range(num_routing_outports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.fu_xbar_outport[i]))
+
+    out_str += '|(predicate_in)'
+    for i in range(num_tile_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.routing_predicate_in[i]))
+
+    out_str += '|(vector_factor_power)'
+    out_str += str(int(s.vector_factor_power))
+
+    out_str += '|(is_last_ctrl)'
+    out_str += str(int(s.is_last_ctrl))
+
+    out_str += '|(read_reg_from)'
+    for i in range(num_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.read_reg_from[i]))
+
+    out_str += '|(write_reg_from)'
+    for i in range(num_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.write_reg_from[i]))
+
+    out_str += '|(write_reg_idx)'
+    for i in range(num_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.write_reg_idx[i]))
+
+    out_str += '|(read_reg_idx)'
+    for i in range(num_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.read_reg_idx[i]))
+
+    return f"(opt){s.ctrl}|{out_str}"
+
+  field_dict = {}
+  field_dict['ctrl'] = OperationType
+  # TODO: need fix to pair `predicate` with specific operation.
+  # The 'predicate' indicates whether the current operation is based on
+  # the partial predication or not. Note that 'predicate' is different
+  # from the following 'predicate_in', which contributes to the 'predicate'
+  # at the next cycle.
+  field_dict['predicate'] = PredicateType
+  # The fu_in indicates the input register ID (i.e., operands) for the
+  # operation.
+  field_dict['fu_in'] = [FuInType for _ in range(num_fu_inports)]
+
+  field_dict['routing_xbar_outport'] = [TileInportsType for _ in range(
+      num_routing_outports)]
+  field_dict['fu_xbar_outport'] = [FuOutType for _ in range(
+      num_routing_outports)]
+  # I assume one tile supports single predicate during the entire execution
+  # time, as it is hard to distinguish predication for different operations
+  # (we automatically update, i.e., 'or', the predicate stored in the
+  # predicate register). This should be guaranteed by the compiler.
+  field_dict['routing_predicate_in'] = [PredicateType for _ in range(
+      num_tile_inports)]
+
+  field_dict['vector_factor_power'] = VectorFactorPowerType
+
+  field_dict['is_last_ctrl'] = b1
+
+  # Register file related signals.
+  # Indicates whether to write data into the register bank, and the
+  # corresponding inport.
+  field_dict['write_reg_from'] = [RegFromType for _ in range(num_fu_inports)]
+  field_dict['write_reg_idx'] = [RegIdxType for _ in range(num_fu_inports)]
+  # Indicates whether to read data from the register bank.
+  field_dict['read_reg_from'] = [b1 for _ in range(num_fu_inports)]
+  field_dict['read_reg_idx'] = [RegIdxType for _ in range(num_fu_inports)]
+
+  # TODO: to support multiple predicate
+  # field_dict[ 'predicate_in0' ] = ...
+  # field_dict[ 'predicate_in1' ] = ...
+
+  return mk_bitstruct( new_name, field_dict,
+    namespace = { '__str__': str_func }
+  )
 
 #=========================================================================
 # Cmd message
@@ -393,7 +530,9 @@ def mk_multi_cgra_noc_pkt(ncols = 2, nrows = 2, opaque_nbits = 8, vc = 2,
     )
 
 #=========================================================================
-# Ring for delivering ctrl signals and commands across tiles
+# Ring for delivering ctrl signals and commands across tiles. Each ctrl
+# signal contains the information about which register holding the operand
+# that required by FU.
 #=========================================================================
 
 def mk_ring_across_tiles_pkt(nrouters = 4,
@@ -404,6 +543,7 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
                              ctrl_fu_outports = 4,
                              ctrl_tile_inports = 5,
                              ctrl_tile_outports = 5,
+                             ctrl_registers_per_reg_bank = 16,
                              prefix="RingAcrossTilesPacket"):
 
   IdType = mk_bits(clog2(nrouters))
@@ -419,11 +559,18 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(1)
+  vector_factor_power_nbits = 3
+  CtrlVectorFactorPowerType = mk_bits(vector_factor_power_nbits)
+
+  # 3 inports of register file bank.
+  CtrlRegFromType = mk_bits(2)
+  CtrlRegIdxType = mk_bits(clog2(ctrl_registers_per_reg_bank))
   VcIdType = mk_bits(1)
 
   new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
-             f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
-             f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
+             f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_" \
+             f"{ctrl_fu_outports}_{ctrl_tile_inports}_" \
+             f"{ctrl_tile_outports}_{ctrl_registers_per_reg_bank}"
 
   def str_func(s):
     out_str = '(ctrl_operation)' + str(s.ctrl_operation)
@@ -453,6 +600,36 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
       if i != 0:
         out_str += '-'
       out_str += str(int(s.ctrl_routing_predicate_in[i]))
+
+    out_str += '|(ctrl_vector_factor_power)'
+    out_str += str(int(s.ctrl_vector_factor_power))
+
+    out_str += '|(ctrl_is_last_ctrl)'
+    out_str += str(int(s.ctrl_is_last_ctrl))
+
+    out_str += '|(ctrl_read_reg_from)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_read_reg_from[i]))
+
+    out_str += '|(write_reg_from)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_write_reg_from[i]))
+
+    out_str += '|(write_reg_idx)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_write_reg_idx[i]))
+
+    out_str += '|(read_reg_idx)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_read_reg_idx[i]))
 
     return f"{s.src}>{s.dst}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
@@ -485,6 +662,19 @@ def mk_ring_across_tiles_pkt(nrouters = 4,
   # predicate register). This should be guaranteed by the compiler.
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
       ctrl_tile_inports)]
+
+  field_dict['ctrl_vector_factor_power'] = CtrlVectorFactorPowerType
+
+  field_dict['ctrl_is_last_ctrl'] = b1
+
+  # Register file related signals.
+  # Indicates whether to write data into the register bank, and the
+  # corresponding inport.
+  field_dict['ctrl_write_reg_from'] = [CtrlRegFromType for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_write_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
+  # Indicates whether to read data from the register bank.
+  field_dict['ctrl_read_reg_from'] = [b1 for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_read_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}

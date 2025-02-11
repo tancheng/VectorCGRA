@@ -17,7 +17,7 @@ from ..lib.opt_type import *
 class CrossbarRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
-                num_outports = 5, id = 0, crossbar_type = "None"):
+                num_outports = 5, id = 0):
 
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2

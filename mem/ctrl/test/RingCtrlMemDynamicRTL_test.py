@@ -96,6 +96,7 @@ def test_Ctrl():
   num_ctrl_actions = 6
   ctrl_action_nbits = clog2(num_ctrl_actions)
   num_ctrl_operations = 64
+  num_registers_per_reg_bank = 16
   CtrlPktType = mk_ring_across_tiles_pkt(num_terminals,
                                          num_ctrl_actions,
                                          ctrl_mem_size,
@@ -104,11 +105,12 @@ def test_Ctrl():
                                          num_fu_outports,
                                          num_tile_inports,
                                          num_tile_outports)
-  CtrlSignalType = mk_separate_ctrl(num_ctrl_operations,
-                                    num_fu_inports,
-                                    num_fu_outports,
-                                    num_tile_inports,
-                                    num_tile_outports)
+  CtrlSignalType = mk_separate_reg_ctrl(num_ctrl_operations,
+                                        num_fu_inports,
+                                        num_fu_outports,
+                                        num_tile_inports,
+                                        num_tile_outports,
+                                        num_registers_per_reg_bank)
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 

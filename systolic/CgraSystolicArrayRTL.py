@@ -26,7 +26,8 @@ class CgraSystolicArrayRTL(Component):
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, controller_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
-                data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
+                data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, controller2addr_map,
                 preload_data = None, preload_const = None):
 
@@ -67,8 +68,9 @@ class CgraSystolicArrayRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, FuList = FuList,
-                      const_list = preload_const[i], id = i)
+                      s.num_mesh_ports, num_registers_per_reg_bank,
+                      FuList = FuList, const_list = preload_const[i],
+                      id = i)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
                                         data_mem_size_global,
