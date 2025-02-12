@@ -32,8 +32,8 @@ class TestHarness(Component):
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, src_ctrl_pkt, ctrl_steps,
-                controller2addr_map):
+                num_banks_per_cgra, num_registers_per_reg_bank,
+                src_ctrl_pkt, ctrl_steps, controller2addr_map):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
@@ -41,9 +41,10 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, cgra_rows, cgra_columns, height, width,
-                ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, ctrl_steps, ctrl_steps,
+                NocPktType, CmdType, cgra_rows, cgra_columns, height,
+                width, ctrl_mem_size, data_mem_size_global,
+                data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
@@ -61,12 +62,12 @@ def test_homo_2x2(cmdline_opts):
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = 16
+  ctrl_mem_size = 6
   data_mem_size_global = 32
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
-  cgra_rows = 1
-  cgra_columns = 4
+  cgra_rows = 2
+  cgra_columns = 2
   num_terminals = cgra_rows * cgra_columns
   width = 2
   height = 2
@@ -86,6 +87,7 @@ def test_homo_2x2(cmdline_opts):
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   cmd_nbits = 5
+  num_registers_per_reg_bank = 16
   CmdType = mk_bits(cmd_nbits)
   controller2addr_map = {
           0: [0, 7],
@@ -94,7 +96,6 @@ def test_homo_2x2(cmdline_opts):
           3: [24, 31],
   }
 
-  cmd_nbits = 4
   cgraId_nbits = 2
   data_nbits = 32
   addr_nbits = clog2(data_mem_size_global)
@@ -111,19 +112,21 @@ def test_homo_2x2(cmdline_opts):
                         num_fu_outports,
                         num_tile_inports,
                         num_tile_outports,
+                        num_registers_per_reg_bank,
                         addr_nbits,
                         data_nbits,
                         predicate_nbits)
 
   CtrlSignalType = \
-      mk_separate_ctrl(num_ctrl_operations,
-                       num_fu_inports,
-                       num_fu_outports,
-                       num_tile_inports,
-                       num_tile_outports)
+      mk_separate_reg_ctrl(num_ctrl_operations,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
-                                     nrows = cgra_rows,
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+                                     nrows = 1,
                                      ntiles = width * height,
                                      addr_nbits = data_addr_nbits,
                                      data_nbits = 32,
@@ -206,7 +209,8 @@ def test_homo_2x2(cmdline_opts):
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, CtrlPktType,
                    CtrlSignalType, NocPktType, CmdType, cgra_rows, cgra_columns,
                    width, height, ctrl_mem_size, data_mem_size_global,
-                   data_mem_size_per_bank, num_banks_per_cgra, src_ctrl_pkt,
+                   data_mem_size_per_bank, num_banks_per_cgra,
+                   num_registers_per_reg_bank, src_ctrl_pkt,
                    ctrl_mem_size, controller2addr_map)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
