@@ -463,8 +463,8 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 # Mesh multi-CGRA data/config/cmd packet
 #=========================================================================
 
-def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, opaque_nbits = 8, vc = 16,
-                          cmd_nbits = 4, addr_nbits = 16,
+def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, opaque_nbits = 8, vc = 2,
+                          cmd_nbits = 6, addr_nbits = 16,
                           data_nbits = 16, predicate_nbits = 1,
                           ctrl_actions = 8,
                           ctrl_mem_size = 16,
