@@ -156,7 +156,7 @@ num_tile_outports = 4
 data_mem_size_global = 16
 addr_nbits = clog2(data_mem_size_global)
 AddrType = mk_bits(addr_nbits)
-
+num_registers_per_reg_bank = 16
 controller_id = 1
 
 idTo2d_map = {
@@ -183,6 +183,7 @@ FromCpuPktType = mk_intra_cgra_pkt(ntiles,
                                      num_fu_outports,
                                      num_tile_inports,
                                      num_tile_outports,
+                                     num_registers_per_reg_bank,
                                      addr_nbits,
                                      data_nbits,
                                      predicate_nbits)

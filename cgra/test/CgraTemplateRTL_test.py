@@ -236,6 +236,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                         num_fu_outports,
                         num_tile_inports,
                         num_tile_outports,
+                        num_registers_per_reg_bank,
                         addr_nbits,
                         data_nbits,
                         predicate_nbits)

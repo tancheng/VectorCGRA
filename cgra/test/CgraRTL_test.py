@@ -160,6 +160,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                         num_fu_outports,
                         num_tile_inports,
                         num_tile_outports,
+                        num_registers_per_reg_bank,
                         addr_nbits,
                         data_nbits,
                         predicate_nbits)
