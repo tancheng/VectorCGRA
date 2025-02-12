@@ -113,6 +113,7 @@ def test_homo_2x2(cmdline_opts):
                         num_fu_outports,
                         num_tile_inports,
                         num_tile_outports,
+                        num_registers_per_reg_bank,
                         addr_nbits,
                         data_nbits,
                         predicate_nbits)
