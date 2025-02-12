@@ -32,7 +32,7 @@ class CtrlMemDynamicRTL(Component):
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
     # Constant
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter + 1)))
     PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     TimeType = mk_bits(clog2(total_ctrl_steps + 1))
     num_routing_outports = num_tile_outports + num_fu_inports
@@ -78,11 +78,17 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.ctrl_predicate
         for i in range(num_fu_inports):
           s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_in[i]
+          s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_from[i]
+          s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_idx[i]
+          s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_from[i]
+          s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_idx[i]
         for i in range(num_routing_outports):
           s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[i]
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[i]
         for i in range(num_tile_inports):
           s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_predicate_in[i]
+        s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.ctrl_vector_factor_power
+        s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.ctrl_is_last_ctrl
 
       if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
@@ -131,13 +137,12 @@ class CtrlMemDynamicRTL(Component):
           s.times <<= s.times + TimeType(1)
         # Reads the next ctrl signal only when the current one is done.
         if s.send_ctrl.rdy:
-          if zext(s.reg_file.raddr[0] + 1, PCType) == \
-             PCType(ctrl_count_per_iter):
+          if (s.reg_file.raddr[0] + 1)  == CtrlAddrType(ctrl_count_per_iter):
             s.reg_file.raddr[0] <<= CtrlAddrType(0)
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'{s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}'
+    return f'recv_pkt: {s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}'
 

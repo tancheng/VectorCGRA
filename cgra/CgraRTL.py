@@ -27,7 +27,8 @@ class CgraRTL(Component):
                 NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
                 multi_cgra_columns, controller_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
-                data_mem_size_per_bank, num_banks_per_cgra, num_ctrl,
+                data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, cgra_topology,
                 controller2addr_map, idTo2d_map, preload_data = None,
                 preload_const = None):
@@ -71,7 +72,7 @@ class CgraRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports,
+                      s.num_mesh_ports, num_registers_per_reg_bank,
                       FuList = FuList,
                       const_list = preload_const[i])
               for i in range(s.num_tiles)]
