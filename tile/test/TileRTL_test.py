@@ -128,49 +128,63 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
+
+  cmd_nbits = 4
+  cgraId_nbits = 4
+  data_nbits = 32
+  data_mem_size_global = 16
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(num_terminals,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+        mk_intra_cgra_pkt(num_terminals,
+                        cmd_nbits,
+                        cgraId_nbits,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        addr_nbits,
+                        data_nbits,
+                        predicate_nbits)
+
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
                        num_fu_outports, num_tile_inports,
                        num_tile_outports)
   src_ctrl_pkt = [
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
+      CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_NAH,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+      CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+      CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_SUB, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-      CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+      CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0)]
   src_data = [[DataType(3, 1)],
               [],
               [DataType(4, 1)],

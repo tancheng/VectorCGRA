@@ -75,7 +75,7 @@ class TestHarness(Component):
                 idTo2d_map)
 
     # Connections
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
     s.dut.send_to_noc.rdy //= 0
     s.dut.recv_from_noc.val //= 0
@@ -183,7 +183,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 2
   num_terminals = 4
-  num_ctrl_actions = 6
+  num_ctrl_actions = 64
   num_ctrl_operations = 64
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
@@ -216,15 +216,27 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
           3: [3, 0],
   }
 
+  cmd_nbits = 4
+  cgraId_nbits = 2
+  data_nbits = 32
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+      mk_intra_cgra_pkt(width * height,
+                        cmd_nbits,
+                        cgraId_nbits,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        addr_nbits,
+                        data_nbits,
+                        predicate_nbits)
+
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations,
                        num_fu_inports,
@@ -234,19 +246,27 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
+                                     ntiles = width * height,
                                      addr_nbits = addr_nbits,
-                                     data_nbits = 32,
-                                     predicate_nbits = 1)
+                                     data_nbits = data_nbits,
+                                     predicate_nbits = 1,
+                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_mem_size = ctrl_mem_size,
+                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_fu_inports = num_fu_inports,
+                                     ctrl_fu_outports = num_fu_outports,
+                                     ctrl_tile_inports = num_tile_inports,
+                                     ctrl_tile_outports = num_tile_outports)
+
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
-                # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
-                  pick_register, tile_in_code, fu_out_code),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
+                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
       # This last one is for launching kernel.
-      CtrlPktType(0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
-                  pick_register, tile_in_code, fu_out_code)
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
+                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0)
       ] for i in range(num_tiles)]
 
   src_ctrl_pkt = []

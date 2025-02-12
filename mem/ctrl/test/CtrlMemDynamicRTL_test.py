@@ -94,33 +94,47 @@ def test_Ctrl():
   num_tile_inports = 4
   num_tile_outports = 4
   num_terminals = 4
-  num_ctrl_actions = 6
+  num_ctrl_actions = 64
   ctrl_action_nbits = clog2(num_ctrl_actions)
   num_ctrl_operations = 64
-  CtrlPktType = mk_ring_across_tiles_pkt(num_terminals,
-                                         num_ctrl_actions,
-                                         ctrl_mem_size,
-                                         num_ctrl_operations,
-                                         num_fu_inports,
-                                         num_fu_outports,
-                                         num_tile_inports,
-                                         num_tile_outports)
+
+  cmd_nbits = 4
+  cgraId_nbits = 4
+  data_nbits = 32
+  data_mem_size_global = 16
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
+  CtrlPktType = \
+        mk_intra_cgra_pkt(num_terminals,
+                        cmd_nbits,
+                        cgraId_nbits,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        addr_nbits,
+                        data_nbits,
+                        predicate_nbits)
+
   CtrlSignalType = mk_separate_ctrl(num_ctrl_operations,
                                     num_fu_inports,
                                     num_fu_outports,
                                     num_tile_inports,
                                     num_tile_outports)
   FuInType = mk_bits(clog2(num_fu_inports + 1))
-  pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
+  pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   AddrType = mk_bits(clog2(ctrl_mem_size))
   src_data0 = [DataType(1, 1), DataType(5, 1), DataType(7, 1), DataType(6, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1), DataType(2, 1), DataType(3, 1)]
-
-  src_ctrl_pkt = [CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 0, OPT_ADD, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 1, OPT_SUB, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 2, OPT_SUB, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, 0, CMD_CONFIG, 3, OPT_ADD, b1(0), pickRegister),
-                  CtrlPktType(0, 1, 0, 0, CMD_LAUNCH, 0, OPT_ADD, b1(0), pickRegister)]
+  src_ctrl_pkt = [CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0),
+                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 1, OPT_SUB, 0, pick_register, [], [], [], 0, 0, 0, 0),
+                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 2, OPT_SUB, 0, pick_register, [], [], [], 0, 0, 0, 0),
+                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 3, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0),
+                  CtrlPktType(0, 0,  1,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,

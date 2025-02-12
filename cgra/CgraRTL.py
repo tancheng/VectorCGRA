@@ -49,7 +49,7 @@ class CgraRTL(Component):
            data_mem_size_global)
 
     # Interfaces
-    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
@@ -102,7 +102,12 @@ class CgraRTL(Component):
     s.send_to_noc //= s.controller.send_to_noc
 
     # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_ctrl_pkt //= s.controller.recv_from_cpu_ctrl_pkt
+    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    #@update
+    #def manuallySetRdy():
+    #  s.controller.recv_from_cpu_pkt.val @= s.recv_from_cpu_pkt.val
+    #  s.controller.recv_from_cpu_pkt.msg @= s.recv_from_cpu_pkt.msg
+    #  s.recv_from_cpu_pkt.rdy @= 1
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):

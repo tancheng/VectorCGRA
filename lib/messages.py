@@ -326,7 +326,7 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 # Mesh multi-CGRA data/config/cmd packet
 #=========================================================================
 
-def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, opaque_nbits = 8, vc = 2,
+def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, opaque_nbits = 8, vc = 16,
                           cmd_nbits = 4, addr_nbits = 16,
                           data_nbits = 16, predicate_nbits = 1,
                           ctrl_actions = 8,
@@ -341,12 +341,13 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, opaque_nbits = 8, vc = 2,
   IdType = mk_bits(max(clog2(ncols * nrows), 1))
   XType = mk_bits(max(clog2(ncols), 1))
   YType = mk_bits(max(clog2(nrows), 1))
+  TileIdType = mk_bits(max(clog2(ntiles), 1))
   OpqType = mk_bits(opaque_nbits)
   CmdType = mk_bits(cmd_nbits)
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
   PredicateType = mk_bits(predicate_nbits)
-  PayloadType = mk_bits(1)
+  PayloadType = mk_bits(32)
 
   CtrlActionType = mk_bits(clog2(ctrl_actions))
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
@@ -361,30 +362,32 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, opaque_nbits = 8, vc = 2,
   VcIdType = mk_bits(clog2(vc))
 
   new_name = f"{prefix}_{ncols*nrows}_{ncols}x{nrows}_{vc}_{opaque_nbits}_" \
-             f"{cmd_nbits}_{addr_nbits}_{data_nbits}_{predicate_nbits}_1"
+             f"{cmd_nbits}_{addr_nbits}_{data_nbits}_{predicate_nbits}_{ctrl_actions}_{ctrl_mem_size}_" \
+             f"{ctrl_operations}_{ctrl_fu_inports}_{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
 
   field_dict = {}
-  field_dict['src'] = IdType
-  field_dict['dst'] = IdType
-  field_dict['src_x'] = XType
+  field_dict['src'] = IdType # src CGRA id
+  field_dict['dst'] = IdType # dst CGRA id
+  field_dict['src_x'] = XType # CGRA 2d coordinates
   field_dict['src_y'] = YType
   field_dict['dst_x'] = XType
   field_dict['dst_y'] = YType
+  field_dict['tile_id'] = TileIdType # for preloading ctrl, added by yyf
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
-  field_dict['cmd'] = CmdType
-  field_dict['addr'] = AddrType
-  field_dict['data'] = DataType
+  field_dict['cmd'] = CmdType 
+  field_dict['addr'] = AddrType # run-time or preloaded data addr
+  field_dict['data'] = DataType # run-time or preloaded data
   field_dict['predicate'] = PredicateType
   field_dict['payload'] = PayloadType
-  field_dict['ctrl_action'] = CtrlActionType
-  field_dict['ctrl_addr'] = CtrlAddrType
-  field_dict['ctrl_operation'] = CtrlOperationType
-  field_dict['ctrl_predicate'] = CtrlPredicateType
-  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
-  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)]
-  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
-  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
+  field_dict['ctrl_action'] = CtrlActionType # for preloading ctrl, added by yyf
+  field_dict['ctrl_addr'] = CtrlAddrType # for preloading ctrl, added by yyf
+  field_dict['ctrl_operation'] = CtrlOperationType # for preloading ctrl, added by yyf
+  field_dict['ctrl_predicate'] = CtrlPredicateType # for preloading ctrl, added by yyf
+  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)] # for preloading ctrl, added by yyf
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)] # for preloading ctrl, added by yyf
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)] # for preloading ctrl, added by yyf
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)] # for preloading ctrl, added by yyf
 
   def str_func(s):
     return f"{s.src}>{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y}:" \
@@ -436,16 +439,16 @@ def mk_intra_cgra_pkt(nrouters = 4,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
-  VcIdType = mk_bits(1)
+  VcIdType = mk_bits(4)
   CmdType = mk_bits(cmd_nbits)
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
   DataPredicateType = mk_bits(predicate_nbits)
 
 
-  new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
+  new_name = f"{prefix}_{nrouters}_{cmd_nbits}_{cgraId_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
-             f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
+             f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}_{addr_nbits}_{data_nbits}_{predicate_nbits}"
 
   def str_func(s):
     out_str = '(ctrl_operation)' + str(s.ctrl_operation)
@@ -476,13 +479,13 @@ def mk_intra_cgra_pkt(nrouters = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_routing_predicate_in[i]))
 
-    return f"{s.srcTile}>{s.dstTile}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+    return f"{s.cgra_id}>{s.src}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
-  field_dict['cgraId'] = CgraIdType
-  field_dict['srcTile'] = TileIdType
-  field_dict['dstTile'] = TileIdType
+  field_dict['cgra_id'] = CgraIdType # for preloading data&ctrl, added by yyf
+  field_dict['src'] = TileIdType
+  field_dict['dst'] = TileIdType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['ctrl_action'] = CtrlActionType
@@ -508,10 +511,10 @@ def mk_intra_cgra_pkt(nrouters = 4,
   # predicate register). This should be guaranteed by the compiler.
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
       ctrl_tile_inports)]
-  field_dict['cmd'] = CmdType
-  field_dict['addr'] = AddrType
-  field_dict['data'] = DataType
-  field_dict['data_predicate'] = DataPredicateType
+  field_dict['cmd'] = CmdType # for preloading data&ctrl, added by yyf
+  field_dict['addr'] = AddrType # for preloading data, added by yyf
+  field_dict['data'] = DataType # for preloading data, added by yyf
+  field_dict['data_predicate'] = DataPredicateType # for preloading data, added by yyf
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}

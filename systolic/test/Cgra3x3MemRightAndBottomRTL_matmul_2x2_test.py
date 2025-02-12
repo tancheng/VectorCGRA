@@ -60,7 +60,7 @@ class TestHarness(Component):
                 controller2addr_map, preload_data, preload_const)
 
     # Connections.
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
     s.dut.send_to_noc.rdy //= 0
     s.dut.recv_from_noc.val //= 0
@@ -175,15 +175,29 @@ def test_CGRA_systolic(cmdline_opts):
           1: [16, 31],
   }
 
+  cmd_nbits = 4
+  cgraId_nbits = 1
+  cgra_columns = 1
+  cgra_rows = 1
+  data_nbits = 32
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+        mk_intra_cgra_pkt(width * height,
+                        cmd_nbits,
+                        cgraId_nbits,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        addr_nbits,
+                        data_nbits,
+                        predicate_nbits)
+
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations,
                        num_fu_inports,
@@ -191,200 +205,135 @@ def test_CGRA_systolic(cmdline_opts):
                        num_tile_inports,
                        num_tile_outports)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = 1,
-                                     nrows = 1,
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
+                                     nrows = cgra_rows,
+                                     ntiles = width * height,
                                      addr_nbits = addr_nbits,
-                                     data_nbits = 32,
-                                     predicate_nbits = 1)
+                                     data_nbits = data_nbits,
+                                     predicate_nbits = 1,
+                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_mem_size = ctrl_mem_size,
+                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_fu_inports = num_fu_inports,
+                                     ctrl_fu_outports = num_fu_outports,
+                                     ctrl_tile_inports = num_tile_inports,
+                                     ctrl_tile_outports = num_tile_outports)
+
+
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt_per_tile = [
       # On tile 0 ([0, 0]).
                  # src dst vc_id opq cmd_type    addr operation     predicate
       [
-       CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
+       CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_LD_CONST, b1(0),    pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 1 ([0, 1]).
                  # src dst vc_id opq cmd_type    addr operation     predicate
       [
-       CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
+       CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 1,   OPT_LD_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 2 ([0, 2]).
-      [CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
+      [CtrlPktType(0, 0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 3 ([1, 0]).
-      [CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 1,   OPT_MUL_CONST, b1(0), pick_register,
+       [CtrlPktType(0, 0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 2,   OPT_MUL_CONST, b1(0), pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 4 ([1, 1]).
-      [
-       CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 1,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+      [CtrlPktType(0, 0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 2,   OPT_MUL_CONST_ADD, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 5 ([1, 2]).
-      [
-       CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
+      [CtrlPktType(0, 0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 1,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 2,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 6 ([2, 0]).
-      [
-       CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 1,   OPT_MUL_CONST, b1(0), pick_register,
+      [CtrlPktType(0, 0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 2,   OPT_MUL_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 7 ([2, 1]).
-      [
-       CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 1,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+      [CtrlPktType(0, 0,  7,  0,    0,  CMD_CONFIG, 1,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 2,   OPT_MUL_CONST_ADD, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 8 ([2, 2]).
-      [
-       CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
+      [CtrlPktType(0, 0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 1,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 2,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
+       CtrlPktType(0, 0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])]]
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)]]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -414,7 +363,7 @@ def test_CGRA_systolic(cmdline_opts):
                    [DataType(0, 1), DataType(1, 1), DataType(0, 0)],
                    # The first one is not useful for the second colum, which is just
                    # to make the length aligned.
-                   [DataType(0, 0), DataType(4, 1), DataType(5, 1)],
+                   [DataType(4, 1), DataType(5, 1), DataType(0, 0)],
                    # The third column is not actually necessary to perform activation
                    # loading nor storing parameters.
                    [DataType(0, 0), DataType(0, 0), DataType(0, 0)],

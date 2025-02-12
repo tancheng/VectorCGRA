@@ -47,7 +47,7 @@ class TestHarness(Component):
                 ctrl_steps, FunctionUnit, FuList, controller2addr_map)
 
     # Connections
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
   def done(s):
     return s.src_ctrl_pkt.done()
@@ -61,7 +61,7 @@ def test_homo_2x2(cmdline_opts):
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = 6
+  ctrl_mem_size = 16
   data_mem_size_global = 32
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
@@ -70,7 +70,7 @@ def test_homo_2x2(cmdline_opts):
   num_terminals = cgra_rows * cgra_columns
   width = 2
   height = 2
-  num_ctrl_actions = 6
+  num_ctrl_actions = 64
   num_ctrl_operations = 64
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
@@ -93,15 +93,27 @@ def test_homo_2x2(cmdline_opts):
           2: [16, 23],
           3: [24, 31],
   }
+
+  cmd_nbits = 4
+  cgraId_nbits = 2
+  data_nbits = 32
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+        mk_intra_cgra_pkt(width * height,
+                        cmd_nbits,
+                        cgraId_nbits,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        addr_nbits,
+                        data_nbits,
+                        predicate_nbits)
   CtrlSignalType = \
       mk_separate_ctrl(num_ctrl_operations,
                        num_fu_inports,
@@ -110,69 +122,76 @@ def test_homo_2x2(cmdline_opts):
                        num_tile_outports)
   NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
                                      nrows = cgra_rows,
-                                     cmd_nbits = cmd_nbits,
+                                     ntiles = width * height,
                                      addr_nbits = data_addr_nbits,
                                      data_nbits = 32,
-                                     predicate_nbits = 1)
+                                     predicate_nbits = 1,
+                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_mem_size = ctrl_mem_size,
+                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_fu_inports = num_fu_inports,
+                                     ctrl_fu_outports = num_fu_outports,
+                                     ctrl_tile_inports = num_tile_inports,
+                                     ctrl_tile_outports = num_tile_outports)
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
   src_opt_per_tile = [[
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         # TODO: make below as TileInType(5) to double check.
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
       # This last one is for launching kernel.
-      CtrlPktType(0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)])
+                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0)
       ] for i in range(num_tiles)]
 
   src_ctrl_pkt = []
