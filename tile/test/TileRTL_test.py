@@ -160,12 +160,16 @@ def test_tile_alu(cmdline_opts):
                # cgraId, srcTile, dstTile, opaque, vc_id, ctrl_action, ctrl_addr,  ctrl_operation, ctrl_predicate,     ctrl_fu_in,
       CpuPktType(     0,       0,       0,      0,     0,  CMD_CONFIG,         0,         OPT_NAH,          b1(0), pick_register0,
                   # ctrl_routing_xbar_outport
-                  [# to fu
+                  [
+                          # to tile
+                          # why this maps with tile_inports: (0000000000000003.1.0.0, val: 1, rdy: 0)|(0000000000000000.0.0.0, val: 0, rdy: 0)|(0000000000000004?
+                          # 第4个inport到 tile out 第一个（routing xbar 第五个）
+                          # 从1开始，0代表没有 inport
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   # to tile
-                   # why this maps with tile_inports: (0000000000000003.1.0.0, val: 1, rdy: 0)|(0000000000000000.0.0.0, val: 0, rdy: 0)|(0000000000000004?
+                          # to fu
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
+                  # fu out 对应的哪个in
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                   # ctrl_routing_predicate_in

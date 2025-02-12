@@ -550,6 +550,7 @@ def mk_intra_cgra_pkt(nrouters = 4,
   CtrlRoutingOutType = mk_bits(clog2(num_routing_outports + 1))
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
+  # 看是否关心传进来的op的 0和1
   CtrlPredicateType = mk_bits(predicate_nbits)
   VcIdType = mk_bits(1)
   # todo

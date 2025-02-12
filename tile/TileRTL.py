@@ -191,11 +191,11 @@ class TileRTL(Component):
       s.const_mem.recv_const.val @= 0
       s.recv_ctrl_pkt.rdy @= 0
 
+
       if s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG):
         s.ctrl_mem.recv_pkt.val @= 1
         s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
         s.recv_ctrl_pkt.rdy @= 1
-
       elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
         s.const_mem.recv_const.val @= 1
         # todo
