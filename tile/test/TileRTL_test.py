@@ -131,15 +131,19 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
+  data_nbits = 64
+
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(num_terminals,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+      mk_intra_cgra_pkt(num_terminals,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_nbits)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations, num_fu_inports,
                            num_fu_outports, num_tile_inports,
@@ -176,32 +180,60 @@ def test_tile_alu(cmdline_opts):
 #                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
   src_ctrl_pkt = [
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
+      CtrlPktType(0,  0, 0,  0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  0),
       CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_SUB, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  0),
+      # for const： 5, 0, 7
+      # CtrlPktType(0, 0, 0, 0, CMD_CONST, 0, OPT_NAH, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+      #             5),
+      # CtrlPktType(0, 0, 0, 0, CMD_CONST, 0, OPT_NAH, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+      #             0),
+      # CtrlPktType(0, 0, 0, 0, CMD_CONST, 0, OPT_NAH, b1(0), pick_register1,
+      #             # routing_xbar_output
+      #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+      #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #             # fu_xbar_output
+      #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+      #             7),
       CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  0)]
   src_data = [[DataType(3, 1)],
               [],
               [DataType(4, 1)],
               [DataType(5, 1), DataType(7, 1)]]
-  src_const = [DataType(5, 1), DataType(0, 0), DataType(7, 1)]
+  # src_const = [DataType(5, 1), DataType(0, 0), DataType(7, 1)]
   sink_out = [
               # 7 - 3 = 4.
               [DataType(4, 1)],

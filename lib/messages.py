@@ -711,50 +711,43 @@ def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
 #=========================================================================
 
 def mk_intra_cgra_pkt(nrouters = 4,
-                      cmd_nbits = 4,
-                      cgraId_nbits = 4,
-                      ctrl_actions = 8,
-                      ctrl_mem_size = 16,
-                      ctrl_operations = 64,
-                      ctrl_fu_inports = 2,
-                      ctrl_fu_outports = 2,
-                      ctrl_tile_inports = 4,
-                      ctrl_tile_outports = 4,
-                      addr_nbits = 16,
-                      data_nbits = 16,
-                      predicate_nbits = 1,
-                      prefix="IntraCgraPacket"):
+                     ctrl_actions = 8,
+                     ctrl_mem_size = 4,
+                     ctrl_operations = 7,
+                     ctrl_fu_inports = 4,
+                     ctrl_fu_outports = 4,
+                     ctrl_tile_inports = 5,
+                     ctrl_tile_outports = 5,
+                     ctrl_registers_per_reg_bank = 16,
+                     data_nbits = 16,
+                     prefix="IntraCgraPacket"):
 
-  CgraIdType = mk_bits(cgraId_nbits)
-  TileIdType = mk_bits(clog2(nrouters))
-  opaque_nbits = 8
+  IdType = mk_bits(clog2(nrouters))
+  opaque_nbits = 1
   OpqType = mk_bits(opaque_nbits)
-  # config or data or const
   CtrlActionType = mk_bits(clog2(ctrl_actions))
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  # add, sub ...
   CtrlOperationType = mk_bits(clog2(ctrl_operations))
-  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports + 1))
+  CtrlTileInType = mk_bits(clog2(ctrl_tile_inports  + 1))
   CtrlTileOutType = mk_bits(clog2(ctrl_tile_outports + 1))
   num_routing_outports = ctrl_tile_outports + ctrl_fu_inports
   CtrlRoutingOutType = mk_bits(clog2(num_routing_outports + 1))
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
-  # 看是否关心传进来的op的 0和1
-  CtrlPredicateType = mk_bits(predicate_nbits)
-  VcIdType = mk_bits(1)
-  # todo
-  # If not for read data/config same time, what is CmdType for?
-  CmdType = mk_bits(cmd_nbits)
-  AddrType = mk_bits(addr_nbits)
-  DataType = mk_bits(data_nbits)
-  # todo
-  DataPredicateType = mk_bits(predicate_nbits)
+  CtrlPredicateType = mk_bits(1)
+  vector_factor_power_nbits = 3
+  CtrlVectorFactorPowerType = mk_bits(vector_factor_power_nbits)
 
+  # 3 inports of register file bank.
+  CtrlRegFromType = mk_bits(2)
+  CtrlRegIdxType = mk_bits(clog2(ctrl_registers_per_reg_bank))
+  VcIdType = mk_bits(1)
+  DataType = mk_bits(data_nbits)
 
   new_name = f"{prefix}_{nrouters}_{opaque_nbits}_{ctrl_actions}_" \
-             f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_"\
-             f"{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
+             f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_" \
+             f"{ctrl_fu_outports}_{ctrl_tile_inports}_" \
+             f"{ctrl_tile_outports}_{ctrl_registers_per_reg_bank}"
 
   def str_func(s):
     out_str = '(ctrl_operation)' + str(s.ctrl_operation)
@@ -785,13 +778,42 @@ def mk_intra_cgra_pkt(nrouters = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_routing_predicate_in[i]))
 
-    return f"{s.srcTile}>{s.dstTile}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+    out_str += '|(ctrl_vector_factor_power)'
+    out_str += str(int(s.ctrl_vector_factor_power))
+
+    out_str += '|(ctrl_is_last_ctrl)'
+    out_str += str(int(s.ctrl_is_last_ctrl))
+
+    out_str += '|(ctrl_read_reg_from)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_read_reg_from[i]))
+
+    out_str += '|(write_reg_from)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_write_reg_from[i]))
+
+    out_str += '|(write_reg_idx)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_write_reg_idx[i]))
+
+    out_str += '|(read_reg_idx)'
+    for i in range(ctrl_fu_inports):
+      if i != 0:
+        out_str += '-'
+      out_str += str(int(s.ctrl_read_reg_idx[i]))
+
+    return f"{s.src}>{s.dst}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
-  field_dict['cgraId'] = CgraIdType
-  field_dict['srcTile'] = TileIdType
-  field_dict['dstTile'] = TileIdType
+  field_dict['src'] = IdType
+  field_dict['dst'] = IdType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['ctrl_action'] = CtrlActionType
@@ -807,19 +829,32 @@ def mk_intra_cgra_pkt(nrouters = 4,
   # operation.
   field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
 
-  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)]
-  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(
+      num_routing_outports)]
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(
+      num_routing_outports)]
+
+  field_dict['data'] = DataType
+
   # I assume one tile supports single predicate during the entire execution
   # time, as it is hard to distinguish predication for different operations
   # (we automatically update, i.e., 'or', the predicate stored in the
   # predicate register). This should be guaranteed by the compiler.
-  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
-  field_dict['cmd'] = CmdType
-  field_dict['addr'] = AddrType
-  field_dict['data'] = DataType
-  # todo
-  # predicate 用于控制是否有效？
-  field_dict['data_predicate'] = DataPredicateType
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
+      ctrl_tile_inports)]
+
+  field_dict['ctrl_vector_factor_power'] = CtrlVectorFactorPowerType
+
+  field_dict['ctrl_is_last_ctrl'] = b1
+
+  # Register file related signals.
+  # Indicates whether to write data into the register bank, and the
+  # corresponding inport.
+  field_dict['ctrl_write_reg_from'] = [CtrlRegFromType for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_write_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
+  # Indicates whether to read data from the register bank.
+  field_dict['ctrl_read_reg_from'] = [b1 for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_read_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}
