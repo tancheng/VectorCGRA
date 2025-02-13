@@ -87,11 +87,9 @@ class TestHarness(Component):
       if not s.src_data[i].done():
         return False
 
-    # for i in range(s.num_tile_outports):
-    #   print(f'>>>$$$ i: {i}')
-    #   if not s.sink_out[i].done():
-    #     print(f'$$$ i: {i}')
-    #     return False
+    for i in range(s.num_tile_outports):
+      if not s.sink_out[i].done():
+        return False
 
     return True
 

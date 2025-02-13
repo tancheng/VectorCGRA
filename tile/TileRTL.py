@@ -16,6 +16,7 @@ Author : Cheng Tan
 
 from pymtl3 import *
 
+from lib.cmd_type import CMD_LAUNCH
 from ..lib.cmd_type import CMD_CONFIG, CMD_CONST
 from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
@@ -191,14 +192,14 @@ class TileRTL(Component):
         s.const_mem.recv_const.val @= 0
         s.recv_ctrl_pkt.rdy @= 0
 
-        if s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG):
+        if s.recv_ctrl_pkt.val & ((s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG) | (s.recv_ctrl_pkt.msg.ctrl_action == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt.val @= 1
             s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
-            s.recv_ctrl_pkt.rdy @= 1
+            s.recv_ctrl_pkt.rdy @= s.ctrl_mem.recv_pkt.rdy
         elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg.payload @= s.recv_ctrl_pkt.msg.data
-            s.recv_ctrl_pkt.rdy @= 1
+            s.recv_ctrl_pkt.rdy @= s.const_mem.recv_const.rdy
 
     # Updates the configuration memory related signals.
     @update
@@ -239,11 +240,12 @@ class TileRTL(Component):
   # Line trace
   def line_trace(s):
     recv_str = "|".join(["(" + str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.recv_data])
+    send_str = "|".join([str(x.msg) for x in s.send_data])
     tile_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_in_channel])
     tile_in_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_in_channel])
     tile_in_channel_str = "|".join([str(x.line_trace()) for x in s.tile_in_channel])
     out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
     const_mem = s.const_mem.line_trace()
-    return f"tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
+    return f"send_str: {send_str}, tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
 
