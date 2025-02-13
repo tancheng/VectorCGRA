@@ -182,7 +182,7 @@ def test_tile_alu(cmdline_opts):
 #                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
   src_ctrl_pkt = [
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  0, 0,  0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
+      CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
