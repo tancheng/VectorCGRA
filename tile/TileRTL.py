@@ -14,27 +14,24 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
-from pymtl3 import *
-
-from lib.cmd_type import CMD_LAUNCH
-from ..lib.cmd_type import CMD_CONFIG, CMD_CONST
-from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
-from ..fu.single.PhiRTL import PhiRTL
 from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
+from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..mem.const.ConstQueueRTL import ConstQueueRTL
+from ..lib.cmd_type import *
+from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
-from ..noc.CrossbarRTL import CrossbarRTL
-from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-from ..noc.LinkOrRTL import LinkOrRTL
-from ..rf.RegisterRTL import RegisterRTL
 from ..mem.register_cluster.RegisterClusterRTL import RegisterClusterRTL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..noc.LinkOrRTL import LinkOrRTL
+from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
+from ..rf.RegisterRTL import RegisterRTL
+
 
 class TileRTL(Component):
 
@@ -43,8 +40,8 @@ class TileRTL(Component):
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
-                    MemUnitRTL], const_list = None, id = 0):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
+                const_list = None, id = 0):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -75,8 +72,6 @@ class TileRTL(Component):
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, FuList)
-    # s.const_queue = ConstQueueRTL(DataType, const_list \
-    #     if const_list != None else [DataType(0)])
     s.const_mem = ConstQueueDynamicRTL(DataType, data_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
@@ -112,10 +107,6 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
-
-    # Connections.
-    # Ctrl.
-    # s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
@@ -175,8 +166,6 @@ class TileRTL(Component):
       s.fu_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_fu_crossbar[i]
 
-      # FIXME: @yuqi, https://github.com/tancheng/VectorCGRA/issues/11
-      # The const can be delivered here.
       s.register_cluster.recv_data_from_const[i].msg //= DataType()
       s.register_cluster.recv_data_from_const[i].val //= 0
 
