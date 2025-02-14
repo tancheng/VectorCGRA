@@ -20,11 +20,11 @@ from ..lib.opt_type import *
 
 class ControllerRTL(Component):
 
-  def construct(s, ControllerIdType, CmdType, CpuPktType, NocPktType,
+  def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
                 CGRADataType, CGRAAddrType, multi_cgra_rows,
                 multi_cgra_columns, controller_id, controller2addr_map,
                 idTo2d_map):
-    # Checks for ring network.
+
     assert(multi_cgra_columns >= multi_cgra_rows)
 
     # Used for calculating the x/y position.
@@ -36,31 +36,31 @@ class ControllerRTL(Component):
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
-    s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
-    s.send_to_intra_cgra_pkt = SendIfcRTL(CpuPktType)
+    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CtrlPktType)
 
     # Request from/to tiles.
-    s.recv_from_local_cgra_load_request_pkt = RecvIfcRTL(NocPktType)
-    s.recv_from_local_cgra_load_response_pkt = RecvIfcRTL(NocPktType)
-    s.recv_from_local_cgra_store_request_pkt = RecvIfcRTL(NocPktType)
+    s.recv_from_tile_load_request_pkt = RecvIfcRTL(NocPktType)
+    s.recv_from_tile_load_response_pkt = RecvIfcRTL(NocPktType)
+    s.recv_from_tile_store_request_pkt = RecvIfcRTL(NocPktType)
 
-    s.send_to_local_cgra_load_request_addr = SendIfcRTL(CGRAAddrType)
-    s.send_to_local_cgra_load_response_data = SendIfcRTL(CGRADataType)
-    s.send_to_local_cgra_store_request_addr = SendIfcRTL(CGRAAddrType)
-    s.send_to_local_cgra_store_request_data = SendIfcRTL(CGRADataType)
+    s.send_to_tile_load_request_addr = SendIfcRTL(CGRAAddrType)
+    s.send_to_tile_load_response_data = SendIfcRTL(CGRADataType)
+    s.send_to_tile_store_request_addr = SendIfcRTL(CGRAAddrType)
+    s.send_to_tile_store_request_data = SendIfcRTL(CGRADataType)
 
     # Component
-    s.recv_from_local_cgra_load_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
-    s.recv_from_local_cgra_load_response_pkt_queue = ChannelRTL(NocPktType, latency = 1)
-    s.recv_from_local_cgra_store_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
+    s.recv_from_tile_load_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
+    s.recv_from_tile_load_response_pkt_queue = ChannelRTL(NocPktType, latency = 1)
+    s.recv_from_tile_store_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
 
-    s.send_to_local_cgra_load_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
-    s.send_to_local_cgra_load_response_data_queue = ChannelRTL(CGRADataType, latency = 1)
-    s.send_to_local_cgra_store_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
-    s.send_to_local_cgra_store_request_data_queue = ChannelRTL(CGRADataType, latency = 1)
+    s.send_to_tile_load_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
+    s.send_to_tile_load_response_data_queue = ChannelRTL(CGRADataType, latency = 1)
+    s.send_to_tile_store_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
+    s.send_to_tile_store_request_data_queue = ChannelRTL(CGRADataType, latency = 1)
 
     # s.recv_from_other_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
-    # s.send_to_local_cgra_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
+    # s.send_to_tile_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
     # s.send_to_other_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
 
     # Crossbar with 3 inports (load and store requests towards remote
@@ -70,7 +70,7 @@ class ControllerRTL(Component):
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 3, 1)
 
-    s.recv_pkt_queue = NormalQueueRTL(CpuPktType)
+    s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -114,15 +114,15 @@ class ControllerRTL(Component):
 
     # Connections
     # Requests towards others, 1 cycle delay to improve timing.
-    s.recv_from_local_cgra_load_request_pkt_queue.recv //= s.recv_from_local_cgra_load_request_pkt
-    s.recv_from_local_cgra_load_response_pkt_queue.recv //= s.recv_from_local_cgra_load_response_pkt
-    s.recv_from_local_cgra_store_request_pkt_queue.recv //= s.recv_from_local_cgra_store_request_pkt
+    s.recv_from_tile_load_request_pkt_queue.recv //= s.recv_from_tile_load_request_pkt
+    s.recv_from_tile_load_response_pkt_queue.recv //= s.recv_from_tile_load_response_pkt
+    s.recv_from_tile_store_request_pkt_queue.recv //= s.recv_from_tile_store_request_pkt
 
     # Requests towards local from others, 1 cycle delay to improve timing.
-    s.send_to_local_cgra_load_request_addr_queue.send //= s.send_to_local_cgra_load_request_addr
-    s.send_to_local_cgra_load_response_data_queue.send //= s.send_to_local_cgra_load_response_data
-    s.send_to_local_cgra_store_request_addr_queue.send //= s.send_to_local_cgra_store_request_addr
-    s.send_to_local_cgra_store_request_data_queue.send //= s.send_to_local_cgra_store_request_data
+    s.send_to_tile_load_request_addr_queue.send //= s.send_to_tile_load_request_addr
+    s.send_to_tile_load_response_data_queue.send //= s.send_to_tile_load_response_data
+    s.send_to_tile_store_request_addr_queue.send //= s.send_to_tile_store_request_addr
+    s.send_to_tile_store_request_data_queue.send //= s.send_to_tile_store_request_data
 
     # For control signals delivery from CPU to tiles.
     # TODO: https://github.com/tancheng/VectorCGRA/issues/11 -- The request needs
@@ -131,8 +131,8 @@ class ControllerRTL(Component):
     # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
-    s.recv_from_cpu_pkt //= s.recv_pkt_queue.recv
-    s.recv_pkt_queue.send //= s.send_to_intra_cgra_pkt
+    s.recv_from_cpu_ctrl_pkt //= s.recv_ctrl_pkt_queue.recv
+    s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
 
     @update
     def update_received_msg():
@@ -141,8 +141,8 @@ class ControllerRTL(Component):
       kStoreRequestInportIdx = 2
 
       # For the load request from local tiles.
-      s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_local_cgra_load_request_pkt_queue.send.val
-      s.recv_from_local_cgra_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
+      s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
+      s.recv_from_tile_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
@@ -153,7 +153,7 @@ class ControllerRTL(Component):
                      0,
                      0,
                      CMD_LOAD_REQUEST,
-                     s.recv_from_local_cgra_load_request_pkt_queue.send.msg.addr,
+                     s.recv_from_tile_load_request_pkt_queue.send.msg.addr,
                      0,
                      1,
                      0)
@@ -161,8 +161,8 @@ class ControllerRTL(Component):
 
 
       # For the store request from local tiles.
-      s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_local_cgra_store_request_pkt_queue.send.val
-      s.recv_from_local_cgra_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
+      s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
+      s.recv_from_tile_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
@@ -173,16 +173,16 @@ class ControllerRTL(Component):
                      0,
                      0,
                      CMD_STORE_REQUEST,
-                     s.recv_from_local_cgra_store_request_pkt_queue.send.msg.addr,
-                     s.recv_from_local_cgra_store_request_pkt_queue.send.msg.data,
-                     s.recv_from_local_cgra_store_request_pkt_queue.send.msg.predicate,
+                     s.recv_from_tile_store_request_pkt_queue.send.msg.addr,
+                     s.recv_from_tile_store_request_pkt_queue.send.msg.data,
+                     s.recv_from_tile_store_request_pkt_queue.send.msg.predicate,
                      0)
 
 
       # For the load response (i.e., the data towards other) from local memory.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
-          s.recv_from_local_cgra_load_response_pkt_queue.send.val
-      s.recv_from_local_cgra_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
+          s.recv_from_tile_load_response_pkt_queue.send.val
+      s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
       s.crossbar.recv[kLoadResponseInportIdx].msg @= \
           NocPktType(controller_id,
                      0,
@@ -195,9 +195,9 @@ class ControllerRTL(Component):
                      CMD_LOAD_RESPONSE,
                      # Retrieves the load (from NoC) address from the message.
                      # The addr information is embedded in the message.
-                     s.recv_from_local_cgra_load_response_pkt_queue.send.msg.addr,
-                     s.recv_from_local_cgra_load_response_pkt_queue.send.msg.data,
-                     s.recv_from_local_cgra_load_response_pkt_queue.send.msg.predicate,
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.addr,
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.data,
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.predicate,
                      0)
 
       # TODO: For the other cmd types.
@@ -207,43 +207,43 @@ class ControllerRTL(Component):
     # def update_received_msg_from_noc():
 
       # Initiates the signals.
-      s.send_to_local_cgra_load_request_addr_queue.recv.val @= 0
-      s.send_to_local_cgra_store_request_addr_queue.recv.val @= 0
-      s.send_to_local_cgra_store_request_data_queue.recv.val @= 0
-      s.send_to_local_cgra_load_response_data_queue.recv.val @= 0
-      s.send_to_local_cgra_load_request_addr_queue.recv.msg @= CGRAAddrType()
-      s.send_to_local_cgra_store_request_addr_queue.recv.msg @= CGRAAddrType()
-      s.send_to_local_cgra_store_request_data_queue.recv.msg @= CGRADataType()
-      s.send_to_local_cgra_load_response_data_queue.recv.msg @= CGRADataType()
+      s.send_to_tile_load_request_addr_queue.recv.val @= 0
+      s.send_to_tile_store_request_addr_queue.recv.val @= 0
+      s.send_to_tile_store_request_data_queue.recv.val @= 0
+      s.send_to_tile_load_response_data_queue.recv.val @= 0
+      s.send_to_tile_load_request_addr_queue.recv.msg @= CGRAAddrType()
+      s.send_to_tile_store_request_addr_queue.recv.msg @= CGRAAddrType()
+      s.send_to_tile_store_request_data_queue.recv.msg @= CGRADataType()
+      s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
       s.recv_from_noc.rdy @= 0
 
       # For the load request from NoC.
       received_pkt = s.recv_from_noc.msg
       if s.recv_from_noc.val:
         if s.recv_from_noc.msg.cmd == CMD_LOAD_REQUEST:
-          if s.send_to_local_cgra_load_request_addr_queue.recv.rdy:
+          if s.send_to_tile_load_request_addr_queue.recv.rdy:
             s.recv_from_noc.rdy @= 1
-            s.send_to_local_cgra_load_request_addr_queue.recv.msg @= \
+            s.send_to_tile_load_request_addr_queue.recv.msg @= \
                 CGRAAddrType(received_pkt.addr)
-            s.send_to_local_cgra_load_request_addr_queue.recv.val @= 1
+            s.send_to_tile_load_request_addr_queue.recv.val @= 1
 
         elif s.recv_from_noc.msg.cmd == CMD_STORE_REQUEST:
-          if s.send_to_local_cgra_store_request_addr_queue.recv.rdy & \
-             s.send_to_local_cgra_store_request_data_queue.recv.rdy:
+          if s.send_to_tile_store_request_addr_queue.recv.rdy & \
+             s.send_to_tile_store_request_data_queue.recv.rdy:
             s.recv_from_noc.rdy @= 1
-            s.send_to_local_cgra_store_request_addr_queue.recv.msg @= \
+            s.send_to_tile_store_request_addr_queue.recv.msg @= \
                 CGRAAddrType(received_pkt.addr)
-            s.send_to_local_cgra_store_request_data_queue.recv.msg @= \
+            s.send_to_tile_store_request_data_queue.recv.msg @= \
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
-            s.send_to_local_cgra_store_request_addr_queue.recv.val @= 1
-            s.send_to_local_cgra_store_request_data_queue.recv.val @= 1
+            s.send_to_tile_store_request_addr_queue.recv.val @= 1
+            s.send_to_tile_store_request_data_queue.recv.val @= 1
 
         elif s.recv_from_noc.msg.cmd == CMD_LOAD_RESPONSE:
-          if s.send_to_local_cgra_load_response_data_queue.recv.rdy:
+          if s.send_to_tile_load_response_data_queue.recv.rdy:
             s.recv_from_noc.rdy @= 1
-            s.send_to_local_cgra_load_response_data_queue.recv.msg @= \
+            s.send_to_tile_load_response_data_queue.recv.msg @= \
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
-            s.send_to_local_cgra_load_response_data_queue.recv.val @= 1
+            s.send_to_tile_load_response_data_queue.recv.val @= 1
 
         # else:
         #   # TODO: Handle other cmd types.
@@ -271,15 +271,14 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.payload)
 
   def line_trace(s):
-    send_to_intra_cgra_pkt_str = "send_to_intra_cgra_pkt: " + str(s.send_to_intra_cgra_pkt.msg)
-    recv_from_local_cgra_load_request_pkt_str = "recv_from_local_cgra_load_request_pkt: " + str(s.recv_from_local_cgra_load_request_pkt.msg)
-    recv_from_local_cgra_load_response_pkt_str = "recv_from_local_cgra_load_response_pkt: " + str(s.recv_from_local_cgra_load_response_pkt.msg)
-    recv_from_local_cgra_store_request_pkt_str = "recv_from_local_cgra_store_request_pkt: " + str(s.recv_from_local_cgra_store_request_pkt.msg)
+    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)
+    recv_from_tile_load_request_pkt_str = "recv_from_tile_load_request_pkt: " + str(s.recv_from_tile_load_request_pkt.msg)
+    recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
+    recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)
     crossbar_str = "crossbar: {" + s.crossbar.line_trace() + "}"
-    send_to_local_cgra_load_request_addr_str = "send_to_local_cgra_load_request_addr: " + str(s.send_to_local_cgra_load_request_addr.msg)
-    send_to_local_cgra_store_request_addr_str = "send_to_local_cgra_store_request_addr: " + str(s.send_to_local_cgra_store_request_addr.msg)
-    send_to_local_cgra_store_request_data_str = "send_to_local_cgra_store_request_data: " + str(s.send_to_local_cgra_store_request_data.msg)
+    send_to_tile_load_request_addr_str = "send_to_tile_load_request_addr: " + str(s.send_to_tile_load_request_addr.msg)
+    send_to_tile_store_request_addr_str = "send_to_tile_store_request_addr: " + str(s.send_to_tile_store_request_addr.msg)
+    send_to_tile_store_request_data_str = "send_to_tile_store_request_data: " + str(s.send_to_tile_store_request_data.msg)
     recv_from_noc_str = "recv_from_noc_pkt: " + str(s.recv_from_noc.msg)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
-    return f'{send_to_intra_cgra_pkt_str} || {recv_from_local_cgra_load_request_pkt_str} || {recv_from_local_cgra_load_response_pkt_str} || {recv_from_local_cgra_store_request_pkt_str} || {crossbar_str} || {send_to_local_cgra_load_request_addr_str} || {send_to_local_cgra_store_request_addr_str} || {send_to_local_cgra_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
-
+    return f'{send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
