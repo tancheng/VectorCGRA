@@ -772,6 +772,8 @@ def mk_intra_cgra_pkt(nrouters = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_fu_xbar_outport[i]))
 
+    out_str = '(data)' + str(s.data)
+
     out_str += '|(ctrl_predicate_in)'
     for i in range(ctrl_tile_inports):
       if i != 0:
