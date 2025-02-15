@@ -224,6 +224,5 @@ def test_tile_alu(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  cmdline_opts['max_cycles'] = 20
-  run_sim(th, cmdline_opts)
+  run_sim(th)
 
