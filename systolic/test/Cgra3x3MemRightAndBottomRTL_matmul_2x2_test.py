@@ -155,6 +155,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_ctrl_actions = 6
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
+  data_nbits = 32
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -184,7 +185,9 @@ def test_CGRA_systolic(cmdline_opts):
                         num_fu_inports,
                         num_fu_outports,
                         num_tile_inports,
-                        num_tile_outports)
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_nbits)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -196,7 +199,7 @@ def test_CGRA_systolic(cmdline_opts):
   NocPktType = mk_multi_cgra_noc_pkt(ncols = 1,
                                      nrows = 1,
                                      addr_nbits = addr_nbits,
-                                     data_nbits = 32,
+                                     data_nbits = data_nbits,
                                      predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
 
