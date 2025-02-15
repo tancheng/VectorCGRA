@@ -176,7 +176,6 @@ def test_CGRA_systolic(cmdline_opts):
           1: [16, 31],
   }
 
-  data_nbits = 64
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,
                         num_ctrl_actions,
@@ -185,9 +184,7 @@ def test_CGRA_systolic(cmdline_opts):
                         num_fu_inports,
                         num_fu_outports,
                         num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        data_nbits)
+                        num_tile_outports)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
