@@ -89,9 +89,7 @@ class TestHarness(Component):
     for i in range(len(s.expected_out)):
       for j in range(len(s.expected_out[i])):
         # Outputs are stored in bank 2 and bank 3.
-        print(f"out 1: {s.dut.data_mem.reg_file[2+i].regs[j]} <-> out 2: {s.expected_out[i][j]}")
         if s.dut.data_mem.reg_file[2+i].regs[j] != s.expected_out[i][j]:
-            print(f"xxxxxxxxxxxxxxxxxxx out 1: {s.dut.data_mem.reg_file[2 + i].regs[j]} <-> out 2: {s.expected_out[i][j]}")
             return False
     return True
 
