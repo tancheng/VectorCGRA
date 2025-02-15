@@ -199,7 +199,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   FunctionUnit = FlexibleFuRTL
   # FuList = [MemUnitRTL, AdderRTL]
   FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
 
   CmdType = mk_bits(4)
@@ -227,7 +228,9 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                         num_fu_inports,
                         num_fu_outports,
                         num_tile_inports,
-                        num_tile_outports)
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_nbits)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -239,7 +242,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
                                      addr_nbits = addr_nbits,
-                                     data_nbits = 32,
+                                     data_nbits = data_nbits,
                                      predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
