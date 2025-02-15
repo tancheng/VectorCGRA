@@ -190,23 +190,11 @@ def test_tile_alu(cmdline_opts):
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                   0),
+
       # for const： 5, 7
-      CtrlPktType(0, 0, 0, 0, CMD_CONST, 0, OPT_NAH, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                  5),
-      CtrlPktType(0, 0, 0, 0, CMD_CONST, 0, OPT_NAH, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                  7),
+      CtrlPktType(0, 0, 0, 0, ctrl_action = CMD_CONST, data = 5),
+      CtrlPktType(0, 0, 0, 0, ctrl_action = CMD_CONST, data = 7),
+
       CtrlPktType(0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),

@@ -29,7 +29,7 @@ class CgraSystolicArrayRTL(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, controller2addr_map,
-                preload_data = None, preload_const = None):
+                preload_data = None):
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
@@ -62,14 +62,12 @@ class CgraSystolicArrayRTL(Component):
     s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
-    if preload_const == None:
-      preload_const = [[DataType(0, 0)] for _ in range(s.num_tiles)]
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_registers_per_reg_bank,
-                      FuList = FuList, const_list = preload_const[i],
+                      FuList = FuList,
                       id = i)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,

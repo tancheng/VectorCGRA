@@ -41,7 +41,7 @@ class TileRTL(Component):
                 num_tile_outports, num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
-                const_list = None, id = 0):
+                id = 0):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -188,6 +188,7 @@ class TileRTL(Component):
         elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg.payload @= s.recv_ctrl_pkt.msg.data
+            s.const_mem.recv_const.msg.predicate @= 1
             s.recv_ctrl_pkt.rdy @= s.const_mem.recv_const.rdy
 
     # Updates the configuration memory related signals.
