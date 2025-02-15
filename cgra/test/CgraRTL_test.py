@@ -151,10 +151,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                                num_fu_inports,
                                num_fu_outports,
                                num_tile_inports,
-                               num_tile_outports,
-                               num_registers_per_reg_bank,
-                               data_bitwidth
-                        )
+                               num_tile_outports)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,

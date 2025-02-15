@@ -46,7 +46,7 @@ class CgraSystolicArrayRTL(Component):
            data_mem_size_global)
 
     # Interfaces
-    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
@@ -101,13 +101,13 @@ class CgraSystolicArrayRTL(Component):
     s.send_to_noc //= s.controller.send_to_noc
 
     # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    s.recv_from_cpu_ctrl_pkt //= s.controller.recv_from_cpu_ctrl_pkt
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
 
-    s.ctrl_ring.recv[0] //= s.controller.send_to_intra_cgra_pkt
+    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
     for i in range(1, s.num_tiles):
       s.ctrl_ring.recv[i].val //= 0
       s.ctrl_ring.recv[i].msg //= CtrlPktType()
@@ -178,4 +178,3 @@ class CgraSystolicArrayRTL(Component):
                        for (i,x) in enumerate(s.tile)])
     res += "\nData Memory: [" + s.data_mem.line_trace() + "]    \n"
     return res
-

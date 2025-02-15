@@ -220,14 +220,14 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   }
 
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+      mk_intra_cgra_pkt(width * height,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,

@@ -60,7 +60,7 @@ class TestHarness(Component):
                 controller2addr_map, preload_data, preload_const)
 
     # Connections.
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
 
     s.dut.send_to_noc.rdy //= 0
     s.dut.recv_from_noc.val //= 0
@@ -176,15 +176,18 @@ def test_CGRA_systolic(cmdline_opts):
           1: [16, 31],
   }
 
+  data_nbits = 64
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports)
+      mk_intra_cgra_pkt(width * height,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_nbits)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -366,7 +369,7 @@ def test_CGRA_systolic(cmdline_opts):
                    # The third column (except the bottom one) is used to store the
                    # accumulated results.
                    [DataType(12, 1), DataType(13, 1), DataType(0, 0)]]
-  
+
   """
   1 3      2 6     14 20
        x        =
@@ -397,4 +400,3 @@ def test_CGRA_systolic(cmdline_opts):
                                    cmdline_opts['dump_vcd'] or \
                                    cmdline_opts['dump_vtb'])
   run_sim(th, enable_verification_pymtl)
-

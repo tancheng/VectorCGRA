@@ -96,7 +96,7 @@ def test_homo_2x2(cmdline_opts):
           3: [24, 31],
   }
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
+      mk_intra_cgra_pkt(width * height,
                                num_ctrl_actions,
                                ctrl_mem_size,
                                num_ctrl_operations,
