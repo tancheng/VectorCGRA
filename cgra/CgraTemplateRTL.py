@@ -31,7 +31,7 @@ class CgraTemplateRTL(Component):
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                preload_data = None, preload_const = None):
+                preload_data = None):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
@@ -60,16 +60,13 @@ class CgraTemplateRTL(Component):
     # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
-    if preload_const == None:
-      preload_const = [[DataType(0, 0)] for _ in range(s.num_tiles)]
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports,
                       num_registers_per_reg_bank,
-                      FuList = FuList,
-                      const_list = preload_const[i])
+                      FuList = FuList)
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,

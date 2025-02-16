@@ -282,4 +282,3 @@ class ControllerRTL(Component):
     recv_from_noc_str = "recv_from_noc_pkt: " + str(s.recv_from_noc.msg)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
     return f'{send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
-

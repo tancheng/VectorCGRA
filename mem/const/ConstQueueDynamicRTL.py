@@ -82,7 +82,7 @@ class ConstQueueDynamicRTL(Component):
       # Checks whether the "reader" successfully read the data at rd_cur,
       # and proceed rd_cur accordingly.
       if s.send_const.rdy:
-        if zext((s.rd_cur), WrCurType) < s.wr_cur:
+        if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
           s.rd_cur <<= s.rd_cur + 1
         else:
           s.rd_cur <<= 0
@@ -108,6 +108,6 @@ class ConstQueueDynamicRTL(Component):
       }
       reg_list.append(reg_dict)
     res_md = markdown_table(reg_list).set_params(quote = False).get_markdown()
-    return (f"wr_cur: {self.wr_cur}, rd_cur: {self.rd_cur}, send.val: {self.send_const.val}, send_const.rdy: {self.send_const.rdy}"
+    return (f"wr_cur: {self.wr_cur}, rd_cur: {self.rd_cur}, send.val: {self.send_const.val}, send_const.rdy: {self.send_const.rdy}, send_const.msg: {self.send_const.msg}"
             f"{res_md}")
 
