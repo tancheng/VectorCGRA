@@ -84,13 +84,11 @@ class Fu(Component):
 
     @update
     def update_reached_vector_factor():
-      #s.reached_vector_factor @= 0
+      s.reached_vector_factor @= 0
       if s.recv_opt.val & (s.vector_factor_counter + \
                            (VectorFactorType(1) << zext(s.vector_factor_power, VectorFactorType)) >= \
                            (VectorFactorType(1) << zext(s.recv_opt.msg.vector_factor_power, VectorFactorType))):
         s.reached_vector_factor @= 1
-      else:
-        s.reached_vector_factor @= 0
 
     @update_ff
     def update_vector_factor_counter():
@@ -107,8 +105,6 @@ class Fu(Component):
                                                                      VectorFactorType))
           elif s.recv_opt.msg.is_last_ctrl & s.reached_vector_factor:
             s.vector_factor_counter <<= 0
-          else:
-            s.vector_factor_counter <<= s.vector_factor_counter
 
   def line_trace(s):
     opt_str = " #"
