@@ -101,7 +101,7 @@ class VectorAdderRTL(Component):
         elif s.recv_opt.msg.ctrl == OPT_INC:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg + s.const_one
           s.recv_all_val @= s.recv_in[s.in0_idx].val
-          s.send_out[0].val @= s.recv_all_val & s.send_out[0].rdy
+          s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
@@ -125,7 +125,7 @@ class VectorAdderRTL(Component):
         elif s.recv_opt.msg.ctrl == OPT_PAS:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
           s.recv_all_val @= s.recv_in[s.in0_idx].val
-          s.send_out[0].val @= s.recv_all_val & s.send_out[0].rdy
+          s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
