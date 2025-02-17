@@ -32,7 +32,8 @@ class SeqMulShifterRTL(TwoSeqCombo):
       s.Fu0.recv_opt.msg.fu_in[1] @= 2
       s.Fu1.recv_opt.msg.fu_in[0] @= 1
       s.Fu1.recv_opt.msg.fu_in[1] @= 2
-
+      s.Fu0.recv_opt.msg.ctrl @= 0
+      s.Fu1.recv_opt.msg.ctrl @= 0
       if s.recv_opt.msg.ctrl == OPT_MUL_LLS:
         s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
         s.Fu1.recv_opt.msg.ctrl @= OPT_LLS
