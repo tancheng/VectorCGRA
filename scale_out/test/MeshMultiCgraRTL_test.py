@@ -84,7 +84,8 @@ def test_homo_2x2(cmdline_opts):
   DUT = MeshMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cmd_nbits = 5
   num_registers_per_reg_bank = 16
@@ -96,14 +97,17 @@ def test_homo_2x2(cmdline_opts):
           3: [24, 31],
   }
   CtrlPktType = \
-      mk_ring_across_tiles_pkt(width * height,
+      mk_intra_cgra_pkt(width * height,
                                num_ctrl_actions,
                                ctrl_mem_size,
                                num_ctrl_operations,
                                num_fu_inports,
                                num_fu_outports,
                                num_tile_inports,
-                               num_tile_outports)
+                               num_tile_outports,
+                               num_registers_per_reg_bank,
+                               data_nbits
+                        )
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -115,7 +119,7 @@ def test_homo_2x2(cmdline_opts):
                                      nrows = cgra_rows,
                                      cmd_nbits = cmd_nbits,
                                      addr_nbits = data_addr_nbits,
-                                     data_nbits = 32,
+                                     data_nbits = data_nbits,
                                      predicate_nbits = 1)
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
   src_opt_per_tile = [[
