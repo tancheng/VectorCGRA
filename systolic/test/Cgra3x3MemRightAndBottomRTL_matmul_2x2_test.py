@@ -89,7 +89,6 @@ class TestHarness(Component):
     for i in range(len(s.expected_out)):
       for j in range(len(s.expected_out[i])):
         # Outputs are stored in bank 2 and bank 3.
-        # print(f"out: {s.dut.data_mem.reg_file[2+i].regs[j]} <--> expected_out: {s.expected_out[i][j]}: result: {s.dut.data_mem.reg_file[2+i].regs[j] == s.expected_out[i][j]}")
         if s.dut.data_mem.reg_file[2+i].regs[j] != s.expected_out[i][j]:
             return False
     return True
@@ -205,16 +204,18 @@ def test_CGRA_systolic(cmdline_opts):
                                      predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
 
-  '''preload_const = [
-                     [DataType(0, 1), DataType(1, 1), DataType(0, 0)],
-                     [DataType(4, 1), DataType(5, 1), DataType(0, 0)],
-                     [DataType(0, 0), DataType(0, 0), DataType(0, 0)],
-                     [DataType(2, 1), DataType(2, 1), DataType(2, 1)],
-                     [DataType(4, 1), DataType(4, 1), DataType(4, 1)],
-                     [DataType(8, 1), DataType(9, 1), DataType(0, 0)],
-                     [DataType(6, 1), DataType(6, 1), DataType(6, 1)],
-                     [DataType(8, 1), DataType(8, 1), DataType(8, 1)],
-                     [DataType(12, 1), DataType(13, 1), DataType(0, 0)]]'''
+  # preload_const for tiles 0-8 line by line
+  '''
+      0: [DataType(0, 1), DataType(1, 1), DataType(0, 0)]
+      1: [DataType(4, 1), DataType(5, 1), DataType(0, 0)]
+      2: [DataType(0, 0), DataType(0, 0), DataType(0, 0)]
+      3: [DataType(2, 1), DataType(2, 1), DataType(2, 1)]
+      4: [DataType(4, 1), DataType(4, 1), DataType(4, 1)]
+      5: [DataType(8, 1), DataType(9, 1), DataType(0, 0)]
+      6: [DataType(6, 1), DataType(6, 1), DataType(6, 1)]
+      7: [DataType(8, 1), DataType(8, 1), DataType(8, 1)]
+      8: [DataType(12, 1), DataType(13, 1), DataType(0, 0)]
+  '''
   src_opt_per_tile = [
       # On tile 0 ([0, 0]).
       [
