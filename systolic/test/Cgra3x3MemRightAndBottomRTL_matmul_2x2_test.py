@@ -56,7 +56,7 @@ class TestHarness(Component):
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
-                1, kMaxCycles, FunctionUnit, FuList,
+                1, ctrl_steps, FunctionUnit, FuList,
                 controller2addr_map, preload_data)
 
     # Connections.
@@ -89,6 +89,7 @@ class TestHarness(Component):
     for i in range(len(s.expected_out)):
       for j in range(len(s.expected_out[i])):
         # Outputs are stored in bank 2 and bank 3.
+        # print(f"out: {s.dut.data_mem.reg_file[2+i].regs[j]} <--> expected_out: {s.expected_out[i][j]}: result: {s.dut.data_mem.reg_file[2+i].regs[j] == s.expected_out[i][j]}")
         if s.dut.data_mem.reg_file[2+i].regs[j] != s.expected_out[i][j]:
             return False
     return True
@@ -156,6 +157,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
   data_nbits = 32
+  ctrl_steps = 2
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -219,7 +221,6 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0, 0, 0, 0, ctrl_action = CMD_CONST, data = 0),
        CtrlPktType(0, 0, 0, 0, ctrl_action = CMD_CONST, data = 1),
-       CtrlPktType(0, 0, 0, 0, ctrl_action = CMD_CONST, data = 0),
 
                  # src dst vc_id opq cmd_type    addr operation     predicate
        CtrlPktType(0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
@@ -238,7 +239,6 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0, 1, 0, 0, ctrl_action = CMD_CONST, data = 4),
        CtrlPktType(0, 1, 0, 0, ctrl_action = CMD_CONST, data = 5),
-       CtrlPktType(0, 1, 0, 0, ctrl_action = CMD_CONST, data = 0),
 
                  # src dst vc_id opq cmd_type    addr operation     predicate
        CtrlPktType(0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
@@ -254,11 +254,6 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 2 ([0, 2]).
       [
-       # Const
-       CtrlPktType(0, 2, 0, 0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0, 2, 0, 0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0, 2, 0, 0, ctrl_action = CMD_CONST, data = 0),
-
        CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -273,8 +268,6 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 3 ([1, 0]).
       [
        # Const
-       CtrlPktType(0, 3, 0, 0, ctrl_action = CMD_CONST, data = 2),
-       CtrlPktType(0, 3, 0, 0, ctrl_action = CMD_CONST, data = 2),
        CtrlPktType(0, 3, 0, 0, ctrl_action = CMD_CONST, data = 2),
 
        CtrlPktType(0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
@@ -291,8 +284,6 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 4 ([1, 1]).
       [
        # Const
-       CtrlPktType(0, 4, 0, 0, ctrl_action = CMD_CONST, data = 4),
-       CtrlPktType(0, 4, 0, 0, ctrl_action = CMD_CONST, data = 4),
        CtrlPktType(0, 4, 0, 0, ctrl_action = CMD_CONST, data = 4),
 
        CtrlPktType(0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
@@ -311,7 +302,6 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0, 5, 0, 0, ctrl_action = CMD_CONST, data = 8),
        CtrlPktType(0, 5, 0, 0, ctrl_action = CMD_CONST, data = 9),
-       CtrlPktType(0, 5, 0, 0, ctrl_action = CMD_CONST, data = 0),
 
        CtrlPktType(0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -328,8 +318,6 @@ def test_CGRA_systolic(cmdline_opts):
       [
        # Const
        CtrlPktType(0, 6, 0, 0, ctrl_action = CMD_CONST, data = 6),
-       CtrlPktType(0, 6, 0, 0, ctrl_action = CMD_CONST, data = 6),
-       CtrlPktType(0, 6, 0, 0, ctrl_action = CMD_CONST, data = 6),
 
        CtrlPktType(0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -345,8 +333,6 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 7 ([2, 1]).
       [
        # Const
-       CtrlPktType(0, 7, 0, 0, ctrl_action = CMD_CONST, data = 8),
-       CtrlPktType(0, 7, 0, 0, ctrl_action = CMD_CONST, data = 8),
        CtrlPktType(0, 7, 0, 0, ctrl_action = CMD_CONST, data = 8),
 
        CtrlPktType(0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
@@ -365,7 +351,6 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0, 8, 0, 0, ctrl_action = CMD_CONST, data = 12),
        CtrlPktType(0, 8, 0, 0, ctrl_action = CMD_CONST, data = 13),
-       CtrlPktType(0, 8, 0, 0, ctrl_action = CMD_CONST, data = 0),
 
        CtrlPktType(0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -444,7 +429,7 @@ def test_CGRA_systolic(cmdline_opts):
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
-                   src_ctrl_pkt, ctrl_mem_size,
+                   src_ctrl_pkt, ctrl_steps,
                    controller2addr_map, preload_data_per_bank,
                    expected_out)
 
