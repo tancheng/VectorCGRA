@@ -236,11 +236,11 @@ def test_CGRA_systolic(cmdline_opts):
       tile 0: [DataType(0, 1), DataType(1, 1)]
       tile 1: [DataType(4, 1), DataType(5, 1)]
       tile 2: []
-      tile 3: [DataType(2, 1), DataType(2, 1), DataType(2, 1)]
-      tile 4: [DataType(4, 1), DataType(4, 1), DataType(4, 1)]
+      tile 3: [DataType(2, 1)]
+      tile 4: [DataType(4, 1)]
       tile 5: [DataType(8, 1), DataType(9, 1)]
-      tile 6: [DataType(6, 1), DataType(6, 1), DataType(6, 1)]
-      tile 7: [DataType(8, 1), DataType(8, 1), DataType(8, 1)]
+      tile 6: [DataType(6, 1)]
+      tile 7: [DataType(8, 1)]
       tile 8: [DataType(12, 1), DataType(13, 1)]
   '''
   src_opt_per_tile = [
