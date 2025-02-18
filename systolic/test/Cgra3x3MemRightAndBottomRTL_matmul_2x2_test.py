@@ -204,6 +204,33 @@ def test_CGRA_systolic(cmdline_opts):
                                      predicate_nbits = 1)
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
 
+  '''preload_const = [
+                   # The offset address used for loading input activation.
+                   # We use a shared data memory here, indicating global address
+                   # space. Users can make each tile has its own address space.
+                   # The last one is not useful for the first colum, which is just
+                   # to make the length aligned.
+                   [DataType(0, 1), DataType(1, 1), DataType(0, 0)],
+                   # The first one is not useful for the second colum, which is just
+                   # to make the length aligned.
+                   # [DataType(0, 0), DataType(4, 1), DataType(5, 1)],
+                   [DataType(4, 1), DataType(5, 1), DataType(0, 0)],
+                   # The third column is not actually necessary to perform activation
+                   # loading nor storing parameters.
+                   [DataType(0, 0), DataType(0, 0), DataType(0, 0)],
+                   # Preloads weights. 3 items to align with the above const length.
+                   # Duplication exists as the iter of the const queue automatically
+                   # increment.
+                   [DataType(2, 1), DataType(2, 1), DataType(2, 1)],
+                   [DataType(4, 1), DataType(4, 1), DataType(4, 1)],
+                   # The third column (except the bottom one) is used to store the
+                   # accumulated results.
+                   [DataType(8, 1), DataType(9, 1), DataType(0, 0)],
+                   [DataType(6, 1), DataType(6, 1), DataType(6, 1)],
+                   [DataType(8, 1), DataType(8, 1), DataType(8, 1)],
+                   # The third column (except the bottom one) is used to store the
+                   # accumulated results.
+                   [DataType(12, 1), DataType(13, 1), DataType(0, 0)]]'''
   # preload const list for tiles 0-8
   '''
       tile 0: [DataType(0, 1), DataType(1, 1)]
