@@ -285,7 +285,7 @@ def test_CGRA_systolic(cmdline_opts):
       # tile 0 and 1 are used to load matrix [[1 2], [3 4]],
       # the calculation tiles are 3, 4, 6, 7,
       # and tile 5 and 8 are used to store the results.
-      # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/WeightStationarySystolicArray.png
+      # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
 
       # On tile 2 ([0, 2]).
       # [
