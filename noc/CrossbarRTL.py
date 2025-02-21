@@ -81,8 +81,8 @@ class CrossbarRTL(Component):
                                 # FIXME: Valid shouldn't depend on rdy.
                                 # reduce_and(s.send_rdy_vector) & \
           if reduce_and(s.recv_valid_vector) & \
-             # reduce_and(s.send_rdy_vector) & \
              s.send_required_vector[i]:
+             # reduce_and(s.send_rdy_vector) & \
             s.send_data[i].msg.payload @= s.recv_data[s.in_dir_local[i]].msg.payload
             s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local[i]].msg.predicate
 
