@@ -280,18 +280,13 @@ def test_CGRA_systolic(cmdline_opts):
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
+
       # On tile 2 ([0, 2]).
-      [
-       CtrlPktType(0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_NAH, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+      # Tile 2 doesn't need to do anything,
+      # tile 0 and 1 are used to load matrix [[1 2], [3 4]],
+      # the calculation tiles are 3, 4, 6, 7,
+      # and tile 5 and 8 are used to store the results.
+      # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
 
       # On tile 3 ([1, 0]).
       [
