@@ -231,9 +231,8 @@ def test_CGRA_systolic(cmdline_opts):
 
   src_opt_per_tile = [
       # On tile 0 ([0, 0]).
-                 # src dst vc_id opq cmd_type    addr operation     predicate
-      [
-       CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
+                 # cgra_id src dst vc_id opq cmd_type addr operation   predicate fu_in routing_xbar fu_xbar
+      [CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
@@ -245,9 +244,7 @@ def test_CGRA_systolic(cmdline_opts):
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
 
       # On tile 1 ([0, 1]).
-                 # src dst vc_id opq cmd_type    addr operation     predicate
-      [
-       CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
+      [CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
