@@ -64,10 +64,6 @@ class TestHarness(Component):
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
-    s.dut.send_to_noc.rdy //= 0
-    s.dut.recv_from_noc.val //= 0
-    s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
-
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
       s.dut.recv_data_on_boundary_north[tile_col].val //= 0
@@ -143,7 +139,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
           3: [3, 0],
   }
 
-  cmd_nbits = 4
+  cmd_nbits = 6
   cgraId_nbits = 2
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
