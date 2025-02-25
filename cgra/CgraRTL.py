@@ -100,11 +100,6 @@ class CgraRTL(Component):
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
-    #@update
-    #def manuallySetRdy():
-    #  s.controller.recv_from_cpu_pkt.val @= s.recv_from_cpu_pkt.val
-    #  s.controller.recv_from_cpu_pkt.msg @= s.recv_from_cpu_pkt.msg
-    #  s.recv_from_cpu_pkt.rdy @= 1
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):

@@ -87,7 +87,7 @@ def test_homo_2x2(cmdline_opts):
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
-  cmd_nbits = 5
+  cmd_nbits = 6
   num_registers_per_reg_bank = 16
   CmdType = mk_bits(cmd_nbits)
   controller2addr_map = {
@@ -144,7 +144,7 @@ def test_homo_2x2(cmdline_opts):
 
   src_opt_per_tile = [[
                 # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         # TODO: make below as TileInType(5) to double check.
@@ -152,7 +152,7 @@ def test_homo_2x2(cmdline_opts):
 
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -160,7 +160,7 @@ def test_homo_2x2(cmdline_opts):
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -168,7 +168,7 @@ def test_homo_2x2(cmdline_opts):
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -176,7 +176,7 @@ def test_homo_2x2(cmdline_opts):
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -184,7 +184,7 @@ def test_homo_2x2(cmdline_opts):
                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -193,7 +193,7 @@ def test_homo_2x2(cmdline_opts):
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
 
       # This last one is for launching kernel.
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
+      CtrlPktType(i, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],

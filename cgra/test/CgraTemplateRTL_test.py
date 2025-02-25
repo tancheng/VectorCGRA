@@ -78,6 +78,7 @@ class TestHarness(Component):
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
+    s.dut.recv_from_noc //= s.dut.send_to_noc
 
   def done(s):
     return s.src_ctrl_pkt.done()
