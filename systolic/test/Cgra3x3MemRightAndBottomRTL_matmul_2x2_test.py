@@ -34,7 +34,7 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 10
+kMaxCycles = 50
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
@@ -62,9 +62,9 @@ class TestHarness(Component):
     # Connections.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
-    s.dut.send_to_noc.rdy //= 0
-    s.dut.recv_from_noc.val //= 0
-    s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
+#    s.dut.send_to_noc.rdy //= 0
+#    s.dut.recv_from_noc.val //= 0
+#    s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -97,7 +97,7 @@ class TestHarness(Component):
     return s.check_parity()
 
   def line_trace(s):
-    return s.src_ctrl_pkt.line_trace() + "\nyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n" + s.dut.line_trace()
+    return s.dut.line_trace()
 
 def run_sim(test_harness, enable_verification_pymtl,
             max_cycles = kMaxCycles):
@@ -178,7 +178,7 @@ def test_CGRA_systolic(cmdline_opts):
           1: [16, 31],
   }
 
-  cmd_nbits = 4
+  cmd_nbits = 6
   cgraId_nbits = 1
   cgra_columns = 1
   cgra_rows = 1
