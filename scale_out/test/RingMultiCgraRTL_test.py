@@ -71,7 +71,7 @@ def test_homo_2x2(cmdline_opts):
   num_terminals = cgra_rows * cgra_columns
   width = 2
   height = 2
-  num_ctrl_actions = 6
+  num_ctrl_actions = 64
   num_ctrl_operations = 64
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
@@ -84,7 +84,8 @@ def test_homo_2x2(cmdline_opts):
   DUT = RingMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cmd_nbits = 5
   num_registers_per_reg_bank = 16

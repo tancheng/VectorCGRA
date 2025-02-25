@@ -70,7 +70,7 @@ class ControllerRTL(Component):
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 4, 1)
 
-    s.recv_from_cpu_pkt_queue = ChannelRTL(FromCpuPktType, latency = 1)
+    s.recv_from_cpu_pkt_queue = NormalQueueRTL(FromCpuPktType)
 
     # # TODO: below ifcs should be connected through another NoC within
     # # one CGRA, instead of per-tile and performing like a bus.
@@ -131,14 +131,17 @@ class ControllerRTL(Component):
     # other CGRAs can be delivered via the NoC across CGRAs. Note that the packet
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
-#    s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
-    
+    #s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
+    #s.recv_ctrl_pkt_queue.send //= s.send_to_ctrl_ring_ctrl_pkt
+
+    #'''
     @update
     def update_recv_from_cpu_pkt_queue():
       s.recv_from_cpu_pkt_queue.recv.val @= s.recv_from_cpu_pkt.val
       s.recv_from_cpu_pkt_queue.recv.msg @= s.recv_from_cpu_pkt.msg
       # must manually set to 1, otherwise TestSrcRTL in CgraRTL_test.py will stuck
       s.recv_from_cpu_pkt.rdy @= 1
+    #'''
 
     @update
     def update_received_msg():
@@ -246,10 +249,10 @@ class ControllerRTL(Component):
                      s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.cgra_id], # src_y
                      0, # dst_x
                      0, # dst_y
-                     s.recv_from_cpu_pkt_queue.send.msg.src, # tile id 
+                     s.recv_from_cpu_pkt_queue.send.msg.dst, # tile id 
                      0,
                      0,
-                     CMD_CONFIG,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_action, # maybe CMD_CONFIG or CMD_CONST
                      s.recv_from_cpu_pkt_queue.send.msg.addr,
                      s.recv_from_cpu_pkt_queue.send.msg.data,
                      s.recv_from_cpu_pkt_queue.send.msg.data_predicate,
@@ -314,9 +317,9 @@ class ControllerRTL(Component):
           if s.send_to_ctrl_ring_ctrl_pkt.rdy:
             s.recv_from_noc.rdy @= 1
             s.send_to_ctrl_ring_ctrl_pkt.val @= 1
-            s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(received_pkt.src, # cgra_id
-                                                               received_pkt.tile_id, # src
-                                                               0, # dst
+            s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(received_pkt.dst, # cgra_id
+                                                               0, # src
+                                                               received_pkt.tile_id, # dst
                                                                received_pkt.opaque, # opaque
                                                                received_pkt.vc_id, # vc_id
                                                                received_pkt.ctrl_action, # ctrl_action
@@ -352,7 +355,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.src_y,
                      s.idTo2d_x_lut[addr_dst_id],
                      s.idTo2d_y_lut[addr_dst_id],
-                     0, 
+                     s.crossbar.send[0].msg.tile_id, 
                      s.crossbar.send[0].msg.opaque,
                      s.crossbar.send[0].msg.vc_id,
                      s.crossbar.send[0].msg.cmd,
@@ -360,16 +363,19 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.data,
                      s.crossbar.send[0].msg.predicate,
                      s.crossbar.send[0].msg.payload,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0)
+                     s.crossbar.send[0].msg.ctrl_action,
+                     s.crossbar.send[0].msg.ctrl_addr,
+                     s.crossbar.send[0].msg.ctrl_operation,
+                     s.crossbar.send[0].msg.ctrl_predicate,
+                     s.crossbar.send[0].msg.ctrl_fu_in,
+                     s.crossbar.send[0].msg.ctrl_routing_xbar_outport,
+                     s.crossbar.send[0].msg.ctrl_fu_xbar_outport,
+                     s.crossbar.send[0].msg.ctrl_routing_predicate_in)
 
   def line_trace(s):
+    recv_from_cpu_pkt_str = "recv_from_cpu_pkt: " + str(s.recv_from_cpu_pkt.msg)
+    recv_from_cpu_pkt_queue_str = "recv_from_cpu_pkt_queue.send: " + str(s.recv_from_cpu_pkt_queue.send.msg)
+    crossbar_recv_str = "crossbar_recv: " + str(s.crossbar.recv[3].msg)
     send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg)
     recv_from_tile_load_request_pkt_str = "recv_from_tile_load_request_pkt: " + str(s.recv_from_tile_load_request_pkt.msg)
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
@@ -380,5 +386,4 @@ class ControllerRTL(Component):
     send_to_tile_store_request_data_str = "send_to_tile_store_request_data: " + str(s.send_to_tile_store_request_data.msg)
     recv_from_noc_str = "recv_from_noc_pkt: " + str(s.recv_from_noc.msg)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
-    return f'{send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
-
+    return f'{recv_from_cpu_pkt_str} || {recv_from_cpu_pkt_queue_str} || {crossbar_recv_str} ||  {send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'

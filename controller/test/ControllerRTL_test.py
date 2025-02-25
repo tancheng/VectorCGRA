@@ -263,4 +263,3 @@ def test_simple():
                    controller2addr_map, idTo2d_map,
                    nterminals)
   run_sim(th)
-

@@ -84,7 +84,8 @@ def test_homo_2x2(cmdline_opts):
   DUT = MeshMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cmd_nbits = 5
   num_registers_per_reg_bank = 16

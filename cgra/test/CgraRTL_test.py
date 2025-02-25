@@ -145,7 +145,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
 
   cmd_nbits = 4
   cgraId_nbits = 2
-  data_nbits = 32
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
@@ -162,7 +161,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                         num_tile_outports,
                         num_registers_per_reg_bank,
                         addr_nbits,
-                        data_nbits,
+                        data_bitwidth,
                         predicate_nbits)
 
   CtrlSignalType = \
@@ -177,7 +176,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                                      nrows = 1,
                                      ntiles = width * height,
                                      addr_nbits = addr_nbits,
-                                     data_nbits = data_nbits,
+                                     data_nbits = data_bitwidth,
                                      predicate_nbits = 1,
                                      ctrl_actions = num_ctrl_actions,
                                      ctrl_mem_size = ctrl_mem_size,
@@ -261,7 +260,7 @@ def test_heterogeneous_king_mesh_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-'''
+
 def test_vector_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
   FuList = [AdderRTL,
@@ -275,7 +274,7 @@ def test_vector_king_mesh_2x2(cmdline_opts):
             SelRTL,
             VectorMulComboRTL,
             VectorAdderComboRTL]
-  data_bitwidth = 32
+  data_bitwidth = 64
   th = init_param(topology, FuList, data_bitwidth)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -283,4 +282,3 @@ def test_vector_king_mesh_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-'''

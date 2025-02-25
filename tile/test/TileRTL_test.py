@@ -10,36 +10,30 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
-from pymtl3 import *
+from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+
 from ..TileRTL import TileRTL
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.SelRTL import SelRTL
+from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
-from ...fu.vector.VectorMulComboRTL       import VectorMulComboRTL
-from ...fu.vector.VectorAdderComboRTL     import VectorAdderComboRTL
-from ...fu.vector.VectorAllReduceRTL      import VectorAllReduceRTL
-from ...fu.single.AdderRTL                import AdderRTL
-from ...fu.single.MemUnitRTL              import MemUnitRTL
-from ...fu.single.MulRTL                  import MulRTL
-from ...fu.single.SelRTL                  import SelRTL
-from ...fu.single.ShifterRTL              import ShifterRTL
-from ...fu.single.LogicRTL                import LogicRTL
-from ...fu.single.PhiRTL                  import PhiRTL
-from ...fu.single.CompRTL                 import CompRTL
-from ...fu.single.BranchRTL               import BranchRTL
-from ...fu.single.NahRTL                  import NahRTL
-from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
-from ...fu.flexible.FlexibleFuRTL         import FlexibleFuRTL
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
+from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
-from ...lib.messages import *
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
 from ...lib.cmd_type import *
+from ...lib.messages import *
 from ...lib.opt_type import *
-from ...mem.ctrl.CtrlMemRTL import CtrlMemRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -131,7 +125,6 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
-
   cmd_nbits = 4
   cgraId_nbits = 1
   data_nbits = 64
@@ -190,7 +183,7 @@ def test_tile_alu(cmdline_opts):
 #                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
 #                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])]
   src_ctrl_pkt = [
-                # src dst vc_id opq cmd_type    addr operation predicate
+                # cgraid src dst vc_id opq cmd_type addr operation predicate
       CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -204,8 +197,13 @@ def test_tile_alu(cmdline_opts):
                    TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
                   # fu_xbar_output
                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
-      CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0), pick_register1,
+                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+
+      # for const： 5, 7
+      CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 5),
+      CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 7),
+
+      CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0), pick_register1,
                   # routing_xbar_output
                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -216,7 +214,7 @@ def test_tile_alu(cmdline_opts):
               [],
               [DataType(4, 1)],
               [DataType(5, 1), DataType(7, 1)]]
-  src_const = [DataType(5, 1), DataType(0, 0), DataType(7, 1)]
+
   sink_out = [
               # 7 - 3 = 4.
               [DataType(4, 1)],

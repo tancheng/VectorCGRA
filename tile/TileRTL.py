@@ -14,23 +14,24 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
-from pymtl3 import *
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
-from ..fu.single.PhiRTL import PhiRTL
 from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
+from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..mem.const.ConstQueueRTL import ConstQueueRTL
+from ..lib.cmd_type import *
+from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
-from ..noc.CrossbarRTL import CrossbarRTL
-from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-from ..noc.LinkOrRTL import LinkOrRTL
-from ..rf.RegisterRTL import RegisterRTL
 from ..mem.register_cluster.RegisterClusterRTL import RegisterClusterRTL
+from ..noc.CrossbarRTL import CrossbarRTL
+from ..noc.LinkOrRTL import LinkOrRTL
+from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
+from ..rf.RegisterRTL import RegisterRTL
+
 
 class TileRTL(Component):
 
@@ -39,8 +40,8 @@ class TileRTL(Component):
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL,
-                    MemUnitRTL], const_list = None, id = 0):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
+                id = 0):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -71,8 +72,7 @@ class TileRTL(Component):
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, FuList)
-    s.const_queue = ConstQueueRTL(DataType, const_list \
-        if const_list != None else [DataType(0)])
+    s.const_mem = ConstQueueDynamicRTL(DataType, data_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
@@ -108,13 +108,8 @@ class TileRTL(Component):
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
 
-    # Connections.
-    # Ctrl.
-    s.ctrl_mem.recv_pkt //= s.recv_ctrl_pkt
-
     # Constant queue.
-    # FIXME: @yuqi, https://github.com/tancheng/VectorCGRA/issues/11
-    s.element.recv_const //= s.const_queue.send_const
+    s.element.recv_const //= s.const_mem.send_const
 
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
@@ -171,14 +166,30 @@ class TileRTL(Component):
       s.fu_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_fu_crossbar[i]
 
-      # FIXME: @yuqi, https://github.com/tancheng/VectorCGRA/issues/11
-      # The const can be delivered here.
       s.register_cluster.recv_data_from_const[i].msg //= DataType()
       s.register_cluster.recv_data_from_const[i].val //= 0
 
       s.register_cluster.send_data_to_fu[i] //= \
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
+
+    @update
+    def feed_pkt():
+        s.ctrl_mem.recv_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.const_mem.recv_const.msg @= DataType(0, 0, 0, 0)
+        s.ctrl_mem.recv_pkt.val @= 0
+        s.const_mem.recv_const.val @= 0
+        s.recv_ctrl_pkt.rdy @= 0
+
+        if s.recv_ctrl_pkt.val & ((s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG) | (s.recv_ctrl_pkt.msg.ctrl_action == CMD_LAUNCH)):
+            s.ctrl_mem.recv_pkt.val @= 1
+            s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
+            s.recv_ctrl_pkt.rdy @= s.ctrl_mem.recv_pkt.rdy
+        elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
+            s.const_mem.recv_const.val @= 1
+            s.const_mem.recv_const.msg.payload @= s.recv_ctrl_pkt.msg.data
+            s.const_mem.recv_const.msg.predicate @= 1
+            s.recv_ctrl_pkt.rdy @= s.const_mem.recv_const.rdy
 
     # Updates the configuration memory related signals.
     @update
@@ -219,10 +230,12 @@ class TileRTL(Component):
   # Line trace
   def line_trace(s):
     recv_str = "|".join(["(" + str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.recv_data])
+    send_str = "|".join([str(x.msg) for x in s.send_data])
     tile_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_in_channel])
     tile_in_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_in_channel])
     tile_in_channel_str = "|".join([str(x.line_trace()) for x in s.tile_in_channel])
     out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
-    return f"tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem} ## "
+    const_mem = s.const_mem.line_trace()
+    return f"send_str: {send_str}, tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
 

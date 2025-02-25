@@ -199,7 +199,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   FunctionUnit = FlexibleFuRTL
   # FuList = [MemUnitRTL, AdderRTL]
   FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
 
   CmdType = mk_bits(4)

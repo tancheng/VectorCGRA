@@ -24,8 +24,7 @@ class MeshMultiCgraRTL(Component):
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 num_ctrl, total_steps, FunctionUnit, FuList,
-                controller2addr_map, preload_data = None,
-                preload_const = None):
+                controller2addr_map, preload_data = None):
 
     # Constant
     s.num_terminals = cgra_rows * cgra_columns
@@ -55,7 +54,7 @@ class MeshMultiCgraRTL(Component):
                       num_registers_per_reg_bank,
                       num_ctrl, total_steps, FunctionUnit, FuList,
                       "Mesh", controller2addr_map, idTo2d_map,
-                      preload_data = None, preload_const = None)
+                      preload_data = None)
               for terminal_id in range(s.num_terminals)]
     # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
