@@ -527,9 +527,11 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, opaque_nbits = 8, v
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)] # for preloading ctrl, added by yyf
 
   def str_func(s):
-      return f"{s.src}>cgraid:{s.dst}&{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.tile_id} ||" \
+      return f"{s.src}>{s.dst},{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.tile_id} ||" \
               f"{s.opaque}:{s.vc_id}|| cmd:{s.cmd} ||{s.addr}.{s.data}.{s.predicate}." \
-              f"{s.payload} || action:{s.ctrl_action} || operation:{s.ctrl_operation} ||end------------"
+              f"{s.payload} || action:{s.ctrl_action} || operation:{s.ctrl_operation} || "\
+              f"ctrl_routing_xbar_outport:{s.ctrl_routing_xbar_outport} || "\
+              f"ctrl_fu_xbar_outport:{s.ctrl_fu_xbar_outport}\n"
 
 
   if vc > 1:

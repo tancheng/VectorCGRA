@@ -62,10 +62,6 @@ class TestHarness(Component):
     # Connections.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
 
-#    s.dut.send_to_noc.rdy //= 0
-#    s.dut.recv_from_noc.val //= 0
-#    s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
-
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
       s.dut.recv_data_on_boundary_north[tile_col].val //= 0
