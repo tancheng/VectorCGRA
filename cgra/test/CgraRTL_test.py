@@ -244,7 +244,7 @@ def test_homogeneous_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
   run_sim(th)
 
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
@@ -255,7 +255,7 @@ def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
   run_sim(th)
 
 def test_vector_king_mesh_2x2(cmdline_opts):
@@ -277,5 +277,5 @@ def test_vector_king_mesh_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
   run_sim(th)

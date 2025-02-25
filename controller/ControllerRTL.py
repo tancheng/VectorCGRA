@@ -274,7 +274,7 @@ class ControllerRTL(Component):
       s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
       s.recv_from_noc.rdy @= 0
       s.send_to_ctrl_ring_ctrl_pkt.val @= 0
-      s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType()
+      s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_noc.msg
@@ -304,7 +304,7 @@ class ControllerRTL(Component):
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
             s.send_to_tile_load_response_data_queue.recv.val @= 1
 
-        elif s.recv_from_noc.msg.cmd == CMD_CONFIG or s.recv_from_noc.msg.cmd == CMD_CONST or s.recv_from_noc.msg.cmd == CMD_LAUNCH:
+        elif (s.recv_from_noc.msg.cmd == CMD_CONFIG) | (s.recv_from_noc.msg.cmd == CMD_CONST) | (s.recv_from_noc.msg.cmd == CMD_LAUNCH):
           s.recv_from_noc.rdy @= s.send_to_ctrl_ring_ctrl_pkt.rdy
           s.send_to_ctrl_ring_ctrl_pkt.val @= s.recv_from_noc.val
           s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(s.recv_from_noc.msg.dst, # cgra_id
@@ -323,10 +323,13 @@ class ControllerRTL(Component):
                                                                s.recv_from_noc.msg.cmd, # cmd
                                                                s.recv_from_noc.msg.addr, # addr
                                                                s.recv_from_noc.msg.data, # data
-                                                               s.recv_from_noc.msg.predicate)  # data_predicate
-
-
-
+                                                               s.recv_from_noc.msg.predicate, # data_predicate
+                                                               0,
+                                                               0,
+                                                               0,
+                                                               0,
+                                                               0,
+                                                               0)
 
         # else:
         #   # TODO: Handle other cmd types.

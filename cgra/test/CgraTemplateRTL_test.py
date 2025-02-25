@@ -266,10 +266,10 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
       # This last one is for launching kernel.
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0)
+                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       ] for i in range(num_tiles)]
 
   src_ctrl_pkt = []
@@ -420,7 +420,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
 
   if paramCGRA != None:
     for tile in tiles:
