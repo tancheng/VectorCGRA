@@ -89,8 +89,11 @@ commands will create and activate the virtual environment:
 ```
  % pip install py==1.11.0
  % pip install -U git+https://github.com/tancheng/pymtl3.1@yo-struct-list-fix
+ % pip install wheel
  % pip install --upgrade pip setuptools twine
  % pip install hypothesis
+ % pip install pytest
+ % pip install py-markdown-table
  % pip list
 ```
 Take a look at the [workflow](https://github.com/tancheng/VectorCGRA/blob/master/.github/workflows/python-package.yml) if you encounter any problem to run the test in this repo.
