@@ -146,7 +146,7 @@ cmd_nbits = 2
 CmdType = mk_bits(cmd_nbits)
 cgraId_nbits = 4
 ControllerIdType = mk_bits(cgraId_nbits)
-num_ctrl_actions = 8
+num_ctrl_actions = 64
 ctrl_mem_size = 16
 num_ctrl_operations = 64
 num_fu_inports = 2
@@ -191,7 +191,14 @@ FromCpuPktType = mk_intra_cgra_pkt(ntiles,
 Pkt = mk_multi_cgra_noc_pkt(nterminals, nterminals, ntiles,
                             addr_nbits = addr_nbits,
                             data_nbits = data_nbits,
-                            predicate_nbits = predicate_nbits)
+                            predicate_nbits = predicate_nbits,
+                            ctrl_actions = num_ctrl_actions,
+                            ctrl_mem_size = ctrl_mem_size,
+                            ctrl_operations = num_ctrl_operations,
+                            ctrl_fu_inports = num_fu_inports,
+                            ctrl_fu_outports = num_fu_outports,
+                            ctrl_tile_inports = num_tile_inports,
+                            ctrl_tile_outports = num_tile_outports)
 
 from_tile_load_request_pkts = [
     #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred

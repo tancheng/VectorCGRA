@@ -72,7 +72,6 @@ class TestHarness(Component):
   def done(s):
     return True
     # temporarily set true to bypass check
-    '''
     for i in range(s.rd_tiles):
       if not s.recv_raddr[i].done() or not s.send_rdata[i].done():
         return False
@@ -87,7 +86,6 @@ class TestHarness(Component):
       return False
  
     return True
-    '''
 
   def line_trace(s):
     return s.data_mem.line_trace()
