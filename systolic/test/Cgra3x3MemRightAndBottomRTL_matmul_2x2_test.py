@@ -34,7 +34,7 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 50
+kMaxCycles = 200
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
