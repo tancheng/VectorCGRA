@@ -250,6 +250,7 @@ def test_CGRA_systolic(cmdline_opts):
                    # The third column (except the bottom one) is used to store the
                    # accumulated results.
                    [DataType(12, 1), DataType(13, 1), DataType(0, 0)]]'''
+
   # preload const list for tiles 0-8
   '''
       tile 0: [DataType(0, 1), DataType(1, 1)]
@@ -263,6 +264,7 @@ def test_CGRA_systolic(cmdline_opts):
       tile 8: [DataType(12, 1), DataType(13, 1)]
   '''
   src_opt_per_tile = [
+
       # On tile 0 ([0, 0]).
       [
        # Const
@@ -405,11 +407,8 @@ def test_CGRA_systolic(cmdline_opts):
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)]]
   
-  src_ctrl_pkt = []
-  for opt_per_tile in src_opt_per_tile:
-    src_ctrl_pkt.extend(opt_per_tile)
-
-  test_meta_data = [
+  # preload activation tensors to data mem
+  '''
      # addr:  0    1    2    3
            [0x1, 0x2, 0x0, 0x0],
      # addr:  4    5    6    7
@@ -417,11 +416,22 @@ def test_CGRA_systolic(cmdline_opts):
      # addr:  8    9   10   11
            [0x0, 0x0, 0x0, 0x0],
      # addr: 12   13   14   15
-           [0x0, 0x0, 0x0, 0x0]]
+           [0x0, 0x0, 0x0, 0x0]
+  '''
+  activation_tensor_preload_data = [
+      [
+          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 0, data = 1, data_predicate = 1),
+          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 1, data = 2, data_predicate = 1),
+          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 4, data = 3, data_predicate = 1),
+          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 5, data = 4, data_predicate = 1)
+      ]
+  ]
 
-  preload_data_per_bank = [[DataType(test_meta_data[j][i], 1)
-                            for i in range(data_mem_size_per_bank)]
-                           for j in range(num_banks_per_cgra)]
+  src_ctrl_pkt = []
+  for activation in activation_tensor_preload_data:
+      src_ctrl_pkt.extend(activation)
+  for opt_per_tile in src_opt_per_tile:
+      src_ctrl_pkt.extend(opt_per_tile)
 
   """
   1 3      2 6     14 20
@@ -441,7 +451,7 @@ def test_CGRA_systolic(cmdline_opts):
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_steps,
-                   controller2addr_map, preload_data_per_bank,
+                   controller2addr_map, None,
                    expected_out)
 
   th.elaborate()
