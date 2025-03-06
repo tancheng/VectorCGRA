@@ -106,6 +106,7 @@ We can now use git to clone the VectorCGRA repo.
  % mkdir -p ${HOME}/cgra
  % cd ${HOME}/cgra
  % git clone https://github.com/tancheng/VectorCGRA.git
+ % cd VectorCGRA/
  % git submodule update --init
 ```
 
