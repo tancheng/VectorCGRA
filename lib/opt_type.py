@@ -132,5 +132,5 @@ OPT_SYMBOL_DICT = {
 
 }
 
-NUM_OPTS = Bits6(63)
-NUM_CMDS = Bits3(7)
+NUM_OPTS = 64
+NUM_CMDS = 6
