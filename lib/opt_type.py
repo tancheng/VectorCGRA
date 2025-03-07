@@ -131,3 +131,6 @@ OPT_SYMBOL_DICT = {
   OPT_LTE : "(?<=)",
 
 }
+
+NUM_OPTS = Bits6(63)
+NUM_CMDS = Bits3(7)

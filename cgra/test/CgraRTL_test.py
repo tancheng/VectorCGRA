@@ -62,6 +62,9 @@ class TestHarness(Component):
                 FuList, topology, controller2addr_map, idTo2d_map)
 
     # Connections
+    # As we always first issue request pkt from CPU to NoC, 
+    # when there is no NoC for single CGRA test, 
+    # we have to connect from_noc and to_noc in testbench.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.dut.recv_from_noc //= s.dut.send_to_noc
 
@@ -108,7 +111,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   width = 2
   height = 2
   num_terminals = 4
-  num_ctrl_actions = 64
+  num_commands = NUM_CMDS
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -140,16 +143,14 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
           3: [3, 0],
   }
 
-  cmd_nbits = 6
-  cgraId_nbits = 2
+  cgra_id_nbits = 2
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -175,7 +176,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_bitwidth,
                                      predicate_nbits = 1,
-                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_actions = num_commands,
                                      ctrl_mem_size = ctrl_mem_size,
                                      ctrl_operations = num_ctrl_operations,
                                      ctrl_fu_inports = num_fu_inports,
@@ -244,7 +245,7 @@ def test_homogeneous_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
@@ -255,7 +256,7 @@ def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
 def test_vector_king_mesh_2x2(cmdline_opts):
@@ -277,5 +278,5 @@ def test_vector_king_mesh_2x2(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)

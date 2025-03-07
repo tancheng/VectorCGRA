@@ -34,7 +34,7 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 50
+kMaxCycles = 200
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
@@ -148,8 +148,8 @@ def test_CGRA_systolic(cmdline_opts):
   width = 3
   height = 3
   num_terminals = 1
-  num_ctrl_actions = 64
-  num_ctrl_operations = 64
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
   data_nbits = 32
   ctrl_steps = 2
@@ -166,7 +166,7 @@ def test_CGRA_systolic(cmdline_opts):
   PredicateType = mk_predicate(1, 1)
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
 
-  CmdType = mk_bits(4)
+  CmdType = NUM_CMDS
   ControllerIdType = mk_bits(max(clog2(num_terminals), 1))
   controller_id = 0
   controller2addr_map = {
@@ -174,8 +174,7 @@ def test_CGRA_systolic(cmdline_opts):
           1: [16, 31],
   }
 
-  cmd_nbits = 6
-  cgraId_nbits = 1
+  cgra_id_nbits = 1
   cgra_columns = 1
   cgra_rows = 1
   data_nbits = 32
@@ -184,9 +183,8 @@ def test_CGRA_systolic(cmdline_opts):
 
   CtrlPktType = \
         mk_intra_cgra_pkt(width * height,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -212,7 +210,7 @@ def test_CGRA_systolic(cmdline_opts):
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_nbits,
                                      predicate_nbits = 1,
-                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_actions = num_commands,
                                      ctrl_mem_size = ctrl_mem_size,
                                      ctrl_operations = num_ctrl_operations,
                                      ctrl_fu_inports = num_fu_inports,
@@ -266,38 +264,38 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 0 ([0, 0]).
       [
        # Const
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 1),
+                 # cgra_id src dst vc_id opq
+       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
+       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
 
                  # cgra_id src dst vc_id opq cmd_type    addr operation     predicate
-       CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
+       CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
       # On tile 1 ([0, 1]).
       [
        # Const
-       CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 4),
-       CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 5),
+       CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 4),
+       CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 5),
 
-                 # cgra_id src dst vc_id opq cmd_type    addr operation     predicate
-       CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
+       CtrlPktType(0,      0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
 
       # On tile 2 ([0, 2]).
@@ -310,100 +308,100 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 3 ([1, 0]).
       [
        # Const
-       CtrlPktType(0, 0, 3, 0, 0, ctrl_action = CMD_CONST, data = 2),
+       CtrlPktType(0,      0,  3,  0,    0, ctrl_action = CMD_CONST, data = 2),
 
-       CtrlPktType(0, 0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
+       CtrlPktType(0,      0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
-      # On tile 4 ([1, 1]).
+      # On tile 4 (1, 1]).
       [
        # Const
-       CtrlPktType(0, 0, 4, 0, 0, ctrl_action = CMD_CONST, data = 4),
+       CtrlPktType(0,      0,  4,  0,    0, ctrl_action = CMD_CONST, data = 4),
 
-       CtrlPktType(0, 0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+       CtrlPktType(0,      0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
       # On tile 5 ([1, 2]).
       [
        # Const
-       CtrlPktType(0, 0, 5, 0, 0, ctrl_action = CMD_CONST, data = 8),
-       CtrlPktType(0, 0, 5, 0, 0, ctrl_action = CMD_CONST, data = 9),
+       CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 8),
+       CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 9),
 
-       CtrlPktType(0, 0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
+       CtrlPktType(0,      0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
       # On tile 6 ([2, 0]).
       [
        # Const
-       CtrlPktType(0, 0, 6, 0, 0, ctrl_action = CMD_CONST, data = 6),
+       CtrlPktType(0,      0,  6,  0,    0, ctrl_action = CMD_CONST, data = 6),
 
-       CtrlPktType(0, 0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
+       CtrlPktType(0,      0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
       # On tile 7 ([2, 1]).
       [
        # Const
-       CtrlPktType(0, 0, 7, 0, 0, ctrl_action = CMD_CONST, data = 8),
+       CtrlPktType(0,      0,  7,  0,    0, ctrl_action = CMD_CONST, data = 8),
 
-       CtrlPktType(0, 0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+       CtrlPktType(0,      0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,      0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)],
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
 
       # On tile 8 ([2, 2]).
       [
        # Const
-       CtrlPktType(0, 0, 8, 0, 0, ctrl_action = CMD_CONST, data = 12),
-       CtrlPktType(0, 0, 8, 0, 0, ctrl_action = CMD_CONST, data = 13),
+       CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 12),
+       CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 13),
 
-       CtrlPktType(0, 0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
+       CtrlPktType(0,     0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0),
-       CtrlPktType(0, 0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       CtrlPktType(0,     0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)], 0, 0, 0, 0, 0)]]
+                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])]]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:

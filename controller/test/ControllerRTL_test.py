@@ -17,6 +17,7 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.messages import *
 from ...lib.cmd_type import *
+from ...lib.opt_type import *
 from ...noc.PyOCN.pymtl3_net.ocnlib.test.stream_sinks import NetSinkRTL as TestNetSinkRTL
 import pytest
 
@@ -57,7 +58,7 @@ class TestHarness(Component):
     s.dut = ControllerRTL(ControllerIdType, CmdType, FromCpuPktType,
                           PktType, MsgType, AddrType,
                           # Number of controllers globally (x/y dimension).
-                          num_terminals, num_terminals,
+                          1, num_terminals,
                           controller_id,
                           controller2addr_map,
                           idTo2d_map)
@@ -142,13 +143,12 @@ DataType = mk_data(data_nbits, predicate_nbits)
 
 nterminals = 4
 ntiles = 4
-cmd_nbits = 2
-CmdType = mk_bits(cmd_nbits)
-cgraId_nbits = 4
-ControllerIdType = mk_bits(cgraId_nbits)
-num_ctrl_actions = 64
+CmdType = NUM_CMDS
+cgra_id_nbits = 2
+ControllerIdType = mk_bits(cgra_id_nbits)
+num_commands = NUM_CMDS
 ctrl_mem_size = 16
-num_ctrl_operations = 64
+num_ctrl_operations = NUM_OPTS
 num_fu_inports = 2
 num_fu_outports = 2
 num_tile_inports = 4
@@ -174,9 +174,8 @@ controller2addr_map = {
 }
 
 FromCpuPktType = mk_intra_cgra_pkt(ntiles,
-                                     cmd_nbits,
-                                     cgraId_nbits,
-                                     num_ctrl_actions,
+                                     cgra_id_nbits,
+                                     num_commands,
                                      ctrl_mem_size,
                                      num_ctrl_operations,
                                      num_fu_inports,
@@ -188,11 +187,11 @@ FromCpuPktType = mk_intra_cgra_pkt(ntiles,
                                      data_nbits,
                                      predicate_nbits)
 
-Pkt = mk_multi_cgra_noc_pkt(nterminals, nterminals, ntiles,
+Pkt = mk_multi_cgra_noc_pkt(nterminals, 1, ntiles,
                             addr_nbits = addr_nbits,
                             data_nbits = data_nbits,
                             predicate_nbits = predicate_nbits,
-                            ctrl_actions = num_ctrl_actions,
+                            ctrl_actions = num_commands,
                             ctrl_mem_size = ctrl_mem_size,
                             ctrl_operations = num_ctrl_operations,
                             ctrl_fu_inports = num_fu_inports,
@@ -201,24 +200,24 @@ Pkt = mk_multi_cgra_noc_pkt(nterminals, nterminals, ntiles,
                             ctrl_tile_outports = num_tile_outports)
 
 from_tile_load_request_pkts = [
-    #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_REQUEST,  1,   0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_REQUEST,  8,   0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_REQUEST,  13,  0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    #   src  dst src_x src_y dst_x dst_y tile_id opq vc  addr data predicate payload ctrl_action       ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  1,   0,   1,        0,      CMD_LOAD_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  8,   0,   1,        0,      CMD_LOAD_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  13,  0,   1,        0,      CMD_LOAD_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 ]
 
 from_tile_load_response_pkts = [
-    #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 11,  11,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 14,  14,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 12,  12,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-]    
+    #   src  dst src_x src_y dst_x dst_y tile_id opq vc  addr data predicate payload ctrl_action       ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  11,  11,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  14,  14,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  12,  12,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+]
 
 from_tile_store_request_pkts = [
-    #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                 addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_STORE_REQUEST,  11,  110, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_STORE_REQUEST,  3,   300, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   0,  0,    0,    0,    0,    0,  0, 0, CMD_STORE_REQUEST,  15,  150, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    #   src  dst src_x src_y dst_x dst_y tile_id opq vc  addr data predicate payload ctrl_action       ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  11,  110, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  3,   300, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,      0,  0,  15,  150, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 ]
 
 expected_to_tile_load_request_addr_msgs =  [AddrType(2)]
@@ -228,26 +227,26 @@ expected_to_tile_store_request_addr_msgs = [AddrType(5)]
 expected_to_tile_store_request_data_msgs = [DataType(50, 1)]
 
 from_noc_pkts = [
-    #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred
-    Pkt(1,   0,  1,    0,    0,    0,    0,  0, 0, CMD_LOAD_REQUEST,  2,   0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(2,   1,  2,    0,    1,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 8,   80,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   1,  0,    0,    1,    0,    0,  0, 0, CMD_STORE_REQUEST, 5,   50,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(0,   1,  0,    0,    1,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 9,   90,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    #   src  dst src_x src_y dst_x dst_y tile_id opq vc addr data predicate payload ctrl_action        ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
+    Pkt(1,   0,  1,    0,    0,    0,    0,      0,  0, 2,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(2,   1,  2,    0,    1,    0,    0,      0,  0, 8,   80,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   1,  0,    0,    1,    0,    0,      0,  0, 5,   50,  1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   1,  0,    0,    1,    0,    0,      0,  0, 9,   90,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
 ]
 
 expected_to_noc_pkts = [
-    #   src  dst src_x src_y dst_x dst_y tile_id opq vc cmd                addr data predicate payload ctrl_action ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar_op ctrl_fu_xbar_op ctrl_rou_pred
-    Pkt(1,   0,  1,    0,    0,    0,    0,  0, 0, CMD_LOAD_REQUEST,  1,   0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   2,  1,    0,    2,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 11,  11,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   2,  1,    0,    2,    0,    0,  0, 0, CMD_STORE_REQUEST, 11,  110, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    #   src  dst src_x src_y dst_x dst_y tile_id opq vc addr data predicate payload ctrl_action        ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
+    Pkt(1,   0,  1,    0,    0,    0,    0,      0,  0, 1,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   2,  1,    0,    2,    0,    0,      0,  0, 11,  11,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   2,  1,    0,    2,    0,    0,      0,  0, 11,  110, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 
-    Pkt(1,   2,  1,    0,    2,    0,    0,  0, 0, CMD_LOAD_REQUEST,  8,   0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 14,  14,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   0,  1,    0,    0,    0,    0,  0, 0, CMD_STORE_REQUEST, 3,   300, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   2,  1,    0,    2,    0,    0,      0,  0, 8,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 14,  14,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   0,  1,    0,    0,    0,    0,      0,  0, 3,   300, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 
-    Pkt(1,   3,  1,    0,    3,    0,    0,  0, 0, CMD_LOAD_REQUEST,  13,  0,   1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,  0, 0, CMD_LOAD_RESPONSE, 12,  12,  1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,  0, 0, CMD_STORE_REQUEST, 15,  150, 1,        0,      0,          0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 13,  0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 12,  12,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 15,  150, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 ]
 
 def test_simple():

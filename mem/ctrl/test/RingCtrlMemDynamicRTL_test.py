@@ -93,11 +93,10 @@ def test_Ctrl():
   width = 2
   height = 2
   num_terminals = width * height
-  num_ctrl_actions = 64
-  ctrl_action_nbits = clog2(num_ctrl_actions)
-  num_ctrl_operations = 64
-  cmd_nbits = 4
-  cgraId_nbits = 4
+  num_commands = NUM_CMDS
+  ctrl_action_nbits = clog2(num_commands)
+  num_ctrl_operations = NUM_OPTS
+  cgra_id_nbits = 4
   data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
@@ -106,9 +105,8 @@ def test_Ctrl():
 
   CtrlPktType = \
         mk_intra_cgra_pkt(num_terminals,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -129,19 +127,19 @@ def test_Ctrl():
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
-  src_ctrl_pkt = [          # src dst vc_id opq cmd_type    addr operation predicate
-                  CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 1,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  3,  0,    0,  CMD_CONFIG, 1,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_SUB,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  2,  0,    0,  CMD_CONFIG, 1,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD,  b1(0), pickRegister, [], [], [], 0, 0, 0, 0)]
+  src_ctrl_pkt = [          # cgra_id src dst opaque vc_id ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
+                  CtrlPktType(0,      0,  0,  0,     0,    CMD_CONFIG, 0,        OPT_ADD,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  2,  0,     0,    CMD_CONFIG, 0,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  3,  0,     0,    CMD_CONFIG, 1,        OPT_ADD,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  3,  0,     0,    CMD_CONFIG, 0,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  0,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  0,  0,     0,    CMD_LAUNCH, 0,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 0,        OPT_ADD,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_SUB,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  2,  0,     0,    CMD_CONFIG, 1,        OPT_ADD,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  2,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       b1(0),         pickRegister),
+                  CtrlPktType(0,      0,  3,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       b1(0),         pickRegister)]
 
   sink_out = [
               [CtrlSignalType(OPT_ADD, 0, pickRegister),

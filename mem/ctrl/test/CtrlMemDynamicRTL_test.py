@@ -94,11 +94,10 @@ def test_Ctrl():
   num_tile_inports = 4
   num_tile_outports = 4
   num_terminals = 4
-  num_ctrl_actions = 6
-  num_ctrl_operations = 64
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
 
-  cmd_nbits = 4
-  cgraId_nbits = 4
+  cgra_id_nbits = 4
   data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
@@ -107,9 +106,8 @@ def test_Ctrl():
 
   CtrlPktType = \
         mk_intra_cgra_pkt(num_terminals,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -132,11 +130,12 @@ def test_Ctrl():
   AddrType = mk_bits(clog2(ctrl_mem_size))
   src_data0 = [DataType(1, 1), DataType(5, 1), DataType(7, 1), DataType(6, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1), DataType(2, 1), DataType(3, 1)]
-  src_ctrl_pkt = [CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 0, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 1, OPT_SUB, 0, pick_register, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 2, OPT_SUB, 0, pick_register, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_CONFIG, 3, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0),
-                  CtrlPktType(0, 0,  1,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0, pick_register, [], [], [], 0, 0, 0, 0)]
+                            # cgra_id src dst opaque vc_id ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
+  src_ctrl_pkt = [CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 0,        OPT_ADD,       0,             pick_register),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       0,             pick_register),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 2,        OPT_SUB,       0,             pick_register),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 3,        OPT_ADD,       0,             pick_register),
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       0,             pick_register)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,

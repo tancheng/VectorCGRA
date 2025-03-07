@@ -99,8 +99,8 @@ def test_tile_alu(cmdline_opts):
   ctrl_mem_size = 3
   data_mem_size = 8
   num_terminals = 4
-  num_ctrl_actions = 6
-  num_ctrl_operations = 64
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
@@ -125,8 +125,7 @@ def test_tile_alu(cmdline_opts):
   # 64-bit to satisfy the default bitwidth of vector FUs.
   DataType = mk_data(64, 1)
   PredicateType = mk_predicate(1, 1)
-  cmd_nbits = 4
-  cgraId_nbits = 1
+  cgra_id_nbits = 1
   data_nbits = 64
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
@@ -134,9 +133,8 @@ def test_tile_alu(cmdline_opts):
 
   CtrlPktType = \
         mk_intra_cgra_pkt(num_terminals,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,

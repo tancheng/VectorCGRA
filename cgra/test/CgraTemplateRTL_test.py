@@ -77,6 +77,9 @@ class TestHarness(Component):
                 idTo2d_map)
 
     # Connections
+    # As we always first issue request pkt from CPU to NoC, 
+    # when there is no NoC for single CGRA test, 
+    # we have to connect from_noc and to_noc in testbench.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.dut.recv_from_noc //= s.dut.send_to_noc
 
@@ -182,8 +185,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 2
   num_terminals = 4
-  num_ctrl_actions = 64
-  num_ctrl_operations = 64
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
@@ -217,17 +220,15 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
           3: [3, 0],
   }
 
-  cmd_nbits = 6
-  cgraId_nbits = 2
+  cgra_id_nbits = 2
   data_nbits = 32
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,
-                        cmd_nbits,
-                        cgraId_nbits,
-                        num_ctrl_actions,
+                        cgra_id_nbits,
+                        num_commands,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -253,7 +254,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_nbits,
                                      predicate_nbits = 1,
-                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_actions = num_commands,
                                      ctrl_mem_size = ctrl_mem_size,
                                      ctrl_operations = num_ctrl_operations,
                                      ctrl_fu_inports = num_fu_inports,
@@ -266,10 +267,10 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
       # This last one is for launching kernel.
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                  pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
 
   src_ctrl_pkt = []
@@ -420,7 +421,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
   if paramCGRA != None:
     for tile in tiles:

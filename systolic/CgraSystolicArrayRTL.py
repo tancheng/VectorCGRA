@@ -92,7 +92,10 @@ class CgraSystolicArrayRTL(Component):
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
-
+    
+    # As we always first issue request pkt from CPU to NoC, 
+    # when there is no NoC for single CGRA test, 
+    # we have to connect from_noc and to_noc in testbench.
     s.controller.send_to_noc //= s.controller.recv_from_noc
 
     # Connects the ctrl interface between CPU and controller.
