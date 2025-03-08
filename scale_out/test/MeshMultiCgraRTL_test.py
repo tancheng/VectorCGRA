@@ -76,7 +76,7 @@ def test_homo_3x3_4x4(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size_global = 32
+  data_mem_size_global = 128
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
   cgra_rows = 3
@@ -119,6 +119,11 @@ def test_homo_3x3_4x4(cmdline_opts):
           1: [8, 15],
           2: [16, 23],
           3: [24, 31],
+          4: [32, 39],
+          5: [40, 47],
+          6: [48, 55],
+          7: [56, 63],
+          8: [64, 71],
   }
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,
