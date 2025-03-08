@@ -61,7 +61,10 @@ class TestHarness(Component):
       s.src_ctrl_pkt[i].send //= s.dut.recv_from_cpu_ctrl_pkt[i]
 
   def done(s):
-    return s.src_ctrl_pkt.done()
+    for i in range(s.num_terminals):
+      if not s.src_ctrl_pkt[i].done():
+        return False
+    return True
 
   def line_trace(s):
     return s.dut.line_trace()
