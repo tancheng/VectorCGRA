@@ -106,9 +106,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size_global = 512
+  data_mem_size_global = 4096
   data_mem_size_per_bank = 32
-  num_banks_per_cgra = 2
+  num_banks_per_cgra = 24
   width = width
   height = height
   num_terminals = 4
@@ -131,10 +131,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   ControllerIdType = mk_bits(clog2(num_terminals))
   controller_id = 1
   controller2addr_map = {
-          0: [0, 3],
-          1: [4, 7],
-          2: [8, 11],
-          3: [12, 15],
+          0: [0,    1023],
+          1: [1024, 2047],
+          2: [2048, 3071],
+          3: [3072, 4095],
   }
 
   idTo2d_map = {
