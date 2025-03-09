@@ -188,27 +188,29 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                # cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(0,      0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
+                  # ctrl_fu_in   routing_xbar  fu_xbar      
+                  pick_register, tile_in_code, fu_out_code),
 
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 1, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
  
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 2, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
  
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 3, OPT_STR, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
  
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 4, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
  
       CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 5, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0),
+                  pick_register, tile_in_code, fu_out_code),
  
       # This last one is for launching kernel.
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code, 0, 0, 0, 0, 0)
+                  pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
   
   src_ctrl_pkt = []

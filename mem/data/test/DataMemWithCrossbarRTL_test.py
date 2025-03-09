@@ -70,19 +70,18 @@ class TestHarness(Component):
     s.data_mem.send_to_noc_store_pkt //= s.send_to_noc_store_pkt.recv
 
   def done(s):
-#    for i in range(s.rd_tiles):
-#      if not s.recv_raddr[i].done() or not s.send_rdata[i].done():
-#        return False
+    for i in range(s.rd_tiles):
+      if not s.recv_raddr[i].done() or not s.send_rdata[i].done():
+        return False
 
-#    for i in range(s.wr_tiles):
-#      if not s.recv_waddr[i].done() or not s.recv_wdata[i].done():
-#        return False
+    for i in range(s.wr_tiles):
+      if not s.recv_waddr[i].done() or not s.recv_wdata[i].done():
+        return False
 
     if not s.send_to_noc_load_request_pkt.done() or \
        not s.send_to_noc_store_pkt.done() or \
        not s.recv_from_noc_rdata.done():
 
-      print("2222222222222222222222222222222223333333333333333333333333333333333333")
       print("s.send_to_noc_load_request_pkt.done()", s.send_to_noc_load_request_pkt.done())
       print("s.send_to_noc_store_pkt.done()", s.send_to_noc_store_pkt.done())
       print("s.recv_from_noc_rdata.done()", s.recv_from_noc_rdata.done())
@@ -125,12 +124,6 @@ def test_const_queue(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   AddrType = mk_bits(addr_nbits)
 
-  #NocPktType = \
-  #    mk_multi_cgra_noc_pkt(nterminals, 1,
-              #              addr_nbits = addr_nbits,
-               #             data_nbits = data_nbits,
-                #            predicate_nbits = predicate_nbits)
-  
   width = 2
   height = 2
   num_terminals = 4
