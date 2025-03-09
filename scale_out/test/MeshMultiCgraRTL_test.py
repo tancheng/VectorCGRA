@@ -16,8 +16,17 @@ from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
 from ..MeshMultiCgraRTL import MeshMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.CompRTL import CompRTL
+from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.MulRTL import MulRTL
+from ...fu.single.PhiRTL import PhiRTL
+from ...fu.single.SelRTL import SelRTL
+from ...fu.single.RetRTL import RetRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
+from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.cmd_type import *
@@ -38,7 +47,7 @@ class TestHarness(Component):
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
-    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_ctrl_pkt = [TestSrcRTL(CtrlPktType, src_ctrl_pkt) for _ in range(s.num_terminals)]
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns,
@@ -48,29 +57,33 @@ class TestHarness(Component):
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
+    for i in range(s.num_terminals):
+      s.src_ctrl_pkt[i].send //= s.dut.recv_from_cpu_ctrl_pkt[i]
 
   def done(s):
-    return s.src_ctrl_pkt.done()
+    for i in range(s.num_terminals):
+      if not s.src_ctrl_pkt[i].done():
+        return False
+    return True
 
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_homo_2x2(cmdline_opts):
+def test_homo_3x3_4x4(cmdline_opts):
   num_tile_inports  = 4
   num_tile_outports = 4
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size_global = 32
+  data_mem_size_global = 128
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
-  cgra_rows = 2
-  cgra_columns = 2
+  cgra_rows = 3
+  cgra_columns = 3
   num_terminals = cgra_rows * cgra_columns
-  width = 2
-  height = 2
+  width = 4
+  height = 4
   num_ctrl_actions = 6
   num_ctrl_operations = 64
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -83,7 +96,18 @@ def test_homo_2x2(cmdline_opts):
   num_tiles = width * height
   DUT = MeshMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
-  FuList = [MemUnitRTL, AdderRTL]
+  # FuList = [MemUnitRTL, AdderRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
@@ -95,6 +119,11 @@ def test_homo_2x2(cmdline_opts):
           1: [8, 15],
           2: [16, 23],
           3: [24, 31],
+          4: [32, 39],
+          5: [40, 47],
+          6: [48, 55],
+          7: [56, 63],
+          8: [64, 71],
   }
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,

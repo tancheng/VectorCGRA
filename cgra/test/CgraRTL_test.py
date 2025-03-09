@@ -92,7 +92,8 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
+def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
+               width = 2, height = 2, data_bitwidth = 32):
   tile_ports = 4
   assert(topology == "Mesh" or topology == "KingMesh")
   if topology == "Mesh":
@@ -105,11 +106,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size_global = 512
+  data_mem_size_global = 4096
   data_mem_size_per_bank = 32
-  num_banks_per_cgra = 2
-  width = 2
-  height = 2
+  num_banks_per_cgra = 24
+  width = width
+  height = height
   num_terminals = 4
   num_ctrl_actions = 6
   num_ctrl_operations = 64
@@ -130,10 +131,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   ControllerIdType = mk_bits(clog2(num_terminals))
   controller_id = 1
   controller2addr_map = {
-          0: [0, 3],
-          1: [4, 7],
-          2: [8, 11],
-          3: [12, 15],
+          0: [0,    1023],
+          1: [1024, 2047],
+          2: [2048, 3071],
+          3: [3072, 4095],
   }
 
   idTo2d_map = {
@@ -214,42 +215,64 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
                    controller2addr_map, idTo2d_map)
   return th
 
-def test_homogeneous_2x2(cmdline_opts):
+# def test_homogeneous_2x2(cmdline_opts):
+#   topology = "Mesh"
+#   # FuList = [AdderRTL, MemUnitRTL]
+#   FuList = [AdderRTL,
+#             MulRTL,
+#             LogicRTL,
+#             ShifterRTL,
+#             PhiRTL,
+#             CompRTL,
+#             BranchRTL,
+#             MemUnitRTL,
+#             SelRTL,
+#             RetRTL,
+#            ]
+#   th = init_param(topology, FuList)
+# 
+#   th.elaborate()
+#   # th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+#   #                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+#   #                      'ALWCOMBORDER'])
+#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+#   run_sim(th)
+# 
+# def test_heterogeneous_king_mesh_2x2(cmdline_opts):
+#   topology = "KingMesh"
+#   th = init_param(topology)
+#   th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
+#   th.elaborate()
+#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+#                        'ALWCOMBORDER'])
+#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+#   run_sim(th)
+# 
+# def test_vector_king_mesh_2x2(cmdline_opts):
+#   topology = "KingMesh"
+#   FuList = [AdderRTL,
+#             MulRTL,
+#             LogicRTL,
+#             ShifterRTL,
+#             PhiRTL,
+#             CompRTL,
+#             BranchRTL,
+#             MemUnitRTL,
+#             SelRTL,
+#             VectorMulComboRTL,
+#             VectorAdderComboRTL]
+#   data_bitwidth = 64
+#   th = init_param(topology, FuList, data_bitwidth = data_bitwidth)
+#   th.elaborate()
+#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+#                        'ALWCOMBORDER'])
+#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+#   run_sim(th)
+
+def test_vector_mesh_12x12(cmdline_opts):
   topology = "Mesh"
-  # FuList = [AdderRTL, MemUnitRTL]
-  FuList = [AdderRTL,
-            MulRTL,
-            LogicRTL,
-            ShifterRTL,
-            PhiRTL,
-            CompRTL,
-            BranchRTL,
-            MemUnitRTL,
-            SelRTL,
-            RetRTL,
-           ]
-  th = init_param(topology, FuList)
-
-  th.elaborate()
-  # th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-  #                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-  #                      'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
-
-def test_heterogeneous_king_mesh_2x2(cmdline_opts):
-  topology = "KingMesh"
-  th = init_param(topology)
-  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
-  th.elaborate()
-  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                       'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
-
-def test_vector_king_mesh_2x2(cmdline_opts):
-  topology = "KingMesh"
   FuList = [AdderRTL,
             MulRTL,
             LogicRTL,
@@ -261,8 +284,9 @@ def test_vector_king_mesh_2x2(cmdline_opts):
             SelRTL,
             VectorMulComboRTL,
             VectorAdderComboRTL]
-  data_bitwidth = 64
-  th = init_param(topology, FuList, data_bitwidth)
+  data_bitwidth = 32
+  th = init_param(topology, FuList, width = 12, height = 12,
+                  data_bitwidth = data_bitwidth)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
