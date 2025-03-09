@@ -81,10 +81,6 @@ class TestHarness(Component):
     if not s.send_to_noc_load_request_pkt.done() or \
        not s.send_to_noc_store_pkt.done() or \
        not s.recv_from_noc_rdata.done():
-
-      print("s.send_to_noc_load_request_pkt.done()", s.send_to_noc_load_request_pkt.done())
-      print("s.send_to_noc_store_pkt.done()", s.send_to_noc_store_pkt.done())
-      print("s.recv_from_noc_rdata.done()", s.recv_from_noc_rdata.done())
       return False
 
     return True
