@@ -131,6 +131,11 @@ class DataMemWithCrossbarRTL(Component):
 
     @update
     def assemble_xbar_pkt():
+      for i in range(num_xbar_in_rd_ports):
+        s.rd_pkt[i] @= TileSramXbarRdPktType(0,0,0)
+      for i in range(num_xbar_in_wr_ports):
+        s.wr_pkt[i] @= TileSramXbarWrPktType(0,0,0)
+
       if s.init_mem_done != b1(0):
         for i in range(num_xbar_in_rd_ports):
           # Calculates the target bank.
@@ -183,7 +188,7 @@ class DataMemWithCrossbarRTL(Component):
           s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
           s.read_crossbar.recv[i].msg @= s.rd_pkt[i]
           s.recv_raddr[i].rdy @= s.read_crossbar.recv[i].rdy
-  
+
         for i in range(num_xbar_in_wr_ports):
           s.write_crossbar.recv[i].val @= s.recv_waddr[i].val
           s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
@@ -251,7 +256,7 @@ class DataMemWithCrossbarRTL(Component):
                                               s.recv_from_noc_rdata.val
                                               # ~s.send_to_noc_load_pending
                                               # s.send_to_noc_load_request_pkt.rdy & \
-        # Outstanding remote read access would block the inport (for read request) of the NoC. 
+        # Outstanding remote read access would block the inport (for read request) of the NoC.
         # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
         # 'val` indicates the data is arbitrated successfully.
         s.recv_from_noc_rdata.rdy @= s.read_crossbar.send[num_banks].val
