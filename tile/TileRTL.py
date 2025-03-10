@@ -175,7 +175,7 @@ class TileRTL(Component):
 
     @update
     def feed_pkt():
-        s.ctrl_mem.recv_pkt.msg @= CtrlPktType()
+        s.ctrl_mem.recv_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         s.const_mem.recv_const.msg @= DataType(0, 0, 0, 0)
         s.ctrl_mem.recv_pkt.val @= 0
         s.const_mem.recv_const.val @= 0
