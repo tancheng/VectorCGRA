@@ -32,7 +32,7 @@ class CtrlMemDynamicRTL(Component):
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
     # Constant
-    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter + 1)))
+    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
     PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     TimeType = mk_bits(clog2(total_ctrl_steps + 1))
     num_routing_outports = num_tile_outports + num_fu_inports

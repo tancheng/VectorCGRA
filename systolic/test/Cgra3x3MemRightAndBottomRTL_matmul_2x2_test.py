@@ -455,7 +455,7 @@ def test_CGRA_systolic(cmdline_opts):
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
                       f'CgraSystolicArrayRTL')
-  th = config_model_with_cmdline_opts(th, cmdline_opts = ['max_cycles'], duts = ['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
   enable_verification_pymtl = not (cmdline_opts['test_verilog'] or \
                                    cmdline_opts['dump_vcd'] or \

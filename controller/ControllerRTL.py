@@ -271,7 +271,7 @@ class ControllerRTL(Component):
       s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
       s.recv_from_noc.rdy @= 0
       s.send_to_ctrl_ring_ctrl_pkt.val @= 0
-      s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType()
+      s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_noc.msg
