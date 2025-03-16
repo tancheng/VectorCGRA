@@ -47,6 +47,8 @@ class CgraSystolicArrayRTL(Component):
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_from_noc = RecvIfcRTL(NocPktType)
+    s.send_to_noc = SendIfcRTL(NocPktType)
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -93,10 +95,8 @@ class CgraSystolicArrayRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
     
-    # As we always first issue request pkt from CPU to NoC, 
-    # when there is no NoC for single CGRA test, 
-    # we have to connect from_noc and to_noc in testbench.
-    s.controller.send_to_noc //= s.controller.recv_from_noc
+    s.recv_from_noc //= s.controller.recv_from_noc
+    s.send_to_noc //= s.controller.send_to_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt

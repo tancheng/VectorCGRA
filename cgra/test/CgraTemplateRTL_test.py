@@ -82,10 +82,10 @@ class TestHarness(Component):
     # recognized.
     s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.dut.send_to_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_noc
 
