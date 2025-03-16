@@ -180,7 +180,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
-                                     ntiles = width * height,
+                                     ntiles = num_tiles,
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_bitwidth,
                                      predicate_nbits = 1,
