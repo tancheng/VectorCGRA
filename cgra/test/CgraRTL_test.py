@@ -55,13 +55,14 @@ class TestHarness(Component):
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
-                controller_id, width, height, ctrl_mem_size,
+                width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps, FunctionUnit,
                 FuList, topology, controller2addr_map, idTo2d_map)
 
     # Connections
+    s.dut.controller_id //= controller_id
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
 
     s.dut.send_to_noc.rdy //= 0
@@ -93,7 +94,7 @@ class TestHarness(Component):
     return s.dut.line_trace()
 
 def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
-               width = 2, height = 2, data_bitwidth = 32):
+               x_tiles = 2, y_tiles = 2, data_bitwidth = 32):
   tile_ports = 4
   assert(topology == "Mesh" or topology == "KingMesh")
   if topology == "Mesh":
@@ -109,8 +110,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   data_mem_size_global = 4096
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 24
-  width = width
-  height = height
   num_terminals = 4
   num_ctrl_actions = 6
   num_ctrl_operations = 64
@@ -121,7 +120,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   addr_nbits = clog2(data_mem_size_global)
   AddrType = mk_bits(addr_nbits)
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  num_tiles = width * height
+  num_tiles = x_tiles * y_tiles
   DUT = CgraRTL
   FunctionUnit = FlexibleFuRTL
   DataType = mk_data(data_bitwidth, 1)
@@ -130,13 +129,15 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   CmdType = mk_bits(4)
   ControllerIdType = mk_bits(clog2(num_terminals))
   controller_id = 1
-  controller2addr_map = {
-          0: [0,    1023],
-          1: [1024, 2047],
-          2: [2048, 3071],
-          3: [3072, 4095],
-  }
-
+  per_cgra_data_size = int(data_mem_size_global / num_terminals)
+  controller2addr_map = {}
+  # 0: [0,    1023]
+  # 1: [1024, 2047]
+  # 2: [2048, 3071]
+  # 3: [3072, 4095]
+  for i in range(num_terminals):
+    controller2addr_map[i] = [i * per_cgra_data_size,
+                              (i + 1) * per_cgra_data_size - 1]
   idTo2d_map = {
           0: [0, 0],
           1: [1, 0],
@@ -145,16 +146,16 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   }
   
   CtrlPktType = \
-      mk_intra_cgra_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports,
-                               num_registers_per_reg_bank,
-                               data_bitwidth)
+      mk_intra_cgra_pkt(num_tiles,
+                        num_ctrl_actions,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_bitwidth)
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -207,7 +208,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                   ControllerIdType, controller_id, width, height,
+                   ControllerIdType, controller_id, x_tiles, y_tiles,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
@@ -215,63 +216,62 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                    controller2addr_map, idTo2d_map)
   return th
 
-# def test_homogeneous_2x2(cmdline_opts):
-#   topology = "Mesh"
-#   # FuList = [AdderRTL, MemUnitRTL]
-#   FuList = [AdderRTL,
-#             MulRTL,
-#             LogicRTL,
-#             ShifterRTL,
-#             PhiRTL,
-#             CompRTL,
-#             BranchRTL,
-#             MemUnitRTL,
-#             SelRTL,
-#             RetRTL,
-#            ]
-#   th = init_param(topology, FuList)
-# 
-#   th.elaborate()
-#   # th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#   #                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#   #                      'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
-# 
-# def test_heterogeneous_king_mesh_2x2(cmdline_opts):
-#   topology = "KingMesh"
-#   th = init_param(topology)
-#   th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
-# 
-# def test_vector_king_mesh_2x2(cmdline_opts):
-#   topology = "KingMesh"
-#   FuList = [AdderRTL,
-#             MulRTL,
-#             LogicRTL,
-#             ShifterRTL,
-#             PhiRTL,
-#             CompRTL,
-#             BranchRTL,
-#             MemUnitRTL,
-#             SelRTL,
-#             VectorMulComboRTL,
-#             VectorAdderComboRTL]
-#   data_bitwidth = 64
-#   th = init_param(topology, FuList, data_bitwidth = data_bitwidth)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
+def test_homogeneous_2x2(cmdline_opts):
+  topology = "Mesh"
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            RetRTL,
+           ]
+  th = init_param(topology, FuList)
 
-def test_vector_mesh_12x12(cmdline_opts):
+  th.elaborate()
+  # th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+  #                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+  #                      'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_heterogeneous_king_mesh_2x2(cmdline_opts):
+  topology = "KingMesh"
+  th = init_param(topology)
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_vector_king_mesh_2x2(cmdline_opts):
+  topology = "KingMesh"
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  data_bitwidth = 64
+  th = init_param(topology, FuList, data_bitwidth = data_bitwidth)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_vector_mesh_4x4(cmdline_opts):
   topology = "Mesh"
   FuList = [AdderRTL,
             MulRTL,
@@ -285,7 +285,7 @@ def test_vector_mesh_12x12(cmdline_opts):
             VectorMulComboRTL,
             VectorAdderComboRTL]
   data_bitwidth = 32
-  th = init_param(topology, FuList, width = 12, height = 12,
+  th = init_param(topology, FuList, x_tiles = 4, y_tiles = 4,
                   data_bitwidth = data_bitwidth)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,

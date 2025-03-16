@@ -12,6 +12,8 @@
 
 from pymtl3 import *
 
+NUM_OPTS = 64
+
 OPT_START                 = Bits6( 0  )
 OPT_NAH                   = Bits6( 1  )
 OPT_PAS                   = Bits6( 31 )

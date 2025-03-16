@@ -58,11 +58,11 @@ class TestHarness(Component):
                           PktType, MsgType, AddrType,
                           # Number of controllers globally (x/y dimension).
                           1, num_terminals,
-                          controller_id,
                           controller2addr_map,
                           idTo2d_map)
 
     # Connections
+    s.dut.controller_id //= controller_id
     s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_tile_load_request_pkt
     s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
@@ -236,9 +236,13 @@ expected_to_noc_pkts = [
 
 def test_simple():
   print("controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType, CtrlPktType,
-                   CmdType, DataType,
-                   AddrType, Pkt, controller_id,
+  th = TestHarness(ControllerIdType,
+                   CtrlPktType,
+                   CmdType,
+                   DataType,
+                   AddrType,
+                   Pkt,
+                   controller_id,
                    from_tile_load_request_pkts,
                    from_tile_load_response_pkts,
                    from_tile_store_request_pkts,
@@ -251,6 +255,7 @@ def test_simple():
                    expected_to_tile_store_request_data_msgs,
                    from_noc_pkts,
                    expected_to_noc_pkts,
-                   controller2addr_map, idTo2d_map,
+                   controller2addr_map,
+                   idTo2d_map,
                    nterminals)
   run_sim(th)

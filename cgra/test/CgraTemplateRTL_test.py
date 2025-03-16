@@ -69,7 +69,7 @@ class TestHarness(Component):
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
-                controller_id, ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps, FunctionUnit, FuList,
@@ -77,6 +77,7 @@ class TestHarness(Component):
                 idTo2d_map)
 
     # Connections
+    s.dut.controller_id //= controller_id
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
 
     s.dut.send_to_noc.rdy //= 0

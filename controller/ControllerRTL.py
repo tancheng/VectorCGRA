@@ -22,7 +22,7 @@ class ControllerRTL(Component):
 
   def construct(s, ControllerIdType, CmdType, CtrlPktType, NocPktType,
                 CGRADataType, CGRAAddrType, multi_cgra_rows,
-                multi_cgra_columns, controller_id, controller2addr_map,
+                multi_cgra_columns, controller2addr_map,
                 idTo2d_map):
 
     assert(multi_cgra_columns >= multi_cgra_rows)
@@ -32,6 +32,8 @@ class ControllerRTL(Component):
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
 
     # Interface
+    s.controller_id = InPort(ControllerIdType)
+
     # Request from/to other CGRA via NoC.
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
@@ -59,32 +61,13 @@ class ControllerRTL(Component):
     s.send_to_tile_store_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
     s.send_to_tile_store_request_data_queue = ChannelRTL(CGRADataType, latency = 1)
 
-    # s.recv_from_other_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
-    # s.send_to_tile_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
-    # s.send_to_other_cmd_queue = ChannelRTL(CmdType, latency = 1, num_entries = 2)
-
     # Crossbar with 3 inports (load and store requests towards remote
     # memory, and load response from local memory) and 1 outport (only
     # allow one request be sent out per cycle).
     # TODO: Include other cmd requests, e.g., dynamic rescheduling,
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 3, 1)
-
     s.recv_ctrl_pkt_queue = NormalQueueRTL(CtrlPktType)
-
-    # # TODO: below ifcs should be connected through another NoC within
-    # # one CGRA, instead of per-tile and performing like a bus.
-    # # Configuration signals to be written into and read from per-tile
-    # # control memory.
-    # s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(s.num_tiles)]
-    # s.recv_wopt = [RecvIfcRTL(CtrlType) for _ in range(s.num_tiles)]
-
-    # s.send_waddr = [SendIfcRTL(AddrType) for _ in range(s.num_tiles)]
-    # s.send_wopt = [SendIfcRTL(CtrlType) for _ in range(s.num_tiles)]
-
-    # # Cmd to invoke/terminate tiles execution.
-    # s.recv_cmd = [RecvIfcRTL(b2) for _ in range(s.num_tiles)]
-    # s.send_cmd = [SendIfcRTL(b2) for _ in range(s.num_tiles)]
 
 
     # LUT for global data address mapping.
@@ -144,10 +127,10 @@ class ControllerRTL(Component):
       s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
       s.recv_from_tile_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
-          NocPktType(controller_id,
+          NocPktType(s.controller_id,
                      0,
-                     s.idTo2d_x_lut[controller_id], # src_x
-                     s.idTo2d_y_lut[controller_id], # src_y
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
                      0, # dst_x
                      0, # dst_y
                      0,
@@ -164,10 +147,10 @@ class ControllerRTL(Component):
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
       s.recv_from_tile_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
-          NocPktType(controller_id,
+          NocPktType(s.controller_id,
                      0,
-                     s.idTo2d_x_lut[controller_id], # src_x
-                     s.idTo2d_y_lut[controller_id], # src_y
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
                      0, # dst_x
                      0, # dst_y
                      0,
@@ -184,10 +167,10 @@ class ControllerRTL(Component):
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
       s.crossbar.recv[kLoadResponseInportIdx].msg @= \
-          NocPktType(controller_id,
+          NocPktType(s.controller_id,
                      0,
-                     s.idTo2d_x_lut[controller_id], # src_x
-                     s.idTo2d_y_lut[controller_id], # src_y
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
                      0, # dst_x
                      0, # dst_y
                      0,

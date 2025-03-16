@@ -47,7 +47,7 @@ class TestHarness(Component):
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
-    s.src_ctrl_pkt = [TestSrcRTL(CtrlPktType, src_ctrl_pkt) for _ in range(s.num_terminals)]
+    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns,
@@ -57,19 +57,15 @@ class TestHarness(Component):
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
-    for i in range(s.num_terminals):
-      s.src_ctrl_pkt[i].send //= s.dut.recv_from_cpu_ctrl_pkt[i]
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
 
   def done(s):
-    for i in range(s.num_terminals):
-      if not s.src_ctrl_pkt[i].done():
-        return False
-    return True
+    return s.src_ctrl_pkt.done()
 
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_homo_3x3_4x4(cmdline_opts):
+def test_homo_2x2_2x2(cmdline_opts):
   num_tile_inports  = 4
   num_tile_outports = 4
   num_fu_inports = 4
@@ -79,24 +75,20 @@ def test_homo_3x3_4x4(cmdline_opts):
   data_mem_size_global = 128
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
-  cgra_rows = 3
-  cgra_columns = 3
+  cgra_rows = 2
+  cgra_columns = 2
   num_terminals = cgra_rows * cgra_columns
-  width = 4
-  height = 4
-  num_ctrl_actions = 6
-  num_ctrl_operations = 64
+  x_tiles = 2
+  y_tiles = 2
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   ctrl_addr_nbits = clog2(ctrl_mem_size)
-  # CtrlAddrType = mk_bits(ctrl_addr_nbits)
   data_addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(clog2(data_mem_size_global))
-  num_tiles = width * height
+  num_tiles = x_tiles * y_tiles
   DUT = MeshMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
-  # FuList = [MemUnitRTL, AdderRTL]
   FuList = [AdderRTL,
             MulRTL,
             LogicRTL,
@@ -111,34 +103,28 @@ def test_homo_3x3_4x4(cmdline_opts):
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
-  cmd_nbits = 5
+  cmd_nbits = clog2(NUM_CMDS)
   num_registers_per_reg_bank = 16
   CmdType = mk_bits(cmd_nbits)
-  controller2addr_map = {
-          0: [0, 7],
-          1: [8, 15],
-          2: [16, 23],
-          3: [24, 31],
-          4: [32, 39],
-          5: [40, 47],
-          6: [48, 55],
-          7: [56, 63],
-          8: [64, 71],
-  }
+  per_cgra_data_size = int(data_mem_size_global / num_terminals)
+  controller2addr_map = {}
+  for i in range(num_terminals):
+    controller2addr_map[i] = [i * per_cgra_data_size,
+                              (i + 1) * per_cgra_data_size - 1]
   CtrlPktType = \
-      mk_intra_cgra_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports,
-                               num_registers_per_reg_bank,
-                               data_nbits
-                        )
+      mk_intra_cgra_pkt(num_tiles,
+                        NUM_CMDS,
+                        ctrl_mem_size,
+                        NUM_OPTS,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        data_nbits
+                       )
   CtrlSignalType = \
-      mk_separate_reg_ctrl(num_ctrl_operations,
+      mk_separate_reg_ctrl(NUM_OPTS,
                            num_fu_inports,
                            num_fu_outports,
                            num_tile_inports,
@@ -217,7 +203,7 @@ def test_homo_3x3_4x4(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, CtrlPktType,
                    CtrlSignalType, NocPktType, CmdType, cgra_rows, cgra_columns,
-                   width, height, ctrl_mem_size, data_mem_size_global,
+                   x_tiles, y_tiles, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
                    ctrl_mem_size, controller2addr_map)

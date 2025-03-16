@@ -38,7 +38,7 @@ class MeshMultiCgraRTL(Component):
 
     # Interface
     # Request from/to CPU.
-    s.recv_from_cpu_ctrl_pkt = [RecvIfcRTL(CtrlPktType) for _ in range(s.num_terminals)]
+    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
 
     # Components
     for cgra_row in range(cgra_rows):
@@ -48,7 +48,7 @@ class MeshMultiCgraRTL(Component):
     s.cgra = [CgraRTL(CGRADataType, PredicateType, CtrlPktType,
                       CtrlSignalType, NocPktType, CmdType,
                       ControllerIdType, cgra_rows, cgra_columns,
-                      terminal_id, tile_columns, tile_rows,
+                      tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
                       num_registers_per_reg_bank,
@@ -56,19 +56,23 @@ class MeshMultiCgraRTL(Component):
                       "Mesh", controller2addr_map, idTo2d_map,
                       preload_data = None)
               for terminal_id in range(s.num_terminals)]
+
+    # Connects controller id.
+    for terminal_id in range(s.num_terminals):
+      s.cgra[terminal_id].controller_id //= terminal_id
+
     # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
     # Connections
-    # s.recv_from_cpu_ctrl_pkt //= s.cgra[0].recv_from_cpu_ctrl_pkt
     for i in range(s.num_terminals):
       s.mesh.send[i] //= s.cgra[i].recv_from_noc
       s.mesh.recv[i] //= s.cgra[i].send_to_noc
 
-    for i in range(s.num_terminals):
-      # s.cgra[i].recv_from_cpu_ctrl_pkt.val //= 0
-      # s.cgra[i].recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
-      s.recv_from_cpu_ctrl_pkt[i] //= s.cgra[i].recv_from_cpu_ctrl_pkt
+    s.recv_from_cpu_ctrl_pkt //= s.cgra[0].recv_from_cpu_ctrl_pkt
+    for i in range(1, s.num_terminals):
+      s.cgra[i].recv_from_cpu_ctrl_pkt.val //= 0
+      s.cgra[i].recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
 
     # Connects the tiles on the boundary of each two ajacent CGRAs.
     for cgra_row in range(cgra_rows):

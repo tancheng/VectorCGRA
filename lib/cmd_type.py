@@ -12,6 +12,8 @@
 
 from pymtl3 import *
 
+NUM_CMDS = 8
+
 CMD_LAUNCH        = 0
 CMD_PAUSE         = 1
 CMD_TERMINATE     = 2
