@@ -110,7 +110,7 @@ def run_sim(test_harness, max_cycles = 40):
   test_harness.sim_tick()
 
 def test_const_queue(cmdline_opts):
-  data_nbits = 16
+  data_nbits = 32
   predicate_nbits = 1
   DataType = mk_data(data_nbits, predicate_nbits)
   data_mem_size_global = 64
@@ -120,11 +120,30 @@ def test_const_queue(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   AddrType = mk_bits(addr_nbits)
 
-  NocPktType = \
-      mk_multi_cgra_noc_pkt(nterminals, 1,
-                            addr_nbits = addr_nbits,
-                            data_nbits = data_nbits,
-                            predicate_nbits = predicate_nbits)
+  width = 2
+  height = 2
+  num_terminals = 4
+  num_ctrl_actions = 64
+  num_ctrl_operations = 64
+  ctrl_mem_size = 6
+  num_tile_inports  = 4
+  num_tile_outports =4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+                                     nrows = 1,
+                                     ntiles = width * height,
+                                     addr_nbits = addr_nbits,
+                                     data_nbits = data_nbits,
+                                     predicate_nbits = 1,
+                                     ctrl_actions = num_ctrl_actions,
+                                     ctrl_mem_size = ctrl_mem_size,
+                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_fu_inports = num_fu_inports,
+                                     ctrl_fu_outports = num_fu_outports,
+                                     ctrl_tile_inports = num_tile_inports,
+                                     ctrl_tile_outports = num_tile_outports)
+
 
   test_meta_data = [
       # addr:  0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15
@@ -169,8 +188,8 @@ def test_const_queue(cmdline_opts):
   # Input data.
   # noc_send_read_addr = [AddrType(42)]
   send_to_noc_load_request_pkt = [
-             #   src  dst src_x src_y dst_x dst_y opq vc cmd                addr data predicate
-      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_LOAD_REQUEST,  42,  0,   1),
+             #   src  dst src_x src_y dst_x dst_y tile_id opq vc  addr data predicate payload ctrl_action
+      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0,  42,  0,   1,        0,      CMD_LOAD_REQUEST),
   ]
   noc_recv_load_data = [DataType(0xbbbb, 1)]
 
@@ -178,9 +197,9 @@ def test_const_queue(cmdline_opts):
   # noc_send_write_addr = [AddrType(40), AddrType(45)]
   # noc_send_write_data = [DataType(0xd040, 1), DataType(0xd545, 1)]
   send_to_noc_store_pkt = [
-             #   src  dst src_x src_y dst_x dst_y opq vc cmd                addr data    predicate
-      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_STORE_REQUEST, 40,  0xd040, 1),
-      NocPktType(0,   0,  0,    0,    0,    0,    0,  0, CMD_STORE_REQUEST, 45,  0xd545, 1),
+             #   src  dst src_x src_y dst_x dst_y tile_id opq vc addr data    predicate payload ctrl_action
+      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0, 40,  0xd040, 1,        0,      CMD_STORE_REQUEST),
+      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0, 45,  0xd545, 1,        0,      CMD_STORE_REQUEST),
   ]
 
   th = TestHarness(NocPktType, DataType, AddrType, data_mem_size_global,

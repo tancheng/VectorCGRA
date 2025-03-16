@@ -38,7 +38,7 @@ class MeshMultiCgraRTL(Component):
 
     # Interface
     # Request from/to CPU.
-    s.recv_from_cpu_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
 
     # Components
     for cgra_row in range(cgra_rows):
@@ -69,10 +69,10 @@ class MeshMultiCgraRTL(Component):
       s.mesh.send[i] //= s.cgra[i].recv_from_noc
       s.mesh.recv[i] //= s.cgra[i].send_to_noc
 
-    s.recv_from_cpu_ctrl_pkt //= s.cgra[0].recv_from_cpu_ctrl_pkt
+    s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
     for i in range(1, s.num_terminals):
-      s.cgra[i].recv_from_cpu_ctrl_pkt.val //= 0
-      s.cgra[i].recv_from_cpu_ctrl_pkt.msg //= CtrlPktType()
+      s.cgra[i].recv_from_cpu_pkt.val //= 0
+      s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
 
     # Connects the tiles on the boundary of each two ajacent CGRAs.
     for cgra_row in range(cgra_rows):
