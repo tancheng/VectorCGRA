@@ -28,6 +28,7 @@ from ...fu.single.RetRTL import RetRTL
 from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
+from ...lib.basic.val_rdy.queues import BypassQueueRTL
 from ...lib.messages import *
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
@@ -61,12 +62,17 @@ class TestHarness(Component):
                 ctrl_steps, ctrl_steps, FunctionUnit,
                 FuList, topology, controller2addr_map, idTo2d_map)
 
+    # Uses a bypass queue here to enable the verilator simulation.
+    # Without bypass queue, the connection will not be translated and
+    # recognized.
+    s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    s.dut.recv_from_noc //= s.dut.send_to_noc
+    s.dut.send_to_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_noc
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0

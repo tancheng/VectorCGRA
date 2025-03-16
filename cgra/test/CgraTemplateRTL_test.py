@@ -15,11 +15,6 @@ from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 from ..CgraTemplateRTL import CgraTemplateRTL
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.messages import *
-from ...lib.cmd_type import *
-from ...lib.opt_type import *
-from ...lib.util.common import *
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -32,6 +27,12 @@ from ...fu.single.RetRTL import RetRTL
 from ...fu.single.SelRTL import SelRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.basic.val_rdy.queues import BypassQueueRTL
+from ...lib.messages import *
+from ...lib.cmd_type import *
+from ...lib.opt_type import *
+from ...lib.util.common import *
 
 fuType2RTL = {}
 fuType2RTL["Phi"  ] = PhiRTL
@@ -76,12 +77,17 @@ class TestHarness(Component):
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map)
 
+    # Uses a bypass queue here to enable the verilator simulation.
+    # Without bypass queue, the connection will not be translated and
+    # recognized.
+    s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    s.dut.recv_from_noc //= s.dut.send_to_noc
+    s.dut.send_to_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_noc
 
   def done(s):
     return s.src_ctrl_pkt.done()

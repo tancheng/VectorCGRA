@@ -12,6 +12,10 @@
 
 from pymtl3 import *
 
+# Total number of operations that are supported by FUs.
+# Needs to be updated once more operations are added/supported.
+NUM_OPTS = 64
+
 OPT_START                 = Bits6( 0  )
 OPT_NAH                   = Bits6( 1  )
 OPT_PAS                   = Bits6( 31 )
@@ -70,8 +74,6 @@ OPT_LT  = Bits6( 60 )
 OPT_GTE = Bits6( 61 )
 OPT_GT  = Bits6( 62 )
 OPT_LTE = Bits6( 63 )
-
-NUM_OPTS = 64
 
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
