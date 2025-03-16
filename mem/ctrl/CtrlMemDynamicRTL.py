@@ -32,7 +32,7 @@ class CtrlMemDynamicRTL(Component):
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
     # Constant
-    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter + 1)))
+    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
     PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     TimeType = mk_bits(clog2(total_ctrl_steps + 1))
     num_routing_outports = num_tile_outports + num_fu_inports
@@ -132,12 +132,12 @@ class CtrlMemDynamicRTL(Component):
     @update_ff
     def update_raddr():
       if s.start_iterate_ctrl == b1(1):
-        if (total_ctrl_steps == 0) | \
+        if (TimeType(total_ctrl_steps) == 0) | \
            (s.times < TimeType(total_ctrl_steps)):
           s.times <<= s.times + TimeType(1)
         # Reads the next ctrl signal only when the current one is done.
         if s.send_ctrl.rdy:
-          if (s.reg_file.raddr[0] + 1)  == CtrlAddrType(ctrl_count_per_iter):
+          if s.reg_file.raddr[0] == CtrlAddrType(ctrl_count_per_iter - 1):
             s.reg_file.raddr[0] <<= CtrlAddrType(0)
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)

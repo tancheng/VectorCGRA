@@ -28,6 +28,7 @@ from ...fu.single.RetRTL import RetRTL
 from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
+from ...lib.basic.val_rdy.queues import BypassQueueRTL
 from ...lib.messages import *
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
@@ -61,12 +62,17 @@ class TestHarness(Component):
                 ctrl_steps, ctrl_steps, FunctionUnit,
                 FuList, topology, controller2addr_map, idTo2d_map)
 
+    # Uses a bypass queue here to enable the verilator simulation.
+    # Without bypass queue, the connection will not be translated and
+    # recognized.
+    s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_ctrl_pkt
-
-    s.dut.send_to_noc.rdy //= 0
-    s.dut.recv_from_noc.val //= 0
-    s.dut.recv_from_noc.msg //= NocPktType(0, 0, 0, 0, 0, 0)
+    # As we always first issue request pkt from CPU to NoC, 
+    # when there is no NoC for single CGRA test, 
+    # we have to connect from_noc and to_noc in testbench.
+    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
+    s.dut.send_to_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_noc
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -111,7 +117,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   width = 2
   height = 2
   num_terminals = 4
-  num_ctrl_actions = 6
+  num_commands = NUM_CMDS
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -142,18 +148,26 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
           2: [2, 0],
           3: [3, 0],
   }
-  
+
+  cgra_id_nbits = 2
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
   CtrlPktType = \
       mk_intra_cgra_pkt(width * height,
-                               num_ctrl_actions,
-                               ctrl_mem_size,
-                               num_ctrl_operations,
-                               num_fu_inports,
-                               num_fu_outports,
-                               num_tile_inports,
-                               num_tile_outports,
-                               num_registers_per_reg_bank,
-                               data_bitwidth)
+                        cgra_id_nbits,
+                        num_commands,
+                        ctrl_mem_size,
+                        num_ctrl_operations,
+                        num_fu_inports,
+                        num_fu_outports,
+                        num_tile_inports,
+                        num_tile_outports,
+                        num_registers_per_reg_bank,
+                        addr_nbits,
+                        data_bitwidth,
+                        predicate_nbits)
+
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
                            num_fu_inports,
@@ -164,39 +178,44 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL], data_bitwidth = 32):
   
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
+                                     ntiles = width * height,
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_bitwidth,
-                                     predicate_nbits = 1)
+                                     predicate_nbits = 1,
+                                     ctrl_actions = num_commands,
+                                     ctrl_mem_size = ctrl_mem_size,
+                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_fu_inports = num_fu_inports,
+                                     ctrl_fu_outports = num_fu_outports,
+                                     ctrl_tile_inports = num_tile_inports,
+                                     ctrl_tile_outports = num_tile_outports)
+
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
-                # src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+                # cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(0,      0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
+                  # ctrl_fu_in   routing_xbar  fu_xbar      
                   pick_register, tile_in_code, fu_out_code),
-                  # [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                  #  # TODO: make below as TileInType(5) to double check.
-                  #  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-  
-                  # [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                  #  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
+
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 1, OPT_INC, 0,
                   pick_register, tile_in_code, fu_out_code),
  
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 2, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code),
  
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 3, OPT_STR, 0,
                   pick_register, tile_in_code, fu_out_code),
  
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 4, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code),
  
-      CtrlPktType(0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 5, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code),
  
       # This last one is for launching kernel.
-      CtrlPktType(0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
+      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
   
@@ -231,9 +250,9 @@ def test_homogeneous_2x2(cmdline_opts):
   th = init_param(topology, FuList)
 
   th.elaborate()
-  # th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-  #                     ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-  #                      'ALWCOMBORDER'])
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
@@ -269,4 +288,3 @@ def test_vector_king_mesh_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-

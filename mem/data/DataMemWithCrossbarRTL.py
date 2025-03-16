@@ -204,11 +204,12 @@ class DataMemWithCrossbarRTL(Component):
             else:
               s.send_to_noc_load_response_pkt.msg @= \
                   NocPktType(
-                      0, 0, 0, 0, 0, 0, 0, 0, CMD_LOAD_RESPONSE,
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 
                       s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr,
-                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
+                      0,
                       s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate,
-                      0
+                      s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
+                      CMD_LOAD_RESPONSE, 0, 0, 0, 0, 0, 0, 0
                   )
               s.send_to_noc_load_response_pkt.val @= \
                   s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
@@ -239,13 +240,22 @@ class DataMemWithCrossbarRTL(Component):
                        0, # src_y
                        0, # dst_x
                        0, # dst_y
+                       0, # tile_id
                        0, # opaque
                        0, # vc_id
-                       CMD_LOAD_REQUEST,
-                       s.read_crossbar.send[num_banks].msg.addr,
+                       s.read_crossbar.send[num_banks].msg.addr, # addr
                        0, # data
                        1, # predicate
-                       0) # payload
+                       0, # payload
+                       CMD_LOAD_REQUEST, # ctrl_action
+                       0, # ctrl_addr
+                       0, # ctrl_operation
+                       0, # ctrl_predicate
+                       0, # ctrl_fu_in
+                       0, # ctrl_routing_xbar_outport
+                       0, # ctrl_fu_xbar_outport
+                       0) # ctrl_routing_predicate_in
+
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks].val & \
                                               s.recv_from_noc_rdata.val
@@ -282,13 +292,22 @@ class DataMemWithCrossbarRTL(Component):
                        0, # src_y
                        0, # dst_x
                        0, # dst_y
+                       0, # tile_id
                        0, # opaque
                        0, # vc_id
-                       CMD_STORE_REQUEST,
-                       s.write_crossbar.send[num_banks].msg.addr,
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload,
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate,
-                       0)
+                       s.write_crossbar.send[num_banks].msg.addr, # addr
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload, # data
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate, # predicate
+                       0, # payload
+                       CMD_STORE_REQUEST, # ctrl_action
+                       0, # ctrl_addr
+                       0, # ctrl_operation
+                       0, # ctrl_predicate
+                       0, # ctrl_fu_in
+                       0, # ctrl_routing_xbar_outport
+                       0, # ctrl_fu_xbar_outport
+                       0) # ctrl_routing_predicate_in
+
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks].val # & s.send_to_noc_store_pkt.rdy
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
 
