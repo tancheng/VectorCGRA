@@ -151,7 +151,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
           3: [3, 0],
   }
 
-  cgra_id_nbits = clogs(num_terminals)
+  cgra_id_nbits = clog2(num_terminals)
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 

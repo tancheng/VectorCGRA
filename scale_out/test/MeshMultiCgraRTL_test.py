@@ -113,7 +113,6 @@ def test_homo_2x2_2x2(cmdline_opts):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
 
-  num_commands = NUM_CMDS
   cmd_nbits = clog2(NUM_CMDS)
   num_registers_per_reg_bank = 16
   CmdType = mk_bits(cmd_nbits)
@@ -148,9 +147,9 @@ def test_homo_2x2_2x2(cmdline_opts):
                                      addr_nbits = data_addr_nbits,
                                      data_nbits = data_nbits,
                                      predicate_nbits = predicate_nbits,
-                                     ctrl_actions = num_commands,
+                                     ctrl_actions = NUM_CMDS,
                                      ctrl_mem_size = ctrl_mem_size,
-                                     ctrl_operations = num_ctrl_operations,
+                                     ctrl_operations = NUM_OPTS,
                                      ctrl_fu_inports = num_fu_inports,
                                      ctrl_fu_outports = num_fu_outports,
                                      ctrl_tile_inports = num_tile_inports,
