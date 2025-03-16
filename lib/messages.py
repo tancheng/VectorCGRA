@@ -509,21 +509,21 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   field_dict['src_y'] = YType
   field_dict['dst_x'] = XType
   field_dict['dst_y'] = YType
-  field_dict['tile_id'] = TileIdType # for preloading ctrl, added by yyf
+  field_dict['tile_id'] = TileIdType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['addr'] = AddrType # run-time or preloaded data addr
   field_dict['data'] = DataType # run-time or preloaded data
   field_dict['predicate'] = PredicateType
   field_dict['payload'] = PayloadType
-  field_dict['ctrl_action'] = CtrlActionType # for preloading ctrl, added by yyf
-  field_dict['ctrl_addr'] = CtrlAddrType # for preloading ctrl, added by yyf
-  field_dict['ctrl_operation'] = CtrlOperationType # for preloading ctrl, added by yyf
-  field_dict['ctrl_predicate'] = CtrlPredicateType # for preloading ctrl, added by yyf
-  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)] # for preloading ctrl, added by yyf
-  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)] # for preloading ctrl, added by yyf
-  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)] # for preloading ctrl, added by yyf
-  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)] # for preloading ctrl, added by yyf
+  field_dict['ctrl_action'] = CtrlActionType
+  field_dict['ctrl_addr'] = CtrlAddrType
+  field_dict['ctrl_operation'] = CtrlOperationType
+  field_dict['ctrl_predicate'] = CtrlPredicateType
+  field_dict['ctrl_fu_in'] = [CtrlFuInType for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_routing_xbar_outport'] = [CtrlTileInType for _ in range(num_routing_outports)]
+  field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
+  field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
 
   def str_func(s):
       return f"{s.src}>{s.dst},{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.tile_id} ||" \
@@ -657,7 +657,7 @@ def mk_intra_cgra_pkt(ntiles = 4,
            f"{out_str}"
 
   field_dict = {}
-  field_dict['cgra_id'] = CgraIdType # for preloading data&ctrl, added by yyf
+  field_dict['cgra_id'] = CgraIdType
   field_dict['src'] = TileIdType
   field_dict['dst'] = TileIdType
   field_dict['opaque'] = OpqType
@@ -685,9 +685,9 @@ def mk_intra_cgra_pkt(ntiles = 4,
   # predicate register). This should be guaranteed by the compiler.
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(
       ctrl_tile_inports)]
-  field_dict['addr'] = AddrType # for preloading data, added by yyf
-  field_dict['data'] = DataType # for preloading data, added by yyf
-  field_dict['data_predicate'] = DataPredicateType # for preloading data, added by yyf
+  field_dict['addr'] = AddrType
+  field_dict['data'] = DataType
+  field_dict['data_predicate'] = DataPredicateType
 
   field_dict['ctrl_vector_factor_power'] = CtrlVectorFactorPowerType
 
