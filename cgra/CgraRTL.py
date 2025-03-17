@@ -25,7 +25,7 @@ class CgraRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
-                multi_cgra_columns, controller_id, width, height,
+                multi_cgra_columns, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -70,7 +70,7 @@ class CgraRTL(Component):
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_registers_per_reg_bank,
-                      FuList = FuList, id = i)
+                      FuList = FuList)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
                                         data_mem_size_global,
@@ -81,11 +81,14 @@ class CgraRTL(Component):
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
-                                 controller_id, controller2addr_map,
-                                 idTo2d_map)
+                                 controller2addr_map, idTo2d_map)
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
+    s.controller_id = InPort(ControllerIdType)
 
     # Connections
+    # Connects the controller id.
+    s.controller.controller_id //= s.controller_id
+
     # Connects data memory with controller.
     s.data_mem.recv_raddr[height] //= s.controller.send_to_tile_load_request_addr
     s.data_mem.recv_waddr[height] //= s.controller.send_to_tile_store_request_addr

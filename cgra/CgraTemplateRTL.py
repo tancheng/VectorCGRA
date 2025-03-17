@@ -25,8 +25,7 @@ class CgraTemplateRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
-                multi_cgra_columns, controller_id,
-                ctrl_mem_size, data_mem_size_global,
+                multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
@@ -66,7 +65,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports,
                       num_registers_per_reg_bank,
-                      FuList = FuList, id = i)
+                      FuList = FuList)
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
@@ -79,10 +78,15 @@ class CgraTemplateRTL(Component):
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
-                                 controller_id, controller2addr_map, idTo2d_map)
+                                 controller2addr_map, idTo2d_map)
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
 
+    s.controller_id = InPort(ControllerIdType)
+
     # Connections
+    # Connects controller id.
+    s.controller.controller_id //= s.controller_id
+
     # Connects data memory with controller.
     s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_tile_load_request_addr
     s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_tile_store_request_addr

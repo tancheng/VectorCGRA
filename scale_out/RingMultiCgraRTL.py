@@ -48,7 +48,7 @@ class RingMultiCgraRTL(Component):
                       ControllerIdType,
                       # Constructs the topology as 1d.
                       1, s.num_terminals,
-                      terminal_id, tile_columns, tile_rows,
+                      tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
                       num_registers_per_reg_bank,
@@ -59,6 +59,10 @@ class RingMultiCgraRTL(Component):
     s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_terminals, 1)
 
     # Connections
+    # Connects the controller id.
+    for terminal_id in range(s.num_terminals):
+      s.cgra[terminal_id].controller_id //= terminal_id
+
     s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
     for i in range(s.num_terminals):
       s.ring.send[i] //= s.cgra[i].recv_from_noc

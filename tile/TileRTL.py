@@ -40,8 +40,7 @@ class TileRTL(Component):
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
-                id = 0):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -80,7 +79,7 @@ class TileRTL(Component):
     s.fu_crossbar = CrossbarRTL(DataType, PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
-                                num_fu_xbar_outports, id)
+                                num_fu_xbar_outports)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)

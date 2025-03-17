@@ -67,8 +67,7 @@ class CgraSystolicArrayRTL(Component):
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_registers_per_reg_bank,
-                      FuList = FuList,
-                      id = i)
+                      FuList = FuList)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
                                         data_mem_size_global,
@@ -81,11 +80,14 @@ class CgraSystolicArrayRTL(Component):
     s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  1, 1,
-                                 controller_id, controller2addr_map,
+                                 controller2addr_map,
                                  idTo2d_map)
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
 
     # Connections
+    # Connects controller id.
+    s.controller.controller_id //= controller_id
+
     # Connects data memory with controller.
     s.data_mem.recv_raddr[4] //= s.controller.send_to_tile_load_request_addr
     s.data_mem.recv_waddr[4] //= s.controller.send_to_tile_store_request_addr
