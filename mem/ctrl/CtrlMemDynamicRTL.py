@@ -128,6 +128,10 @@ class CtrlMemDynamicRTL(Component):
           s.start_iterate_ctrl <<= 0
       # else:
       #   s.start_iterate_ctrl <<= 1
+      if s.complete_iterate_ctrl:
+        s.send_pkt.msg <<= CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)
+        s.send_pkt.val <<= 1
+        print(f'\n=> s.send_pkt.msg: {s.send_pkt.msg}\n')
 
     @update_ff
     def update_raddr():
