@@ -40,12 +40,15 @@ class CtrlMemDynamicRTL(Component):
     # Interface
     s.send_ctrl = SendIfcRTL(CtrlSignalType)
     s.recv_pkt = RecvIfcRTL(CtrlPktType)
+    s.send_pkt = SendIfcRTL(CtrlPktType)
 
     # Component
     s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
+    # send back to controller via the control ring (only one controller，all tiles send complete signal to controller)
     s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
+    s.complete_iterate_ctrl = Wire(b1)
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -108,6 +111,8 @@ class CtrlMemDynamicRTL(Component):
              (s.times == TimeType(total_ctrl_steps))) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
+          if (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
+            s.complete_iterate_ctrl @= 1
         else:
           s.send_ctrl.val @= 1
       if s.recv_pkt_queue.send.val & \
