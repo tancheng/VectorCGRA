@@ -20,7 +20,7 @@ from ..lib.opt_type import *
 
 class ControllerRTL(Component):
 
-  def construct(s, ControllerIdType, CmdType, FromCpuPktType, NocPktType,
+  def construct(s, ControllerIdType, CmdType, CpuPktType, NocPktType,
                 CGRADataType, CGRAAddrType, multi_cgra_rows,
                 multi_cgra_columns, controller2addr_map,
                 idTo2d_map):
@@ -38,8 +38,11 @@ class ControllerRTL(Component):
     s.recv_from_noc = RecvIfcRTL(NocPktType)
     s.send_to_noc = SendIfcRTL(NocPktType)
 
-    s.recv_from_cpu_pkt = RecvIfcRTL(FromCpuPktType)
-    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(FromCpuPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
+    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CpuPktType)
+
+    s.recv_from_ctrl_ring_ctrl_pkt = RecvIfcRTL(CpuPktType)
+    s.send_to_cpu_pkt = SendIfcRTL(CpuPktType)
 
     # Request from/to tiles.
     s.recv_from_tile_load_request_pkt = RecvIfcRTL(NocPktType)
@@ -67,7 +70,7 @@ class ControllerRTL(Component):
     # TODO: Include other cmd requests, e.g., dynamic rescheduling,
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 4, 1)
-    s.recv_from_cpu_pkt_queue = NormalQueueRTL(FromCpuPktType)
+    s.recv_from_cpu_pkt_queue = NormalQueueRTL(CpuPktType)
 
     # LUT for global data address mapping.
     addr_offset_nbits = 0
@@ -114,6 +117,13 @@ class ControllerRTL(Component):
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
+
+    @update
+    def update_send_to_cpu_signal():
+        s.send_to_cpu_pkt.val @= 0
+        if s.recv_from_ctrl_ring_ctrl_pkt.val:
+            s.send_to_cpu_pkt.val @= 1
+            s.send_to_cpu_pkt.msg @= s.recv_from_ctrl_ring_ctrl_pkt.msg
 
     @update
     def update_received_msg():
@@ -253,7 +263,7 @@ class ControllerRTL(Component):
       s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
       s.recv_from_noc.rdy @= 0
       s.send_to_ctrl_ring_ctrl_pkt.val @= 0
-      s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_ctrl_ring_ctrl_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_noc.msg
@@ -286,7 +296,7 @@ class ControllerRTL(Component):
         elif (s.recv_from_noc.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_noc.msg.ctrl_action == CMD_CONST) | (s.recv_from_noc.msg.ctrl_action == CMD_LAUNCH):
           s.recv_from_noc.rdy @= s.send_to_ctrl_ring_ctrl_pkt.rdy
           s.send_to_ctrl_ring_ctrl_pkt.val @= s.recv_from_noc.val
-          s.send_to_ctrl_ring_ctrl_pkt.msg @= FromCpuPktType(s.recv_from_noc.msg.dst, # cgra_id
+          s.send_to_ctrl_ring_ctrl_pkt.msg @= CpuPktType(s.recv_from_noc.msg.dst, # cgra_id
                                                                0, # src
                                                                s.recv_from_noc.msg.tile_id, # dst
                                                                s.recv_from_noc.msg.opaque, # opaque

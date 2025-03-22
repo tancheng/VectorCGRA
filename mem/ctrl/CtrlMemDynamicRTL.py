@@ -159,5 +159,5 @@ class CtrlMemDynamicRTL(Component):
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'recv_pkt: {s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}'
+    return f'recv_pkt: {s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.ctrl_action: {s.send_pkt.msg.ctrl_action}, send_pkt.val: {s.send_pkt.val}'
 
