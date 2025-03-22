@@ -28,8 +28,8 @@ from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
-from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
@@ -50,12 +50,12 @@ class TestHarness(Component):
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
 
-    s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.src_data = [ValRdyTestSrcRTL(DataType, src_data[i])
+    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_data = [TestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
-    s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
+    s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
-    s.execution_complete_cmd = ValRdyTestSinkRTL(CtrlPktType, complete_ctrl_pkt)
+    s.execution_complete_cmd = TestSinkRTL(CtrlPktType, complete_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
@@ -64,7 +64,7 @@ class TestHarness(Component):
                 FunctionUnit, FuList)
 
     connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
-    s.execution_complete_cmd.recv //= s.dut.send_pkt
+    s.execution_complete_cmd.recv //= s.dut.send_towards_controller_pkt
 
     for i in range(num_tile_inports):
       connect(s.src_data[i].send, s.dut.recv_data[i])
