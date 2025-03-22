@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 8
+NUM_CMDS = 9
 
 CMD_LAUNCH        = 0
 CMD_PAUSE         = 1
@@ -24,6 +24,7 @@ CMD_LOAD_REQUEST  = 4
 CMD_LOAD_RESPONSE = 5
 CMD_STORE_REQUEST = 6
 CMD_CONST         = 7
+CMD_COMPLETE      = 8
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:        "(LAUNCH_KERNEL)",
@@ -33,6 +34,7 @@ CMD_SYMBOL_DICT = {
   CMD_LOAD_REQUEST:  "(LOAD_REQUEST)",
   CMD_LOAD_RESPONSE: "(LOAD_RESPONSE)",
   CMD_STORE_REQUEST: "(STORE_REQUEST)",
-  CMD_CONST:         "(CONST_DATA)"
+  CMD_CONST:         "(CONST_DATA)",
+  CMD_COMPLETE:      "(COMPLETE_EXECUTION)"
 }
 

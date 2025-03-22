@@ -82,7 +82,7 @@ class CgraRTL(Component):
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  controller2addr_map, idTo2d_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
     s.controller_id = InPort(ControllerIdType)
 
     # Connections
@@ -105,13 +105,13 @@ class CgraRTL(Component):
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
 
     # Connects ring with each control memory.
-    for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+    s.ctrl_ring.send[0] //= s.controller.recv_from_ctrl_ring_ctrl_pkt
+    for i in range(1, s.num_tiles + 1):
+      s.ctrl_ring.send[i] //= s.tile[i-1].recv_ctrl_pkt
 
     s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
-    for i in range(1, s.num_tiles):
-      s.ctrl_ring.recv[i].val //= 0
-      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+    for i in range(1, s.num_tiles + 1):
+      s.ctrl_ring.recv[i] //= s.tile[i-1].send_pkt
 
     for i in range(s.num_tiles):
 
@@ -205,6 +205,7 @@ class CgraRTL(Component):
   def line_trace(s):
     res = "||\n".join([(("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
+    res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
 

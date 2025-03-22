@@ -27,7 +27,7 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, ControllerIdType, FromCpuPktType, CmdType, MsgType,
+  def construct(s, ControllerIdType, CpuPktType, CmdType, MsgType,
                 AddrType, PktType, controller_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
@@ -55,7 +55,7 @@ class TestHarness(Component):
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
 
-    s.dut = ControllerRTL(ControllerIdType, CmdType, FromCpuPktType,
+    s.dut = ControllerRTL(ControllerIdType, CmdType, CpuPktType,
                           PktType, MsgType, AddrType,
                           # Number of controllers globally (x/y dimension).
                           1, num_terminals,
@@ -77,7 +77,7 @@ class TestHarness(Component):
     s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
 
     s.dut.recv_from_cpu_pkt.val //= 0
-    s.dut.recv_from_cpu_pkt.msg //= FromCpuPktType()
+    s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
     s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
 
   def done(s):
@@ -173,7 +173,7 @@ controller2addr_map = {
         3: [12, 15],
 }
 
-FromCpuPktType = mk_intra_cgra_pkt(ntiles,
+CpuPktType = mk_intra_cgra_pkt(ntiles,
                                      cgra_id_nbits,
                                      num_commands,
                                      ctrl_mem_size,
@@ -252,7 +252,7 @@ expected_to_noc_pkts = [
 def test_simple(cmdline_opts):
   print("controller2addr_map: ", controller2addr_map)
   th = TestHarness(ControllerIdType,
-                   FromCpuPktType,
+                   CpuPktType,
                    CmdType,
                    DataType,
                    AddrType,

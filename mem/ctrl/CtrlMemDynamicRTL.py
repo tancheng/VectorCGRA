@@ -38,14 +38,19 @@ class CtrlMemDynamicRTL(Component):
     num_routing_outports = num_tile_outports + num_fu_inports
 
     # Interface
+    # Stores ctrl signals into the control memory/registers.
     s.send_ctrl = SendIfcRTL(CtrlSignalType)
+    # Receives the ctrl packets from the controller.
     s.recv_pkt = RecvIfcRTL(CtrlPktType)
+    # Sends the ctrl packets towards the controller.
+    s.send_pkt = SendIfcRTL(CtrlPktType)
 
     # Component
     s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
     s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
+    s.sent_complete = Wire(b1)
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -103,11 +108,14 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_send_out_signal():
       s.send_ctrl.val @= 0
+      s.send_pkt.val @= 0
       if s.start_iterate_ctrl == b1(1):
-        if ((total_ctrl_steps > 0) & \
-             (s.times == TimeType(total_ctrl_steps))) | \
+        if ((total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps))) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
+          if (s.sent_complete != 1) & (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
+            s.send_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            s.send_pkt.val @= 1
         else:
           s.send_ctrl.val @= 1
       if s.recv_pkt_queue.send.val & \
@@ -130,6 +138,13 @@ class CtrlMemDynamicRTL(Component):
       #   s.start_iterate_ctrl <<= 1
 
     @update_ff
+    def issue_complete():
+      if s.send_pkt.val & s.send_pkt.rdy:
+        s.sent_complete <<= 1
+      if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
+        s.sent_complete <<= 0
+
+    @update_ff
     def update_raddr():
       if s.start_iterate_ctrl == b1(1):
         if (TimeType(total_ctrl_steps) == 0) | \
@@ -144,5 +159,5 @@ class CtrlMemDynamicRTL(Component):
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'recv_pkt: {s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}'
+    return f'recv_pkt: {s.recv_pkt.msg}.recv_rdy:{s.recv_pkt.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.ctrl_action: {s.send_pkt.msg.ctrl_action}, send_pkt.val: {s.send_pkt.val}'
 
