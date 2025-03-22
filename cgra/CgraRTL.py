@@ -105,8 +105,12 @@ class CgraRTL(Component):
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
 
     # Connects ring with each control memory.
-    for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+    s.ctrl_ring.send[0] //= s.controller.recv_from_ctrl_ring_ctrl_pkt
+    for i in range(1, s.num_tiles + 1):
+      s.ctrl_ring.send[i] //= s.tile[i-1].recv_ctrl_pkt
+    # s.ctrl_ring.send[s.num_tiles].rdy //= s.controller.recv_from_ctrl_ring_ctrl_pkt.rdy
+    # s.ctrl_ring.send[s.num_tiles].msg //= s.controller.recv_from_ctrl_ring_ctrl_pkt.msg
+
 
     s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
     for i in range(1, s.num_tiles + 1):
