@@ -107,7 +107,7 @@ class CgraSystolicArrayRTL(Component):
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
 
-    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
+    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_pkt
     for i in range(1, s.num_tiles):
       s.ctrl_ring.recv[i].val //= 0
       s.ctrl_ring.recv[i].msg //= CtrlPktType()
