@@ -108,14 +108,10 @@ class CgraRTL(Component):
     s.ctrl_ring.send[0] //= s.controller.recv_from_ctrl_ring_ctrl_pkt
     for i in range(1, s.num_tiles + 1):
       s.ctrl_ring.send[i] //= s.tile[i-1].recv_ctrl_pkt
-    # s.ctrl_ring.send[s.num_tiles].rdy //= s.controller.recv_from_ctrl_ring_ctrl_pkt.rdy
-    # s.ctrl_ring.send[s.num_tiles].msg //= s.controller.recv_from_ctrl_ring_ctrl_pkt.msg
-
 
     s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
     for i in range(1, s.num_tiles + 1):
-      s.ctrl_ring.recv[i].val //= s.tile[i-1].send_pkt.val
-      s.ctrl_ring.recv[i].msg //= s.tile[i-1].send_pkt.msg
+      s.ctrl_ring.recv[i] //= s.tile[i-1].send_pkt
 
     for i in range(s.num_tiles):
 
