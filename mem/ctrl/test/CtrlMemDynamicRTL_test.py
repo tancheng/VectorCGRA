@@ -7,12 +7,11 @@ Test cases for control memory with command-based action handling.
 Author : Cheng Tan
   Date : Dec 21, 2024
 """
-
 from pymtl3 import *
 from ..CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ....fu.single.AdderRTL import AdderRTL
-from ....lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
-from ....lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.cmd_type import *
 from ....lib.messages import *
 from ....lib.opt_type import *
@@ -32,13 +31,13 @@ class TestHarness(Component):
 
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
-    s.src_data0 = ValRdyTestSrcRTL(DataType, src0_msgs)
-    s.src_data1 = ValRdyTestSrcRTL(DataType, src1_msgs)
+    s.src_data0 = TestSrcRTL(DataType, src0_msgs)
+    s.src_data1 = TestSrcRTL(DataType, src1_msgs)
     # s.src_waddr = TestSrcRTL(AddrType, ctrl_waddr )
     # s.src_wdata = TestSrcRTL(ConfigType, ctrl_msgs  )
-    s.src_pkt = ValRdyTestSrcRTL(CtrlPktType, ctrl_pkts)
-    s.sink_out = ValRdyTestSinkRTL(DataType, sink_msgs)
-    s.execution_complete_cmd = ValRdyTestSinkRTL(CtrlPktType, complete_ctrl_pkt)
+    s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
+    s.sink_out = TestSinkRTL(DataType, sink_msgs)
+    s.execution_complete_cmd = TestSinkRTL(CtrlPktType, complete_ctrl_pkt)
 
     s.alu = AdderRTL(DataType, PredicateType, CtrlSignalType, 2, 2,
                      data_mem_size)
