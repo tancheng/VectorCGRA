@@ -39,9 +39,9 @@ class ControllerRTL(Component):
     s.send_to_noc = SendIfcRTL(NocPktType)
 
     s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
-    s.send_to_ctrl_ring_ctrl_pkt = SendIfcRTL(CpuPktType)
+    s.send_to_ctrl_ring_pkt = SendIfcRTL(CpuPktType)
 
-    s.recv_from_ctrl_ring_ctrl_pkt = RecvIfcRTL(CpuPktType)
+    s.recv_from_ctrl_ring_pkt = RecvIfcRTL(CpuPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CpuPktType)
 
     # Request from/to tiles.
@@ -118,12 +118,16 @@ class ControllerRTL(Component):
     # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
 
+    # s.send_to_cpu_pkt //= s.recv_from_ctrl_ring_pkt
+
     @update
     def update_send_to_cpu_signal():
         s.send_to_cpu_pkt.val @= 0
-        if s.recv_from_ctrl_ring_ctrl_pkt.val:
+        s.send_to_cpu_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.recv_from_ctrl_ring_pkt.rdy @= s.send_to_cpu_pkt.rdy
+        if s.recv_from_ctrl_ring_pkt.val:
             s.send_to_cpu_pkt.val @= 1
-            s.send_to_cpu_pkt.msg @= s.recv_from_ctrl_ring_ctrl_pkt.msg
+            s.send_to_cpu_pkt.msg @= s.recv_from_ctrl_ring_pkt.msg
 
     @update
     def update_received_msg():
@@ -262,8 +266,8 @@ class ControllerRTL(Component):
       s.send_to_tile_store_request_data_queue.recv.msg @= CGRADataType()
       s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
       s.recv_from_noc.rdy @= 0
-      s.send_to_ctrl_ring_ctrl_pkt.val @= 0
-      s.send_to_ctrl_ring_ctrl_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_ctrl_ring_pkt.val @= 0
+      s.send_to_ctrl_ring_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_noc.msg
@@ -294,9 +298,9 @@ class ControllerRTL(Component):
             s.send_to_tile_load_response_data_queue.recv.val @= 1
 
         elif (s.recv_from_noc.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_noc.msg.ctrl_action == CMD_CONST) | (s.recv_from_noc.msg.ctrl_action == CMD_LAUNCH):
-          s.recv_from_noc.rdy @= s.send_to_ctrl_ring_ctrl_pkt.rdy
-          s.send_to_ctrl_ring_ctrl_pkt.val @= s.recv_from_noc.val
-          s.send_to_ctrl_ring_ctrl_pkt.msg @= CpuPktType(s.recv_from_noc.msg.dst, # cgra_id
+          s.recv_from_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
+          s.send_to_ctrl_ring_pkt.val @= s.recv_from_noc.val
+          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_noc.msg.dst, # cgra_id
                                                                0, # src
                                                                s.recv_from_noc.msg.tile_id, # dst
                                                                s.recv_from_noc.msg.opaque, # opaque
@@ -356,7 +360,7 @@ class ControllerRTL(Component):
     recv_from_cpu_pkt_str = "recv_from_cpu_pkt: " + str(s.recv_from_cpu_pkt.msg)
     recv_from_cpu_pkt_queue_str = "recv_from_cpu_pkt_queue.send: " + str(s.recv_from_cpu_pkt_queue.send.msg)
     crossbar_recv_str = "crossbar_recv.val:" + str(s.crossbar.recv[3].val) + " crossbar_recv.rdy:" + str(s.crossbar.recv[3].rdy) + " crossbar_recv.msg: " + str(s.crossbar.recv[3].msg)
-    send_to_ctrl_ring_ctrl_pkt_str = "send_to_ctrl_ring_ctrl_pkt.val:" + str(s.send_to_ctrl_ring_ctrl_pkt.val) + " send_to_ctrl_ring_ctrl_pkt: " + str(s.send_to_ctrl_ring_ctrl_pkt.msg) + " send_to_ctrl_ring_ctrl_pkt.rdy:" + str(s.send_to_ctrl_ring_ctrl_pkt.rdy)
+    send_to_ctrl_ring_pkt_str = "send_to_ctrl_ring_pkt.val:" + str(s.send_to_ctrl_ring_pkt.val) + " send_to_ctrl_ring_pkt: " + str(s.send_to_ctrl_ring_pkt.msg) + " send_to_ctrl_ring_pkt.rdy:" + str(s.send_to_ctrl_ring_pkt.rdy)
     recv_from_tile_load_request_pkt_str = "recv_from_tile_load_request_pkt: " + str(s.recv_from_tile_load_request_pkt.msg)
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
     recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)
@@ -366,4 +370,4 @@ class ControllerRTL(Component):
     send_to_tile_store_request_data_str = "send_to_tile_store_request_data: " + str(s.send_to_tile_store_request_data.msg)
     recv_from_noc_str ="recv_from_noc_pkt.val: " + str(s.recv_from_noc.val) + " recv_from_noc_pkt.msg: " + str(s.recv_from_noc.msg) + " recv_from_noc_pkt.rdy: " + str(s.recv_from_noc.rdy)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_noc.msg) + "; rdy: " + str(s.send_to_noc.rdy) + "; val: " + str(s.send_to_noc.val)
-    return f'{recv_from_cpu_pkt_str} || {recv_from_cpu_pkt_queue_str} || {crossbar_recv_str} ||  {send_to_ctrl_ring_ctrl_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
+    return f'{recv_from_cpu_pkt_str} || {recv_from_cpu_pkt_queue_str} || {crossbar_recv_str} ||  {send_to_ctrl_ring_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_tile_load_request_addr_str} || {send_to_tile_store_request_addr_str} || {send_to_tile_store_request_data_str} || {recv_from_noc_str} || {send_to_noc_str}\n'

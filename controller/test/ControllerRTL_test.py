@@ -78,7 +78,7 @@ class TestHarness(Component):
 
     s.dut.recv_from_cpu_pkt.val //= 0
     s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
-    s.dut.send_to_ctrl_ring_ctrl_pkt.rdy //= 0
+    s.dut.send_to_ctrl_ring_pkt.rdy //= 0
 
   def done(s):
     return s.src_from_tile_load_request_pkt_en_rdy.done() and \
