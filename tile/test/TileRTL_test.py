@@ -45,7 +45,7 @@ class TestHarness(Component):
                 CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
-                src_ctrl_pkt, sink_out):
+                src_ctrl_pkt, sink_out, complete_ctrl_pkt):
 
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
@@ -55,6 +55,7 @@ class TestHarness(Component):
                   for i in range(num_tile_inports)]
     s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
+    s.execution_complete_cmd = ValRdyTestSinkRTL(CtrlPktType, complete_ctrl_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
@@ -63,6 +64,7 @@ class TestHarness(Component):
                 FunctionUnit, FuList)
 
     connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
+    s.execution_complete_cmd.recv //= s.dut.send_pkt
 
     for i in range(num_tile_inports):
       connect(s.src_data[i].send, s.dut.recv_data[i])
@@ -220,13 +222,14 @@ def test_tile_alu(cmdline_opts):
               [],
               # 5 + 4 = 9; 7 - 3 = 4.
               [DataType(9, 1), DataType(4, 1)]]
+  complete_ctrl_pkt = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out)
+                   src_ctrl_pkt, sink_out, complete_ctrl_pkt)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

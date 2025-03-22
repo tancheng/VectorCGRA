@@ -60,6 +60,8 @@ class TileRTL(Component):
 
     # Ctrl.
     s.recv_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    # Sends the ctrl packets to ctrl ring.
+    s.send_pkt = SendIfcRTL(CtrlPktType)
 
     # Data.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
@@ -190,10 +192,16 @@ class TileRTL(Component):
             s.const_mem.recv_const.msg.predicate @= 1
             s.recv_ctrl_pkt.rdy @= s.const_mem.recv_const.rdy
 
+    @update
+    def update_send_out_signal():
+        s.send_pkt.val @= 0
+        if s.ctrl_mem.send_pkt.val:
+            s.send_pkt.val @= 1
+            s.send_pkt.msg @= s.ctrl_mem.send_pkt.msg
+
     # Updates the configuration memory related signals.
     @update
     def update_opt():
-
       s.element.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.routing_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.fu_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
