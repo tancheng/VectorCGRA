@@ -82,7 +82,7 @@ class CgraRTL(Component):
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  controller2addr_map, idTo2d_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
     s.controller_id = InPort(ControllerIdType)
 
     # Connections
