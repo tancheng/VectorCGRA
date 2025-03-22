@@ -6,20 +6,17 @@ CgraRTL.py
 Author : Cheng Tan
   Date : Dec 22, 2024
 """
-
 from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
-from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..fu.single.AdderRTL import AdderRTL
-from ..lib.util.common import *
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
+from ..lib.util.common import *
 from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+
 
 class CgraRTL(Component):
 
@@ -42,7 +39,7 @@ class CgraRTL(Component):
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
-    CtrlRingPos = mk_ring_pos(s.num_tiles)
+    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
@@ -105,13 +102,13 @@ class CgraRTL(Component):
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
 
     # Connects ring with each control memory.
-    s.ctrl_ring.send[0] //= s.controller.recv_from_ctrl_ring_ctrl_pkt
-    for i in range(1, s.num_tiles + 1):
-      s.ctrl_ring.send[i] //= s.tile[i-1].recv_ctrl_pkt
+    for i in range(s.num_tiles):
+      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
-    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
-    for i in range(1, s.num_tiles + 1):
-      s.ctrl_ring.recv[i] //= s.tile[i-1].send_pkt
+    for i in range(s.num_tiles):
+      s.ctrl_ring.recv[i] //= s.tile[i].send_towards_controller_pkt
+    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
 
