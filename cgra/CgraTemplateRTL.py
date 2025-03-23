@@ -9,10 +9,6 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
-from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..fu.single.AdderRTL import AdderRTL
-from ..lib.util.common import *
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
@@ -34,7 +30,7 @@ class CgraTemplateRTL(Component):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
-    CtrlRingPos = mk_ring_pos(s.num_tiles)
+    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
@@ -79,7 +75,7 @@ class CgraTemplateRTL(Component):
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  controller2addr_map, idTo2d_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     s.controller_id = InPort(ControllerIdType)
 
@@ -105,11 +101,11 @@ class CgraTemplateRTL(Component):
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
-    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_pkt
-    for i in range(1, s.num_tiles):
-      s.ctrl_ring.recv[i].val //= 0
-      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+    for i in range(s.num_tiles):
+      s.ctrl_ring.recv[i] //= s.tile[i].send_towards_controller_pkt
+    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for link in LinkList:
 

@@ -479,7 +479,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   IdType = mk_bits(max(clog2(ncols * nrows), 1))
   XType = mk_bits(max(clog2(ncols), 1))
   YType = mk_bits(max(clog2(nrows), 1))
-  TileIdType = mk_bits(max(clog2(ntiles), 1))
+  TileIdType = mk_bits(max(clog2(ntiles + 1), 1))
   OpqType = mk_bits(opaque_nbits)
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
@@ -564,7 +564,7 @@ def mk_intra_cgra_pkt(ntiles = 4,
                       prefix="PreloadCGRAsPacket"):
 
   CgraIdType = mk_bits(cgraId_nbits)
-  TileIdType = mk_bits(clog2(ntiles))
+  TileIdType = mk_bits(clog2(ntiles + 1))
   opaque_nbits = 8
   OpqType = mk_bits(opaque_nbits)
   CtrlActionType = mk_bits(clog2(ctrl_actions))
