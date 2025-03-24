@@ -39,7 +39,8 @@ class TestHarness(Component):
                 from_noc_pkts,
                 expected_to_noc_pkts,
                 controller2addr_map,
-                idTo2d_map, num_terminals):
+                idTo2d_map, num_terminals,
+                complete_ctrl_pkt):
 
     cmp_func = lambda a, b : a == b # a.data == b.data
 
@@ -54,6 +55,7 @@ class TestHarness(Component):
 
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
+    s.execution_complete_cmd = TestSinkRTL(CpuPktType, complete_ctrl_pkt)
 
     s.dut = ControllerRTL(ControllerIdType, CmdType, CpuPktType,
                           PktType, MsgType, AddrType,
@@ -79,6 +81,7 @@ class TestHarness(Component):
     s.dut.recv_from_cpu_pkt.val //= 0
     s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
     s.dut.send_to_ctrl_ring_pkt.rdy //= 0
+    s.execution_complete_cmd.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
     return s.src_from_tile_load_request_pkt_en_rdy.done() and \
@@ -248,6 +251,7 @@ expected_to_noc_pkts = [
     Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 12,  12,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
     Pkt(1,   3,  1,    0,    3,    0,    0,      0,  0, 15,  150, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 ]
+complete_ctrl_pkt = [CpuPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
 
 def test_simple(cmdline_opts):
   print("controller2addr_map: ", controller2addr_map)
@@ -272,7 +276,8 @@ def test_simple(cmdline_opts):
                    expected_to_noc_pkts,
                    controller2addr_map,
                    idTo2d_map,
-                   nterminals)
+                   nterminals,
+                   complete_ctrl_pkt)
   th.elaborate()
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)

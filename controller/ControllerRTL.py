@@ -9,14 +9,14 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
-from pymtl3.stdlib.primitive import RegisterFile
-from ..lib.basic.val_rdy.ifcs import SendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import SendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
-from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
-from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..lib.cmd_type import *
 from ..lib.opt_type import *
+from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
+from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
+
 
 class ControllerRTL(Component):
 
@@ -71,6 +71,7 @@ class ControllerRTL(Component):
     # termination).
     s.crossbar = XbarBypassQueueRTL(NocPktType, 4, 1)
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(CpuPktType)
+    s.send_to_cpu_pkt_queue = NormalQueueRTL(CpuPktType)
 
     # LUT for global data address mapping.
     addr_offset_nbits = 0
@@ -117,17 +118,15 @@ class ControllerRTL(Component):
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
-
-    # s.send_to_cpu_pkt //= s.recv_from_ctrl_ring_pkt
+    s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
 
     @update
     def update_send_to_cpu_signal():
-        s.send_to_cpu_pkt.val @= 0
-        s.send_to_cpu_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        s.recv_from_ctrl_ring_pkt.rdy @= s.send_to_cpu_pkt.rdy
+        s.send_to_cpu_pkt_queue.recv.val @= 0
+        s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         if s.recv_from_ctrl_ring_pkt.val:
-            s.send_to_cpu_pkt.val @= 1
-            s.send_to_cpu_pkt.msg @= s.recv_from_ctrl_ring_pkt.msg
+            s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
+            s.send_to_cpu_pkt_queue.recv.val @= 1
 
     @update
     def update_received_msg():
