@@ -9,17 +9,16 @@ Author : Cheng Tan
 '''
 
 from pymtl3 import *
-from pymtl3.stdlib.test_utils import TestVectorSimulator, config_model_with_cmdline_opts
+from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
+
 from ..ControllerRTL import ControllerRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
-from ...lib.messages import *
 from ...lib.cmd_type import *
+from ...lib.messages import *
 from ...lib.opt_type import *
 from ...noc.PyOCN.pymtl3_net.ocnlib.test.stream_sinks import NetSinkRTL as TestNetSinkRTL
-import pytest
+
 
 #-------------------------------------------------------------------------
 # TestHarness
