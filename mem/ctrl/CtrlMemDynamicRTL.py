@@ -9,14 +9,15 @@ Author : Cheng Tan
   Date : Dec 20, 2024
 """
 
-from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
+
 from ...lib.basic.en_rdy.ifcs import SendIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import NormalQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
+
 
 class CtrlMemDynamicRTL(Component):
 

@@ -7,7 +7,6 @@ Test cases for control memory with command-based action handling.
 Author : Cheng Tan
   Date : Dec 21, 2024
 """
-from pymtl3 import *
 from ..CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ....fu.single.AdderRTL import AdderRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
