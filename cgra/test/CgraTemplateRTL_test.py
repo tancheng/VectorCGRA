@@ -9,12 +9,13 @@ Author : Cheng Tan
 
 """
 
-from pymtl3 import *
 from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
                                             VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
+
 from ..CgraTemplateRTL import CgraTemplateRTL
+from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -25,12 +26,12 @@ from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
 from ...fu.single.RetRTL import RetRTL
 from ...fu.single.SelRTL import SelRTL
-from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.basic.val_rdy.queues import BypassQueueRTL
-from ...lib.messages import *
 from ...lib.cmd_type import *
+from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
@@ -60,10 +61,11 @@ class TestHarness(Component):
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, TileList,
-                LinkList, dataSPM, controller2addr_map, idTo2d_map):
+                LinkList, dataSPM, controller2addr_map, idTo2d_map, complete_signal_sink_out):
 
     s.num_tiles = len(TileList)
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType,
@@ -89,6 +91,7 @@ class TestHarness(Component):
     # we have to connect from_noc and to_noc in testbench.
     s.dut.send_to_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_noc
+    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
     return s.src_ctrl_pkt.done()
@@ -175,9 +178,6 @@ class Link:
     if s.fromMem:
       s.dstTile.fromMem = True
 
-
-import platform
-import pytest
 
 def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tile_inports  = 8
@@ -279,6 +279,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -420,7 +421,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size, tiles, links, dataSPM,
-                   controller2addr_map, idTo2d_map)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
