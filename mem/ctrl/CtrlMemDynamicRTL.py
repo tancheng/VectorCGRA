@@ -23,7 +23,8 @@ class CtrlMemDynamicRTL(Component):
   def construct(s, CtrlPktType, CtrlSignalType, ctrl_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, ctrl_count_per_iter = 4,
-                total_ctrl_steps = 4):
+                total_ctrl_steps = 4,
+                tile_id = 0):
 
     # The total_ctrl_steps indicates the number of steps the ctrl
     # signals should proceed. For example, if the number of ctrl
@@ -114,7 +115,7 @@ class CtrlMemDynamicRTL(Component):
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
           if (s.sent_complete != 1) & (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
-            s.send_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            s.send_pkt.msg @= CtrlPktType(0, 0, tile_id, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt.val @= 1
         else:
           s.send_ctrl.val @= 1

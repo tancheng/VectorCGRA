@@ -27,7 +27,7 @@ class TestHarness(Component):
                 CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, src0_msgs, src1_msgs, ctrl_pkts,
-                sink_msgs, complete_ctrl_pkt):
+                sink_msgs, complete_signal_sink_out):
 
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -37,7 +37,7 @@ class TestHarness(Component):
     # s.src_wdata = TestSrcRTL(ConfigType, ctrl_msgs  )
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
-    s.execution_complete_cmd = TestSinkRTL(CtrlPktType, complete_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.alu = AdderRTL(DataType, PredicateType, CtrlSignalType, 2, 2,
                      data_mem_size)
@@ -47,7 +47,7 @@ class TestHarness(Component):
 
     s.alu.recv_opt //= s.ctrl_mem.send_ctrl
     s.src_pkt.send //= s.ctrl_mem.recv_pkt
-    s.execution_complete_cmd.recv //= s.ctrl_mem.send_pkt
+    s.complete_signal_sink_out.recv //= s.ctrl_mem.send_pkt
     s.src_data0.send //= s.alu.recv_in[0]
     s.src_data1.send //= s.alu.recv_in[1]
     s.alu.send_out[0] //= s.sink_out.recv
@@ -138,12 +138,11 @@ def test_Ctrl():
                   CtrlPktType(0,      0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_NAH,       0,             pick_register)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
-
-  complete_ctrl_pkt = [CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = [CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports, src_data0, src_data1,
-                   src_ctrl_pkt, sink_out, complete_ctrl_pkt)
+                   src_ctrl_pkt, sink_out, complete_signal_sink_out)
   run_sim(th)
 
