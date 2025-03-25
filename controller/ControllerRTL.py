@@ -8,7 +8,6 @@ Author : Cheng Tan
   Date : Dec 2, 2024
 """
 
-from pymtl3 import *
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
@@ -121,18 +120,6 @@ class ControllerRTL(Component):
     s.send_to_cpu_pkt_queue.recv //= s.recv_from_ctrl_ring_pkt
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
 
-    # @update
-    # def update_send_to_cpu_signal():
-    #     s.send_to_cpu_pkt_queue.recv.val @= 0
-    #     s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-    #     # print('~~~~~~~~~~~~~~~~~~')
-    #     # s.recv_from_ctrl_ring_pkt.rdy @= 1
-    #     if s.recv_from_ctrl_ring_pkt.val:
-    #         # print(f'----------------------')
-    #         # print(str(s.recv_from_ctrl_ring_pkt.msg))
-    #         # print(f'++++++++++++++++++++++')
-    #         s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
-    #         s.send_to_cpu_pkt_queue.recv.val @= 1
 
     @update
     def update_received_msg():
