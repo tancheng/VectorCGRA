@@ -118,15 +118,21 @@ class ControllerRTL(Component):
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
+    s.send_to_cpu_pkt_queue.recv //= s.recv_from_ctrl_ring_pkt
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
 
-    @update
-    def update_send_to_cpu_signal():
-        s.send_to_cpu_pkt_queue.recv.val @= 0
-        s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        if s.recv_from_ctrl_ring_pkt.val:
-            s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
-            s.send_to_cpu_pkt_queue.recv.val @= 1
+    # @update
+    # def update_send_to_cpu_signal():
+    #     s.send_to_cpu_pkt_queue.recv.val @= 0
+    #     s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    #     # print('~~~~~~~~~~~~~~~~~~')
+    #     # s.recv_from_ctrl_ring_pkt.rdy @= 1
+    #     if s.recv_from_ctrl_ring_pkt.val:
+    #         # print(f'----------------------')
+    #         # print(str(s.recv_from_ctrl_ring_pkt.msg))
+    #         # print(f'++++++++++++++++++++++')
+    #         s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
+    #         s.send_to_cpu_pkt_queue.recv.val @= 1
 
     @update
     def update_received_msg():
