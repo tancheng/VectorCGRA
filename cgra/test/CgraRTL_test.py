@@ -9,11 +9,10 @@ Author : Cheng Tan
   Date : Dec 22, 2024
 """
 
-from pymtl3 import *
+from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+
 from ..CgraRTL import CgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
@@ -23,16 +22,18 @@ from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
-from ...fu.single.SelRTL import SelRTL
 from ...fu.single.RetRTL import RetRTL
+from ...fu.single.SelRTL import SelRTL
 from ...fu.single.ShifterRTL import ShifterRTL
-from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
-from ...lib.basic.val_rdy.queues import BypassQueueRTL
-from ...lib.messages import *
-from ...lib.cmd_type import *
-from ...lib.opt_type import *
+from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.basic.val_rdy.queues import BypassQueueRTL
+from ...lib.cmd_type import *
+from ...lib.messages import *
+from ...lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -47,7 +48,7 @@ class TestHarness(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
-                idTo2d_map):
+                idTo2d_map, complete_signal_sink_out):
 
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
@@ -66,6 +67,8 @@ class TestHarness(Component):
     # Without bypass queue, the connection will not be translated and
     # recognized.
     s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
+
     # Connections
     s.dut.controller_id //= controller_id
     # As we always first issue request pkt from CPU to NoC, 
@@ -74,6 +77,8 @@ class TestHarness(Component):
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.dut.send_to_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_noc
+
+    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -220,6 +225,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -232,7 +238,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size, topology,
-                   controller2addr_map, idTo2d_map)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
   return th
 
 def test_homogeneous_2x2(cmdline_opts):
