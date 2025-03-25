@@ -62,6 +62,8 @@ jobs:
         source ${HOME}/venv/bin/activate
         # Simulation across all tests.
         pytest .. -v --tb=short
+        # CtrlMemDynamicRTL
+        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs --tb=short
         # Tile translation.
         pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Controller
@@ -82,5 +84,3 @@ jobs:
         pytest ../scale_out/test/MeshMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Const Queue
         pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
-        # CtrlMemDynamicRTL
-        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs --tb=short
