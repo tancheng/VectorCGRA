@@ -653,7 +653,7 @@ def mk_intra_cgra_pkt(ntiles = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_read_reg_idx[i]))
 
-    return f"{s.src}>{s.dst}:{s.opaque}:{s.ctrl_action}.{s.ctrl_addr}." \
+    return f"{s.cgra_id}:{s.src}>{s.dst}:{s.opaque}.{s.vc_id}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
