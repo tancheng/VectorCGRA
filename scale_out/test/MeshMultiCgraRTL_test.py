@@ -8,11 +8,10 @@ Author : Cheng Tan
   Date : Jan 8, 2024
 """
 
-from pymtl3 import *
+from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+
 from ..MeshMultiCgraRTL import MeshMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
@@ -23,14 +22,15 @@ from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
 from ...fu.single.SelRTL import SelRTL
-from ...fu.single.RetRTL import RetRTL
 from ...fu.single.ShifterRTL import ShifterRTL
-from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
+from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
-from ...lib.cmd_type import *
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -42,12 +42,13 @@ class TestHarness(Component):
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, controller2addr_map):
+                src_ctrl_pkt, ctrl_steps, controller2addr_map, complete_signal_sink_out):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns,
@@ -58,6 +59,7 @@ class TestHarness(Component):
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
+    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
     return s.src_ctrl_pkt.done()
@@ -215,6 +217,7 @@ def test_homo_2x2_2x2(cmdline_opts):
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0)
       ] for i in range(num_tiles)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -225,7 +228,7 @@ def test_homo_2x2_2x2(cmdline_opts):
                    x_tiles, y_tiles, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
-                   ctrl_mem_size, controller2addr_map)
+                   ctrl_mem_size, controller2addr_map, complete_signal_sink_out)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
