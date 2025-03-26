@@ -99,7 +99,7 @@ class TestHarness(Component):
       s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
-    return s.src_ctrl_pkt.done()
+    return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
