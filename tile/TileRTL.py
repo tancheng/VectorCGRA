@@ -40,8 +40,7 @@ class TileRTL(Component):
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL],
-                tile_id = 0):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -90,7 +89,7 @@ class TileRTL(Component):
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
                                    num_tile_inports, num_tile_outports,
-                                   num_ctrl, total_steps, tile_id)
+                                   num_ctrl, total_steps)
 
     # The `tile_in_channel` indicates the outport channels that are
     # connected to the next tiles.
