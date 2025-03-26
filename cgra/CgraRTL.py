@@ -6,7 +6,6 @@ CgraRTL.py
 Author : Cheng Tan
   Date : Dec 22, 2024
 """
-from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL

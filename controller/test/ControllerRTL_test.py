@@ -8,7 +8,6 @@ Author : Cheng Tan
   Date : Dec 15, 2024
 '''
 
-from pymtl3 import *
 from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
 
 from ..ControllerRTL import ControllerRTL
