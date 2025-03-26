@@ -84,8 +84,8 @@ class TestHarness(Component):
     # Connections
     s.dut.controller_id //= controller_id
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    # As we always first issue request pkt from CPU to NoC, 
-    # when there is no NoC for single CGRA test, 
+    # As we always first issue request pkt from CPU to NoC,
+    # when there is no NoC for single CGRA test,
     # we have to connect from_noc and to_noc in testbench.
     s.dut.send_to_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_noc
@@ -427,7 +427,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                       f'CgraTemplateRTL')
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                       'ALWCOMBORDER'])
+                       'ALWCOMBORDER', 'CMPCONST'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
   if paramCGRA != None:
