@@ -52,16 +52,18 @@ class ConstQueueDynamicRTL(Component):
 
     @update
     def load_const():
+      # Initializes signals.
+      s.reg_file.waddr[0] @= 0
+      s.reg_file.wdata[0] @= 0
+      s.reg_file.wen[0] @= 0
+
       not_full = s.wr_cur < const_mem_size
       s.recv_const.rdy @= not_full
+
       if s.recv_const.val & not_full:
         s.reg_file.waddr[0] @= trunc(s.wr_cur, AddrType)
         s.reg_file.wdata[0] @= s.recv_const.msg
         s.reg_file.wen[0] @= 1
-      else:
-        s.reg_file.waddr[0] @= trunc(s.wr_cur, AddrType)
-        s.reg_file.wdata[0] @= s.recv_const.msg
-        s.reg_file.wen[0] @= 0
 
 
     @update_ff
