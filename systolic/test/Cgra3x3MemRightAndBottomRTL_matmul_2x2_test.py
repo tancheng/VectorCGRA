@@ -159,6 +159,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_banks_per_cgra = 4
   width = 3
   height = 3
+  num_tiles = width * height
   num_terminals = 1
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
@@ -194,7 +195,7 @@ def test_CGRA_systolic(cmdline_opts):
   predicate_nbits = 1
 
   CtrlPktType = \
-        mk_intra_cgra_pkt(width * height,
+        mk_intra_cgra_pkt(num_tiles,
                         cgra_id_nbits,
                         num_commands,
                         ctrl_mem_size,
@@ -218,7 +219,7 @@ def test_CGRA_systolic(cmdline_opts):
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
                                      nrows = cgra_rows,
-                                     ntiles = width * height,
+                                     ntiles = num_tiles,
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_nbits,
                                      predicate_nbits = 1,
@@ -451,7 +452,7 @@ def test_CGRA_systolic(cmdline_opts):
   expected_out = [[DataType(14, 1), DataType(20, 1)],
                   [DataType(30, 1), DataType(44, 1)]]
 
-  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 1, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, num_tiles, 0, 1, ctrl_action = CMD_COMPLETE)]
 
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
