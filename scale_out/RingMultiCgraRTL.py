@@ -67,8 +67,8 @@ class RingMultiCgraRTL(Component):
     s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
 
     for i in range(s.num_terminals):
-      s.ring.send[i] //= s.cgra[i].recv_from_noc
-      s.ring.recv[i] //= s.cgra[i].send_to_noc
+      s.ring.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
+      s.ring.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
 
     for i in range(1, s.num_terminals):
       s.cgra[i].recv_from_cpu_pkt.val //= 0
