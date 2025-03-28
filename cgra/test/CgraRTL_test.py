@@ -75,8 +75,8 @@ class TestHarness(Component):
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    s.dut.send_to_noc //= s.bypass_queue.recv
-    s.bypass_queue.send //= s.dut.recv_from_noc
+    s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
 
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
@@ -225,7 +225,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
-  complete_signal_sink_out = [CtrlPktType(0, 0, num_tiles, 0, 1, ctrl_action = CMD_COMPLETE)]
+
+  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
