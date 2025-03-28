@@ -64,8 +64,8 @@ class TestHarness(Component):
                 num_registers_per_reg_bank,
                 FunctionUnit, FuList)
 
-    connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
-    s.complete_signal_sink_out.recv //= s.dut.send_towards_controller_pkt
+    connect(s.src_ctrl_pkt.send, s.dut.recv_from_controller_pkt)
+    s.complete_signal_sink_out.recv //= s.dut.send_to_controller_pkt
 
     for i in range(num_tile_inports):
       connect(s.src_data[i].send, s.dut.recv_data[i])
@@ -86,6 +86,9 @@ class TestHarness(Component):
 
     for i in range(s.num_tile_outports):
       if not s.sink_out[i].done():
+        return False
+
+    if not s.complete_signal_sink_out.done():
         return False
 
     return True
@@ -223,7 +226,8 @@ def test_tile_alu(cmdline_opts):
               [],
               # 5 + 4 = 9; 7 - 3 = 4.
               [DataType(9, 1), DataType(4, 1)]]
-  complete_signal_sink_out = [CtrlPktType(0, 0, num_terminals, 0, 0, ctrl_action = CMD_COMPLETE)]
+  #                                       cgra_id, src,           dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_terminals,      0,  0, ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, ctrl_mem_size,
