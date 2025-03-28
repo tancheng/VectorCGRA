@@ -66,8 +66,8 @@ class MeshMultiCgraRTL(Component):
 
     # Connections
     for i in range(s.num_terminals):
-      s.mesh.send[i] //= s.cgra[i].recv_from_noc
-      s.mesh.recv[i] //= s.cgra[i].send_to_noc
+      s.mesh.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
+      s.mesh.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
 
     s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
     s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
