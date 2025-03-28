@@ -36,7 +36,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
     s.ctrl_memories = [
         CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType, ctrl_mem_size,
                           num_fu_inports, num_fu_outports, num_tile_inports,
-                          num_tile_outports, ctrl_count_per_iter,
+                          num_tile_outports, num_terminals, ctrl_count_per_iter,
                           total_ctrl_steps) for terminal_id in range(s.num_terminals)]
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, num_terminals + 1, 1)
 
@@ -46,8 +46,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
     s.ctrl_ring.send[s.num_terminals] //= s.send_towards_controller_pkt
 
     for i in range(s.num_terminals):
-      s.ctrl_ring.recv[i].val //= 0
-      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+      s.ctrl_ring.recv[i] //= s.ctrl_memories[i].send_pkt
     s.ctrl_ring.recv[s.num_terminals] //= s.recv_pkt_from_controller
 
     for i in range(s.num_terminals):

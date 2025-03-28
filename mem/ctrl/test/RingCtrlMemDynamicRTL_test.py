@@ -27,14 +27,14 @@ class TestHarness( Component ):
                  CtrlSignalType, ctrl_mem_size, width, height,
                  data_mem_size, num_fu_inports, num_fu_outports,
                  num_tile_inports, num_tile_outports, ctrl_pkts,
-                 sink_msgs, complete_ctrl_pkt):
+                 sink_msgs, complete_signal_sink_out):
 
     s.width = width
     s.height = height
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = [TestSinkRTL(CtrlSignalType, sink_msgs[i])
                   for i in range(width * height)]
-    s.execution_complete_cmd = TestSinkRTL(CtrlPktType, complete_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = \
         DUT(CtrlPktType, CtrlSignalType, width, height,
@@ -43,7 +43,7 @@ class TestHarness( Component ):
             len(ctrl_pkts), len(ctrl_pkts))
 
     connect(s.src_pkt.send, s.dut.recv_pkt_from_controller)
-    s.execution_complete_cmd.recv //= s.dut.send_towards_controller_pkt
+    s.complete_signal_sink_out.recv //= s.dut.send_towards_controller_pkt
     for i in range(width * height):
       connect(s.dut.send_ctrl[i], s.sink_out[i].recv)
 
@@ -52,6 +52,8 @@ class TestHarness( Component ):
       return False
     for i in range(s.width * s.height):
       if not s.sink_out[i].done():
+        return False
+    if not s.complete_signal_sink_out.done():
         return False
     return True
 
@@ -64,7 +66,6 @@ def run_sim(test_harness, max_cycles = 40):
   test_harness.sim_reset()
 
   # Run simulation
-
   ncycles = 0
   print()
   print("{}:{}".format(ncycles, test_harness.line_trace()))
@@ -155,10 +156,10 @@ def test_Ctrl():
 
               [CtrlSignalType(OPT_SUB, 0, pickRegister),
                CtrlSignalType(OPT_ADD, 0, pickRegister)]]
-  complete_ctrl_pkt = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, num_terminals, 0, 1, ctrl_action = CMD_COMPLETE)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, width, height, data_mem_size, num_fu_inports,
                    num_fu_outports, num_tile_inports, num_tile_outports,
-                   src_ctrl_pkt, sink_out, complete_ctrl_pkt)
+                   src_ctrl_pkt, sink_out, complete_signal_sink_out)
   run_sim(th)
 
