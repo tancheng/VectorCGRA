@@ -66,7 +66,7 @@ class CgraRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, num_registers_per_reg_bank,
+                      s.num_mesh_ports, s.num_tiles, num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
@@ -103,9 +103,9 @@ class CgraRTL(Component):
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
     # Connects ring with each control memory.
-    s.ctrl_ring.send[0] //= s.controller.recv_from_ctrl_ring_pkt
-    for i in range(1, s.num_tiles + 1):
-      s.ctrl_ring.send[i] //= s.tile[i-1].recv_ctrl_pkt
+    for i in range(s.num_tiles):
+      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
       s.ctrl_ring.recv[i] //= s.tile[i].send_towards_controller_pkt

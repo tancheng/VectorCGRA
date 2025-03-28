@@ -225,7 +225,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
-  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, num_tiles, 0, 1, ctrl_action = CMD_COMPLETE)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
