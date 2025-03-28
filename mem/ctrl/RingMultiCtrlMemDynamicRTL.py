@@ -30,7 +30,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
     # Interface
     s.send_ctrl = [SendIfcRTL(CtrlSignalType) for _ in range(s.num_terminals)]
     s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
-    s.send_towards_controller_pkt = SendIfcRTL(CtrlPktType)
+    s.send_to_controller_pkt = SendIfcRTL(CtrlPktType)
 
     # Components
     s.ctrl_memories = [
@@ -42,11 +42,11 @@ class RingMultiCtrlMemDynamicRTL(Component):
 
     # Connections
     for i in range(s.num_terminals):
-      s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt
-    s.ctrl_ring.send[s.num_terminals] //= s.send_towards_controller_pkt
+      s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt_from_controller
+    s.ctrl_ring.send[s.num_terminals] //= s.send_to_controller_pkt
 
     for i in range(s.num_terminals):
-      s.ctrl_ring.recv[i] //= s.ctrl_memories[i].send_pkt
+      s.ctrl_ring.recv[i] //= s.ctrl_memories[i].send_pkt_to_controller
     s.ctrl_ring.recv[s.num_terminals] //= s.recv_pkt_from_controller
 
     for i in range(s.num_terminals):

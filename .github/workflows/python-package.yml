@@ -63,7 +63,7 @@ jobs:
         # Simulation across all tests.
         pytest .. -v --tb=short
         # CtrlMemDynamicRTL
-        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs --tb=short
+        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
         # Tile translation.
         pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Controller

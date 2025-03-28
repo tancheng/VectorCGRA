@@ -43,7 +43,7 @@ class TestHarness( Component ):
             len(ctrl_pkts), len(ctrl_pkts))
 
     connect(s.src_pkt.send, s.dut.recv_pkt_from_controller)
-    s.complete_signal_sink_out.recv //= s.dut.send_towards_controller_pkt
+    s.complete_signal_sink_out.recv //= s.dut.send_to_controller_pkt
     for i in range(width * height):
       connect(s.dut.send_ctrl[i], s.sink_out[i].recv)
 
@@ -156,7 +156,8 @@ def test_Ctrl():
 
               [CtrlSignalType(OPT_SUB, 0, pickRegister),
                CtrlSignalType(OPT_ADD, 0, pickRegister)]]
-  complete_signal_sink_out = [CtrlPktType(0, 0, num_terminals, 0, 1, ctrl_action = CMD_COMPLETE)]
+  #                                       cgra_id, src,           dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_terminals,      0,  1, ctrl_action = CMD_COMPLETE)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, width, height, data_mem_size, num_fu_inports,
                    num_fu_outports, num_tile_inports, num_tile_outports,
