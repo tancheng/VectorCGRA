@@ -38,7 +38,8 @@ class TileRTL(Component):
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_registers_per_reg_bank = 16,
+                num_tile_outports, num_tiles,
+                num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
 
@@ -89,6 +90,7 @@ class TileRTL(Component):
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
                                    num_tile_inports, num_tile_outports,
+                                   num_tiles,
                                    num_ctrl, total_steps)
 
     # The `tile_in_channel` indicates the outport channels that are
