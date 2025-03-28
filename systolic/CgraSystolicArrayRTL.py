@@ -36,6 +36,7 @@ class CgraSystolicArrayRTL(Component):
     assert(height == 3)
     assert(num_banks_per_cgra == 4)
     s.num_tiles = width * height
+    # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -45,8 +46,8 @@ class CgraSystolicArrayRTL(Component):
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
-    s.recv_from_noc = RecvIfcRTL(NocPktType)
-    s.send_to_noc = SendIfcRTL(NocPktType)
+    s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -81,6 +82,8 @@ class CgraSystolicArrayRTL(Component):
                                  1, 1,
                                  controller2addr_map,
                                  idTo2d_map)
+    # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
+    #                                                                             For latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     # Connections
@@ -96,8 +99,8 @@ class CgraSystolicArrayRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
     
-    s.recv_from_noc //= s.controller.recv_from_noc
-    s.send_to_noc //= s.controller.send_to_noc
+    s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+    s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
@@ -105,11 +108,11 @@ class CgraSystolicArrayRTL(Component):
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
     s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tile[i].send_towards_controller_pkt
+      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
     s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for i in range(s.num_tiles):

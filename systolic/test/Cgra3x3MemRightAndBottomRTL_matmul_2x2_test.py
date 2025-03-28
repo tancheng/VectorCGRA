@@ -70,8 +70,8 @@ class TestHarness(Component):
     # As we always first issue request pkt from CPU to NoC,
     # when there is no NoC for single CGRA test,
     # we have to connect from_noc and to_noc in testbench.
-    s.dut.send_to_noc //= s.bypass_queue.recv
-    s.bypass_queue.send //= s.dut.recv_from_noc
+    s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
     for tile_col in range(width):
@@ -451,8 +451,8 @@ def test_CGRA_systolic(cmdline_opts):
   """
   expected_out = [[DataType(14, 1), DataType(20, 1)],
                   [DataType(30, 1), DataType(44, 1)]]
-
-  complete_signal_sink_out = [CtrlPktType(0, 0, num_tiles, 0, 1, ctrl_action = CMD_COMPLETE)]
+  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
