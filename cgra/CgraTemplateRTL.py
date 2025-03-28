@@ -60,7 +60,7 @@ class CgraTemplateRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports,
+                      s.num_mesh_ports, s.num_tiles,
                       num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]

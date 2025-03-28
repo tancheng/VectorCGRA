@@ -94,7 +94,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
-    return s.src_ctrl_pkt.done()
+    return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -279,7 +279,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
       CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
-  complete_signal_sink_out = [CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = [CtrlPktType(0, 0, num_tiles, 0, 1, ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
