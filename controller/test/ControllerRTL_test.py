@@ -71,8 +71,8 @@ class TestHarness(Component):
     s.dut.send_to_tile_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
     s.dut.send_to_tile_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
 
-    s.src_from_noc_val_rdy.send //= s.dut.recv_from_noc
-    s.dut.send_to_noc //= s.sink_to_noc_val_rdy.recv
+    s.src_from_noc_val_rdy.send //= s.dut.recv_from_inter_cgra_noc
+    s.dut.send_to_inter_cgra_noc //= s.sink_to_noc_val_rdy.recv
 
     s.dut.recv_from_cpu_pkt.val //= 0
     s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
