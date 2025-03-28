@@ -51,7 +51,9 @@ class TestHarness(Component):
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.expected_out = expected_out
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
+
+    cmp_fn = lambda a, b: a.dst == b.dst and a.ctrl_action == b.ctrl_action
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, controller_id,
