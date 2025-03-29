@@ -8,14 +8,13 @@ Author : Cheng Tan
   Date : Jan 8, 2025
 """
 
-from pymtl3 import *
-from pymtl3.stdlib.primitive import RegisterFile
 from ..cgra.CgraRTL import CgraRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
-from ..lib.util.common import *
-from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
+from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
+
 
 class MeshMultiCgraRTL(Component):
   def construct(s, CGRADataType, PredicateType, CtrlPktType,
@@ -39,6 +38,7 @@ class MeshMultiCgraRTL(Component):
     # Interface
     # Request from/to CPU.
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
+    s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
 
     # Components
     for cgra_row in range(cgra_rows):
@@ -66,13 +66,16 @@ class MeshMultiCgraRTL(Component):
 
     # Connections
     for i in range(s.num_terminals):
-      s.mesh.send[i] //= s.cgra[i].recv_from_noc
-      s.mesh.recv[i] //= s.cgra[i].send_to_noc
+      s.mesh.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
+      s.mesh.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
 
     s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
+    s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
+
     for i in range(1, s.num_terminals):
       s.cgra[i].recv_from_cpu_pkt.val //= 0
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
+      s.cgra[i].send_to_cpu_pkt.rdy //= 0
 
     # Connects the tiles on the boundary of each two ajacent CGRAs.
     for cgra_row in range(cgra_rows):

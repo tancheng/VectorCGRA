@@ -38,7 +38,8 @@ class TileRTL(Component):
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_registers_per_reg_bank = 16,
+                num_tile_outports, num_tiles,
+                num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
 
@@ -59,7 +60,9 @@ class TileRTL(Component):
                    for _ in range (num_tile_outports)]
 
     # Ctrl.
-    s.recv_ctrl_pkt = RecvIfcRTL(CtrlPktType)
+    s.recv_from_controller_pkt = RecvIfcRTL(CtrlPktType)
+    # Sends the ctrl packets to ctrl ring.
+    s.send_to_controller_pkt = SendIfcRTL(CtrlPktType)
 
     # Data.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
@@ -87,6 +90,7 @@ class TileRTL(Component):
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
                                    num_tile_inports, num_tile_outports,
+                                   num_tiles,
                                    num_ctrl, total_steps)
 
     # The `tile_in_channel` indicates the outport channels that are
@@ -174,26 +178,32 @@ class TileRTL(Component):
 
     @update
     def feed_pkt():
-        s.ctrl_mem.recv_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         s.const_mem.recv_const.msg @= DataType(0, 0, 0, 0)
-        s.ctrl_mem.recv_pkt.val @= 0
+        s.ctrl_mem.recv_pkt_from_controller.val @= 0
         s.const_mem.recv_const.val @= 0
-        s.recv_ctrl_pkt.rdy @= 0
+        s.recv_from_controller_pkt.rdy @= 0
 
-        if s.recv_ctrl_pkt.val & ((s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONFIG) | (s.recv_ctrl_pkt.msg.ctrl_action == CMD_LAUNCH)):
-            s.ctrl_mem.recv_pkt.val @= 1
-            s.ctrl_mem.recv_pkt.msg @= s.recv_ctrl_pkt.msg
-            s.recv_ctrl_pkt.rdy @= s.ctrl_mem.recv_pkt.rdy
-        elif s.recv_ctrl_pkt.val & (s.recv_ctrl_pkt.msg.ctrl_action == CMD_CONST):
+        if s.recv_from_controller_pkt.val & ((s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_controller_pkt.msg.ctrl_action == CMD_LAUNCH)):
+            s.ctrl_mem.recv_pkt_from_controller.val @= 1
+            s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
+            s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
+        elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONST):
             s.const_mem.recv_const.val @= 1
-            s.const_mem.recv_const.msg.payload @= s.recv_ctrl_pkt.msg.data
+            s.const_mem.recv_const.msg.payload @= s.recv_from_controller_pkt.msg.data
             s.const_mem.recv_const.msg.predicate @= 1
-            s.recv_ctrl_pkt.rdy @= s.const_mem.recv_const.rdy
+            s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
+
+    @update
+    def update_send_out_signal():
+        s.send_to_controller_pkt.val @= 0
+        if s.ctrl_mem.send_pkt_to_controller.val:
+            s.send_to_controller_pkt.val @= 1
+            s.send_to_controller_pkt.msg @= s.ctrl_mem.send_pkt_to_controller.msg
 
     # Updates the configuration memory related signals.
     @update
     def update_opt():
-
       s.element.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.routing_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg
       s.fu_crossbar.recv_opt.msg @= s.ctrl_mem.send_ctrl.msg

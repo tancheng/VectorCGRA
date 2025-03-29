@@ -9,11 +9,12 @@ Author : Cheng Tan
   Date : Nov 19, 2024
 """
 
-from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
+
 from ..CgraSystolicArrayRTL import CgraSystolicArrayRTL
+from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
@@ -22,9 +23,8 @@ from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
-from ...fu.single.SelRTL import SelRTL
-from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.basic.val_rdy.queues import BypassQueueRTL
 from ...lib.cmd_type import *
@@ -35,7 +35,7 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 200
+kMaxCycles = 100
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
@@ -45,12 +45,15 @@ class TestHarness(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, controller2addr_map,
-                preload_data, expected_out):
+                preload_data, expected_out, complete_signal_sink_out):
 
     s.DataType = DataType
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.expected_out = expected_out
+
+    cmp_fn = lambda a, b: a.dst == b.dst and a.ctrl_action == b.ctrl_action
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, ControllerIdType, controller_id,
@@ -69,8 +72,9 @@ class TestHarness(Component):
     # As we always first issue request pkt from CPU to NoC,
     # when there is no NoC for single CGRA test,
     # we have to connect from_noc and to_noc in testbench.
-    s.dut.send_to_noc //= s.bypass_queue.recv
-    s.bypass_queue.send //= s.dut.recv_from_noc
+    s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
+    s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
+    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -100,7 +104,7 @@ class TestHarness(Component):
     return True
 
   def done(s):
-    return s.check_parity()
+    return s.check_parity() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -124,7 +128,6 @@ def run_sim(test_harness, enable_verification_pymtl,
       ncycles += 1
       print("----------------------------------------------------")
       print("cycle{}:{}".format( ncycles, test_harness.line_trace()))
-
     # Checks the output parity.
     assert test_harness.check_parity()
 
@@ -157,6 +160,7 @@ def test_CGRA_systolic(cmdline_opts):
   num_banks_per_cgra = 4
   width = 3
   height = 3
+  num_tiles = width * height
   num_terminals = 1
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
@@ -192,7 +196,7 @@ def test_CGRA_systolic(cmdline_opts):
   predicate_nbits = 1
 
   CtrlPktType = \
-        mk_intra_cgra_pkt(width * height,
+        mk_intra_cgra_pkt(num_tiles,
                         cgra_id_nbits,
                         num_commands,
                         ctrl_mem_size,
@@ -216,7 +220,7 @@ def test_CGRA_systolic(cmdline_opts):
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
                                      nrows = cgra_rows,
-                                     ntiles = width * height,
+                                     ntiles = num_tiles,
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_nbits,
                                      predicate_nbits = 1,
@@ -449,6 +453,10 @@ def test_CGRA_systolic(cmdline_opts):
   expected_out = [[DataType(14, 1), DataType(20, 1)],
                   [DataType(30, 1), DataType(44, 1)]]
 
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
+  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
   # read) continue.
@@ -460,7 +468,8 @@ def test_CGRA_systolic(cmdline_opts):
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_steps,
                    controller2addr_map, None,
-                   expected_out)
+                   expected_out,
+                   complete_signal_sink_out)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,

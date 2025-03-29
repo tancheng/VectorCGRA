@@ -9,10 +9,6 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
-from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..fu.single.AdderRTL import AdderRTL
-from ..lib.util.common import *
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
@@ -34,7 +30,8 @@ class CgraTemplateRTL(Component):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
-    CtrlRingPos = mk_ring_pos(s.num_tiles)
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
@@ -42,8 +39,9 @@ class CgraTemplateRTL(Component):
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
-    s.recv_from_noc = RecvIfcRTL(NocPktType)
-    s.send_to_noc = SendIfcRTL(NocPktType)
+    s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
+    s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
     # FIXME: Think about how to handle the boundary for the case of
     # multi-cgra modeling.
@@ -63,7 +61,7 @@ class CgraTemplateRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports,
+                      s.num_mesh_ports, s.num_tiles,
                       num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]
@@ -79,7 +77,9 @@ class CgraTemplateRTL(Component):
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  controller2addr_map, idTo2d_map)
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles, 1)
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+    # The last argument of 1 is for the latency per hop.
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     s.controller_id = InPort(ControllerIdType)
 
@@ -96,20 +96,21 @@ class CgraTemplateRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
-    s.recv_from_noc //= s.controller.recv_from_noc
-    s.send_to_noc //= s.controller.send_to_noc
+    s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+    s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    s.send_to_cpu_pkt //= s.controller.send_to_cpu_pkt
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_ctrl_pkt
+      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
-    s.ctrl_ring.recv[0] //= s.controller.send_to_ctrl_ring_ctrl_pkt
-    for i in range(1, s.num_tiles):
-      s.ctrl_ring.recv[i].val //= 0
-      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+    for i in range(s.num_tiles):
+      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for link in LinkList:
 

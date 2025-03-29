@@ -25,28 +25,29 @@ class RingMultiCtrlMemDynamicRTL(Component):
     # Constant
     num_terminals = width * height
     s.num_terminals = width * height
-    CtrlRingPos = mk_ring_pos(num_terminals)
+    CtrlRingPos = mk_ring_pos(num_terminals + 1)
 
     # Interface
     s.send_ctrl = [SendIfcRTL(CtrlSignalType) for _ in range(s.num_terminals)]
     s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
+    s.send_to_controller_pkt = SendIfcRTL(CtrlPktType)
 
     # Components
     s.ctrl_memories = [
         CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType, ctrl_mem_size,
                           num_fu_inports, num_fu_outports, num_tile_inports,
-                          num_tile_outports, ctrl_count_per_iter,
+                          num_tile_outports, num_terminals, ctrl_count_per_iter,
                           total_ctrl_steps) for terminal_id in range(s.num_terminals)]
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, num_terminals, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, num_terminals + 1, 1)
 
     # Connections
     for i in range(s.num_terminals):
-      s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt
+      s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt_from_controller
+    s.ctrl_ring.send[s.num_terminals] //= s.send_to_controller_pkt
 
-    s.ctrl_ring.recv[0] //= s.recv_pkt_from_controller
-    for i in range(1, s.num_terminals):
-      s.ctrl_ring.recv[i].val //= 0
-      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+    for i in range(s.num_terminals):
+      s.ctrl_ring.recv[i] //= s.ctrl_memories[i].send_pkt_to_controller
+    s.ctrl_ring.recv[s.num_terminals] //= s.recv_pkt_from_controller
 
     for i in range(s.num_terminals):
       s.ctrl_memories[i].send_ctrl //= s.send_ctrl[i]

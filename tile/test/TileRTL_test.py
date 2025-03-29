@@ -28,8 +28,8 @@ from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
-from ...lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
@@ -45,24 +45,27 @@ class TestHarness(Component):
                 CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
-                src_ctrl_pkt, sink_out):
+                src_ctrl_pkt, sink_out, num_terminals, complete_signal_sink_out):
 
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
 
-    s.src_ctrl_pkt = ValRdyTestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.src_data = [ValRdyTestSrcRTL(DataType, src_data[i])
+    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_data = [TestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
-    s.sink_out = [ValRdyTestSinkRTL(DataType, sink_out[i])
+    s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, 3, 3, # 3 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_registers_per_reg_bank,
+                num_tile_outports, num_terminals,
+                num_registers_per_reg_bank,
                 FunctionUnit, FuList)
 
-    connect(s.src_ctrl_pkt.send, s.dut.recv_ctrl_pkt)
+    connect(s.src_ctrl_pkt.send, s.dut.recv_from_controller_pkt)
+    s.complete_signal_sink_out.recv //= s.dut.send_to_controller_pkt
 
     for i in range(num_tile_inports):
       connect(s.src_data[i].send, s.dut.recv_data[i])
@@ -83,6 +86,9 @@ class TestHarness(Component):
 
     for i in range(s.num_tile_outports):
       if not s.sink_out[i].done():
+        return False
+
+    if not s.complete_signal_sink_out.done():
         return False
 
     return True
@@ -220,13 +226,15 @@ def test_tile_alu(cmdline_opts):
               [],
               # 5 + 4 = 9; 7 - 3 = 4.
               [DataType(9, 1), DataType(4, 1)]]
+  #                                       cgra_id, src,           dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_terminals,      0,  0, ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out)
+                   src_ctrl_pkt, sink_out, num_terminals, complete_signal_sink_out)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
