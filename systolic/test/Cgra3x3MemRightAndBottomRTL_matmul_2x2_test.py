@@ -104,8 +104,7 @@ class TestHarness(Component):
     return True
 
   def done(s):
-    print(f"s.dut.send_to_cpu_pkt: {s.dut.send_to_cpu_pkt}")
-    return s.check_parity() #and s.complete_signal_sink_out.done()
+    return s.check_parity() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -128,7 +127,7 @@ def run_sim(test_harness, enable_verification_pymtl,
       test_harness.sim_tick()
       ncycles += 1
       print("----------------------------------------------------")
-      print("xxxxxxxxxcycle{}:{}".format( ncycles, test_harness.line_trace()))
+      print("cycle{}:{}".format( ncycles, test_harness.line_trace()))
     # Checks the output parity.
     assert test_harness.check_parity()
 
@@ -139,7 +138,7 @@ def run_sim(test_harness, enable_verification_pymtl,
       test_harness.sim_tick()
       ncycles += 1
       print("----------------------------------------------------")
-      print(".......cycle{}:{}".format( ncycles, test_harness.line_trace()))
+      print("cycle{}:{}".format( ncycles, test_harness.line_trace()))
 
   test_harness.sim_tick()
   test_harness.sim_tick()
@@ -453,6 +452,8 @@ def test_CGRA_systolic(cmdline_opts):
   """
   expected_out = [[DataType(14, 1), DataType(20, 1)],
                   [DataType(30, 1), DataType(44, 1)]]
+
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
   complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 

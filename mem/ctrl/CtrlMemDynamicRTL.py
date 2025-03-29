@@ -142,7 +142,7 @@ class CtrlMemDynamicRTL(Component):
 
     @update_ff
     def issue_complete():
-      # Once COMPLETE signal is sent, we cannot send another COMPLETE signal until the next ctrl signal is launched.
+      # Once COMPLETE signal is sent, we shouldn't send another COMPLETE signal until the next ctrl signal is launched.
       if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
         s.sent_complete <<= 1
       if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:

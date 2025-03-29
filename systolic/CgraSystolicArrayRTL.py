@@ -36,7 +36,7 @@ class CgraSystolicArrayRTL(Component):
     assert(height == 3)
     assert(num_banks_per_cgra == 4)
     s.num_tiles = width * height
-    # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -82,8 +82,8 @@ class CgraSystolicArrayRTL(Component):
                                  1, 1,
                                  controller2addr_map,
                                  idTo2d_map)
-    # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
-    #                                                                             For latency per hop.
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+    # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     # Connections

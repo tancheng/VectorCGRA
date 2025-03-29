@@ -74,7 +74,6 @@ class RingMultiCgraRTL(Component):
       s.cgra[i].recv_from_cpu_pkt.val //= 0
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
       s.cgra[i].send_to_cpu_pkt.rdy //= 0
-      # s.cgra[i].send_to_cpu_pkt.msg //= CtrlPktType()
 
     # Connects the tiles on the boundary of each two ajacent CGRAs.
     for cgra_row in range(cgra_rows):

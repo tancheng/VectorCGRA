@@ -479,7 +479,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   IdType = mk_bits(max(clog2(ncols * nrows), 1))
   XType = mk_bits(max(clog2(ncols), 1))
   YType = mk_bits(max(clog2(nrows), 1))
-  # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
+  # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
   TileIdType = mk_bits(max(clog2(ntiles + 1), 1))
   OpqType = mk_bits(opaque_nbits)
   AddrType = mk_bits(addr_nbits)
@@ -565,7 +565,7 @@ def mk_intra_cgra_pkt(ntiles = 4,
                       prefix="PreloadCGRAsPacket"):
 
   CgraIdType = mk_bits(cgraId_nbits)
-  # An additional port for Controller to receive CMD_COMPLETE signal from Ring to Cpu.
+  # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
   TileIdType = mk_bits(clog2(ntiles + 1))
   opaque_nbits = 8
   OpqType = mk_bits(opaque_nbits)

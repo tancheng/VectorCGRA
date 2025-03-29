@@ -217,6 +217,8 @@ def test_homo_2x2_2x2(cmdline_opts):
                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                    FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0)
       ] for i in range(num_tiles)]
+
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
   complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 

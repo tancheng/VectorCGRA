@@ -53,9 +53,7 @@ class TestHarness( Component ):
     for i in range(s.width * s.height):
       if not s.sink_out[i].done():
         return False
-    if not s.complete_signal_sink_out.done():
-        return False
-    return True
+    return s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -156,6 +154,8 @@ def test_Ctrl():
 
               [CtrlSignalType(OPT_SUB, 0, pickRegister),
                CtrlSignalType(OPT_ADD, 0, pickRegister)]]
+
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   #                                       cgra_id, src,           dst, opaque, vc, ctrl_action
   complete_signal_sink_out = [CtrlPktType(      0,   0, num_terminals,      0,  1, ctrl_action = CMD_COMPLETE)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
