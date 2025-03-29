@@ -315,7 +315,7 @@ class DataMemWithCrossbarRTL(Component):
       # Preloads data.
       @update_ff
       def update_init_index_increment():
-        if (reset):
+        if (s.reset):
           s.init_mem_done <<= b1(0)
           s.init_mem_addr <<= PerBankAddrType(0)
         else:
@@ -328,7 +328,7 @@ class DataMemWithCrossbarRTL(Component):
     else:
       @update_ff
       def update_init_index_once():
-          if (reset):
+          if (s.reset):
             s.init_mem_done <<= b1(0)
             s.init_mem_addr <<= PerBankAddrType(0)
           else:
