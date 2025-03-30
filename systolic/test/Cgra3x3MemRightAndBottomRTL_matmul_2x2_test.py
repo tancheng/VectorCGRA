@@ -284,9 +284,9 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 0 ([0, 0]).
       [
        # Const
-                 # cgra_id src dst vc_id opq
-       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
+                 # dst_cgra_id src dst vc_id opq
+       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
+       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
 
        # Pre-configure the prologue count for both operation and routing.
        CtrlPktType(0,      0,  0,  0,    0,
@@ -308,8 +308,8 @@ def test_CGRA_systolic(cmdline_opts):
                    ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
                    data = updated_ctrl_steps),
 
-       # cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
-       CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
+                 # dst_cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+       CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
@@ -548,8 +548,8 @@ def test_CGRA_systolic(cmdline_opts):
                   [DataType(30, 1), DataType(44, 1)]] # 0x1e, 0x2c
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl

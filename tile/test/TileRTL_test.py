@@ -229,8 +229,8 @@ def test_tile_alu(cmdline_opts):
               [],
               # 5 + 4 = 9; 7 - 3 = 4.
               [DataType(9, 1), DataType(4, 1)]]
-  #                                       dst_cgra_id, src, dst,           opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_terminals, 0,      0,  ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src,           dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(          0,   0, num_terminals,      0,  0, ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, ctrl_mem_size,

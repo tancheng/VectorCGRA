@@ -143,8 +143,8 @@ def test_homo_2x2(cmdline_opts):
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt_per_tile = [[
-                # dst_cgra_id src dst vc_id opq  cmd_type    addr  operation  predicate
-      CtrlPktType(0,          0,  0,  0,    0,   CMD_CONFIG, 0,    OPT_INC,   b1(0),
+                # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
+      CtrlPktType(i,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         # TODO: make below as TileInType(5) to double check.
@@ -203,8 +203,8 @@ def test_homo_2x2(cmdline_opts):
       ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src, dst,       opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,      1,  ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
