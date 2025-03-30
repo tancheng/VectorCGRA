@@ -40,7 +40,7 @@ CMD_SYMBOL_DICT = {
   CMD_LOAD_REQUEST:                     "(LOAD_REQUEST)",
   CMD_LOAD_RESPONSE:                    "(LOAD_RESPONSE)",
   CMD_STORE_REQUEST:                    "(STORE_REQUEST)",
-  CMD_CONST:                            "(CONST_DATA)"
+  CMD_CONST:                            "(CONST_DATA)",
   CMD_COMPLETE:                         "(COMPLETE_EXECUTION)"
 }
 
