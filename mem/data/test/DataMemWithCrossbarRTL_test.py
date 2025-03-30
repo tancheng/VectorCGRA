@@ -188,8 +188,8 @@ def test_const_queue(cmdline_opts):
   # Input data.
   # noc_send_read_addr = [AddrType(42)]
   send_to_noc_load_request_pkt = [
-             #   src  dst src_x src_y dst_x dst_y tile_id opq vc  addr data predicate payload ctrl_action
-      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0,  42,  0,   1,        0,      CMD_LOAD_REQUEST),
+             #   src  dst src_x src_y dst_x dst_y dst_tile_id opq vc  addr data predicate payload ctrl_action
+      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0,  42,  0,   1,        0,      CMD_LOAD_REQUEST),
   ]
   noc_recv_load_data = [DataType(0xbbbb, 1)]
 
@@ -197,9 +197,9 @@ def test_const_queue(cmdline_opts):
   # noc_send_write_addr = [AddrType(40), AddrType(45)]
   # noc_send_write_data = [DataType(0xd040, 1), DataType(0xd545, 1)]
   send_to_noc_store_pkt = [
-             #   src  dst src_x src_y dst_x dst_y tile_id opq vc addr data    predicate payload ctrl_action
-      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0, 40,  0xd040, 1,        0,      CMD_STORE_REQUEST),
-      NocPktType(0,   0,  0,    0,    0,    0,    0,      0,  0, 45,  0xd545, 1,        0,      CMD_STORE_REQUEST),
+             #   src  dst src_x src_y dst_x dst_y dst_tile_id opq vc addr data    predicate payload ctrl_action
+      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 40,  0xd040, 1,        0,      CMD_STORE_REQUEST),
+      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 45,  0xd545, 1,        0,      CMD_STORE_REQUEST),
   ]
 
   th = TestHarness(NocPktType, DataType, AddrType, data_mem_size_global,

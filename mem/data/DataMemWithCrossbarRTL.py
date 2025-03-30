@@ -240,7 +240,7 @@ class DataMemWithCrossbarRTL(Component):
                        0, # src_y
                        0, # dst_x
                        0, # dst_y
-                       0, # tile_id
+                       0, # dst_tile_id
                        0, # opaque
                        0, # vc_id
                        s.read_crossbar.send[num_banks].msg.addr, # addr
@@ -292,7 +292,7 @@ class DataMemWithCrossbarRTL(Component):
                        0, # src_y
                        0, # dst_x
                        0, # dst_y
-                       0, # tile_id
+                       0, # dst_tile_id
                        0, # opaque
                        0, # vc_id
                        s.write_crossbar.send[num_banks].msg.addr, # addr

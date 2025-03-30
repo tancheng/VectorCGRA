@@ -220,10 +220,10 @@ class ControllerRTL(Component):
           s.recv_from_cpu_pkt_queue.send.val
       s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
-          NocPktType(s.recv_from_cpu_pkt_queue.send.msg.cgra_id, # src
-                     0, # dst 
-                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.cgra_id], # src_x
-                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.cgra_id], # src_y
+          NocPktType(0, # src
+                     s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
+                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_x
+                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_y
                      0, # dst_x
                      0, # dst_y
                      s.recv_from_cpu_pkt_queue.send.msg.dst, # tile id 
@@ -292,9 +292,9 @@ class ControllerRTL(Component):
         elif (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONST) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
-          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # cgra_id
+          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
                                                     0,  # src
-                                                    s.recv_from_inter_cgra_noc.msg.tile_id,  # dst
+                                                    s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
                                                     s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
                                                     s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
                                                     s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
@@ -332,7 +332,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.src_y,
                      s.idTo2d_x_lut[addr_dst_id],
                      s.idTo2d_y_lut[addr_dst_id],
-                     s.crossbar.send[0].msg.tile_id, 
+                     s.crossbar.send[0].msg.dst_tile_id,
                      s.crossbar.send[0].msg.opaque,
                      s.crossbar.send[0].msg.vc_id,
                      s.crossbar.send[0].msg.addr,

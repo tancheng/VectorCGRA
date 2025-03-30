@@ -116,8 +116,8 @@ class CtrlMemDynamicRTL(Component):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if (s.sent_complete != 1) & (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
-            #                             cgra_id, src,       dst, opaque, vc, ctrl_action
-            s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            #                                           dst_cgra_id, src,       dst, opaque, vc, ctrl_action
+            s.send_pkt_to_controller.msg @= CtrlPktType(0,             0, num_tiles,      0,  0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1
