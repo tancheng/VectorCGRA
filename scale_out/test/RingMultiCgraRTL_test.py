@@ -8,20 +8,20 @@ Author : Cheng Tan
   Date : Dec 23, 2024
 """
 
-from pymtl3 import *
+from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+
 from ..RingMultiCgraRTL import RingMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
-from ...fu.single.ShifterRTL import ShifterRTL
+from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
-from ...lib.cmd_type import *
-from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -33,12 +33,13 @@ class TestHarness(Component):
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, controller2addr_map):
+                src_ctrl_pkt, ctrl_steps, controller2addr_map, complete_signal_sink_out):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns, height,
@@ -49,9 +50,10 @@ class TestHarness(Component):
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
+    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
-    return s.src_ctrl_pkt.done()
+    return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -102,7 +104,7 @@ def test_homo_2x2(cmdline_opts):
   predicate_nbits = 1
 
   CtrlPktType = \
-        mk_intra_cgra_pkt(width * height,
+        mk_intra_cgra_pkt(num_tiles,
                         cgra_id_nbits,
                         num_commands,
                         ctrl_mem_size,
@@ -126,7 +128,7 @@ def test_homo_2x2(cmdline_opts):
 
   NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
                                      nrows = 1,
-                                     ntiles = width * height,
+                                     ntiles = num_tiles,
                                      addr_nbits = data_addr_nbits,
                                      data_nbits = 32,
                                      predicate_nbits = 1,
@@ -200,6 +202,9 @@ def test_homo_2x2(cmdline_opts):
                         FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)])
       ] for i in range(num_tiles)]
 
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
+  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -210,7 +215,7 @@ def test_homo_2x2(cmdline_opts):
                    width, height, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
-                   ctrl_mem_size, controller2addr_map)
+                   ctrl_mem_size, controller2addr_map, complete_signal_sink_out)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

@@ -52,8 +52,14 @@ class ConstQueueDynamicRTL(Component):
 
     @update
     def load_const():
+      # Initializes signals.
+      s.reg_file.waddr[0] @= AddrType()
+      s.reg_file.wdata[0] @= DataType()
+      s.reg_file.wen[0] @= 0
+
       not_full = s.wr_cur < const_mem_size
       s.recv_const.rdy @= not_full
+
       if s.recv_const.val & not_full:
         s.reg_file.waddr[0] @= trunc(s.wr_cur, AddrType)
         s.reg_file.wdata[0] @= s.recv_const.msg
@@ -63,9 +69,12 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def update_wr_cur():
       not_full = (s.wr_cur < const_mem_size)
+      if s.reset:
+        s.wr_cur <<= 0
       # Checks if there's a valid const (from producer) to be written.
-      if s.recv_const.val & not_full:
-        s.wr_cur <<= s.wr_cur + 1
+      else:
+        if s.recv_const.val & not_full:
+          s.wr_cur <<= s.wr_cur + 1
 
 
     @update
@@ -79,13 +88,16 @@ class ConstQueueDynamicRTL(Component):
 
     @update_ff
     def update_rd_cur():
+      if s.reset:
+        s.rd_cur <<= 0
       # Checks whether the "reader" successfully read the data at rd_cur,
       # and proceed rd_cur accordingly.
-      if s.send_const.rdy:
-        if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
-          s.rd_cur <<= s.rd_cur + 1
-        else:
-          s.rd_cur <<= 0
+      else:
+        if s.send_const.rdy:
+          if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
+            s.rd_cur <<= s.rd_cur + 1
+          else:
+            s.rd_cur <<= 0
 
 
   def line_trace(s, verbosity = 0):

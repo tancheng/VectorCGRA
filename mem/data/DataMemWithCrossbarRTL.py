@@ -315,18 +315,26 @@ class DataMemWithCrossbarRTL(Component):
       # Preloads data.
       @update_ff
       def update_init_index_increment():
-        if (s.init_mem_done == b1(0)) & (s.init_mem_addr < data_mem_size_per_bank - 1):
-          s.init_mem_addr <<= s.init_mem_addr + PerBankAddrType(1)
-        else:
-          s.init_mem_done <<= b1(1)
+        if s.reset:
+          s.init_mem_done <<= 0
           s.init_mem_addr <<= PerBankAddrType(0)
+        else:
+          if (s.init_mem_done == 0) & (s.init_mem_addr < data_mem_size_per_bank - 1):
+            s.init_mem_addr <<= s.init_mem_addr + PerBankAddrType(1)
+          else:
+            s.init_mem_done <<= 1
+            s.init_mem_addr <<= PerBankAddrType(0)
 
     else:
       @update_ff
       def update_init_index_once():
-          if s.init_mem_done == b1(0):
-            s.init_mem_done <<= b1(1)
+          if s.reset:
+            s.init_mem_done <<= 0
             s.init_mem_addr <<= PerBankAddrType(0)
+          else:
+            if s.init_mem_done == 0:
+              s.init_mem_done <<= 1
+              s.init_mem_addr <<= PerBankAddrType(0)
 
     # Indicates whether the remote (towards others via NoC) load is pending on response.
     @update_ff

@@ -7,17 +7,14 @@ Test cases for control memory with command-based action handling.
 Author : Cheng Tan
   Date : Dec 21, 2024
 """
-
-from pymtl3 import *
 from ..CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ....fu.single.AdderRTL import AdderRTL
-from ....lib.basic.en_rdy.test_sinks import TestSinkRTL
-from ....lib.basic.en_rdy.test_srcs import TestSrcRTL
-from ....lib.basic.val_rdy.SourceRTL import SourceRTL as ValRdyTestSrcRTL
-from ....lib.basic.val_rdy.SinkRTL import SinkRTL as ValRdyTestSinkRTL
-from ....lib.messages import *
+from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.cmd_type import *
+from ....lib.messages import *
 from ....lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -29,32 +26,35 @@ class TestHarness(Component):
                 CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, src0_msgs, src1_msgs, ctrl_pkts,
-                sink_msgs):
+                sink_msgs, num_terminals, complete_signal_sink_out):
 
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
-    s.src_data0 = ValRdyTestSrcRTL(DataType, src0_msgs)
-    s.src_data1 = ValRdyTestSrcRTL(DataType, src1_msgs)
+    s.src_data0 = TestSrcRTL(DataType, src0_msgs)
+    s.src_data1 = TestSrcRTL(DataType, src1_msgs)
     # s.src_waddr = TestSrcRTL(AddrType, ctrl_waddr )
     # s.src_wdata = TestSrcRTL(ConfigType, ctrl_msgs  )
-    s.src_pkt = ValRdyTestSrcRTL(CtrlPktType, ctrl_pkts)
-    s.sink_out = ValRdyTestSinkRTL(DataType, sink_msgs)
+    s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
+    s.sink_out = TestSinkRTL(DataType, sink_msgs)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.alu = AdderRTL(DataType, PredicateType, CtrlSignalType, 2, 2,
                      data_mem_size)
     s.ctrl_mem = MemUnit(CtrlPktType, CtrlSignalType, ctrl_mem_size,
                          num_fu_inports, num_fu_outports, num_tile_inports,
-                         num_tile_outports, len(ctrl_pkts), len(ctrl_pkts))
+                         num_tile_outports, num_terminals,
+                         len(ctrl_pkts), len(ctrl_pkts))
 
     s.alu.recv_opt //= s.ctrl_mem.send_ctrl
-    s.src_pkt.send //= s.ctrl_mem.recv_pkt
+    s.src_pkt.send //= s.ctrl_mem.recv_pkt_from_controller
+    s.complete_signal_sink_out.recv //= s.ctrl_mem.send_pkt_to_controller
     s.src_data0.send //= s.alu.recv_in[0]
     s.src_data1.send //= s.alu.recv_in[1]
     s.alu.send_out[0] //= s.sink_out.recv
 
   def done(s):
     return s.src_data0.done() and s.src_data1.done() and \
-        s.src_pkt.done() and s.sink_out.done()
+        s.src_pkt.done() and s.sink_out.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
     return s.alu.line_trace() + " || " +s.ctrl_mem.line_trace()
@@ -135,12 +135,15 @@ def test_Ctrl():
                   CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       0,             pick_register),
                   CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 2,        OPT_SUB,       0,             pick_register),
                   CtrlPktType(0,      0,  1,  0,     0,    CMD_CONFIG, 3,        OPT_ADD,       0,             pick_register),
-                  CtrlPktType(0,      0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       0,             pick_register)]
+                  CtrlPktType(0,      0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_NAH,       0,             pick_register)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
+  #                                       cgra_id, src,            dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0,  num_terminals,      0,  0, ctrl_action = CMD_COMPLETE)]
+
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports, src_data0, src_data1,
-                   src_ctrl_pkt, sink_out)
+                   src_ctrl_pkt, sink_out, num_terminals, complete_signal_sink_out)
   run_sim(th)
 
