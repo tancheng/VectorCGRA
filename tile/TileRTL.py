@@ -110,6 +110,15 @@ class TileRTL(Component):
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
 
+    # Prologue port.
+    s.element.prologue_count_inport //= s.ctrl_mem.prologue_count_outport_fu
+    for i in range(num_routing_xbar_inports):
+      s.routing_crossbar.prologue_count_inport[i] //= \
+          s.ctrl_mem.prologue_count_outport_routing_crossbar[i]
+    for i in range(num_fu_xbar_inports):
+      s.fu_crossbar.prologue_count_inport[i] //= \
+          s.ctrl_mem.prologue_count_outport_fu_crossbar[i]
+
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
         s.to_mem_raddr //= s.element.to_mem_raddr[i]

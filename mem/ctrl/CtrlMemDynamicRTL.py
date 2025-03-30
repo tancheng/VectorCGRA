@@ -17,6 +17,7 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import NormalQueueRTL
 from ...lib.cmd_type import *
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 class CtrlMemDynamicRTL(Component):
 
@@ -35,6 +36,9 @@ class CtrlMemDynamicRTL(Component):
     CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
     PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     TimeType = mk_bits(clog2(total_ctrl_steps + 1))
+    PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
+    TileInPortType = mk_bits(clog2(num_tile_inports))
+    FuOutPortType = mk_bits(clog2(num_fu_outports))
     num_routing_outports = num_tile_outports + num_fu_inports
 
     # Interface
@@ -46,6 +50,19 @@ class CtrlMemDynamicRTL(Component):
     s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
+
+    s.prologue_count_reg_fu = [Wire(PrologueCountType) for _ in range(ctrl_mem_size)]
+    s.prologue_count_outport_fu = OutPort(PrologueCountType)
+    s.prologue_count_outport_fu_crossbar = \
+        [OutPort(PrologueCountType) for _ in range(num_fu_outports)]
+    s.prologue_count_outport_routing_crossbar = \
+        [OutPort(PrologueCountType) for _ in range(num_tile_inports)]
+
+    s.prologue_count_reg_fu_crossbar = \
+        [Wire(PrologueCountType) for _ in range(num_fu_outports)]
+    s.prologue_count_reg_routing_crossbar = \
+        [Wire(PrologueCountType) for _ in range(num_tile_inports)]
+
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -91,6 +108,9 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.ctrl_is_last_ctrl
 
       if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE):
@@ -118,8 +138,6 @@ class CtrlMemDynamicRTL(Component):
     @update_ff
     def update_whether_we_can_iterate_ctrl():
       if s.recv_pkt_queue.send.val:
-        # if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
-        #    (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
         if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
           s.start_iterate_ctrl <<= 1
         elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE:
@@ -130,7 +148,15 @@ class CtrlMemDynamicRTL(Component):
       #   s.start_iterate_ctrl <<= 1
 
     @update_ff
-    def update_raddr():
+    def update_raddr_and_fu_prologue():
+      if s.reset:
+        for i in range(ctrl_mem_size):
+          s.prologue_count_reg_fu[i] <<= 0
+      else:
+        if s.recv_pkt_queue.send.val & \
+           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU):
+          s.prologue_count_reg_fu[s.recv_pkt_queue.send.msg.ctrl_addr] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+
       if s.start_iterate_ctrl == b1(1):
         if (TimeType(total_ctrl_steps) == 0) | \
            (s.times < TimeType(total_ctrl_steps)):
@@ -141,6 +167,36 @@ class CtrlMemDynamicRTL(Component):
             s.reg_file.raddr[0] <<= CtrlAddrType(0)
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
+          if s.prologue_count_reg_fu[s.reg_file.raddr[0]] > 0:
+            s.prologue_count_reg_fu[s.reg_file.raddr[0]] <<= s.prologue_count_reg_fu[s.reg_file.raddr[0]] - 1
+
+    @update
+    def update_prologue_outport():
+      s.prologue_count_outport_fu @= s.prologue_count_reg_fu[s.reg_file.raddr[0]]
+      for i in range(num_tile_inports):
+        s.prologue_count_outport_routing_crossbar[i] @= \
+            s.prologue_count_reg_routing_crossbar[i]
+      for i in range(num_fu_outports):
+        s.prologue_count_outport_fu_crossbar[i] @= \
+            s.prologue_count_reg_fu_crossbar[i]
+
+    @update_ff
+    def update_prologue_reg():
+      if s.reset:
+        for i in range(num_tile_inports):
+          s.prologue_count_reg_routing_crossbar[i] <<= 0
+        for i in range(num_fu_outports):
+          s.prologue_count_reg_fu_crossbar[i] <<= 0
+      else:
+        if s.recv_pkt_queue.send.val & \
+           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR):
+          temp_routing_crossbar_in = s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[0]
+          s.prologue_count_reg_routing_crossbar[trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+        elif s.recv_pkt_queue.send.val & \
+           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
+          temp_fu_crossbar_in = s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[0]
+          s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])

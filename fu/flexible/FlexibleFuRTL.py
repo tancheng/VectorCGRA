@@ -16,6 +16,7 @@ from ...fu.single.NahRTL  import NahRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 
 class FlexibleFuRTL(Component):
@@ -30,6 +31,7 @@ class FlexibleFuRTL(Component):
     s.fu_list_size = len(FuList)
     CountType = mk_bits(clog2(num_entries + 1))
     AddrType = mk_bits(clog2(data_mem_size))
+    PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -42,6 +44,8 @@ class FlexibleFuRTL(Component):
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
     s.to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.to_mem_wdata = [SendIfcRTL(DataType) for _ in range(s.fu_list_size)]
+
+    s.prologue_count_inport = InPort(PrologueCountType)
 
     # Components
     s.fu = [FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
@@ -98,7 +102,7 @@ class FlexibleFuRTL(Component):
       # Operation (especially mem access) won't perform more than once, because once the
       # operation is performance (i.e., the recv_opt.rdy would be set), the `element_done`
       # register would be set and be respected.
-      s.recv_opt.rdy @= reduce_or(s.fu_recv_opt_rdy_vector)
+      s.recv_opt.rdy @= reduce_or(s.fu_recv_opt_rdy_vector) | (s.prologue_count_inport != 0)
 
       for j in range(num_inports):
         s.recv_in[j].rdy @= b1(0)
