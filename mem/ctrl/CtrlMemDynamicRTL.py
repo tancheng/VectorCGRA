@@ -149,7 +149,7 @@ class CtrlMemDynamicRTL(Component):
     @update_ff
     def update_whether_we_can_iterate_ctrl():
       if s.reset:
-        s.start_iterate_ctrl << = 0
+        s.start_iterate_ctrl <<= 0
       else:
         if s.recv_pkt_queue.send.val:
           if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
