@@ -6,7 +6,7 @@ Author : Cheng Tan
   Date : Dec 24, 2022
 """
 
-# Constants for routing directions
+# Constants for routing directions.
 
 PORT_NORTH     = 0
 PORT_SOUTH     = 1
@@ -25,3 +25,8 @@ PORT_CONST = 2
 LINK_NO_MEM   = 0
 LINK_FROM_MEM = 1
 LINK_TO_MEM   = 2
+
+# Constant for prologue max count.
+
+PROLOGUE_MAX_COUNT = 7
+

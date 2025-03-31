@@ -166,7 +166,10 @@ def test_CGRA_systolic(cmdline_opts):
   num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
   data_nbits = 32
-  ctrl_steps = 2
+  # 2 is enough for [2, 2] x [2, 2] matmul, however, we enable the
+  # prologue pre-configuration in this test, which requires the
+  # total ctrl count more than 2.
+  ctrl_steps = 3
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -284,13 +287,23 @@ def test_CGRA_systolic(cmdline_opts):
        CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
        CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
 
-                 # cgra_id src dst vc_id opq cmd_type    addr operation     predicate
-       CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
+       # Pre-configure the prologue count for both operation and routing.
+       CtrlPktType(0,      0,  0,  0,    0,
+                   ctrl_action = CMD_CONFIG_PROLOGUE_FU,
+                   ctrl_addr = 0,
+                   data = 1),
+       CtrlPktType(0,      0,  0,  0,    0,
+                   ctrl_action = CMD_CONFIG_PROLOGUE_FU_CROSSBAR,
+                   # ctrl_fu_xbar_outport = [0,0,0,0,0,0,0,0], by default zeros
+                   data = 1),
+
+                 # cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
+       CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
                     FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,        OPT_NAH, b1(0),    pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
