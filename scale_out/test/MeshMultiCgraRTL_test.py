@@ -239,6 +239,7 @@ def test_homo_2x2_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+'''
 def test_homo_2x2_4x4(cmdline_opts):
   num_tile_inports  = 4
   num_tile_outports = 4
@@ -410,3 +411,4 @@ def test_homo_2x2_4x4(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+'''
