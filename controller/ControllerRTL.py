@@ -220,7 +220,7 @@ class ControllerRTL(Component):
           s.recv_from_cpu_pkt_queue.send.val
       s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
-          NocPktType(0, # src
+          NocPktType(s.controller_id, # src
                      s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
                      s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_x
                      s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_y
