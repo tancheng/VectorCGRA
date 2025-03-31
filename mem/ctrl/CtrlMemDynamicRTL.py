@@ -50,6 +50,8 @@ class CtrlMemDynamicRTL(Component):
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(CtrlPktType)
 
+    s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
+
     # Component
     s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
     s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)

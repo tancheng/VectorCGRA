@@ -24,6 +24,7 @@ from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.cmd_type import *
+from ..lib.util.common import *
 from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
 from ..mem.register_cluster.RegisterClusterRTL import RegisterClusterRTL
@@ -73,16 +74,18 @@ class TileRTL(Component):
     # Components.
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
-                              data_mem_size, FuList)
+                              data_mem_size, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, data_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
-                                     num_routing_xbar_outports)
+                                     num_routing_xbar_outports,
+                                     num_tiles)
     s.fu_crossbar = CrossbarRTL(DataType, PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
-                                num_fu_xbar_outports)
+                                num_fu_xbar_outports,
+                                num_tiles)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
@@ -110,6 +113,18 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
+
+    s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
+
+    # Propagates tile id.
+    s.element.tile_id //= s.tile_id
+    s.ctrl_mem.tile_id //= s.tile_id
+    s.fu_crossbar.tile_id //= s.tile_id
+    s.routing_crossbar.tile_id //= s.tile_id
+
+    # Assigns crossbar id.
+    s.routing_crossbar.crossbar_id //= PORT_ROUTING_CROSSBAR
+    s.fu_crossbar.crossbar_id //= PORT_FU_CROSSBAR
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
@@ -193,7 +208,12 @@ class TileRTL(Component):
         s.const_mem.recv_const.val @= 0
         s.recv_from_controller_pkt.rdy @= 0
 
-        if s.recv_from_controller_pkt.val & ((s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_controller_pkt.msg.ctrl_action == CMD_LAUNCH)):
+        if s.recv_from_controller_pkt.val & \
+           ((s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy

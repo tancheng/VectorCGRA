@@ -36,7 +36,7 @@ class TestHarness(Component):
                   for i in range(num_outports)]
 
     s.dut = CrossbarUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports)
+                         num_outports, 1)
 
     for i in range(num_inports):
       s.src_data[i].send //= s.dut.recv_data[i]

@@ -22,7 +22,8 @@ from ...lib.util.common import *
 class FlexibleFuRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, FuList):
+                num_inports, num_outports, data_mem_size,
+                num_tiles, FuList):
 
     # Constant
     num_entries = 2
@@ -46,6 +47,7 @@ class FlexibleFuRTL(Component):
     s.to_mem_wdata = [SendIfcRTL(DataType) for _ in range(s.fu_list_size)]
 
     s.prologue_count_inport = InPort(PrologueCountType)
+    s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components
     s.fu = [FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,

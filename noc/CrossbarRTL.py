@@ -18,7 +18,7 @@ from ..lib.util.common import *
 class CrossbarRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
-                num_outports = 5):
+                num_outports = 5, num_tiles = 4):
 
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2
@@ -41,10 +41,13 @@ class CrossbarRTL(Component):
     s.recv_required_vector = Wire(num_inports)
     s.send_required_vector = Wire(num_outports)
 
+    s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
+    s.crossbar_id = InPort(b1)
+
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
-    s.recv_prologue_vector = Wire(num_outports)
-    s.recv_prologue_or_valid_vector = Wire(num_outports)
+    s.prologue_allowing_vector = Wire(num_outports)
+    s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [Wire(PrologueCountType) for _ in range(num_inports)]
     s.prologue_count_inport = [InPort(PrologueCountType) for _ in range(num_inports)]
 
@@ -98,7 +101,8 @@ class CrossbarRTL(Component):
         s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
         # s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
-                          reduce_and(s.recv_prologue_or_valid_vector)
+                          reduce_and(s.recv_valid_or_prologue_allowing_vector)
+        print("[cheng] tile[", s.tile_id, "], crossbar_id[", s.crossbar_id, "], within xbar (though not sure which one), s.recv_opt.rdy: ", s.recv_opt.rdy, "; reduce_and(s.send_rdy_vector): ", reduce_and(s.send_rdy_vector), "; reduce_and(s.recv_valid_or_prologue_allowing_vector): ", reduce_and(s.recv_valid_or_prologue_allowing_vector), "; s.prologue_allowing_vector: ", s.prologue_allowing_vector, "; s.prologue_allowing_vector[0]: ", s.prologue_allowing_vector[0])
 
     @update_ff
     def update_prologue_counter():
@@ -109,25 +113,33 @@ class CrossbarRTL(Component):
         for i in range(num_outports):
           if (s.in_dir[i] > 0) & \
              (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport[s.in_dir_local[i]]):
+            print("[cheng] increasing fu_xbar_prologue, s.in_dir_local[", i, "]: ", s.in_dir_local[i], "; s.prologue_count_inport[s.in_dir_local[i]]: ", s.prologue_count_inport[s.in_dir_local[i]])
             s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
 
+      for i in range(num_outports):
+        if (s.in_dir[i] > 0) & \
+           (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport[s.in_dir_local[i]]):
+          print("[cheng] s.in_dir_local[", i, "]: ", s.in_dir_local[i], "; s.prologue_count_inport[s.in_dir_local[i]]: ", s.prologue_count_inport[s.in_dir_local[i]])
+
+
     @update
-    def update_prologue_vector():
-      s.recv_prologue_vector @= 0
+    def update_prologue_allowing_vector():
+      s.prologue_allowing_vector @= 0
       for i in range(num_outports):
         if s.in_dir[i] > 0:
           # Records whether the prologue steps have already been satisfied.
-          s.recv_prologue_vector[i] @= \
-              (s.prologue_counter[s.in_dir_local[i]] >= s.prologue_count_inport[s.in_dir_local[i]])
+          s.prologue_allowing_vector[i] @= \
+              (s.prologue_counter[s.in_dir_local[i]] < \
+               s.prologue_count_inport[s.in_dir_local[i]])
         else:
-          s.recv_prologue_vector[i] @= 1
+          s.prologue_allowing_vector[i] @= 1
 
     @update
     def update_prologue_or_valid_vector():
-      s.recv_prologue_or_valid_vector @= 0
+      s.recv_valid_or_prologue_allowing_vector @= 0
       for i in range(num_outports):
-        s.recv_prologue_or_valid_vector[i] @= \
-            s.recv_valid_vector[i] | s.recv_prologue_vector[i]
+        s.recv_valid_or_prologue_allowing_vector[i] @= \
+            s.recv_valid_vector[i] | s.prologue_allowing_vector[i]
 
     @update
     def update_in_dir_vector():
@@ -137,7 +149,7 @@ class CrossbarRTL(Component):
         s.in_dir_local[i] @= 0
 
       for i in range(num_outports):
-        s.in_dir[i]  @= s.crossbar_outport[i]
+        s.in_dir[i] @= s.crossbar_outport[i]
         if s.in_dir[i] > 0:
           s.in_dir_local[i] @= trunc(s.in_dir[i] - 1, NumInportType)
 

@@ -29,3 +29,4 @@ LINK_TO_MEM   = 2
 # Constant for prologue max count.
 
 PROLOGUE_MAX_COUNT = 7
+
