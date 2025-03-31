@@ -289,7 +289,7 @@ class ControllerRTL(Component):
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
             s.send_to_tile_load_response_data_queue.recv.val @= 1
 
-        elif (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONST) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LAUNCH):
+        elif (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONFIG) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONST) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LAUNCH) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT) | (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
           s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # cgra_id
