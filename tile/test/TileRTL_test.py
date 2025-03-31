@@ -64,6 +64,9 @@ class TestHarness(Component):
                 num_registers_per_reg_bank,
                 FunctionUnit, FuList)
 
+    # Connects tile id.
+    s.dut.tile_id //= 0
+
     connect(s.src_ctrl_pkt.send, s.dut.recv_from_controller_pkt)
     s.complete_signal_sink_out.recv //= s.dut.send_to_controller_pkt
 

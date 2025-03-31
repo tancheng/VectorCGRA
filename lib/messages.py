@@ -597,7 +597,8 @@ def mk_intra_cgra_pkt(ntiles = 4,
              f"{ctrl_tile_outports}_{ctrl_registers_per_reg_bank}"
 
   def str_func(s):
-    out_str = '(ctrl_operation)' + str(s.ctrl_operation)
+    out_str = '(ctrl_action)' + str(s.ctrl_action)
+    out_str += '(ctrl_operation)' + str(s.ctrl_operation)
     out_str += '|(ctrl_fu_in)'
     for i in range(ctrl_fu_inports):
       if i != 0:
