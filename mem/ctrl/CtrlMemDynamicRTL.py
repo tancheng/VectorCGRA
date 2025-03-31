@@ -33,9 +33,9 @@ class CtrlMemDynamicRTL(Component):
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
     # Constant
-    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
-    PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
-    TimeType = mk_bits(clog2(total_ctrl_steps + 1))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    PCType = mk_bits( clog2(ctrl_mem_size + 1) )
+    TimeType = mk_bits(8)
     num_routing_outports = num_tile_outports + num_fu_inports
 
     # Interface
@@ -52,6 +52,8 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
+    s.ctrl_count_per_iter_val = Wire(PCType)
+    s.total_ctrl_steps_val = Wire(TimeType)
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -76,7 +78,7 @@ class CtrlMemDynamicRTL(Component):
       for i in range(num_tile_inports):
         s.reg_file.wdata[0].routing_predicate_in[i] @= 0
 
-      if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
+      if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) & (s.recv_pkt_queue.send.msg.addr != 21) & (s.recv_pkt_queue.send.msg.addr != 22):
         s.reg_file.wen[0] @= 1 # s.recv_pkt_queue.deq_en
         s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
         # Fills the fields of the control signal.
@@ -111,11 +113,11 @@ class CtrlMemDynamicRTL(Component):
       s.send_ctrl.val @= 0
       s.send_pkt_to_controller.val @= 0
       if s.start_iterate_ctrl == b1(1):
-        if ((total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps))) | \
+        if ((s.total_ctrl_steps_val > 0) & (s.times == TimeType(s.total_ctrl_steps_val))) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
-          if (s.sent_complete != 1) & (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
+          if (s.sent_complete != 1) & (s.total_ctrl_steps_val > 0) & (s.times == TimeType(s.total_ctrl_steps_val)):
             #                             cgra_id, src,       dst, opaque, vc, ctrl_action
             s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt_to_controller.val @= 1
@@ -151,15 +153,29 @@ class CtrlMemDynamicRTL(Component):
     @update_ff
     def update_raddr():
       if s.start_iterate_ctrl == b1(1):
-        if (TimeType(total_ctrl_steps) == 0) | \
-           (s.times < TimeType(total_ctrl_steps)):
+        if (TimeType(s.total_ctrl_steps_val) == 0) | \
+           (s.times < TimeType(s.total_ctrl_steps_val)):
           s.times <<= s.times + TimeType(1)
         # Reads the next ctrl signal only when the current one is done.
         if s.send_ctrl.rdy:
-          if s.reg_file.raddr[0] == CtrlAddrType(ctrl_count_per_iter - 1):
+          if s.reg_file.raddr[0] == CtrlAddrType(s.ctrl_count_per_iter_val - 1):
             s.reg_file.raddr[0] <<= CtrlAddrType(0)
           else:
             s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
+
+    @update_ff
+    def update_ctrl_count_per_iter():
+      if s.reset:
+        s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) & (s.recv_pkt_queue.send.msg.addr == 21):
+        s.ctrl_count_per_iter_val <<= PCType(s.recv_pkt_queue.send.msg.data)
+
+    @update_ff
+    def update_total_ctrl_steps():
+      if s.reset:
+        s.total_ctrl_steps_val <<= TimeType(total_ctrl_steps)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) & (s.recv_pkt_queue.send.msg.addr == 22):
+        s.total_ctrl_steps_val <<= TimeType(s.recv_pkt_queue.send.msg.data)
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
