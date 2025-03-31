@@ -105,6 +105,10 @@ class CgraRTL(Component):
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
+    # Assigns tile id.
+    for i in range(s.num_tiles):
+      s.tile[i].tile_id //= i
+
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
