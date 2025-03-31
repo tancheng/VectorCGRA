@@ -80,8 +80,8 @@ def test_homo_2x2_2x2(cmdline_opts):
   cgra_rows = 2
   cgra_columns = 2
   num_terminals = cgra_rows * cgra_columns
-  x_tiles = 4
-  y_tiles = 4
+  x_tiles = 2
+  y_tiles = 2
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
