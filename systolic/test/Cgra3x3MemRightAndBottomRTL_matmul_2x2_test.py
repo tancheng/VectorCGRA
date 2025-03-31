@@ -308,8 +308,8 @@ def test_CGRA_systolic(cmdline_opts):
                    ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
                    data = updated_ctrl_steps),
 
-                 # dst_cgra_id src dst vc_id opq cmd_type    addr operation     predicate
-       CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),    pick_register,
+                 # dst_cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
+       CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
