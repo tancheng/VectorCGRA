@@ -102,7 +102,6 @@ class CrossbarRTL(Component):
         # s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
-        print("[cheng] tile[", s.tile_id, "], crossbar_id[", s.crossbar_id, "], within xbar (though not sure which one), s.recv_opt.rdy: ", s.recv_opt.rdy, "; reduce_and(s.send_rdy_vector): ", reduce_and(s.send_rdy_vector), "; reduce_and(s.recv_valid_or_prologue_allowing_vector): ", reduce_and(s.recv_valid_or_prologue_allowing_vector), "; s.prologue_allowing_vector: ", s.prologue_allowing_vector, "; s.prologue_allowing_vector[0]: ", s.prologue_allowing_vector[0])
 
     @update_ff
     def update_prologue_counter():
@@ -113,14 +112,7 @@ class CrossbarRTL(Component):
         for i in range(num_outports):
           if (s.in_dir[i] > 0) & \
              (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport[s.in_dir_local[i]]):
-            print("[cheng] increasing fu_xbar_prologue, s.in_dir_local[", i, "]: ", s.in_dir_local[i], "; s.prologue_count_inport[s.in_dir_local[i]]: ", s.prologue_count_inport[s.in_dir_local[i]])
             s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
-
-      for i in range(num_outports):
-        if (s.in_dir[i] > 0) & \
-           (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport[s.in_dir_local[i]]):
-          print("[cheng] s.in_dir_local[", i, "]: ", s.in_dir_local[i], "; s.prologue_count_inport[s.in_dir_local[i]]: ", s.prologue_count_inport[s.in_dir_local[i]])
-
 
     @update
     def update_prologue_allowing_vector():
