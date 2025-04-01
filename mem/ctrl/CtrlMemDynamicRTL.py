@@ -236,14 +236,14 @@ class CtrlMemDynamicRTL(Component):
       if s.reset:
         s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
-        s.ctrl_count_per_iter_val <<= PCType(s.recv_pkt_queue.send.msg.data)
+        s.ctrl_count_per_iter_val <<= PCType(trunc(s.recv_pkt_queue.send.msg.data, PCType))
 
     @update_ff
     def update_total_ctrl_steps():
       if s.reset:
         s.total_ctrl_steps_val <<= TimeType(total_ctrl_steps)
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT):
-        s.total_ctrl_steps_val <<= TimeType(s.recv_pkt_queue.send.msg.data)
+        s.total_ctrl_steps_val <<= TimeType(trunc(s.recv_pkt_queue.send.msg.data, TimeType))
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
