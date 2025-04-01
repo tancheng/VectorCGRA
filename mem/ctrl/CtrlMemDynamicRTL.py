@@ -191,13 +191,13 @@ class CtrlMemDynamicRTL(Component):
               trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
 
         if s.start_iterate_ctrl == b1(1):
-          if (TimeType(total_ctrl_steps) == 0) | \
-             (s.times < TimeType(total_ctrl_steps)):
+          if (TimeType(s.total_ctrl_steps_val) == 0) | \
+             (s.times < TimeType(s.total_ctrl_steps_val)):
             s.times <<= s.times + TimeType(1)
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy:
-            if s.reg_file.raddr[0] == CtrlAddrType(ctrl_count_per_iter - 1):
+            if s.reg_file.raddr[0] == CtrlAddrType(trunc(s.ctrl_count_per_iter_val - 1, CtrlAddrType)):
               s.reg_file.raddr[0] <<= 0
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
