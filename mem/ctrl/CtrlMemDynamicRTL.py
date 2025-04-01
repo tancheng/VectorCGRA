@@ -19,7 +19,6 @@ from ...lib.cmd_type import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
-
 class CtrlMemDynamicRTL(Component):
 
   def construct(s, CtrlPktType, CtrlSignalType, ctrl_mem_size,
@@ -35,8 +34,8 @@ class CtrlMemDynamicRTL(Component):
 
     # Constant
     CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
-    PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
-    TimeType = mk_bits(clog2(total_ctrl_steps + 1))
+    PCType = mk_bits(clog2(ctrl_mem_size + 1))
+    TimeType = mk_bits(clog2(MAX_CTRL_COUNT))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
     TileInPortType = mk_bits(clog2(num_tile_inports))
     FuOutPortType = mk_bits(clog2(num_fu_outports))
@@ -58,6 +57,8 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
+    s.ctrl_count_per_iter_val = Wire(PCType)
+    s.total_ctrl_steps_val = Wire(TimeType)
 
     s.prologue_count_reg_fu = [Wire(PrologueCountType) for _ in range(ctrl_mem_size)]
     s.prologue_count_outport_fu = OutPort(PrologueCountType)
@@ -121,7 +122,9 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE):
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
+         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
         s.recv_pkt_queue.send.rdy @= 1
       # TODO: Extend for the other commands. Maybe another queue to
       # handle complicated actions.
@@ -133,13 +136,13 @@ class CtrlMemDynamicRTL(Component):
       s.send_ctrl.val @= 0
       s.send_pkt_to_controller.val @= 0
       if s.start_iterate_ctrl == b1(1):
-        if ((total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps))) | \
+        if ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
-          if (s.sent_complete != 1) & (total_ctrl_steps > 0) & (s.times == TimeType(total_ctrl_steps)):
-            #                                           dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-            s.send_pkt_to_controller.msg @= CtrlPktType(0,             0, num_tiles,      0,  0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+          if (s.sent_complete != 1) & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val):
+            #                             cgra_id, src,       dst, opaque, vc, ctrl_action
+            s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1
@@ -188,13 +191,13 @@ class CtrlMemDynamicRTL(Component):
               trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
 
         if s.start_iterate_ctrl == b1(1):
-          if (TimeType(total_ctrl_steps) == 0) | \
-             (s.times < TimeType(total_ctrl_steps)):
+          if (TimeType(s.total_ctrl_steps_val) == 0) | \
+             (s.times < TimeType(s.total_ctrl_steps_val)):
             s.times <<= s.times + TimeType(1)
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy:
-            if s.reg_file.raddr[0] == CtrlAddrType(ctrl_count_per_iter - 1):
+            if s.reg_file.raddr[0] == trunc(s.ctrl_count_per_iter_val - 1, CtrlAddrType):
               s.reg_file.raddr[0] <<= 0
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
@@ -228,6 +231,19 @@ class CtrlMemDynamicRTL(Component):
           temp_fu_crossbar_in = s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[0]
           s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
 
+    @update_ff
+    def update_ctrl_count_per_iter():
+      if s.reset:
+        s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
+        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_queue.send.msg.data, PCType)
+
+    @update_ff
+    def update_total_ctrl_steps():
+      if s.reset:
+        s.total_ctrl_steps_val <<= TimeType(total_ctrl_steps)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT):
+        s.total_ctrl_steps_val <<= trunc(s.recv_pkt_queue.send.msg.data, TimeType)
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])

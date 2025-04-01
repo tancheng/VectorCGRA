@@ -169,7 +169,8 @@ def test_CGRA_systolic(cmdline_opts):
   # 2 is enough for [2, 2] x [2, 2] matmul, however, we enable the
   # prologue pre-configuration in this test, which requires the
   # total ctrl count more than 2.
-  ctrl_steps = 3
+  ctrl_steps = 1
+  updated_ctrl_steps = 3
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -283,9 +284,9 @@ def test_CGRA_systolic(cmdline_opts):
       # On tile 0 ([0, 0]).
       [
        # Const
-                 # dst_cgra_id src dst vc_id opq
-       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
+                 # cgra_id src dst vc_id opq
+       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
+       CtrlPktType(0,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
 
        # Pre-configure the prologue count for both operation and routing.
        CtrlPktType(0,      0,  0,  0,    0,
@@ -297,8 +298,18 @@ def test_CGRA_systolic(cmdline_opts):
                    # ctrl_fu_xbar_outport = [0,0,0,0,0,0,0,0], by default zeros
                    data = 1),
 
-                 # dst_cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
-       CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  0,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  0,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
+
+       # cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
+       CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                    [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
@@ -314,6 +325,16 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 4),
        CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 5),
+
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  1,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  1,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
 
        CtrlPktType(0,      0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -339,6 +360,16 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0,      0,  3,  0,    0, ctrl_action = CMD_CONST, data = 2),
 
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  3,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  3,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
+
        CtrlPktType(0,      0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
@@ -354,6 +385,16 @@ def test_CGRA_systolic(cmdline_opts):
       [
        # Const
        CtrlPktType(0,      0,  4,  0,    0, ctrl_action = CMD_CONST, data = 4),
+
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  4,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  4,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
 
        CtrlPktType(0,      0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
@@ -372,6 +413,16 @@ def test_CGRA_systolic(cmdline_opts):
        CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 8),
        CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 9),
 
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  5,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  5,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
+
        CtrlPktType(0,      0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
@@ -387,6 +438,16 @@ def test_CGRA_systolic(cmdline_opts):
       [
        # Const
        CtrlPktType(0,      0,  6,  0,    0, ctrl_action = CMD_CONST, data = 6),
+
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  6,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  6,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
 
        CtrlPktType(0,      0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -404,6 +465,16 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0,      0,  7,  0,    0, ctrl_action = CMD_CONST, data = 8),
 
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  7,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  7,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
+
        CtrlPktType(0,      0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
@@ -420,6 +491,16 @@ def test_CGRA_systolic(cmdline_opts):
        # Const
        CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 12),
        CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 13),
+
+       # Pre-configure per-tile config count per iter.
+       CtrlPktType(0,      0,  8,  0,    0,
+                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+                   data = 1),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(0,      0,  8,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   data = updated_ctrl_steps),
 
        CtrlPktType(0,     0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -463,12 +544,12 @@ def test_CGRA_systolic(cmdline_opts):
        x        =
   2 4      4 8     30 44
   """
-  expected_out = [[DataType(14, 1), DataType(20, 1)],
-                  [DataType(30, 1), DataType(44, 1)]]
+  expected_out = [[DataType(14, 1), DataType(20, 1)], # 0x0e, 0x14
+                  [DataType(30, 1), DataType(44, 1)]] # 0x1e, 0x2c
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
