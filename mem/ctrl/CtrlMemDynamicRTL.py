@@ -197,7 +197,7 @@ class CtrlMemDynamicRTL(Component):
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy:
-            if s.reg_file.raddr[0] == CtrlAddrType(trunc(s.ctrl_count_per_iter_val - 1, CtrlAddrType)):
+            if s.reg_file.raddr[0] == trunc(s.ctrl_count_per_iter_val - 1, CtrlAddrType):
               s.reg_file.raddr[0] <<= 0
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
@@ -236,14 +236,14 @@ class CtrlMemDynamicRTL(Component):
       if s.reset:
         s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
-        s.ctrl_count_per_iter_val <<= PCType(trunc(s.recv_pkt_queue.send.msg.data, PCType))
+        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_queue.send.msg.data, PCType)
 
     @update_ff
     def update_total_ctrl_steps():
       if s.reset:
         s.total_ctrl_steps_val <<= TimeType(total_ctrl_steps)
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT):
-        s.total_ctrl_steps_val <<= TimeType(trunc(s.recv_pkt_queue.send.msg.data, TimeType))
+        s.total_ctrl_steps_val <<= trunc(s.recv_pkt_queue.send.msg.data, TimeType)
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
