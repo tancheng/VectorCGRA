@@ -240,10 +240,10 @@ class ControllerRTL(Component):
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
           NocPktType(s.controller_id, # src
                      s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
-                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_x
-                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_y
-                     0, # dst_x
-                     0, # dst_y
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
+                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
+                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
                      s.recv_from_cpu_pkt_queue.send.msg.dst, # tile id 
                      0, # opaque
                      0, # vc_id
