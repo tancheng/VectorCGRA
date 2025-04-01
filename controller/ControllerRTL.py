@@ -153,12 +153,12 @@ class ControllerRTL(Component):
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
                      0, # ctrl_routing_predicate_in
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0)
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
 
 
@@ -187,12 +187,12 @@ class ControllerRTL(Component):
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
                      0, # ctrl_routing_predicate_in
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0)
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
 
 
@@ -224,12 +224,12 @@ class ControllerRTL(Component):
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
                      0, # ctrl_routing_predicate_in
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0)
+                     0,  # ctrl_vector_factor_power
+                     0,  # ctrl_is_last_ctrl
+                     0,  # ctrl_write_reg_from
+                     0,  # ctrl_write_reg_idx
+                     0,  # ctrl_read_reg_from
+                     0)  # ctrl_read_reg_idx
 
 
 

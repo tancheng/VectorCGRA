@@ -158,8 +158,8 @@ def test_homo_2x2_2x2(cmdline_opts):
                                      ctrl_tile_outports = num_tile_outports)
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src, dst,       opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,      1,  ctrl_action = CMD_COMPLETE)]
 
   '''
   Creates test performing load -> inc -> store. Specifically,

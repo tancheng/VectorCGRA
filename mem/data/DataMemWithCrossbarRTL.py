@@ -255,12 +255,12 @@ class DataMemWithCrossbarRTL(Component):
                        0, # ctrl_routing_xbar_outport
                        0, # ctrl_fu_xbar_outport
                        0, # ctrl_routing_predicate_in
-                       0,
-                       0,
-                       0,
-                       0,
-                       0,
-                       0)
+                       0, # ctrl_vector_factor_power
+                       0, # ctrl_is_last_ctrl
+                       0, # ctrl_write_reg_from
+                       0, # ctrl_write_reg_idx
+                       0, # ctrl_read_reg_from
+                       0) # ctrl_read_reg_idx
 
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks].val & \
@@ -313,12 +313,12 @@ class DataMemWithCrossbarRTL(Component):
                        0, # ctrl_routing_xbar_outport
                        0, # ctrl_fu_xbar_outport
                        0, # ctrl_routing_predicate_in
-                       0,
-                       0,
-                       0,
-                       0,
-                       0,
-                       0)
+                       0, # ctrl_vector_factor_power
+                       0, # ctrl_is_last_ctrl
+                       0, # ctrl_write_reg_from
+                       0, # ctrl_write_reg_idx
+                       0, # ctrl_read_reg_from
+                       0) # ctrl_read_reg_idx
 
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks].val # & s.send_to_noc_store_pkt.rdy
         s.write_crossbar.send[num_banks].rdy @= s.send_to_noc_store_pkt.rdy
