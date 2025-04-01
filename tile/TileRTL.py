@@ -213,6 +213,8 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU) | \
             (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
             (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
+            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.ctrl_action == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
