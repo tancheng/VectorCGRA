@@ -234,7 +234,7 @@ def test_homo_2x2_2x2(cmdline_opts):
 
                  # cgra_id src dst vc_id opq cmd_type    addr operation predicate
        CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST,  b1(0),
-                   [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                   [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
@@ -245,11 +245,11 @@ def test_homo_2x2_2x2(cmdline_opts):
                   ),
 
        CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
-                   pickRegister,
+                   [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                     FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                    ctrl_read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
                    ctrl_read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]
@@ -263,7 +263,7 @@ def test_homo_2x2_2x2(cmdline_opts):
 
                  # cgra_id src dst vc_id opq cmd_type    addr operation predicate
        CtrlPktType(0,      0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST,  b1(0),
-                   pickRegister,
+                   [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                     # TODO: make below as TileInType(5) to double check.
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
