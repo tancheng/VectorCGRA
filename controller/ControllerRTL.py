@@ -152,7 +152,13 @@ class ControllerRTL(Component):
                      0, # ctrl_fu_in
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
-                     0) # ctrl_routing_predicate_in
+                     0, # ctrl_routing_predicate_in
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
 
 
@@ -180,7 +186,13 @@ class ControllerRTL(Component):
                      0, # ctrl_fu_in
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
-                     0) # ctrl_routing_predicate_in
+                     0, # ctrl_routing_predicate_in
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
 
 
@@ -211,7 +223,13 @@ class ControllerRTL(Component):
                      0, # ctrl_fu_in
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
-                     0) # ctrl_routing_predicate_in
+                     0, # ctrl_routing_predicate_in
+                     0,  # ctrl_vector_factor_power
+                     0,  # ctrl_is_last_ctrl
+                     0,  # ctrl_write_reg_from
+                     0,  # ctrl_write_reg_idx
+                     0,  # ctrl_read_reg_from
+                     0)  # ctrl_read_reg_idx
 
 
 
@@ -220,12 +238,12 @@ class ControllerRTL(Component):
           s.recv_from_cpu_pkt_queue.send.val
       s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
-          NocPktType(s.recv_from_cpu_pkt_queue.send.msg.cgra_id, # src
-                     0, # dst 
-                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.cgra_id], # src_x
-                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.cgra_id], # src_y
-                     0, # dst_x
-                     0, # dst_y
+          NocPktType(s.controller_id, # src
+                     s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
+                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
+                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
                      s.recv_from_cpu_pkt_queue.send.msg.dst, # tile id 
                      0, # opaque
                      0, # vc_id
@@ -240,7 +258,13 @@ class ControllerRTL(Component):
                      s.recv_from_cpu_pkt_queue.send.msg.ctrl_fu_in, # ctrl_fu_in
                      s.recv_from_cpu_pkt_queue.send.msg.ctrl_routing_xbar_outport, # ctrl_routing_xbar_outport
                      s.recv_from_cpu_pkt_queue.send.msg.ctrl_fu_xbar_outport, # ctrl_fu_xbar_outport
-                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_routing_predicate_in) # ctrl_routing_predicate_in
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_routing_predicate_in, # ctrl_routing_predicate_in
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_vector_factor_power,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_is_last_ctrl,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_write_reg_from,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_write_reg_idx,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_read_reg_from,
+                     s.recv_from_cpu_pkt_queue.send.msg.ctrl_read_reg_idx)
         
       # TODO: For the other cmd types.
 
@@ -299,9 +323,9 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
-          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # cgra_id
+          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
                                                     0,  # src
-                                                    s.recv_from_inter_cgra_noc.msg.tile_id,  # dst
+                                                    s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
                                                     s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
                                                     s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
                                                     s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
@@ -315,12 +339,12 @@ class ControllerRTL(Component):
                                                     s.recv_from_inter_cgra_noc.msg.addr,  # addr
                                                     s.recv_from_inter_cgra_noc.msg.data,  # data
                                                     s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
-                                                    0,  # ctrl_vector_factor_power
-                                                    0,  # ctrl_is_last_ctrl
-                                                    0,  # ctrl_write_reg_from
-                                                    0,  # ctrl_write_reg_idx
-                                                    0,  # ctrl_read_reg_from
-                                                    0)  # ctrl_read_reg_idx
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
+                                                    s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
 
         # else:
         #   # TODO: Handle other cmd types.
@@ -339,7 +363,7 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.src_y,
                      s.idTo2d_x_lut[addr_dst_id],
                      s.idTo2d_y_lut[addr_dst_id],
-                     s.crossbar.send[0].msg.tile_id, 
+                     s.crossbar.send[0].msg.dst_tile_id,
                      s.crossbar.send[0].msg.opaque,
                      s.crossbar.send[0].msg.vc_id,
                      s.crossbar.send[0].msg.addr,
@@ -353,7 +377,13 @@ class ControllerRTL(Component):
                      s.crossbar.send[0].msg.ctrl_fu_in,
                      s.crossbar.send[0].msg.ctrl_routing_xbar_outport,
                      s.crossbar.send[0].msg.ctrl_fu_xbar_outport,
-                     s.crossbar.send[0].msg.ctrl_routing_predicate_in)
+                     s.crossbar.send[0].msg.ctrl_routing_predicate_in,
+                     s.crossbar.send[0].msg.ctrl_vector_factor_power,
+                     s.crossbar.send[0].msg.ctrl_is_last_ctrl,
+                     s.crossbar.send[0].msg.ctrl_write_reg_from,
+                     s.crossbar.send[0].msg.ctrl_write_reg_idx,
+                     s.crossbar.send[0].msg.ctrl_read_reg_from,
+                     s.crossbar.send[0].msg.ctrl_read_reg_idx)
 
   def line_trace(s):
     recv_from_cpu_pkt_str = "recv_from_cpu_pkt: " + str(s.recv_from_cpu_pkt.msg)
