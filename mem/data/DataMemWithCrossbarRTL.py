@@ -161,11 +161,80 @@ class DataMemWithCrossbarRTL(Component):
 
       for i in range(num_rd_tiles):
         s.send_rdata[i].val @= 0
+        s.send_rdata[i].msg @= DataType()
       s.send_to_noc_load_response_pkt.val @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.recv_wdata[i].rdy @= 0
         s.recv_wdata_bypass_q[i].recv.val @= 0
+        s.recv_wdata_bypass_q[i].recv.msg @= DataType()
+
+      s.send_to_noc_store_pkt.msg @= \
+            NocPktType(0, # src
+                       0, # dst
+                       0, # src_x
+                       0, # src_y
+                       0, # dst_x
+                       0, # dst_y
+                       0, # tile_id
+                       0, # opaque
+                       0, # vc_id
+                       s.write_crossbar.send[num_banks].msg.addr, # addr
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload, # data
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate, # predicate
+                       0, # payload
+                       CMD_STORE_REQUEST, # ctrl_action
+                       0, # ctrl_addr
+                       0, # ctrl_operation
+                       0, # ctrl_predicate
+                       0, # ctrl_fu_in
+                       0, # ctrl_routing_xbar_outport
+                       0, # ctrl_fu_xbar_outport
+                       0) # ctrl_routing_predicate_in
+
+      s.send_to_noc_store_pkt.val @= 0
+
+      for i in range(num_xbar_in_rd_ports):
+        s.read_crossbar.recv[i].val @= 0
+        s.read_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0)
+
+      s.recv_from_noc_rdata.rdy @= 0
+
+      for i in range(num_xbar_in_wr_ports):
+        s.write_crossbar.recv[i].val @= 0
+        s.write_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0)
+
+      for b in range(num_banks):
+        s.write_crossbar.send[b].rdy @= 0
+        s.read_crossbar.send[b].rdy @= 0
+        s.reg_file[b].raddr[0] @= PerBankAddrType(0)
+
+      s.send_to_noc_load_request_pkt.msg @= \
+            NocPktType(0, # src
+                       0, # dst
+                       0, # src_x
+                       0, # src_y
+                       0, # dst_x
+                       0, # dst_y
+                       0, # tile_id
+                       0, # opaque
+                       0, # vc_id
+                       s.write_crossbar.send[num_banks].msg.addr, # addr
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload, # data
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate, # predicate
+                       0, # payload
+                       CMD_STORE_REQUEST, # ctrl_action
+                       0, # ctrl_addr
+                       0, # ctrl_operation
+                       0, # ctrl_predicate
+                       0, # ctrl_fu_in
+                       0, # ctrl_routing_xbar_outport
+                       0, # ctrl_fu_xbar_outport
+                       0) # ctrl_routing_predicate_in
+      s.send_to_noc_load_request_pkt.val @= 0
+
+      
+
 
       if s.init_mem_done == 0:
         for b in range(num_banks):
