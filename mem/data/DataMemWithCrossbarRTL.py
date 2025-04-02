@@ -54,6 +54,7 @@ class DataMemWithCrossbarRTL(Component):
     s.num_rd_tiles = num_rd_tiles
     s.num_wr_tiles = num_wr_tiles
     RdTileIdType = mk_bits(clog2(num_rd_tiles))
+    # The additional port is for the request from inter-cgra NoC via controller.
     num_xbar_in_rd_ports = num_rd_tiles + 1
     num_xbar_in_wr_ports = num_wr_tiles + 1
     num_xbar_out_rd_ports = num_banks + 1
@@ -197,14 +198,15 @@ class DataMemWithCrossbarRTL(Component):
         for i in range(num_xbar_in_rd_ports):
           if (s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.src == i) & \
              (s.read_crossbar.packet_on_input_units[i].dst < num_banks):
-            if i <= s.num_rd_tiles:
+            if i < s.num_rd_tiles:
               s.send_rdata[RdTileIdType(i)].msg @= s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0]
               s.send_rdata[RdTileIdType(i)].val @= s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
             # TODO: Check the translated Verilog to make sure the loop is flattened correctly with special out (NocPktType) towards NoC.
             else:
+              print("[cheng] within data memory, i: ", i, "; target_addr: ", s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr, "; response: ", s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0]) 
               s.send_to_noc_load_response_pkt.msg @= \
                   NocPktType(
-                      0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                      0, 0, 0, 0, 0, 0, 0, 1, 0, 
                       s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr,
                       0,
                       s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate,

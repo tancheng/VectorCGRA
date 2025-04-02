@@ -231,6 +231,7 @@ class TileRTL(Component):
         if s.ctrl_mem.send_pkt_to_controller.val:
             s.send_to_controller_pkt.val @= 1
             s.send_to_controller_pkt.msg @= s.ctrl_mem.send_pkt_to_controller.msg
+        s.ctrl_mem.send_pkt_to_controller.rdy @= s.send_to_controller_pkt.rdy
 
     # Updates the configuration memory related signals.
     @update

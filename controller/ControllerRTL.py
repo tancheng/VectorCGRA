@@ -117,7 +117,6 @@ class ControllerRTL(Component):
     # format can be in a universal fashion to support both data and config. Later
     # on, the format can be packet-based or flit-based.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
-    s.send_to_cpu_pkt_queue.recv //= s.recv_from_ctrl_ring_pkt
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
 
 
@@ -127,6 +126,17 @@ class ControllerRTL(Component):
       kLoadResponseInportIdx = 1
       kStoreRequestInportIdx = 2
       kFromCpuCtrlAndDataIdx = 3
+
+      s.send_to_cpu_pkt_queue.recv.val @= 0
+      s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType()
+      s.recv_from_ctrl_ring_pkt.rdy @= 0
+
+      # Connects ctrl ring with send to CPU queue.
+      # s.send_to_cpu_pkt_queue.recv //= s.recv_from_ctrl_ring_pkt
+      if s.recv_from_ctrl_ring_pkt.val & s.send_to_cpu_pkt_queue.recv.rdy:
+        s.send_to_cpu_pkt_queue.recv.val @= 1
+        s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
+        s.recv_from_ctrl_ring_pkt.rdy @= 1
 
       # For the load request from local tiles.
       s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
@@ -200,6 +210,8 @@ class ControllerRTL(Component):
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
+      if s.recv_from_tile_load_response_pkt_queue.send.val:
+        print("[cheng] within controller, received sth from tile_load_response_pkt_queue: ", s.recv_from_tile_load_response_pkt_queue.send.msg)
       s.crossbar.recv[kLoadResponseInportIdx].msg @= \
           NocPktType(s.controller_id,
                      0,
@@ -208,7 +220,7 @@ class ControllerRTL(Component):
                      0, # dst_x
                      0, # dst_y
                      0, # tile id
-                     0, # opaque
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.opaque, # opaque
                      0, # vc_id
                      # Retrieves the load (from NoC) address from the message.
                      # The addr information is embedded in the message.
@@ -224,18 +236,20 @@ class ControllerRTL(Component):
                      0, # ctrl_routing_xbar_outport
                      0, # ctrl_fu_xbar_outport
                      0, # ctrl_routing_predicate_in
-                     0,  # ctrl_vector_factor_power
-                     0,  # ctrl_is_last_ctrl
-                     0,  # ctrl_write_reg_from
-                     0,  # ctrl_write_reg_idx
-                     0,  # ctrl_read_reg_from
-                     0)  # ctrl_read_reg_idx
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
 
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
           s.recv_from_cpu_pkt_queue.send.val
+      if s.recv_from_cpu_pkt_queue.send.val & s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy:
+        print("[cheng] sth from CPU: ", s.recv_from_cpu_pkt_queue.send.msg)
       s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
           NocPktType(s.controller_id, # src
@@ -289,6 +303,7 @@ class ControllerRTL(Component):
       received_pkt = s.recv_from_inter_cgra_noc.msg
       if s.recv_from_inter_cgra_noc.val:
         if s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LOAD_REQUEST:
+          print("[cheng] omg, received from NoC a LOAD_REQUEST: ", s.recv_from_inter_cgra_noc.msg, "; s.send_to_tile_load_request_addr_queue.recv.rdy: ", s.send_to_tile_load_request_addr_queue.recv.rdy)
           if s.send_to_tile_load_request_addr_queue.recv.rdy:
             s.recv_from_inter_cgra_noc.rdy @= 1
             s.send_to_tile_load_request_addr_queue.recv.msg @= \
@@ -307,7 +322,38 @@ class ControllerRTL(Component):
             s.send_to_tile_store_request_data_queue.recv.val @= 1
 
         elif s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LOAD_RESPONSE:
-          if s.send_to_tile_load_response_data_queue.recv.rdy:
+          print("[cheng] errr, received from NoC a LOAD_RESPONSE: ", s.recv_from_inter_cgra_noc.msg, "; s.recv_from_inter_cgra_noc.msg.opaque: ", s.recv_from_inter_cgra_noc.msg.opaque, "; s.send_to_cpu_pkt_queue.recv.rdy: ", s.send_to_cpu_pkt_queue.recv.rdy, "; s.recv_from_ctrl_ring_pkt.val: ", s.recv_from_ctrl_ring_pkt.val)
+          if (s.recv_from_inter_cgra_noc.msg.opaque == 1) & \
+             s.send_to_cpu_pkt_queue.recv.rdy & \
+             (s.recv_from_ctrl_ring_pkt.val == 0): # Inter-cgra has lower priority than intra-cgra.
+            s.recv_from_inter_cgra_noc.rdy @= 1
+            s.send_to_cpu_pkt_queue.recv.val @= 1
+            s.send_to_cpu_pkt_queue.recv.msg @= \
+                CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
+                           0,  # src
+                           0,  # dst
+                           s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
+                           s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
+                           s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
+                           s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
+                           s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
+                           s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
+                           s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
+                           s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
+                           s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
+                           s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
+                           s.recv_from_inter_cgra_noc.msg.addr,  # addr
+                           s.recv_from_inter_cgra_noc.msg.data,  # data
+                           s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
+                           s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
+                           s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
+                           s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
+                           s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
+                           s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
+                           s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
+
+
+          elif (s.recv_from_inter_cgra_noc.msg.opaque == 0) & s.send_to_tile_load_response_data_queue.recv.rdy:
             s.recv_from_inter_cgra_noc.rdy @= 1
             s.send_to_tile_load_response_data_queue.recv.msg @= \
                 CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
@@ -323,28 +369,29 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
-          s.send_to_ctrl_ring_pkt.msg @= CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
-                                                    0,  # src
-                                                    s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
-                                                    s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
-                                                    s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
-                                                    s.recv_from_inter_cgra_noc.msg.addr,  # addr
-                                                    s.recv_from_inter_cgra_noc.msg.data,  # data
-                                                    s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
-                                                    s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
+          s.send_to_ctrl_ring_pkt.msg @= \
+              CpuPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
+                         0,  # src
+                         s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
+                         s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
+                         s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
+                         s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
+                         s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
+                         s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
+                         s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
+                         s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
+                         s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
+                         s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
+                         s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
+                         s.recv_from_inter_cgra_noc.msg.addr,  # addr
+                         s.recv_from_inter_cgra_noc.msg.data,  # data
+                         s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
+                         s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
+                         s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
+                         s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
+                         s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
+                         s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
+                         s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
 
         # else:
         #   # TODO: Handle other cmd types.

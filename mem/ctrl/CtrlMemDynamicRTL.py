@@ -140,9 +140,11 @@ class CtrlMemDynamicRTL(Component):
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
-          if (s.sent_complete != 1) & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val):
-            #                             cgra_id, src,       dst, opaque, vc, ctrl_action
-            s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+          if (s.sent_complete != 1) & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
+                          # cgra_id, src,       dst,       opq, vc, ctrl_action
+            s.send_pkt_to_controller.msg @= \
+                CtrlPktType(0,       s.tile_id, num_tiles, 0,   0,  CMD_COMPLETE,
+                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1
@@ -173,8 +175,9 @@ class CtrlMemDynamicRTL(Component):
       else:
         # Once COMPLETE signal is sent, we shouldn't send another COMPLETE signal until the next ctrl signal is launched.
         if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
+          print("[cheng] tile: ", s.tile_id, " sent ", s.send_pkt_to_controller.msg.ctrl_action, "to controller")
           s.sent_complete <<= 1
-        if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
+        if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH):
           s.sent_complete <<= 0
 
     @update_ff

@@ -42,13 +42,14 @@ class TestHarness(Component):
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, controller2addr_map, complete_signal_sink_out):
+                src_ctrl_pkt, ctrl_steps, controller2addr_map,
+                expected_sink_out_pkt):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
+    s.expected_sink_out = TestSinkRTL(CtrlPktType, expected_sink_out_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 NocPktType, CmdType, cgra_rows, cgra_columns,
@@ -59,10 +60,10 @@ class TestHarness(Component):
 
     # Connections
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
+    s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
 
   def done(s):
-    return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
+    return s.src_ctrl_pkt.done() and s.expected_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -157,10 +158,6 @@ def test_homo_2x2_2x2(cmdline_opts):
                                      ctrl_tile_inports = num_tile_inports,
                                      ctrl_tile_outports = num_tile_outports)
 
-  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src, dst,       opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,      1,  ctrl_action = CMD_COMPLETE)]
-
   '''
   Creates test performing load -> inc -> store. Specifically,
   tile 0 performs `load` on memory address 2, and stores the result (0xfe) in register 7.
@@ -172,7 +169,6 @@ def test_homo_2x2_2x2(cmdline_opts):
        # Preload data.
        CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 2, data = 254, data_predicate = 1),
        # Tile 0.
-
        # Indicates the load address of 2.
        CtrlPktType(2,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 2),
 
@@ -203,7 +199,6 @@ def test_homo_2x2_2x2(cmdline_opts):
 
        # Tile 2. Note that tile 0 and tile 2 can access the memory, as they are on
        # the first column.
-
        # Indicates the store address of 3.
        CtrlPktType(2,      0,  2,  0,    0, ctrl_action = CMD_CONST, data = 3),
 
@@ -231,7 +226,30 @@ def test_homo_2x2_2x2(cmdline_opts):
                     TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
                    [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0)
+                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+
+       # Request the data from a specific memory address.
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
+
+      ]
+
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
+  expected_sink_out_pkt = \
+      [
+                 # dst_cgra,          opq, vc_id
+                 #    src, dst_tile,           ctrl_action
+       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
+       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
+       CtrlPktType(0, 0,   num_tiles, 0,   1,  ctrl_action = CMD_COMPLETE),
+       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
+       CtrlPktType(0, 2,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE),
+                                                                                               # 0xff <- Supposed to be 0xff
+       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00, data_predicate = 1),
+       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00, data_predicate = 1),
       ]
 
   # We only needs 2 steps to finish this test.
@@ -242,7 +260,7 @@ def test_homo_2x2_2x2(cmdline_opts):
                    x_tiles, y_tiles, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
-                   ctrl_steps, controller2addr_map, complete_signal_sink_out)
+                   ctrl_steps, controller2addr_map, expected_sink_out_pkt)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
