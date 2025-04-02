@@ -474,6 +474,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
                           ctrl_fu_outports = 2,
                           ctrl_tile_inports = 4,
                           ctrl_tile_outports = 4,
+                          ctrl_registers_per_reg_bank = 16,
                           prefix="MeshMultiCGRAPacket"):
 
   IdType = mk_bits(max(clog2(ncols * nrows), 1))
@@ -499,6 +500,11 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   CtrlPredicateType = mk_bits(predicate_nbits)
   VcIdType = mk_bits(clog2(vc))
 
+  vector_factor_power_nbits = 3
+  CtrlVectorFactorPowerType = mk_bits(vector_factor_power_nbits)
+  CtrlRegFromType = mk_bits(2)
+  CtrlRegIdxType = mk_bits(clog2(ctrl_registers_per_reg_bank))
+
   new_name = f"{prefix}_{ncols*nrows}_{ncols}x{nrows}_{vc}_{opaque_nbits}_" \
              f"{addr_nbits}_{data_nbits}_{predicate_nbits}_{ctrl_actions}_{ctrl_mem_size}_" \
              f"{ctrl_operations}_{ctrl_fu_inports}_{ctrl_fu_outports}_{ctrl_tile_inports}_{ctrl_tile_outports}"
@@ -510,7 +516,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   field_dict['src_y'] = YType
   field_dict['dst_x'] = XType
   field_dict['dst_y'] = YType
-  field_dict['tile_id'] = TileIdType
+  field_dict['dst_tile_id'] = TileIdType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['addr'] = AddrType # run-time or preloaded data addr
@@ -526,8 +532,19 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   field_dict['ctrl_fu_xbar_outport'] = [CtrlFuOutType for _ in range(num_routing_outports)]
   field_dict['ctrl_routing_predicate_in'] = [CtrlPredicateType for _ in range(ctrl_tile_inports)]
 
+  field_dict['ctrl_vector_factor_power'] = CtrlVectorFactorPowerType
+  field_dict['ctrl_is_last_ctrl'] = b1
+  # Register file related signals.
+  # Indicates whether to write data into the register bank, and the
+  # corresponding inport.
+  field_dict['ctrl_write_reg_from'] = [CtrlRegFromType for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_write_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
+  # Indicates whether to read data from the register bank.
+  field_dict['ctrl_read_reg_from'] = [b1 for _ in range(ctrl_fu_inports)]
+  field_dict['ctrl_read_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
+
   def str_func(s):
-      return f"{s.src}>{s.dst},{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.tile_id} ||" \
+      return f"{s.src}>{s.dst},{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.dst_tile_id} ||" \
               f"{s.opaque}:{s.vc_id}|| {s.addr}.{s.data}.{s.predicate}." \
               f"{s.payload} || action:{s.ctrl_action} || operation:{s.ctrl_operation} || "\
               f"ctrl_routing_xbar_outport:{s.ctrl_routing_xbar_outport} || "\
@@ -656,11 +673,11 @@ def mk_intra_cgra_pkt(ntiles = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_read_reg_idx[i]))
 
-    return f"{s.cgra_id}:{s.src}>{s.dst}:{s.opaque}.{s.vc_id}:{s.ctrl_action}.{s.ctrl_addr}." \
+    return f"{s.dst_cgra_id}:{s.src}>{s.dst}:{s.opaque}.{s.vc_id}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
-  field_dict['cgra_id'] = CgraIdType
+  field_dict['dst_cgra_id'] = CgraIdType
   field_dict['src'] = TileIdType
   field_dict['dst'] = TileIdType
   field_dict['opaque'] = OpqType

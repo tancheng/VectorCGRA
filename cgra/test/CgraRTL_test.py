@@ -201,8 +201,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
   fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
   src_opt_per_tile = [[
-                # cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
-      CtrlPktType(0,      0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
+                # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(0,          0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
                   # ctrl_fu_in   routing_xbar  fu_xbar      
                   pick_register, tile_in_code, fu_out_code),
 
@@ -227,8 +227,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(      0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src, dst,       opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,      1,  ctrl_action = CMD_COMPLETE)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
