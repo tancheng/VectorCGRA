@@ -190,8 +190,13 @@ class DataMemWithCrossbarRTL(Component):
                        0, # ctrl_fu_in
                        0, # ctrl_routing_xbar_outport
                        0, # ctrl_fu_xbar_outport
-                       0) # ctrl_routing_predicate_in
-
+                       0, # ctrl_routing_predicate_in
+                       0, # ctrl_vector_factor_power
+                       0, # ctrl_is_last_ctrl
+                       0, # ctrl_write_reg_from
+                       0, # ctrl_write_reg_idx
+                       0, # ctrl_read_reg_from
+                       0) # ctrl_read_reg_idx
       s.send_to_noc_store_pkt.val @= 0
 
       for i in range(num_xbar_in_rd_ports):
@@ -230,7 +235,13 @@ class DataMemWithCrossbarRTL(Component):
                        0, # ctrl_fu_in
                        0, # ctrl_routing_xbar_outport
                        0, # ctrl_fu_xbar_outport
-                       0) # ctrl_routing_predicate_in
+                       0, # ctrl_routing_predicate_in
+                       0, # ctrl_vector_factor_power
+                       0, # ctrl_is_last_ctrl
+                       0, # ctrl_write_reg_from
+                       0, # ctrl_write_reg_idx
+                       0, # ctrl_read_reg_from
+                       0) # ctrl_read_reg_idx
       s.send_to_noc_load_request_pkt.val @= 0
 
       
