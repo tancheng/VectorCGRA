@@ -156,8 +156,8 @@ def test_Ctrl():
                CtrlSignalType(OPT_ADD, 0, pickRegister)]]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src, dst,           opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_terminals, 0,      1,  ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src,           dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(          0,   0, num_terminals,      0,  1, ctrl_action = CMD_COMPLETE)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, width, height, data_mem_size, num_fu_inports,
                    num_fu_outports, num_tile_inports, num_tile_outports,

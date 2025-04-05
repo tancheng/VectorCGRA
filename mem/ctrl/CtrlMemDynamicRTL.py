@@ -89,11 +89,17 @@ class CtrlMemDynamicRTL(Component):
       s.reg_file.wdata[0].predicate @= 0
       for i in range(num_fu_inports):
         s.reg_file.wdata[0].fu_in[i] @= 0
+        s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_from[i]
+        s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_idx[i]
+        s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_from[i]
+        s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_idx[i]
       for i in range(num_routing_outports):
         s.reg_file.wdata[0].routing_xbar_outport[i] @= 0
         s.reg_file.wdata[0].fu_xbar_outport[i] @= 0
       for i in range(num_tile_inports):
         s.reg_file.wdata[0].routing_predicate_in[i] @= 0
+      s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.ctrl_vector_factor_power
+      s.reg_file.wdata[0].is_last_ctrl @= 0
 
       if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
         s.reg_file.wen[0] @= 1
@@ -134,6 +140,7 @@ class CtrlMemDynamicRTL(Component):
     def update_send_out_signal():
       s.send_ctrl.val @= 0
       s.send_pkt_to_controller.val @= 0
+      s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       if s.start_iterate_ctrl == b1(1):
         if ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].ctrl == OPT_START):
