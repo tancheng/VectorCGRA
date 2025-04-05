@@ -64,6 +64,7 @@ class CrossbarRTL(Component):
       for i in range(num_outports):
         s.send_data[i].val @= 0
         s.send_data[i].msg @= DataType()
+      s.recv_opt.rdy @= 0
 
       # For predication register update. 'predicate' and 'predicate_in' no need
       # to be active at the same time. Specifically, the 'predicate' is for

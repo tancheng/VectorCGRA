@@ -156,10 +156,71 @@ def test_homo_2x2_2x2(cmdline_opts):
                                      ctrl_fu_outports = num_fu_outports,
                                      ctrl_tile_inports = num_tile_inports,
                                      ctrl_tile_outports = num_tile_outports)
+  pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
+  src_opt_per_tile = [[
+                # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
+      CtrlPktType(0,          0,  i,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   # TODO: make below as TileInType(5) to double check.
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                  
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                  
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),  
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0),
+
+      # This last one is for launching kernel.
+      CtrlPktType(0,      0,  i,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
+                  pickRegister,
+                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)], 0, 0, 0, 0, 0)
+      ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src, dst,       opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,      1,  ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
 
   '''
   Creates test performing load -> inc -> store. Specifically,
