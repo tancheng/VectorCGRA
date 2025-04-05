@@ -744,22 +744,26 @@ def mk_intra_cgra_pkt(ntiles = 4,
 #=========================================================================
 
 def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
-                          mem_size_global = 64,
-                          prefix="TileSramXbarPacket"):
+                          mem_size_global = 64, num_cgras = 4,
+                          num_tiles = 17, prefix="TileSramXbarPacket"):
 
   SrcType = mk_bits(clog2(number_src))
   DstType = mk_bits(clog2(number_dst))
   AddrType = mk_bits(clog2(mem_size_global))
+  CgraIdType = mk_bits(max(1, clog2(num_cgras)))
+  TileIdType = mk_bits(clog2(num_tiles + 1))
 
   new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
 
   def str_func(s):
-    return f"{s.src}>{s.dst}:{s.addr}"
+    return f"{s.src}>{s.dst}:(addr){s.addr}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}"
 
   return mk_bitstruct(new_name, {
       'src': SrcType,
       'dst': DstType,
       'addr': AddrType,
+      'src_cgra': CgraIdType,
+      'src_tile': TileIdType,
     },
     namespace = {'__str__': str_func}
   )

@@ -42,13 +42,14 @@ class TestHarness(Component):
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, controller2addr_map,
-                expected_sink_out_pkt):
+                src_ctrl_pkt, src_query_pkt, ctrl_steps,
+                controller2addr_map, expected_sink_out_pkt):
 
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
     s.expected_sink_out = TestSinkRTL(CtrlPktType, expected_sink_out_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
@@ -59,14 +60,64 @@ class TestHarness(Component):
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
-    s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
 
+    complete_count_value = \
+            sum(1 for pkt in expected_sink_out_pkt \
+                if pkt.ctrl_action == CMD_COMPLETE)
+
+    CompleteCountType = mk_bits(clog2(complete_count_value + 1))
+    s.complete_count = Wire(CompleteCountType)
+
+    @update
+    def conditional_issue_ctrl_or_query():
+      s.dut.recv_from_cpu_pkt.val @= s.src_ctrl_pkt.send.val
+      s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
+      s.src_ctrl_pkt.send.rdy @= 0
+      s.src_query_pkt.send.rdy @= 0
+      if (s.complete_count >= complete_count_value) & \
+         ~s.src_ctrl_pkt.send.val:
+        s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
+        s.dut.recv_from_cpu_pkt.msg @= s.src_query_pkt.send.msg
+        s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
+      else:
+        s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
+  
+    @update_ff
+    def update_complete_count():
+      if s.reset:
+        s.complete_count <<= 0
+      else:
+        if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy:
+          s.complete_count <<= s.complete_count + CompleteCountType(1)
+
   def done(s):
-    return s.src_ctrl_pkt.done() and s.expected_sink_out.done()
+    return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
+           s.expected_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
+
+def run_sim(test_harness, max_cycles = 100):
+  test_harness.apply(DefaultPassGroup())
+  test_harness.sim_reset()
+
+  # Run simulation
+
+  ncycles = 0
+  print()
+  print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
+  while not test_harness.done() and ncycles < max_cycles:
+    test_harness.sim_tick()
+    ncycles += 1
+    print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
+
+  # Check timeout
+  assert ncycles < max_cycles
+
+  test_harness.sim_tick()
+  test_harness.sim_tick()
+  test_harness.sim_tick()
 
 def test_homo_2x2_2x2(cmdline_opts):
   num_tile_inports  = 4
@@ -76,11 +127,11 @@ def test_homo_2x2_2x2(cmdline_opts):
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 16
   data_mem_size_global = 128
-  data_mem_size_per_bank = 4
-  num_banks_per_cgra = 2
   cgra_rows = 2
   cgra_columns = 2
   num_terminals = cgra_rows * cgra_columns
+  num_banks_per_cgra = 2
+  data_mem_size_per_bank = data_mem_size_global // num_terminals // num_banks_per_cgra
   x_tiles = 2
   y_tiles = 2
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -115,6 +166,7 @@ def test_homo_2x2_2x2(cmdline_opts):
   for i in range(num_terminals):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
+  print("[cheng] controller2addr_map: ", controller2addr_map)
 
   cmd_nbits = clog2(NUM_CMDS)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
@@ -159,18 +211,20 @@ def test_homo_2x2_2x2(cmdline_opts):
                                      ctrl_tile_outports = num_tile_outports)
 
   '''
-  Creates test performing load -> inc -> store. Specifically,
-  tile 0 performs `load` on memory address 2, and stores the result (0xfe) in register 7.
-  tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
-  tile 2 waits for the data from tile 0, and performs stores (0xff) to memory address 3.
+  Creates test performing load -> inc -> store on cgra 2. Specifically,
+  cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
+  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
+  cgra 2 tile 2 waits for the data from tile 0, and performs stores (0xff) to memory address 3.
+  Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
+  therefore, all the memory addresses from cgra 2 are remote.
   '''
   src_ctrl_pkt = \
       [
-       # Preload data.
-       CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 2, data = 254, data_predicate = 1),
+       # Preload data.                                             address 34 belong to cgra 1 (not cgra 0)
+       CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 34, data = 254, data_predicate = 1),
        # Tile 0.
        # Indicates the load address of 2.
-       CtrlPktType(2,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 2),
+       CtrlPktType(2,      0,  0,  0,    0, ctrl_action = CMD_CONST, data = 34),
 
                  # cgra_id src dst vc_id opq cmd_type    addr operation predicate
        CtrlPktType(2,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST,  b1(0),
@@ -206,11 +260,18 @@ def test_homo_2x2_2x2(cmdline_opts):
        CtrlPktType(2,      0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST,  b1(0),
                    [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                    [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    # TODO: make below as TileInType(5) to double check.
                     TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
 
                    [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                     FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+
+       # Pre-configure per-tile total config count.
+       CtrlPktType(2,      0,  2,  0,    0,
+                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                   # Only execute one operation (i.e., store) is enough for this tile.
+                   # If this is set more than 1, no `COMPLETE` signal would be set back
+                   # to CPU/test_harness.
+                   data = 1),
 
        # For launching the two tiles.
        CtrlPktType(2,      0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),
@@ -227,29 +288,23 @@ def test_homo_2x2_2x2(cmdline_opts):
 
                    [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                     FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
+      ]
 
-       # Request the data from a specific memory address.
+  src_query_pkt = \
+      [
+       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 34),
        CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
-       CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 3),
-
       ]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   expected_sink_out_pkt = \
       [
-                 # dst_cgra,          opq, vc_id
-                 #    src, dst_tile,           ctrl_action
-       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
-       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
-       CtrlPktType(0, 0,   num_tiles, 0,   1,  ctrl_action = CMD_COMPLETE),
-       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00),
-       CtrlPktType(0, 2,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE),
-                                                                                               # 0xff <- Supposed to be 0xff
-       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00, data_predicate = 1),
-       CtrlPktType(0, 0,   0,         1,   0,  ctrl_action = CMD_LOAD_RESPONSE, addr = 3, data = 0x00, data_predicate = 1),
+                 # dst_cgra, src, dst_tile,  opq, vc_id ctrl_action
+       CtrlPktType(0,        0,   num_tiles, 0,   0,    ctrl_action = CMD_COMPLETE),
+       CtrlPktType(0,        0,   num_tiles, 0,   0,    ctrl_action = CMD_COMPLETE),
+                                                                                                         # Expected updated value.
+       CtrlPktType(0,        0,   num_tiles, 0,   0,    ctrl_action = CMD_LOAD_RESPONSE, addr = 3,  data = 0xff, data_predicate = 1),
+       CtrlPktType(0,        0,   num_tiles, 0,   0,    ctrl_action = CMD_LOAD_RESPONSE, addr = 34, data = 0xfe, data_predicate = 1),
       ]
 
   # We only needs 2 steps to finish this test.
@@ -259,7 +314,7 @@ def test_homo_2x2_2x2(cmdline_opts):
                    CtrlSignalType, NocPktType, CmdType, cgra_rows, cgra_columns,
                    x_tiles, y_tiles, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
-                   num_registers_per_reg_bank, src_ctrl_pkt,
+                   num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps, controller2addr_map, expected_sink_out_pkt)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -267,3 +322,4 @@ def test_homo_2x2_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+

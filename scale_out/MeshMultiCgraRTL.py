@@ -33,6 +33,7 @@ class MeshMultiCgraRTL(Component):
     MeshPos = mk_mesh_pos(cgra_columns, cgra_rows)
     s.num_tiles = tile_rows * tile_columns
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
     ControllerIdType = mk_bits(clog2(s.num_terminals))
 
     # Interface
@@ -60,6 +61,11 @@ class MeshMultiCgraRTL(Component):
     # Connects controller id.
     for terminal_id in range(s.num_terminals):
       s.cgra[terminal_id].controller_id //= terminal_id
+
+    # Connects memory address upper and lower bound for each CGRA.
+    for terminal_id in range(s.num_terminals):
+      s.cgra[terminal_id].address_lower //= DataAddrType(controller2addr_map[terminal_id][0])
+      s.cgra[terminal_id].address_upper //= DataAddrType(controller2addr_map[terminal_id][1])
 
     # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)

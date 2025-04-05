@@ -39,7 +39,7 @@ class TileRTL(Component):
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                 ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_tiles,
+                num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
@@ -93,7 +93,7 @@ class TileRTL(Component):
                                    ctrl_mem_size,
                                    num_fu_inports, num_fu_outports,
                                    num_tile_inports, num_tile_outports,
-                                   num_tiles,
+                                   num_cgras, num_tiles,
                                    num_ctrl, total_steps)
 
     # The `tile_in_channel` indicates the outport channels that are
@@ -114,10 +114,12 @@ class TileRTL(Component):
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
 
+    s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Propagates tile id.
     s.element.tile_id //= s.tile_id
+    s.ctrl_mem.cgra_id //= s.cgra_id
     s.ctrl_mem.tile_id //= s.tile_id
     s.fu_crossbar.tile_id //= s.tile_id
     s.routing_crossbar.tile_id //= s.tile_id
