@@ -144,7 +144,7 @@ def test_homo_2x2(cmdline_opts):
 
   src_opt_per_tile = [[
                 # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(i,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+      CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
                        pickRegister,
                        [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                         # TODO: make below as TileInType(5) to double check.
