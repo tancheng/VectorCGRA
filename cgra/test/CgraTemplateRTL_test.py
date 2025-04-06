@@ -57,12 +57,13 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                ControllerIdType, controller_id, ctrl_mem_size,
+                ControllerIdType, cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, TileList,
                 LinkList, dataSPM, controller2addr_map, idTo2d_map, complete_signal_sink_out):
 
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = len(TileList)
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
@@ -84,7 +85,7 @@ class TestHarness(Component):
     # recognized.
     s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
-    s.dut.controller_id //= controller_id
+    s.dut.controller_id //= cgra_id
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     # As we always first issue request pkt from CPU to NoC,
     # when there is no NoC for single CGRA test,
@@ -92,6 +93,10 @@ class TestHarness(Component):
     s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
+
+    # Connects memory address upper and lower bound for each CGRA.
+    s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+    s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
   def done(s):
     return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
@@ -191,10 +196,11 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   data_mem_size_global = 512
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 2
-  num_terminals = 4
+  num_cgras = 4
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
+  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -211,8 +217,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   PredicateType = mk_predicate(1, 1)
 
   CmdType = mk_bits(4)
-  ControllerIdType = mk_bits(clog2(num_terminals))
-  controller_id = 1
+  ControllerIdType = mk_bits(clog2(num_cgras))
+  cgra_id = 0
   controller2addr_map = {
           0: [0, 3],
           1: [4, 7],
@@ -255,7 +261,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                            num_tile_outports,
                            num_registers_per_reg_bank)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_cgras,
                                      nrows = 1,
                                      ntiles = width * height,
                                      addr_nbits = addr_nbits,
@@ -269,20 +275,34 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                                      ctrl_tile_inports = num_tile_inports,
                                      ctrl_tile_outports = num_tile_outports)
 
-  pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
-  fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
+  pick_register = [FuInType(0) for x in range(num_fu_inports)]
+  # Note that we still need to set FU inport, and `INC` requires one input.
+  pick_register[0] = FuInType(1)
+  tile_in_code = [TileInType(0) for x in range(num_routing_outports)]
+  fu_out_code  = [FuOutType(0) for x in range(num_routing_outports)]
+  # Note that we still need to set FU xbar, and `INC` requires one output.
+  fu_out_code[num_tile_outports] = FuOutType(1)
   src_opt_per_tile = [[
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code),
+      CtrlPktType(cgra_id, 0,  i,  0,     0,  ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                  # Only execute one operation (i.e., store) is enough for this tile.
+                  # If this is set more than 1, no `COMPLETE` signal would be set back
+                  # to CPU/test_harness.
+                  data = 1),
+      CtrlPktType(cgra_id, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
+                  pick_register,
+                  tile_in_code,
+                  fu_out_code,
+                  # Needs a valid input for INC.
+                  ctrl_read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                  ctrl_read_reg_idx = [RegIdxType(2), RegIdxType(0), RegIdxType(0), RegIdxType(0)]),
       # This last one is for launching kernel.
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
+      CtrlPktType(cgra_id, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_NAH, 0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src, dst,       opq, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(cgra_id,     0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -419,7 +439,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                   ControllerIdType, controller_id,
+                   ControllerIdType, cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,

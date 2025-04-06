@@ -20,7 +20,7 @@ from ..tile.TileRTL import TileRTL
 class CgraRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
+                NocPktType, CmdType, CgraIdType, multi_cgra_rows,
                 multi_cgra_columns, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
@@ -82,14 +82,14 @@ class CgraRTL(Component):
                                         s.num_tiles,
                                         idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
-    s.controller_id = InPort(ControllerIdType)
+    s.controller_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)

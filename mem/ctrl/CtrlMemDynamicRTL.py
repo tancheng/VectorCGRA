@@ -178,6 +178,8 @@ class CtrlMemDynamicRTL(Component):
       else:
         # Once COMPLETE signal is sent, we shouldn't send another
         # COMPLETE signal until the next ctrl signal is launched.
+        # TODO: Need to extend the logic here if other signals can be
+        # sent to the controller.
         if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
           s.sent_complete <<= 1
         if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH):

@@ -25,8 +25,14 @@ from ...noc.PyOCN.pymtl3_net.ocnlib.test.stream_sinks import NetSinkRTL as TestN
 
 class TestHarness(Component):
 
-  def construct(s, ControllerIdType, CpuPktType, CmdType, MsgType,
-                AddrType, PktType, controller_id,
+  def construct(s,
+                ControllerIdType,
+                CpuPktType,
+                CmdType,
+                MsgType,
+                AddrType,
+                PktType,
+                controller_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
                 from_tile_store_request_pkt_msgs,
@@ -37,9 +43,9 @@ class TestHarness(Component):
                 from_noc_pkts,
                 expected_to_noc_pkts,
                 controller2addr_map,
-                idTo2d_map, num_terminals):
-
-    cmp_func = lambda a, b : a == b # a.data == b.data
+                idTo2d_map,
+                num_cgras,
+                num_tiles):
 
     s.src_from_tile_load_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_request_pkt_msgs)
     s.src_from_tile_load_response_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
@@ -51,12 +57,17 @@ class TestHarness(Component):
     s.sink_to_tile_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_tile_store_request_data_msgs)
 
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
-    s.sink_to_noc_val_rdy = TestNetSinkRTL(PktType, expected_to_noc_pkts, cmp_fn = cmp_func)
+    s.sink_to_noc_val_rdy = TestSinkRTL(PktType, expected_to_noc_pkts)
 
-    s.dut = ControllerRTL(ControllerIdType, CmdType, CpuPktType,
-                          PktType, MsgType, AddrType,
-                          # Number of controllers globally (x/y dimension).
-                          1, num_terminals,
+    s.dut = ControllerRTL(ControllerIdType,
+                          CmdType,
+                          CpuPktType,
+                          PktType,
+                          MsgType,
+                          AddrType,
+                          1, # Number of controllers globally (x/y dimension).
+                          num_cgras,
+                          num_tiles,
                           controller2addr_map,
                           idTo2d_map)
 
@@ -66,10 +77,12 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
 
-    s.dut.send_to_tile_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
-    s.dut.send_to_tile_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
     s.dut.send_to_tile_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
     s.dut.send_to_tile_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
+    s.dut.send_to_tile_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
+    s.dut.send_to_tile_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
+    s.dut.send_to_tile_load_request_src_cgra.rdy //= 1
+    s.dut.send_to_tile_load_request_src_tile.rdy //= 1
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_inter_cgra_noc
     s.dut.send_to_inter_cgra_noc //= s.sink_to_noc_val_rdy.recv
@@ -126,8 +139,8 @@ def run_sim(test_harness, max_cycles = 20):
 # Test cases
 #-------------------------------------------------------------------------
 
-def mk_src_pkts(nterminals, lst):
-  src_pkts = [[] for _ in range(nterminals)]
+def mk_src_pkts(num_cgras, lst):
+  src_pkts = [[] for _ in range(num_cgras)]
   src = 0
   for pkt in lst:
     if hasattr(pkt, 'fl_type'):
@@ -142,8 +155,8 @@ data_nbits = 32
 predicate_nbits = 1
 DataType = mk_data(data_nbits, predicate_nbits)
 
-nterminals = 4
-ntiles = 4
+num_cgras = 4
+num_tiles = 4
 CmdType = NUM_CMDS
 cgra_id_nbits = 2
 ControllerIdType = mk_bits(cgra_id_nbits)
@@ -158,7 +171,7 @@ data_mem_size_global = 16
 addr_nbits = clog2(data_mem_size_global)
 AddrType = mk_bits(addr_nbits)
 num_registers_per_reg_bank = 16
-controller_id = 1
+controller_id = 0
 
 idTo2d_map = {
         0: [0, 0],
@@ -174,7 +187,7 @@ controller2addr_map = {
         3: [12, 15],
 }
 
-CpuPktType = mk_intra_cgra_pkt(ntiles,
+CpuPktType = mk_intra_cgra_pkt(num_tiles,
                                      cgra_id_nbits,
                                      num_commands,
                                      ctrl_mem_size,
@@ -188,7 +201,7 @@ CpuPktType = mk_intra_cgra_pkt(ntiles,
                                      data_nbits,
                                      predicate_nbits)
 
-Pkt = mk_multi_cgra_noc_pkt(nterminals, 1, ntiles,
+Pkt = mk_multi_cgra_noc_pkt(num_cgras, 1, num_tiles,
                             addr_nbits = addr_nbits,
                             data_nbits = data_nbits,
                             predicate_nbits = predicate_nbits,
@@ -237,17 +250,17 @@ from_noc_pkts = [
 
 expected_to_noc_pkts = [
     #   src  dst src_x src_y dst_x dst_y dst_tile_id opq vc addr data predicate payload ctrl_action        ctrl_addr ctrl_op ctrl_pred ctrl_fu ctrl_rou_xbar ctrl_fu_xbar ctrl_rou_pred
-    Pkt(1,   0,  1,    0,    0,    0,    0,          0,  0, 1,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   2,  1,    0,    2,    0,    0,          0,  0, 11,  11,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   2,  1,    0,    2,    0,    0,          0,  0, 11,  110, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,          0,  0, 1,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,          0,  0, 11,  11,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   2,  0,    0,    2,    0,    0,          0,  0, 11,  110, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 
-    Pkt(1,   2,  1,    0,    2,    0,    0,          0,  0, 8,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,          0,  0, 14,  14,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   0,  1,    0,    0,    0,    0,          0,  0, 3,   300, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   2,  0,    0,    2,    0,    0,          0,  0, 8,   0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,          0,  0, 14,  14,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,          0,  0, 3,   300, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 
-    Pkt(1,   3,  1,    0,    3,    0,    0,          0,  0, 13,  0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,          0,  0, 12,  12,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
-    Pkt(1,   3,  1,    0,    3,    0,    0,          0,  0, 15,  150, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   3,  0,    0,    3,    0,    0,          0,  0, 13,  0,   1,        0,      CMD_LOAD_REQUEST,  0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   0,  0,    0,    0,    0,    0,          0,  0, 12,  12,  1,        0,      CMD_LOAD_RESPONSE, 0,        0,      0,        0,      0,               0,              0),
+    Pkt(0,   3,  0,    0,    3,    0,    0,          0,  0, 15,  150, 1,        0,      CMD_STORE_REQUEST, 0,        0,      0,        0,      0,               0,              0),
 ]
 
 def test_simple(cmdline_opts):
@@ -273,7 +286,9 @@ def test_simple(cmdline_opts):
                    expected_to_noc_pkts,
                    controller2addr_map,
                    idTo2d_map,
-                   nterminals)
+                   num_cgras,
+                   num_tiles)
   th.elaborate()
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+

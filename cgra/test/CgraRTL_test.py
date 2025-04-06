@@ -43,13 +43,14 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                ControllerIdType, controller_id, width, height,
+                ControllerIdType, cgra_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
                 idTo2d_map, complete_signal_sink_out):
 
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
@@ -70,7 +71,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     # Connections
-    s.dut.controller_id //= controller_id
+    s.dut.controller_id //= cgra_id
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
@@ -79,6 +80,10 @@ class TestHarness(Component):
     s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
 
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
+
+    # Connects memory address upper and lower bound for each CGRA.
+    s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+    s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -118,10 +123,13 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
-  data_mem_size_global = 4096
-  data_mem_size_per_bank = 32
-  num_banks_per_cgra = 24
-  num_terminals = 4
+  # data_mem_size_global = 4096
+  # data_mem_size_per_bank = 32
+  # num_banks_per_cgra = 24
+  data_mem_size_global = 128
+  data_mem_size_per_bank = 16
+  num_banks_per_cgra = 2
+  num_cgras = 4
   num_commands = NUM_CMDS
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
@@ -131,6 +139,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   addr_nbits = clog2(data_mem_size_global)
   AddrType = mk_bits(addr_nbits)
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
   num_tiles = x_tiles * y_tiles
   DUT = CgraRTL
   FunctionUnit = FlexibleFuRTL
@@ -138,15 +147,15 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   PredicateType = mk_predicate(1, 1)
   
   CmdType = mk_bits(NUM_CMDS)
-  ControllerIdType = mk_bits(clog2(num_terminals))
-  controller_id = 1
-  per_cgra_data_size = int(data_mem_size_global / num_terminals)
+  ControllerIdType = mk_bits(clog2(num_cgras))
+  cgra_id = 0
+  per_cgra_data_size = int(data_mem_size_global / num_cgras)
   controller2addr_map = {}
   # 0: [0,    1023]
   # 1: [1024, 2047]
   # 2: [2048, 3071]
   # 3: [3072, 4095]
-  for i in range(num_terminals):
+  for i in range(num_cgras):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
   idTo2d_map = {
@@ -156,7 +165,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
           3: [3, 0],
   }
 
-  cgra_id_nbits = clog2(num_terminals)
+  cgra_id_nbits = clog2(num_cgras)
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
@@ -183,7 +192,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                            num_tile_outports,
                            num_registers_per_reg_bank)
   
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
+  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_cgras,
                                      nrows = 1,
                                      ntiles = num_tiles,
                                      addr_nbits = addr_nbits,
@@ -197,38 +206,49 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                      ctrl_tile_inports = num_tile_inports,
                                      ctrl_tile_outports = num_tile_outports)
 
-  pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
-  fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
-  src_opt_per_tile = [[
-                # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
-      CtrlPktType(0,          0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
-                  # ctrl_fu_in   routing_xbar  fu_xbar      
-                  pick_register, tile_in_code, fu_out_code),
+  # pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
+  # tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
+  # fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 1, OPT_INC, 0,
-                  pick_register, tile_in_code, fu_out_code),
- 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 2, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code),
- 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 3, OPT_STR, 0,
-                  pick_register, tile_in_code, fu_out_code),
- 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 4, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code),
- 
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_CONFIG, 5, OPT_ADD, 0,
-                  pick_register, tile_in_code, fu_out_code),
- 
-      # This last one is for launching kernel.
-      CtrlPktType(0, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_ADD, 0,
+  pick_register = [FuInType(0) for _ in range(num_fu_inports)]
+  tile_in_code = [TileInType(0) for _ in range(num_routing_outports)]
+  fu_out_code  = [FuOutType(0) for _ in range(num_routing_outports)]
+
+  '''
+  Each tile performs independent INC, without waiting for data from
+  neighbours, instead, consuming the data inside their own register
+  cluster/file (i.e., `ctrl_read_reg_from`).
+  '''
+  src_opt_per_tile = [[
+      # Pre-configure per-tile total config count. As we only have single `INC` operation,
+      # we set it as one, which would trigger `COMPLETE` signal be sent back to CPU.
+                # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(cgra_id,    0,  i,  0,     0,  ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                  # Only execute one operation (i.e., store) is enough for this tile.
+                  # If this is set more than 1, no `COMPLETE` signal would be set back
+                  # to CPU/test_harness.
+                  data = 1),
+                # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(cgra_id,    0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
+                  [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                  # routing_xbar
+                  tile_in_code,
+                  # Needs a valid output for INC.
+                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                   # Note that we still need to set FU xbar.
+                   FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  # Needs a valid input for INC.
+                  ctrl_read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                  ctrl_read_reg_idx = [RegIdxType(2), RegIdxType(0), RegIdxType(0), RegIdxType(0)]
+                  ),
+                # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
+      CtrlPktType(cgra_id,    0,  i,  0,     0,  CMD_LAUNCH, 0,        OPT_NAH,       0,
                   pick_register, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src, dst,       opq, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -236,7 +256,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                   ControllerIdType, controller_id, x_tiles, y_tiles,
+                   ControllerIdType, cgra_id, x_tiles, y_tiles,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
@@ -321,3 +341,4 @@ def test_vector_mesh_4x4(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+

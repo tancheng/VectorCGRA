@@ -17,7 +17,7 @@ from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 
 
 class MeshMultiCgraRTL(Component):
-  def construct(s, CGRADataType, PredicateType, CtrlPktType,
+  def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CtrlSignalType, NocPktType, CmdType, cgra_rows,
                 cgra_columns, tile_rows, tile_columns, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
@@ -26,7 +26,7 @@ class MeshMultiCgraRTL(Component):
                 controller2addr_map, preload_data = None):
 
     # Constant
-    s.num_terminals = cgra_rows * cgra_columns
+    s.num_cgras = cgra_rows * cgra_columns
     idTo2d_map = {}
 
     # Mesh position takes column as argument first.
@@ -34,7 +34,7 @@ class MeshMultiCgraRTL(Component):
     s.num_tiles = tile_rows * tile_columns
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    ControllerIdType = mk_bits(clog2(s.num_terminals))
+    ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
 
     # Interface
     # Request from/to CPU.
@@ -46,7 +46,7 @@ class MeshMultiCgraRTL(Component):
       for cgra_col in range(cgra_columns):
         idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
-    s.cgra = [CgraRTL(CGRADataType, PredicateType, CtrlPktType,
+    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
                       CtrlSignalType, NocPktType, CmdType,
                       ControllerIdType, cgra_rows, cgra_columns,
                       tile_columns, tile_rows,
@@ -56,29 +56,29 @@ class MeshMultiCgraRTL(Component):
                       num_ctrl, total_steps, FunctionUnit, FuList,
                       "Mesh", controller2addr_map, idTo2d_map,
                       preload_data = None)
-              for terminal_id in range(s.num_terminals)]
-
-    # Connects controller id.
-    for terminal_id in range(s.num_terminals):
-      s.cgra[terminal_id].controller_id //= terminal_id
-
-    # Connects memory address upper and lower bound for each CGRA.
-    for terminal_id in range(s.num_terminals):
-      s.cgra[terminal_id].address_lower //= DataAddrType(controller2addr_map[terminal_id][0])
-      s.cgra[terminal_id].address_upper //= DataAddrType(controller2addr_map[terminal_id][1])
+              for cgra_id in range(s.num_cgras)]
 
     # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
     # Connections
-    for i in range(s.num_terminals):
+    for i in range(s.num_cgras):
       s.mesh.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
       s.mesh.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
+
+    # Connects controller id.
+    for cgra_id in range(s.num_cgras):
+      s.cgra[cgra_id].controller_id //= cgra_id
+
+    # Connects memory address upper and lower bound for each CGRA.
+    for cgra_id in range(s.num_cgras):
+      s.cgra[cgra_id].address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+      s.cgra[cgra_id].address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
     s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
     s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
 
-    for i in range(1, s.num_terminals):
+    for i in range(1, s.num_cgras):
       s.cgra[i].recv_from_cpu_pkt.val //= 0
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
       s.cgra[i].send_to_cpu_pkt.rdy //= 0
@@ -96,13 +96,13 @@ class MeshMultiCgraRTL(Component):
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_south[tile_col].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
 
         if cgra_row == cgra_rows - 1:
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_north[tile_col].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
 
         if cgra_col != 0:
           for tile_row in range(tile_rows):
@@ -114,13 +114,13 @@ class MeshMultiCgraRTL(Component):
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
 
         if cgra_col == cgra_columns - 1:
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_east[tile_row].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
 
   def line_trace(s):
     res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())

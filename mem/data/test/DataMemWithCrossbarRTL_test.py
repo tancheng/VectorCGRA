@@ -55,7 +55,7 @@ class TestHarness(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks, rd_tiles, wr_tiles,
-                                        preload_data_per_bank)
+                                        preload_data_per_bank = preload_data_per_bank)
 
     for i in range(rd_tiles):
       s.data_mem.recv_raddr[i] //= s.recv_raddr[i].send
@@ -68,6 +68,11 @@ class TestHarness(Component):
     s.data_mem.recv_from_noc_rdata //= s.recv_from_noc_rdata.send
     s.data_mem.send_to_noc_load_request_pkt //= s.send_to_noc_load_request_pkt.recv
     s.data_mem.send_to_noc_store_pkt //= s.send_to_noc_store_pkt.recv
+
+    s.data_mem.address_lower //= 0
+    s.data_mem.address_upper //= 31
+
+    s.cgra_id = 0
 
   def done(s):
     for i in range(s.rd_tiles):
@@ -198,8 +203,8 @@ def test_const_queue(cmdline_opts):
   # noc_send_write_data = [DataType(0xd040, 1), DataType(0xd545, 1)]
   send_to_noc_store_pkt = [
              #   src  dst src_x src_y dst_x dst_y dst_tile_id opq vc addr data    predicate payload ctrl_action
-      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 40,  0xd040, 1,        0,      CMD_STORE_REQUEST),
-      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 45,  0xd545, 1,        0,      CMD_STORE_REQUEST),
+      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 40,  0xd040, 1,        0xd040, CMD_STORE_REQUEST),
+      NocPktType(0,   0,  0,    0,    0,    0,    0,          0,  0, 45,  0xd545, 1,        0xd545, CMD_STORE_REQUEST),
   ]
 
   th = TestHarness(NocPktType, DataType, AddrType, data_mem_size_global,

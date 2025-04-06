@@ -15,7 +15,6 @@ from ....lib.cmd_type import *
 from ....lib.messages import *
 from ....lib.opt_type import *
 
-
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -26,14 +25,12 @@ class TestHarness(Component):
                 CtrlSignalType, ctrl_mem_size, data_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, src0_msgs, src1_msgs, ctrl_pkts,
-                sink_msgs, num_terminals, complete_signal_sink_out):
+                sink_msgs, num_tiles, complete_signal_sink_out):
 
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
     s.src_data0 = TestSrcRTL(DataType, src0_msgs)
     s.src_data1 = TestSrcRTL(DataType, src1_msgs)
-    # s.src_waddr = TestSrcRTL(AddrType, ctrl_waddr )
-    # s.src_wdata = TestSrcRTL(ConfigType, ctrl_msgs  )
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
@@ -42,8 +39,8 @@ class TestHarness(Component):
                      data_mem_size)
     s.ctrl_mem = MemUnit(CtrlPktType, CtrlSignalType, ctrl_mem_size,
                          num_fu_inports, num_fu_outports, num_tile_inports,
-                         num_tile_outports, num_terminals,
-                         len(ctrl_pkts), len(ctrl_pkts))
+                         num_tile_outports, 1, num_tiles,
+                         len(ctrl_pkts) - 1, len(ctrl_pkts) - 1)
 
     s.alu.recv_opt //= s.ctrl_mem.send_ctrl
     s.src_pkt.send //= s.ctrl_mem.recv_pkt_from_controller
@@ -93,7 +90,7 @@ def test_Ctrl():
   num_fu_outports = 2
   num_tile_inports = 4
   num_tile_outports = 4
-  num_terminals = 4
+  num_tiles = 4
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
 
@@ -105,19 +102,19 @@ def test_Ctrl():
   num_registers_per_reg_bank = 16
 
   CtrlPktType = \
-        mk_intra_cgra_pkt(num_terminals,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
+        mk_intra_cgra_pkt(num_tiles,
+                          cgra_id_nbits,
+                          num_commands,
+                          ctrl_mem_size,
+                          num_ctrl_operations,
+                          num_fu_inports,
+                          num_fu_outports,
+                          num_tile_inports,
+                          num_tile_outports,
+                          num_registers_per_reg_bank,
+                          addr_nbits,
+                          data_nbits,
+                          predicate_nbits)
 
   CtrlSignalType = mk_separate_reg_ctrl(num_ctrl_operations,
                                         num_fu_inports,
@@ -138,12 +135,12 @@ def test_Ctrl():
                   CtrlPktType(0,          0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_NAH,       0,             pick_register)]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
-  #                                       dst_cgra_id, src,            dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0,  num_terminals,      0,  0, ctrl_action = CMD_COMPLETE)]
+  #                                       dst_cgra_id, src, dst,           opq, vc, ctrl_action
+  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports, src_data0, src_data1,
-                   src_ctrl_pkt, sink_out, num_terminals, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
   run_sim(th)
 

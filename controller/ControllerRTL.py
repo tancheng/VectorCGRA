@@ -20,7 +20,7 @@ from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 class ControllerRTL(Component):
 
   def construct(s, ControllerIdType, CmdType, CpuPktType, NocPktType,
-                CGRADataType, CGRAAddrType, multi_cgra_rows,
+                CgraDataType, CgraAddrType, multi_cgra_rows,
                 multi_cgra_columns, num_tiles, controller2addr_map,
                 idTo2d_map):
 
@@ -49,24 +49,24 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt = RecvIfcRTL(NocPktType)
     s.recv_from_tile_store_request_pkt = RecvIfcRTL(NocPktType)
 
-    s.send_to_tile_load_request_addr = SendIfcRTL(CGRAAddrType)
+    s.send_to_tile_load_request_addr = SendIfcRTL(CgraAddrType)
     s.send_to_tile_load_request_src_cgra = SendIfcRTL(ControllerIdType)
     s.send_to_tile_load_request_src_tile = SendIfcRTL(TileIdType)
-    s.send_to_tile_load_response_data = SendIfcRTL(CGRADataType)
-    s.send_to_tile_store_request_addr = SendIfcRTL(CGRAAddrType)
-    s.send_to_tile_store_request_data = SendIfcRTL(CGRADataType)
+    s.send_to_tile_load_response_data = SendIfcRTL(CgraDataType)
+    s.send_to_tile_store_request_addr = SendIfcRTL(CgraAddrType)
+    s.send_to_tile_store_request_data = SendIfcRTL(CgraDataType)
 
     # Component
     s.recv_from_tile_load_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
     s.recv_from_tile_load_response_pkt_queue = ChannelRTL(NocPktType, latency = 1)
     s.recv_from_tile_store_request_pkt_queue = ChannelRTL(NocPktType, latency = 1)
 
-    s.send_to_tile_load_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
+    s.send_to_tile_load_request_addr_queue = ChannelRTL(CgraAddrType, latency = 1)
     s.send_to_tile_load_request_src_cgra_queue = ChannelRTL(ControllerIdType, latency = 1)
     s.send_to_tile_load_request_src_tile_queue = ChannelRTL(TileIdType, latency = 1)
-    s.send_to_tile_load_response_data_queue = ChannelRTL(CGRADataType, latency = 1)
-    s.send_to_tile_store_request_addr_queue = ChannelRTL(CGRAAddrType, latency = 1)
-    s.send_to_tile_store_request_data_queue = ChannelRTL(CGRADataType, latency = 1)
+    s.send_to_tile_load_response_data_queue = ChannelRTL(CgraDataType, latency = 1)
+    s.send_to_tile_store_request_addr_queue = ChannelRTL(CgraAddrType, latency = 1)
+    s.send_to_tile_store_request_data_queue = ChannelRTL(CgraDataType, latency = 1)
 
     # Crossbar with 4 inports (load and store requests towards remote
     # memory, load response from local memory, ctrl&data packet from cpu,
@@ -295,12 +295,12 @@ class ControllerRTL(Component):
       s.send_to_tile_store_request_addr_queue.recv.val @= 0
       s.send_to_tile_store_request_data_queue.recv.val @= 0
       s.send_to_tile_load_response_data_queue.recv.val @= 0
-      s.send_to_tile_load_request_addr_queue.recv.msg @= CGRAAddrType()
+      s.send_to_tile_load_request_addr_queue.recv.msg @= CgraAddrType()
       s.send_to_tile_load_request_src_cgra_queue.recv.msg @= ControllerIdType()
       s.send_to_tile_load_request_src_tile_queue.recv.msg @= TileIdType()
-      s.send_to_tile_store_request_addr_queue.recv.msg @= CGRAAddrType()
-      s.send_to_tile_store_request_data_queue.recv.msg @= CGRADataType()
-      s.send_to_tile_load_response_data_queue.recv.msg @= CGRADataType()
+      s.send_to_tile_store_request_addr_queue.recv.msg @= CgraAddrType()
+      s.send_to_tile_store_request_data_queue.recv.msg @= CgraDataType()
+      s.send_to_tile_load_response_data_queue.recv.msg @= CgraDataType()
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -315,16 +315,16 @@ class ControllerRTL(Component):
 
           if s.send_to_tile_load_request_addr_queue.recv.rdy:
             s.recv_from_inter_cgra_noc.rdy @= 1
-            s.send_to_tile_load_request_addr_queue.recv.msg @= CGRAAddrType(received_pkt.addr)
+            s.send_to_tile_load_request_addr_queue.recv.msg @= CgraAddrType(received_pkt.addr)
             s.send_to_tile_load_request_src_cgra_queue.recv.msg @= received_pkt.src
             # FIXME: for now, as we don't have src_tile_id, use dst_tile_id to represent it.
             s.send_to_tile_load_request_src_tile_queue.recv.msg @= received_pkt.dst_tile_id
 
         elif s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_STORE_REQUEST:
           s.send_to_tile_store_request_data_queue.recv.msg @= \
-              CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
+              CgraDataType(received_pkt.data, received_pkt.predicate, 0, 0)
           s.send_to_tile_store_request_addr_queue.recv.msg @= \
-              CGRAAddrType(received_pkt.addr)
+              CgraAddrType(received_pkt.addr)
           s.send_to_tile_store_request_addr_queue.recv.val @= 1
           s.send_to_tile_store_request_data_queue.recv.val @= 1
 
@@ -363,7 +363,7 @@ class ControllerRTL(Component):
           else:
             s.recv_from_inter_cgra_noc.rdy @= s.send_to_tile_load_response_data_queue.recv.rdy
             s.send_to_tile_load_response_data_queue.recv.msg @= \
-                CGRADataType(received_pkt.data, received_pkt.predicate, 0, 0)
+                CgraDataType(received_pkt.data, received_pkt.predicate, 0, 0)
             s.send_to_tile_load_response_data_queue.recv.val @= 1
 
         elif s.recv_from_inter_cgra_noc.msg.ctrl_action == CMD_COMPLETE:

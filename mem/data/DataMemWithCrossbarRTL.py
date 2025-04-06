@@ -219,9 +219,9 @@ class DataMemWithCrossbarRTL(Component):
                        0, # tile_id
                        0, # opaque
                        0, # vc_id
-                       s.write_crossbar.send[num_banks].msg.addr, # addr
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload, # data
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate, # predicate
+                       s.write_crossbar.send[num_banks_per_cgra].msg.addr, # addr
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # data
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, # predicate
                        0, # payload
                        CMD_STORE_REQUEST, # ctrl_action
                        0, # ctrl_addr
@@ -249,7 +249,7 @@ class DataMemWithCrossbarRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0)
 
-      for b in range(num_banks):
+      for b in range(num_banks_per_cgra):
         s.write_crossbar.send[b].rdy @= 0
         s.read_crossbar.send[b].rdy @= 0
         s.reg_file[b].raddr[0] @= PerBankAddrType(0)
@@ -264,9 +264,9 @@ class DataMemWithCrossbarRTL(Component):
                        0, # tile_id
                        0, # opaque
                        0, # vc_id
-                       s.write_crossbar.send[num_banks].msg.addr, # addr
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.payload, # data
-                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks].msg.src].send.msg.predicate, # predicate
+                       s.write_crossbar.send[num_banks_per_cgra].msg.addr, # addr
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # data
+                       s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, # predicate
                        0, # payload
                        CMD_STORE_REQUEST, # ctrl_action
                        0, # ctrl_addr
