@@ -166,7 +166,7 @@ def test_homo_2x2_2x2(cmdline_opts):
   for i in range(num_terminals):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  print("[cheng] controller2addr_map: ", controller2addr_map)
+  print("[LOG] controller2addr_map: ", controller2addr_map)
 
   cmd_nbits = clog2(NUM_CMDS)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
