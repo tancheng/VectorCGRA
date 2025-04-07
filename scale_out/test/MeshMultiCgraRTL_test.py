@@ -334,5 +334,5 @@ def test_verilog_homo_2x2_2x2(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  test_harness.apply(DefaultPassGroup())
+  th.apply(DefaultPassGroup())
 
