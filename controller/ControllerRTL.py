@@ -128,7 +128,7 @@ class ControllerRTL(Component):
       kFromInterTileRingIdx = 4
 
       s.send_to_cpu_pkt_queue.recv.val @= 0
-      s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType()
+      s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
 
       # For the command signal from inter-tile/intra-cgra control ring.
@@ -231,7 +231,34 @@ class ControllerRTL(Component):
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
-      s.crossbar.recv[kLoadResponseInportIdx].msg @= s.recv_from_tile_load_response_pkt_queue.send.msg
+      s.crossbar.recv[kLoadResponseInportIdx].msg @= \
+          NocPktType(s.controller_id,
+                     0,
+                     s.idTo2d_x_lut[s.controller_id], # src_x
+                     s.idTo2d_y_lut[s.controller_id], # src_y
+                     s.idTo2d_x_lut[0], # dst_x
+                     s.idTo2d_y_lut[0], # dst_y
+                     0, # tile id
+                     0, # opaque
+                     0, # vc_id
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.addr, # addr
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.data, # data
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.predicate, # predicate
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.payload, # payload
+                     s.recv_from_tile_load_response_pkt_queue.send.msg.ctrl_action, # ctrl_action
+                     0, # ctrl_addr
+                     0, # ctrl_operation
+                     0, # ctrl_predicate
+                     0, # ctrl_fu_in
+                     0, # ctrl_routing_xbar_outport
+                     0, # ctrl_fu_xbar_outport
+                     0, # ctrl_routing_predicate_in
+                     0, # ctrl_vector_factor_power
+                     0, # ctrl_is_last_ctrl
+                     0, # ctrl_write_reg_from
+                     0, # ctrl_write_reg_idx
+                     0, # ctrl_read_reg_from
+                     0) # ctrl_read_reg_idx
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
@@ -423,43 +450,17 @@ class ControllerRTL(Component):
         #   # TODO: Handle other cmd types.
         #   assert(False)
 
-
     @update
     def update_sending_to_noc_msg():
       s.send_to_inter_cgra_noc.val @= s.crossbar.send[0].val
       s.crossbar.send[0].rdy @= s.send_to_inter_cgra_noc.rdy
-      addr_dst_id = s.crossbar.send[0].msg.dst
+      s.send_to_inter_cgra_noc.msg @= s.crossbar.send[0].msg
       if (s.crossbar.send[0].msg.ctrl_action == CMD_LOAD_REQUEST) | \
          (s.crossbar.send[0].msg.ctrl_action == CMD_STORE_REQUEST):
         addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.addr >> addr_offset_nbits, ControllerIdType)]
-      s.send_to_inter_cgra_noc.msg @= \
-          NocPktType(s.crossbar.send[0].msg.src,
-                     addr_dst_id,
-                     s.crossbar.send[0].msg.src_x,
-                     s.crossbar.send[0].msg.src_y,
-                     s.idTo2d_x_lut[addr_dst_id],
-                     s.idTo2d_y_lut[addr_dst_id],
-                     s.crossbar.send[0].msg.dst_tile_id,
-                     s.crossbar.send[0].msg.opaque,
-                     s.crossbar.send[0].msg.vc_id,
-                     s.crossbar.send[0].msg.addr,
-                     s.crossbar.send[0].msg.data,
-                     s.crossbar.send[0].msg.predicate,
-                     s.crossbar.send[0].msg.payload,
-                     s.crossbar.send[0].msg.ctrl_action,
-                     s.crossbar.send[0].msg.ctrl_addr,
-                     s.crossbar.send[0].msg.ctrl_operation,
-                     s.crossbar.send[0].msg.ctrl_predicate,
-                     s.crossbar.send[0].msg.ctrl_fu_in,
-                     s.crossbar.send[0].msg.ctrl_routing_xbar_outport,
-                     s.crossbar.send[0].msg.ctrl_fu_xbar_outport,
-                     s.crossbar.send[0].msg.ctrl_routing_predicate_in,
-                     s.crossbar.send[0].msg.ctrl_vector_factor_power,
-                     s.crossbar.send[0].msg.ctrl_is_last_ctrl,
-                     s.crossbar.send[0].msg.ctrl_write_reg_from,
-                     s.crossbar.send[0].msg.ctrl_write_reg_idx,
-                     s.crossbar.send[0].msg.ctrl_read_reg_from,
-                     s.crossbar.send[0].msg.ctrl_read_reg_idx)
+        s.send_to_inter_cgra_noc.msg.dst @= addr_dst_id
+        s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[addr_dst_id]
+        s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[addr_dst_id]
 
   def line_trace(s):
     recv_from_cpu_pkt_str = "recv_from_cpu_pkt: " + str(s.recv_from_cpu_pkt.msg)
