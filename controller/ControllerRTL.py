@@ -231,34 +231,35 @@ class ControllerRTL(Component):
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
-      s.crossbar.recv[kLoadResponseInportIdx].msg @= \
-          NocPktType(s.controller_id,
-                     0,
-                     s.idTo2d_x_lut[s.controller_id], # src_x
-                     s.idTo2d_y_lut[s.controller_id], # src_y
-                     s.idTo2d_x_lut[0], # dst_x
-                     s.idTo2d_y_lut[0], # dst_y
-                     0, # tile id
-                     0, # opaque
-                     0, # vc_id
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.addr, # addr
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.data, # data
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.predicate, # predicate
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.payload, # payload
-                     s.recv_from_tile_load_response_pkt_queue.send.msg.ctrl_action, # ctrl_action
-                     0, # ctrl_addr
-                     0, # ctrl_operation
-                     0, # ctrl_predicate
-                     0, # ctrl_fu_in
-                     0, # ctrl_routing_xbar_outport
-                     0, # ctrl_fu_xbar_outport
-                     0, # ctrl_routing_predicate_in
-                     0, # ctrl_vector_factor_power
-                     0, # ctrl_is_last_ctrl
-                     0, # ctrl_write_reg_from
-                     0, # ctrl_write_reg_idx
-                     0, # ctrl_read_reg_from
-                     0) # ctrl_read_reg_idx
+      s.crossbar.recv[kLoadResponseInportIdx].msg @= s.recv_from_tile_load_response_pkt_queue.send.msg
+      # s.crossbar.recv[kLoadResponseInportIdx].msg @= \
+      #     NocPktType(0, # s.controller_id,
+      #                0,
+      #                0, # s.idTo2d_x_lut[s.controller_id], # src_x
+      #                0, # s.idTo2d_y_lut[s.controller_id], # src_y
+      #                s.idTo2d_x_lut[0], # dst_x
+      #                s.idTo2d_y_lut[0], # dst_y
+      #                0, # tile id
+      #                0, # opaque
+      #                0, # vc_id
+      #                s.recv_from_tile_load_response_pkt_queue.send.msg.addr, # addr
+      #                s.recv_from_tile_load_response_pkt_queue.send.msg.data, # data
+      #                s.recv_from_tile_load_response_pkt_queue.send.msg.predicate, # predicate
+      #                s.recv_from_tile_load_response_pkt_queue.send.msg.payload, # payload
+      #                s.recv_from_tile_load_response_pkt_queue.send.msg.ctrl_action, # ctrl_action
+      #                0, # ctrl_addr
+      #                0, # ctrl_operation
+      #                0, # ctrl_predicate
+      #                0, # ctrl_fu_in
+      #                0, # ctrl_routing_xbar_outport
+      #                0, # ctrl_fu_xbar_outport
+      #                0, # ctrl_routing_predicate_in
+      #                0, # ctrl_vector_factor_power
+      #                0, # ctrl_is_last_ctrl
+      #                0, # ctrl_write_reg_from
+      #                0, # ctrl_write_reg_idx
+      #                0, # ctrl_read_reg_from
+      #                0) # ctrl_read_reg_idx
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
