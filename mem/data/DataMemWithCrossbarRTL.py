@@ -168,11 +168,11 @@ class DataMemWithCrossbarRTL(Component):
                                XbarOutRdType)
           else:
             bank_index = XbarOutRdType(num_banks_per_cgra)
-          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index, s.recv_raddr[i].msg)
+          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index, s.recv_raddr[i].msg, 0, 0)
         for i in range(num_rd_tiles):
           s.rd_pkt[i].src_cgra @= s.cgra_id
           # FIXME: change to exact tile id.
-          s.rd_pkt[i].src_tile @= i * (num_tiles // num_rd_tiles)
+          s.rd_pkt[i].src_tile @= 0 # i * (num_tiles // num_rd_tiles)
         s.rd_pkt[num_rd_tiles].src_cgra @= s.recv_from_noc_load_src_cgra.msg
         s.rd_pkt[num_rd_tiles].src_tile @= s.recv_from_noc_load_src_tile.msg
 
@@ -184,7 +184,7 @@ class DataMemWithCrossbarRTL(Component):
                                XbarOutWrType)
           else:
             bank_index = XbarOutWrType(num_banks_per_cgra)
-          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, s.recv_waddr[i].msg)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, s.recv_waddr[i].msg, 0, 0)
 
 
     # Connects xbar with the sram.
@@ -241,13 +241,13 @@ class DataMemWithCrossbarRTL(Component):
 
       for i in range(num_xbar_in_rd_ports):
         s.read_crossbar.recv[i].val @= 0
-        s.read_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0)
+        s.read_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0, 0, 0)
 
       s.recv_from_noc_rdata.rdy @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.write_crossbar.recv[i].val @= 0
-        s.write_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0)
+        s.write_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0, 0, 0)
 
       for b in range(num_banks_per_cgra):
         s.write_crossbar.send[b].rdy @= 0
