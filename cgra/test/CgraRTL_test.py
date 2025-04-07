@@ -130,7 +130,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   data_mem_size_per_bank = 16
   num_banks_per_cgra = 2
   num_cgras = 4
-  num_commands = NUM_CMDS
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
   TileInType = mk_bits(clog2(num_tile_inports + 1))
@@ -172,7 +171,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   CtrlPktType = \
       mk_intra_cgra_pkt(num_tiles,
                         cgra_id_nbits,
-                        num_commands,
+                        NUM_CMDS,
                         ctrl_mem_size,
                         num_ctrl_operations,
                         num_fu_inports,
@@ -198,7 +197,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                      addr_nbits = addr_nbits,
                                      data_nbits = data_bitwidth,
                                      predicate_nbits = 1,
-                                     ctrl_actions = num_commands,
+                                     ctrl_actions = NUM_CMDS,
                                      ctrl_mem_size = ctrl_mem_size,
                                      ctrl_operations = num_ctrl_operations,
                                      ctrl_fu_inports = num_fu_inports,
@@ -206,13 +205,15 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                      ctrl_tile_inports = num_tile_inports,
                                      ctrl_tile_outports = num_tile_outports)
 
-  # pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  # tile_in_code = [TileInType(max(4 - x, 0)) for x in range(num_routing_outports)]
-  # fu_out_code  = [FuOutType(x % 2) for x in range(num_routing_outports)]
-
-  pick_register = [FuInType(0) for _ in range(num_fu_inports)]
   tile_in_code = [TileInType(0) for _ in range(num_routing_outports)]
-  fu_out_code  = [FuOutType(0) for _ in range(num_routing_outports)]
+  fu_in_code = [FuInType(0) for _ in range(num_fu_inports)]
+  fu_in_code[0] = FuInType(1)
+  fu_out_code = [FuOutType(0) for _ in range(num_routing_outports)]
+  fu_out_code[num_tile_inports] = FuOutType(1)
+  read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
+  read_reg_from_code[0] = b1(1)
+  read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
+  read_reg_idx_code[0] = RegIdxType(2)
 
   '''
   Each tile performs independent INC, without waiting for data from
@@ -230,25 +231,24 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                   data = 1),
                 # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
       CtrlPktType(cgra_id,    0,  i,  0,     0,  CMD_CONFIG, 0,        OPT_INC,       0,
-                  [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                  # fu_in
+                  fu_in_code,
                   # routing_xbar
                   tile_in_code,
                   # Needs a valid output for INC.
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   # Note that we still need to set FU xbar.
-                   FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                  fu_out_code,
                   # Needs a valid input for INC.
-                  ctrl_read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
-                  ctrl_read_reg_idx = [RegIdxType(2), RegIdxType(0), RegIdxType(0), RegIdxType(0)]
+                  ctrl_read_reg_from = read_reg_from_code,
+                  ctrl_read_reg_idx = read_reg_idx_code
                   ),
                 # dst_cgra_id src dst opaque vc  ctrl_action ctrl_addr ctrl_operation ctrl_predicate
       CtrlPktType(cgra_id,    0,  i,  0,     0,  CMD_LAUNCH, 0,        OPT_NAH,       0,
-                  pick_register, tile_in_code, fu_out_code)
+                  fu_in_code, tile_in_code, fu_out_code)
       ] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   #                                       dst_cgra_id, src, dst,       opq, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE) for _ in range(num_tiles)]
   
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -289,7 +289,7 @@ def test_homogeneous_2x2(cmdline_opts):
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
   th = init_param(topology)
-  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL])
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL])
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

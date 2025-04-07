@@ -131,13 +131,6 @@ class ControllerRTL(Component):
       s.send_to_cpu_pkt_queue.recv.msg @= CpuPktType()
       s.recv_from_ctrl_ring_pkt.rdy @= 0
 
-      # Connects ctrl ring with send to CPU queue.
-      # s.send_to_cpu_pkt_queue.recv //= s.recv_from_ctrl_ring_pkt
-      if s.recv_from_ctrl_ring_pkt.val & s.send_to_cpu_pkt_queue.recv.rdy:
-        s.send_to_cpu_pkt_queue.recv.val @= 1
-        s.send_to_cpu_pkt_queue.recv.msg @= s.recv_from_ctrl_ring_pkt.msg
-        s.recv_from_ctrl_ring_pkt.rdy @= 1
-
       # For the command signal from inter-tile/intra-cgra control ring.
       s.crossbar.recv[kFromInterTileRingIdx].val @= s.recv_from_ctrl_ring_pkt.val
       s.recv_from_ctrl_ring_pkt.rdy @= s.crossbar.recv[kFromInterTileRingIdx].rdy
@@ -150,7 +143,7 @@ class ControllerRTL(Component):
                      s.idTo2d_y_lut[0], # dst_y
                      num_tiles, # tile id
                      0, # opaque
-                     0, # vc_id
+                     0, # vc_id # FIXME: May need to change vc_id for self produce-consume pkt to avoid deadlock.
                      s.recv_from_ctrl_ring_pkt.msg.addr, # addr
                      0, # data
                      0, # predicate
@@ -202,8 +195,6 @@ class ControllerRTL(Component):
                      0, # ctrl_read_reg_from
                      0) # ctrl_read_reg_idx
 
-
-
       # For the store request from local tiles.
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
       s.recv_from_tile_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
@@ -249,13 +240,13 @@ class ControllerRTL(Component):
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
           NocPktType(0, # src
                      s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
-                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_x
-                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # src_y
-                     0, # dst_x
-                     0, # dst_y
+                     0, # src_x
+                     0, # src_y
+                     s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
+                     s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
                      s.recv_from_cpu_pkt_queue.send.msg.dst, # tile id 
                      0, # opaque
-                     0, # vc_id
+                     s.recv_from_cpu_pkt_queue.send.msg.vc_id, # vc_id
                      s.recv_from_cpu_pkt_queue.send.msg.addr, # addr
                      s.recv_from_cpu_pkt_queue.send.msg.data, # data
                      s.recv_from_cpu_pkt_queue.send.msg.data_predicate, # predicate
