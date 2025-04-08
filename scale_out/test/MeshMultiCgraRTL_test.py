@@ -220,7 +220,7 @@ def initialize_test_harness(cmdline_opts):
   '''
   src_ctrl_pkt = \
       [
-       # Preload data.                                             address 34 belong to cgra 1 (not cgra 0)
+       # Preloads data.                                            address 34 belongs to cgra 1 (not cgra 0)
        CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 34, data = 254, data_predicate = 1),
        # Tile 0.
        # Indicates the load address of 2.
