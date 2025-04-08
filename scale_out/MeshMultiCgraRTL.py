@@ -83,7 +83,7 @@ class MeshMultiCgraRTL(Component):
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
       s.cgra[i].send_to_cpu_pkt.rdy //= 0
 
-    # Connects the tiles on the boundary of each two ajacent CGRAs.
+    # Connects the tiles on the boundary of each two adjacent CGRAs.
     for cgra_row in range(cgra_rows):
       for cgra_col in range(cgra_columns):
         if cgra_row != 0:
