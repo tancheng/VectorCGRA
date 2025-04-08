@@ -11,13 +11,14 @@ Author : Cheng Tan
   Date : Dec 3, 2019
 """
 from pymtl3 import *
+from .cmd_type import *
 
 #=========================================================================
 # Generic data message
 #=========================================================================
 
-def mk_data( payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
-             prefix="CGRAData" ):
+def mk_data(payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
+            prefix="CgraData"):
 
   PayloadType   = mk_bits( payload_nbits   )
   PredicateType = mk_bits( predicate_nbits )
@@ -280,12 +281,6 @@ def mk_separate_reg_ctrl(num_operations = 7,
         out_str += '-'
       out_str += str(int(s.fu_in[i]))
 
-    # out_str = '|(fu_out)'
-    # for i in range(num_fu_out):
-    #   if i != 0:
-    #     out_str += '-'
-    #   out_str += str(int(s.fu_out[i]))
-
     out_str += '|(predicate)'
     out_str += str(int(s.predicate))
 
@@ -387,12 +382,12 @@ def mk_separate_reg_ctrl(num_operations = 7,
 # Cmd message
 #=========================================================================
 
-def mk_cmd(cmd_nbits = 6,
-           prefix="CommandMessage"):
+def mk_cmd(num_commands = 12,
+           prefix="CgraCommand"):
 
-  CmdType = mk_bits(clog2(cmd_nbits))
+  CmdType = mk_bits(clog2(num_commands))
 
-  new_name = f"{cmd}"
+  new_name = f"{num_commands}"
 
   def str_func(s):
     return f"{s.cmd}"
@@ -462,6 +457,117 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 #=========================================================================
 # Mesh multi-CGRA data/config/cmd packet
 #=========================================================================
+
+def mk_cgra_payload(DataType,
+                    DataAddrType,
+                    CtrlType,
+                    CtrlAddrType,
+                    prefix="MultiCgraPayload"):
+
+  new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr"
+
+  field_dict = {}
+  field_dict['cmd'] = mk_bits(clog2(NUM_CMDS))
+  field_dict['data'] = DataType
+  field_dict['data_addr'] = DataAddrType
+  field_dict['ctrl'] = CtrlType
+  field_dict['ctrl_addr'] = CtrlAddrType
+
+  def str_func(s):
+      return f"MultiCgraNocPayload: cmd:{s.cmd}|data:{s.data}|data_addr:{s.data_addr}|" \
+             f"ctrl:{s.ctrl}|ctrl_addr:{s.ctrl_addr}\n"
+
+  return mk_bitstruct(new_name, field_dict,
+    namespace = {'__str__': str_func}
+  )
+
+def mk_inter_cgra_pkt(num_cgra_columns,
+                      num_cgra_rows,
+                      num_tiles,
+                      CgraPayloadType,
+                      prefix="InterCgraPacket"):
+
+  CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1))
+  CgraXType = mk_bits(max(clog2(num_cgra_columns), 1))
+  CgraYType = mk_bits(max(clog2(num_cgra_rows), 1))
+  # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+  TileIdType = mk_bits(clog2(num_tiles + 1))
+  opaque_nbits = 8
+  OpqType = mk_bits(opaque_nbits)
+  num_vcs = 4
+  VcIdType = mk_bits(clog2(num_vcs))
+
+  new_name = f"{prefix}_{num_cgra_columns*num_cgra_rows}_" \
+             f"{num_cgra_columns}x{num_cgra_rows}_{num_tiles}_" \
+             f"{opaque_nbits}_{num_vcs}_CgraPayload"
+
+  field_dict = {}
+  field_dict['src'] = CgraIdType # src CGRA id
+  field_dict['dst'] = CgraIdType # dst CGRA id
+  field_dict['src_x'] = CgraXType # CGRA 2d coordinates
+  field_dict['src_y'] = CgraYType
+  field_dict['dst_x'] = CgraXType
+  field_dict['dst_y'] = CgraYType
+  field_dict['src_tile_id'] = TileIdType
+  field_dict['dst_tile_id'] = TileIdType
+  field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
+  field_dict['payload'] = CgraPayloadType
+
+  def str_func(s):
+    return f"InterCgraPkt: {s.src}->{s.dst} || " \
+           f"({s.src_x},{s.src_y})->({s.dst_x},{s.dst_y}) || " \
+           f"tileid:{s.src_tile_id}->{s.dst_tile_id} || " \
+           f"{s.opaque}:{s.vc_id} || " \
+           f"payload:{s.payload}\n"
+
+  return mk_bitstruct(new_name, field_dict,
+    namespace = {'__str__': str_func}
+  )
+
+def mk_new_intra_cgra_pkt(num_cgra_columns,
+                          num_cgra_rows,
+                          num_tiles,
+                          CgraPayloadType,
+                          prefix="IntraCgraPacket"):
+
+  CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1))
+  CgraXType = mk_bits(max(clog2(num_cgra_columns), 1))
+  CgraYType = mk_bits(max(clog2(num_cgra_rows), 1))
+  # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+  TileIdType = mk_bits(clog2(num_tiles + 1))
+  opaque_nbits = 8
+  OpqType = mk_bits(opaque_nbits)
+  num_vcs = 2
+  VcIdType = mk_bits(clog2(num_vcs))
+
+  new_name = f"{prefix}_{num_cgra_columns*num_cgra_rows}_" \
+             f"{num_cgra_columns}x{num_cgra_rows}_{num_tiles}_" \
+             f"{opaque_nbits}_{num_vcs}_CgraPayload"
+
+  def str_func(s):
+    return f"IntraCgraPkt: {s.src}->{s.dst} || " \
+           f"cgra_id:{s.src_cgra_id}->{s.dst_cgra_id} || " \
+           f"{s.opaque}:{s.vc_id} || " \
+           f"payload:{s.payload}\n"
+
+  field_dict = {}
+  field_dict['src'] = TileIdType
+  field_dict['dst'] = TileIdType
+  field_dict['src_cgra_id'] = CgraIdType
+  field_dict['dst_cgra_id'] = CgraIdType
+  field_dict['src_cgra_x'] = CgraXType
+  field_dict['src_cgra_y'] = CgraYType
+  field_dict['dst_cgra_x'] = CgraXType
+  field_dict['dst_cgra_y'] = CgraYType
+  field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
+  field_dict['payload'] = CgraPayloadType
+
+  return mk_bitstruct(new_name, field_dict,
+    namespace = {'__str__': str_func}
+  )
+
 
 def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, 
                           opaque_nbits = 8,
