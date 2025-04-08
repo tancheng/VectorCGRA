@@ -21,13 +21,16 @@ from ..tile.TileRTL import TileRTL
 class CgraSystolicArrayRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
+                NocPktType, CmdType, CgraIdType, cgra_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, controller2addr_map,
                 preload_data = None):
 
+    multi_cgra_rows = 1
+    multi_cgra_columns = 1
+    num_cgras = multi_cgra_rows * multi_cgra_columns
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
     s.num_mesh_ports = 4
@@ -64,34 +67,55 @@ class CgraSystolicArrayRTL(Component):
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
-                      total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, s.num_tiles,
+                      total_steps, 4, 2,
+                      s.num_mesh_ports,
+                      s.num_mesh_ports,
+                      num_cgras,
+                      s.num_tiles,
                       num_registers_per_reg_bank,
                       FuList = FuList)
                for i in range(s.num_tiles)]
+    idTo2d_map = {0: [0, 0]}
     s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
                                         # 4 read/write from tiles and 1 read/write from NoC.
+                                        # We actually only needs in total 3.
                                         4, 4,
+                                        multi_cgra_rows,
+                                        multi_cgra_columns,
+                                        s.num_tiles,
+                                        idTo2d_map,
                                         preload_data)
-    idTo2d_map = {0: [0, 0]}
-    s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
-                                 1, 1,
+                                 multi_cgra_rows,
+                                 multi_cgra_columns,
+                                 s.num_tiles,
                                  controller2addr_map,
                                  idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
+    # Address lower and upper bound.
+    s.address_lower = InPort(DataAddrType)
+    s.address_upper = InPort(DataAddrType)
+
     # Connections
     # Connects controller id.
-    s.controller.controller_id //= controller_id
+    s.controller.controller_id //= cgra_id
+    s.data_mem.cgra_id //= cgra_id
+
+    # Connects the address lower and upper bound.
+    s.data_mem.address_lower //= s.address_lower
+    s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
     s.data_mem.recv_raddr[4] //= s.controller.send_to_tile_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
     s.data_mem.recv_waddr[4] //= s.controller.send_to_tile_store_request_addr
     s.data_mem.recv_wdata[4] //= s.controller.send_to_tile_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
@@ -109,6 +133,7 @@ class CgraSystolicArrayRTL(Component):
     # Assigns tile id.
     for i in range(s.num_tiles):
       s.tile[i].tile_id //= i
+      s.tile[i].cgra_id //= cgra_id
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
@@ -150,26 +175,31 @@ class CgraSystolicArrayRTL(Component):
         s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
 
       # Memory banks are connected at bottom and right of the CGRA/systolic array.
-      if i == 0:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[0]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[0]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[0]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[0]
-      elif i == 1:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[1]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[1]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[1]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[1]
-      elif i == 5:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[2]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[2]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[2]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[2]
-      elif i == 8:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[3]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[3]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[3]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[3]
+      if i == 0 or i == 1 or i == 5 or i == 8:
+        # Left-bottom tile.
+        s.tile[0].to_mem_raddr   //= s.data_mem.recv_raddr[0]
+        s.tile[0].from_mem_rdata //= s.data_mem.send_rdata[0]
+        s.tile[0].to_mem_waddr   //= s.data_mem.recv_waddr[0]
+        s.tile[0].to_mem_wdata   //= s.data_mem.recv_wdata[0]
+  
+        # Mid-bottom tile.
+        s.tile[1].to_mem_raddr   //= s.data_mem.recv_raddr[1]
+        s.tile[1].from_mem_rdata //= s.data_mem.send_rdata[1]
+        s.tile[1].to_mem_waddr   //= s.data_mem.recv_waddr[1]
+        s.tile[1].to_mem_wdata   //= s.data_mem.recv_wdata[1]
+  
+        # Right-mid tile.
+        s.tile[5].to_mem_raddr   //= s.data_mem.recv_raddr[2]
+        s.tile[5].from_mem_rdata //= s.data_mem.send_rdata[2]
+        s.tile[5].to_mem_waddr   //= s.data_mem.recv_waddr[2]
+        s.tile[5].to_mem_wdata   //= s.data_mem.recv_wdata[2]
+  
+        # Right-top tile.
+        s.tile[8].to_mem_raddr   //= s.data_mem.recv_raddr[3]
+        s.tile[8].from_mem_rdata //= s.data_mem.send_rdata[3]
+        s.tile[8].to_mem_waddr   //= s.data_mem.recv_waddr[3]
+        s.tile[8].to_mem_wdata   //= s.data_mem.recv_wdata[3]
+
       else:
         s.tile[i].to_mem_raddr.rdy   //= 0
         s.tile[i].from_mem_rdata.val //= 0

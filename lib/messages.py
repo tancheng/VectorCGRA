@@ -464,7 +464,7 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 #=========================================================================
 
 def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, 
-                          opaque_nbits = 8, vc = 2,
+                          opaque_nbits = 8,
                           addr_nbits = 16,
                           data_nbits = 16, predicate_nbits = 1,
                           ctrl_actions = 8,
@@ -498,6 +498,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
+  vc = 4
   VcIdType = mk_bits(clog2(vc))
 
   vector_factor_power_nbits = 3
@@ -596,7 +597,8 @@ def mk_intra_cgra_pkt(ntiles = 4,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
-  VcIdType = mk_bits(4)
+  vc = 4
+  VcIdType = mk_bits(clog2(vc))
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
   DataPredicateType = mk_bits(predicate_nbits)
@@ -606,7 +608,6 @@ def mk_intra_cgra_pkt(ntiles = 4,
   # 3 inports of register file bank.
   CtrlRegFromType = mk_bits(2)
   CtrlRegIdxType = mk_bits(clog2(ctrl_registers_per_reg_bank))
-  VcIdType = mk_bits(1)
 
   new_name = f"{prefix}_{ntiles}_{opaque_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_" \

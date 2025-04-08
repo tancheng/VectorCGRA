@@ -20,7 +20,7 @@ from ..tile.TileRTL import TileRTL
 class CgraTemplateRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, multi_cgra_rows,
+                NocPktType, CmdType, CgraIdType, multi_cgra_rows,
                 multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -30,6 +30,7 @@ class CgraTemplateRTL(Component):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
+    num_cgras = multi_cgra_rows * multi_cgra_columns
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
@@ -61,7 +62,7 @@ class CgraTemplateRTL(Component):
                       CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, s.num_tiles,
+                      s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]
@@ -72,23 +73,38 @@ class CgraTemplateRTL(Component):
                                         num_banks_per_cgra,
                                         dataSPM.getNumOfValidReadPorts(),
                                         dataSPM.getNumOfValidWritePorts(),
+                                        multi_cgra_rows,
+                                        multi_cgra_columns,
+                                        s.num_tiles,
+                                        idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(ControllerIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
-                                 controller2addr_map, idTo2d_map)
+                                 s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
-    s.controller_id = InPort(ControllerIdType)
+    s.controller_id = InPort(CgraIdType)
+
+    # Address lower and upper bound.
+    s.address_lower = InPort(DataAddrType)
+    s.address_upper = InPort(DataAddrType)
 
     # Connections
     # Connects controller id.
     s.controller.controller_id //= s.controller_id
+    s.data_mem.cgra_id //= s.controller_id
+
+    # Connects the address lower and upper bound.
+    s.data_mem.address_lower //= s.address_lower
+    s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
     s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_tile_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
     s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_tile_store_request_addr
     s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_tile_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
@@ -105,6 +121,7 @@ class CgraTemplateRTL(Component):
 
     # Assigns tile id.
     for i in range(s.num_tiles):
+      s.tile[i].cgra_id //= s.controller_id
       s.tile[i].tile_id //= i
 
     # Connects ring with each control memory.

@@ -119,7 +119,7 @@ def run_sim(test_harness, max_cycles = 100):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-def test_homo_2x2_2x2(cmdline_opts):
+def initialize_test_harness(cmdline_opts):
   num_tile_inports  = 4
   num_tile_outports = 4
   num_fu_inports = 4
@@ -166,7 +166,7 @@ def test_homo_2x2_2x2(cmdline_opts):
   for i in range(num_terminals):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  print("[cheng] controller2addr_map: ", controller2addr_map)
+  print("[LOG] controller2addr_map: ", controller2addr_map)
 
   cmd_nbits = clog2(NUM_CMDS)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
@@ -220,7 +220,7 @@ def test_homo_2x2_2x2(cmdline_opts):
   '''
   src_ctrl_pkt = \
       [
-       # Preload data.                                             address 34 belong to cgra 1 (not cgra 0)
+       # Preloads data.                                            address 34 belongs to cgra 1 (not cgra 0)
        CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 34, data = 254, data_predicate = 1),
        # Tile 0.
        # Indicates the load address of 2.
@@ -316,10 +316,23 @@ def test_homo_2x2_2x2(cmdline_opts):
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps, controller2addr_map, expected_sink_out_pkt)
+  return th
+
+def test_sim_homo_2x2_2x2(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_verilog_homo_2x2_2x2(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th.apply(DefaultPassGroup())
 
