@@ -464,7 +464,7 @@ def mk_ring_multi_cgra_pkt(nrouters = 4, opaque_nbits = 8, vc = 2,
 #=========================================================================
 
 def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16, 
-                          opaque_nbits = 8, vc = 2,
+                          opaque_nbits = 8,
                           addr_nbits = 16,
                           data_nbits = 16, predicate_nbits = 1,
                           ctrl_actions = 8,
@@ -498,6 +498,7 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
+  vc = 4
   VcIdType = mk_bits(clog2(vc))
 
   vector_factor_power_nbits = 3
@@ -544,8 +545,8 @@ def mk_multi_cgra_noc_pkt(ncols = 4, nrows = 4, ntiles = 16,
   field_dict['ctrl_read_reg_idx'] = [CtrlRegIdxType for _ in range(ctrl_fu_inports)]
 
   def str_func(s):
-      return f"{s.src}>{s.dst},{s.src_x},{s.src_y}>{s.dst_x},{s.dst_y} || tileid:{s.dst_tile_id} ||" \
-              f"{s.opaque}:{s.vc_id}|| {s.addr}.{s.data}.{s.predicate}." \
+      return f"NocPkt: {s.src}->{s.dst},{s.src_x},{s.src_y}->{s.dst_x},{s.dst_y} || tileid:{s.dst_tile_id} ||" \
+              f"{s.opaque}:{s.vc_id} || addr:{s.addr}.data:{s.data}.{s.predicate}." \
               f"{s.payload} || action:{s.ctrl_action} || operation:{s.ctrl_operation} || "\
               f"ctrl_routing_xbar_outport:{s.ctrl_routing_xbar_outport} || "\
               f"ctrl_fu_xbar_outport:{s.ctrl_fu_xbar_outport}\n"
@@ -596,7 +597,8 @@ def mk_intra_cgra_pkt(ntiles = 4,
   CtrlFuInType = mk_bits(clog2(ctrl_fu_inports + 1))
   CtrlFuOutType = mk_bits(clog2(ctrl_fu_outports + 1))
   CtrlPredicateType = mk_bits(predicate_nbits)
-  VcIdType = mk_bits(4)
+  vc = 4
+  VcIdType = mk_bits(clog2(vc))
   AddrType = mk_bits(addr_nbits)
   DataType = mk_bits(data_nbits)
   DataPredicateType = mk_bits(predicate_nbits)
@@ -606,7 +608,6 @@ def mk_intra_cgra_pkt(ntiles = 4,
   # 3 inports of register file bank.
   CtrlRegFromType = mk_bits(2)
   CtrlRegIdxType = mk_bits(clog2(ctrl_registers_per_reg_bank))
-  VcIdType = mk_bits(1)
 
   new_name = f"{prefix}_{ntiles}_{opaque_nbits}_{ctrl_actions}_" \
              f"{ctrl_mem_size}_{ctrl_operations}_{ctrl_fu_inports}_" \
@@ -616,6 +617,10 @@ def mk_intra_cgra_pkt(ntiles = 4,
   def str_func(s):
     out_str = '(ctrl_action)' + str(s.ctrl_action)
     out_str += '(ctrl_operation)' + str(s.ctrl_operation)
+
+    out_str += '|(vc)'
+    out_str += str(int(s.vc_id))
+
     out_str += '|(ctrl_fu_in)'
     for i in range(ctrl_fu_inports):
       if i != 0:
@@ -642,6 +647,15 @@ def mk_intra_cgra_pkt(ntiles = 4,
       if i != 0:
         out_str += '-'
       out_str += str(int(s.ctrl_routing_predicate_in[i]))
+
+    out_str += '|(addr)'
+    out_str += str(int(s.addr))
+
+    out_str += '|(data)'
+    out_str += str(int(s.data))
+
+    out_str += '|(data_predicate)'
+    out_str += str(int(s.data_predicate))
 
     out_str += '|(ctrl_vector_factor_power)'
     out_str += str(int(s.ctrl_vector_factor_power))
@@ -673,7 +687,7 @@ def mk_intra_cgra_pkt(ntiles = 4,
         out_str += '-'
       out_str += str(int(s.ctrl_read_reg_idx[i]))
 
-    return f"{s.dst_cgra_id}:{s.src}>{s.dst}:{s.opaque}.{s.vc_id}:{s.ctrl_action}.{s.ctrl_addr}." \
+    return f"(dst_cgra_id){s.dst_cgra_id}:(tile_src){s.src}->(tile_dst){s.dst}:{s.opaque}.{s.vc_id}:{s.ctrl_action}.{s.ctrl_addr}." \
            f"{out_str}"
 
   field_dict = {}
@@ -731,22 +745,26 @@ def mk_intra_cgra_pkt(ntiles = 4,
 #=========================================================================
 
 def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
-                          mem_size_global = 64,
-                          prefix="TileSramXbarPacket"):
+                          mem_size_global = 64, num_cgras = 4,
+                          num_tiles = 17, prefix="TileSramXbarPacket"):
 
   SrcType = mk_bits(clog2(number_src))
   DstType = mk_bits(clog2(number_dst))
   AddrType = mk_bits(clog2(mem_size_global))
+  CgraIdType = mk_bits(max(1, clog2(num_cgras)))
+  TileIdType = mk_bits(clog2(num_tiles + 1))
 
   new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
 
   def str_func(s):
-    return f"{s.src}>{s.dst}:{s.addr}"
+    return f"{s.src}>{s.dst}:(addr){s.addr}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}"
 
   return mk_bitstruct(new_name, {
       'src': SrcType,
       'dst': DstType,
       'addr': AddrType,
+      'src_cgra': CgraIdType,
+      'src_tile': TileIdType,
     },
     namespace = {'__str__': str_func}
   )

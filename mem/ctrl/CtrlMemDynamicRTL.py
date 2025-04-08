@@ -23,7 +23,7 @@ class CtrlMemDynamicRTL(Component):
 
   def construct(s, CtrlPktType, CtrlSignalType, ctrl_mem_size,
                 num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_tiles,
+                num_tile_outports, num_cgras, num_tiles,
                 ctrl_count_per_iter = 4, total_ctrl_steps = 4):
 
     # The total_ctrl_steps indicates the number of steps the ctrl
@@ -35,7 +35,7 @@ class CtrlMemDynamicRTL(Component):
     # Constant
     CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
     PCType = mk_bits(clog2(ctrl_mem_size + 1))
-    TimeType = mk_bits(clog2(MAX_CTRL_COUNT))
+    TimeType = mk_bits(clog2(MAX_CTRL_COUNT + 1))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
     TileInPortType = mk_bits(clog2(num_tile_inports))
     FuOutPortType = mk_bits(clog2(num_fu_outports))
@@ -49,6 +49,7 @@ class CtrlMemDynamicRTL(Component):
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(CtrlPktType)
 
+    s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Component
@@ -72,10 +73,8 @@ class CtrlMemDynamicRTL(Component):
     s.prologue_count_reg_routing_crossbar = \
         [Wire(PrologueCountType) for _ in range(num_tile_inports)]
 
-
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
-    # s.recv_pkt.rdy //= s.recv_pkt_queue.enq_rdy
     s.recv_pkt_from_controller //= s.recv_pkt_queue.recv
 
     @update
@@ -103,7 +102,7 @@ class CtrlMemDynamicRTL(Component):
       s.reg_file.wdata[0].is_last_ctrl @= 0
 
       if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
-        s.reg_file.wen[0] @= 1 # s.recv_pkt_queue.deq_en
+        s.reg_file.wen[0] @= 1
         s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
         # Fills the fields of the control signal.
         s.reg_file.wdata[0].ctrl @= s.recv_pkt_queue.send.msg.ctrl_operation
@@ -147,9 +146,10 @@ class CtrlMemDynamicRTL(Component):
            (s.reg_file.rdata[0].ctrl == OPT_START):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
-          if (s.sent_complete != 1) & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val):
-            #                             cgra_id, src,       dst, opaque, vc, ctrl_action
-            s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+          if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
+            s.send_pkt_to_controller.msg @= \
+                CtrlPktType(0,       s.tile_id, num_tiles, 0,   0,  CMD_COMPLETE,
+                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1
@@ -170,18 +170,19 @@ class CtrlMemDynamicRTL(Component):
             s.start_iterate_ctrl <<= 0
           elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE:
             s.start_iterate_ctrl <<= 0
-        # else:
-        #   s.start_iterate_ctrl <<= 1
 
     @update_ff
     def issue_complete():
       if s.reset:
         s.sent_complete <<= 0
       else:
-        # Once COMPLETE signal is sent, we shouldn't send another COMPLETE signal until the next ctrl signal is launched.
+        # Once COMPLETE signal is sent, we shouldn't send another
+        # COMPLETE signal until the next ctrl signal is launched.
+        # TODO: Need to extend the logic here if other signals can be
+        # sent to the controller.
         if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
           s.sent_complete <<= 1
-        if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
+        if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH):
           s.sent_complete <<= 0
 
     @update_ff
@@ -198,8 +199,9 @@ class CtrlMemDynamicRTL(Component):
               trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
 
         if s.start_iterate_ctrl == b1(1):
-          if (TimeType(s.total_ctrl_steps_val) == 0) | \
-             (s.times < TimeType(s.total_ctrl_steps_val)):
+          if ((s.total_ctrl_steps_val == 0) | \
+              (s.times < s.total_ctrl_steps_val)) & \
+             s.send_ctrl.rdy & s.send_ctrl.val:
             s.times <<= s.times + TimeType(1)
 
           # Reads the next ctrl signal only when the current one is done.

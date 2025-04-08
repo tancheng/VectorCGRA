@@ -17,7 +17,7 @@ from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 
 
 class RingMultiCgraRTL(Component):
-  def construct(s, CGRADataType, PredicateType, CtrlPktType,
+  def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CtrlSignalType, NocPktType, CmdType, cgra_rows,
                 cgra_columns, tile_rows, tile_columns, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
@@ -27,11 +27,12 @@ class RingMultiCgraRTL(Component):
 
     # Constant
     idTo2d_map = {}
-    s.num_terminals = cgra_rows * cgra_columns
-    RingPos = mk_ring_pos(s.num_terminals)
+    s.num_cgras = cgra_rows * cgra_columns
+    RingPos = mk_ring_pos(s.num_cgras)
     s.num_tiles = tile_rows * tile_columns
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-    ControllerIdType = mk_bits(clog2(s.num_terminals))
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
+    ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
 
     # Interface
     # Request from/to CPU.
@@ -40,14 +41,14 @@ class RingMultiCgraRTL(Component):
 
     # Components
     # Constructs the topology as 1d.
-    for terminal_id in range(s.num_terminals):
-        idTo2d_map[terminal_id] = (terminal_id, 0)
+    for cgra_id in range(s.num_cgras):
+        idTo2d_map[cgra_id] = (cgra_id, 0)
 
-    s.cgra = [CgraRTL(CGRADataType, PredicateType, CtrlPktType,
+    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
                       CtrlSignalType, NocPktType, CmdType,
                       ControllerIdType,
                       # Constructs the topology as 1d.
-                      1, s.num_terminals,
+                      1, s.num_cgras,
                       tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
@@ -55,22 +56,29 @@ class RingMultiCgraRTL(Component):
                       num_ctrl, total_steps, FunctionUnit, FuList,
                       "Mesh", controller2addr_map, idTo2d_map,
                       preload_data = None)
-              for terminal_id in range(s.num_terminals)]
-    s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_terminals, 1)
+              for cgra_id in range(s.num_cgras)]
+
+    # Latency is 1.
+    s.ring = RingNetworkRTL(NocPktType, RingPos, s.num_cgras, 1)
 
     # Connections
+    for i in range(s.num_cgras):
+      s.ring.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
+      s.ring.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
+
     # Connects the controller id.
-    for terminal_id in range(s.num_terminals):
-      s.cgra[terminal_id].controller_id //= terminal_id
+    for cgra_id in range(s.num_cgras):
+      s.cgra[cgra_id].controller_id //= cgra_id
+
+    # Connects memory address upper and lower bound for each CGRA.
+    for cgra_id in range(s.num_cgras):
+      s.cgra[cgra_id].address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+      s.cgra[cgra_id].address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
     s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
     s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
 
-    for i in range(s.num_terminals):
-      s.ring.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
-      s.ring.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
-
-    for i in range(1, s.num_terminals):
+    for i in range(1, s.num_cgras):
       s.cgra[i].recv_from_cpu_pkt.val //= 0
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
       s.cgra[i].send_to_cpu_pkt.rdy //= 0
@@ -88,13 +96,13 @@ class RingMultiCgraRTL(Component):
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_south[tile_col].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
 
         if cgra_row == cgra_rows - 1:
           for tile_col in range(tile_columns):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_north[tile_col].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
 
         if cgra_col != 0:
           for tile_row in range(tile_rows):
@@ -106,13 +114,13 @@ class RingMultiCgraRTL(Component):
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
 
         if cgra_col == cgra_columns - 1:
           for tile_row in range(tile_rows):
             s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_east[tile_row].rdy //= 0
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].val //= 0
-            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CGRADataType()
+            s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
 
   def line_trace(s):
     res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())

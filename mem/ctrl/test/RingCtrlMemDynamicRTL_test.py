@@ -27,14 +27,13 @@ class TestHarness( Component ):
                  CtrlSignalType, ctrl_mem_size, width, height,
                  data_mem_size, num_fu_inports, num_fu_outports,
                  num_tile_inports, num_tile_outports, ctrl_pkts,
-                 sink_msgs, complete_signal_sink_out):
+                 sink_msgs):
 
     s.width = width
     s.height = height
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = [TestSinkRTL(CtrlSignalType, sink_msgs[i])
                   for i in range(width * height)]
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     s.dut = \
         DUT(CtrlPktType, CtrlSignalType, width, height,
@@ -42,10 +41,11 @@ class TestHarness( Component ):
             num_tile_inports, num_tile_outports,
             len(ctrl_pkts), len(ctrl_pkts))
 
-    connect(s.src_pkt.send, s.dut.recv_pkt_from_controller)
-    s.complete_signal_sink_out.recv //= s.dut.send_to_controller_pkt
+    s.src_pkt.send //= s.dut.recv_pkt_from_controller
     for i in range(width * height):
-      connect(s.dut.send_ctrl[i], s.sink_out[i].recv)
+      s.dut.send_ctrl[i] //= s.sink_out[i].recv
+
+    s.dut.send_to_controller_pkt.rdy //= 0
 
   def done(s):
     if not s.src_pkt.done():
@@ -53,7 +53,7 @@ class TestHarness( Component ):
     for i in range(s.width * s.height):
       if not s.sink_out[i].done():
         return False
-    return s.complete_signal_sink_out.done()
+    return True
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -63,7 +63,7 @@ def run_sim(test_harness, max_cycles = 40):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
-  # Run simulation
+  # Runs simulation.
   ncycles = 0
   print()
   print("{}:{}".format(ncycles, test_harness.line_trace()))
@@ -72,8 +72,7 @@ def run_sim(test_harness, max_cycles = 40):
     ncycles += 1
     print("{}:{}".format( ncycles, test_harness.line_trace()))
 
-  # Check timeout
-
+  # Checks timeout.
   assert ncycles < max_cycles
 
   test_harness.sim_tick()
@@ -93,7 +92,7 @@ def test_Ctrl():
   num_tile_outports = 4
   width = 2
   height = 2
-  num_terminals = width * height
+  num_tiles = width * height
   num_commands = NUM_CMDS
   ctrl_action_nbits = clog2(num_commands)
   num_ctrl_operations = NUM_OPTS
@@ -105,19 +104,19 @@ def test_Ctrl():
   num_registers_per_reg_bank = 16
 
   CtrlPktType = \
-        mk_intra_cgra_pkt(num_terminals,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
+        mk_intra_cgra_pkt(num_tiles,
+                          cgra_id_nbits,
+                          num_commands,
+                          ctrl_mem_size,
+                          num_ctrl_operations,
+                          num_fu_inports,
+                          num_fu_outports,
+                          num_tile_inports,
+                          num_tile_outports,
+                          num_registers_per_reg_bank,
+                          addr_nbits,
+                          data_nbits,
+                          predicate_nbits)
 
   CtrlSignalType = mk_separate_reg_ctrl(num_ctrl_operations,
                                         num_fu_inports,
@@ -155,12 +154,9 @@ def test_Ctrl():
               [CtrlSignalType(OPT_SUB, 0, pickRegister),
                CtrlSignalType(OPT_ADD, 0, pickRegister)]]
 
-  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,           dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_terminals,      0,  1, ctrl_action = CMD_COMPLETE)]
   th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
                    ctrl_mem_size, width, height, data_mem_size, num_fu_inports,
                    num_fu_outports, num_tile_inports, num_tile_outports,
-                   src_ctrl_pkt, sink_out, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out)
   run_sim(th)
 

@@ -40,7 +40,7 @@ kMaxCycles = 100
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                ControllerIdType, controller_id, width, height,
+                ControllerIdType, cgra_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -48,6 +48,7 @@ class TestHarness(Component):
                 preload_data, expected_out, complete_signal_sink_out):
 
     s.DataType = DataType
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.expected_out = expected_out
@@ -56,7 +57,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, controller_id,
+                NocPktType, CmdType, ControllerIdType, cgra_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -75,6 +76,10 @@ class TestHarness(Component):
     s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
+
+    # Connects memory address upper and lower bound for each CGRA.
+    s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+    s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
     for tile_col in range(width):
       s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -99,7 +104,7 @@ class TestHarness(Component):
     for i in range(len(s.expected_out)):
       for j in range(len(s.expected_out[i])):
         # Outputs are stored in bank 2 and bank 3.
-        if s.dut.data_mem.reg_file[2+i].regs[j] != s.expected_out[i][j]:
+        if s.dut.data_mem.reg_file[2 + i].regs[j] != s.expected_out[i][j]:
             return False
     return True
 
@@ -161,7 +166,7 @@ def test_CGRA_systolic(cmdline_opts):
   width = 3
   height = 3
   num_tiles = width * height
-  num_terminals = 1
+  num_cgras = 1
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
@@ -177,7 +182,6 @@ def test_CGRA_systolic(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   AddrType = mk_bits(addr_nbits)
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  num_tiles = width * height
   DUT = CgraSystolicArrayRTL
   FunctionUnit = FlexibleFuRTL
   DataType = mk_data(32, 1)
@@ -185,8 +189,8 @@ def test_CGRA_systolic(cmdline_opts):
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
 
   CmdType = NUM_CMDS
-  ControllerIdType = mk_bits(max(clog2(num_terminals), 1))
-  controller_id = 0
+  ControllerIdType = mk_bits(max(clog2(num_cgras), 1))
+  cgra_id = 0
   controller2addr_map = {
           0: [0,  15],
           1: [16, 31],
@@ -201,18 +205,18 @@ def test_CGRA_systolic(cmdline_opts):
 
   CtrlPktType = \
         mk_intra_cgra_pkt(num_tiles,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
+                          cgra_id_nbits,
+                          num_commands,
+                          ctrl_mem_size,
+                          num_ctrl_operations,
+                          num_fu_inports,
+                          num_fu_outports,
+                          num_tile_inports,
+                          num_tile_outports,
+                          num_registers_per_reg_bank,
+                          addr_nbits,
+                          data_nbits,
+                          predicate_nbits)
 
   CtrlSignalType = \
       mk_separate_reg_ctrl(num_ctrl_operations,
@@ -556,7 +560,7 @@ def test_CGRA_systolic(cmdline_opts):
   # read) continue.
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    CtrlPktType, CtrlSignalType, NocPktType, CmdType,
-                   ControllerIdType, controller_id, width, height,
+                   ControllerIdType, cgra_id, width, height,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
