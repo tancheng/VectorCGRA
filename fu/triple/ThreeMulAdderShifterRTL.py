@@ -43,18 +43,18 @@ class ThreeMulAdderShifterRTL(ThreeCombo):
       s.Fu2.recv_opt.msg.fu_in[0] @= 1
       s.Fu2.recv_opt.msg.fu_in[1] @= 2
 
-      if s.recv_opt.msg.ctrl == OPT_MUL_ADD_LLS:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl @= OPT_ADD
-        s.Fu2.recv_opt.msg.ctrl @= OPT_LLS
-      elif s.recv_opt.msg.ctrl == OPT_MUL_SUB_LLS:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl @= OPT_SUB
-        s.Fu2.recv_opt.msg.ctrl @= OPT_LLS
-      elif s.recv_opt.msg.ctrl == OPT_MUL_SUB_LRS:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl @= OPT_SUB
-        s.Fu2.recv_opt.msg.ctrl @= OPT_LRS
+      if s.recv_opt.msg.operation == OPT_MUL_ADD_LLS:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL
+        s.Fu1.recv_opt.msg.operation @= OPT_ADD
+        s.Fu2.recv_opt.msg.operation @= OPT_LLS
+      elif s.recv_opt.msg.operation == OPT_MUL_SUB_LLS:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL
+        s.Fu1.recv_opt.msg.operation @= OPT_SUB
+        s.Fu2.recv_opt.msg.operation @= OPT_LLS
+      elif s.recv_opt.msg.operation == OPT_MUL_SUB_LRS:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL
+        s.Fu1.recv_opt.msg.operation @= OPT_SUB
+        s.Fu2.recv_opt.msg.operation @= OPT_LRS
       # else:
       #   for j in range(num_outports):
       #     s.send_out[j].val @= b1(0)

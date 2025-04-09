@@ -62,7 +62,7 @@ class MulRTL(Fu):
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_MUL:
+        if s.recv_opt.msg.operation == OPT_MUL:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload * s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -76,7 +76,7 @@ class MulRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_MUL_CONST:
+        elif s.recv_opt.msg.operation == OPT_MUL_CONST:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload * s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
@@ -89,7 +89,7 @@ class MulRTL(Fu):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_DIV:
+        elif s.recv_opt.msg.operation == OPT_DIV:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload / s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \

@@ -332,10 +332,10 @@ def mk_separate_reg_ctrl(num_operations = 7,
         out_str += '-'
       out_str += str(int(s.read_reg_idx[i]))
 
-    return f"(opt){s.ctrl}|{out_str}"
+    return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
-  field_dict['ctrl'] = OperationType
+  field_dict['operation'] = OperationType
   # TODO: need fix to pair `predicate` with specific operation.
   # The 'predicate' indicates whether the current operation is based on
   # the partial predication or not. Note that 'predicate' is different
@@ -849,6 +849,27 @@ def mk_intra_cgra_pkt(ntiles = 4,
 #=========================================================================
 # Crossbar (tiles <-> SRAM) packet
 #=========================================================================
+
+def mk_new_tile_sram_xbar_pkt(number_inports,
+                              number_outports,
+                              PyloadType,
+                              prefix="TileSramXbarPacket"):
+
+  SrcType = mk_bits(clog2(number_inports))
+  DstType = mk_bits(clog2(number_outports))
+
+  new_name = f"{prefix}_{number_inports}_{number_outports}_PyloadType"
+
+  def str_func(s):
+    return f"{s.src}>{s.dst}:(payload){s.payload}"
+
+  return mk_bitstruct(new_name, {
+      'src': SrcType,
+      'dst': DstType,
+      'payload': PayloadType,
+    },
+    namespace = {'__str__': str_func}
+  )
 
 def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
                           mem_size_global = 64, num_cgras = 4,

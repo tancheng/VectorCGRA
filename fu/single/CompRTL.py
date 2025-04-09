@@ -65,7 +65,7 @@ class CompRTL(Fu):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_EQ:
+        if s.recv_opt.msg.operation == OPT_EQ:
           if s.recv_in[s.in0_idx].msg.payload == s.recv_in[s.in1_idx].msg.payload:
             s.send_out[0].msg @= s.const_one
           else:
@@ -82,7 +82,7 @@ class CompRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_EQ_CONST:
+        elif s.recv_opt.msg.operation == OPT_EQ_CONST:
           if s.recv_in[s.in0_idx].msg.payload == s.recv_const.msg.payload:
             s.send_out[0].msg @= s.const_one
           else:
@@ -98,7 +98,7 @@ class CompRTL(Fu):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_LT:
+        elif s.recv_opt.msg.operation == OPT_LT:
           if s.recv_in[s.in0_idx].msg.payload < s.recv_in[s.in1_idx].msg.payload:
             s.send_out[0].msg @= s.const_one
           else:

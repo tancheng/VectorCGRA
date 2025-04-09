@@ -39,7 +39,7 @@ class NahRTL(Fu):
 
       s.recv_predicate.rdy @= b1(0)
 
-      if s.recv_opt.msg.ctrl == OPT_NAH:
+      if s.recv_opt.msg.operation == OPT_NAH:
         s.recv_opt.rdy @= 1
       else:
         for j in range(num_outports):

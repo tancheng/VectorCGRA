@@ -83,7 +83,7 @@ class FpMulRTL(Fu):
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_FMUL:
+        if s.recv_opt.msg.operation == OPT_FMUL:
           s.fmul.a @= s.recv_in[s.in0_idx].msg.payload
           s.fmul.b @= s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
@@ -97,7 +97,7 @@ class FpMulRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_FMUL_CONST:
+        elif s.recv_opt.msg.operation == OPT_FMUL_CONST:
           s.fmul.a @= s.recv_in[s.in0_idx].msg.payload
           s.fmul.b @= s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \

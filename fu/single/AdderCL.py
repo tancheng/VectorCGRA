@@ -68,7 +68,7 @@ class AdderCL(Fu):
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_ADD:
+        if s.recv_opt.msg.operation == OPT_ADD:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -82,7 +82,7 @@ class AdderCL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_ADD_CONST:
+        elif s.recv_opt.msg.operation == OPT_ADD_CONST:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
@@ -96,7 +96,7 @@ class AdderCL(Fu):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_INC:
+        elif s.recv_opt.msg.operation == OPT_INC:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.const_one.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
@@ -108,7 +108,7 @@ class AdderCL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_SUB:
+        elif s.recv_opt.msg.operation == OPT_SUB:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload - s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -123,7 +123,7 @@ class AdderCL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_PAS:
+        elif s.recv_opt.msg.operation == OPT_PAS:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \

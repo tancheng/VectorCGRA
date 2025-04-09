@@ -50,12 +50,12 @@ class VectorAllReduceRTL(Component):
     s.reduce_add = SumUnit(TempDataType, num_lanes)
     for i in range(num_lanes):
       s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
-          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD else 0)
+          if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD else 0)
 
     s.reduce_mul = ReduceMulUnit(TempDataType, num_lanes)
     for i in range(num_lanes):
       s.reduce_mul.in_[i] //= lambda: (s.temp_result[i]
-          if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL else 0)
+          if s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL else 0)
 
     @update
     def update_result():
@@ -65,10 +65,10 @@ class VectorAllReduceRTL(Component):
         s.temp_result[i] @= TempDataType(0)
         s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
-      if s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_ADD:
+      if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD:
         s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
 
-      elif s.recv_opt.msg.ctrl == OPT_VEC_REDUCE_MUL:
+      elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL:
         s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_mul.out
 
     @update
@@ -89,7 +89,7 @@ class VectorAllReduceRTL(Component):
         s.recv_predicate.rdy @= b1(1)
       # else:
       #   s.send_out[0].msg.predicate @= b1( 0 )
-      if s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_ADD | s.recv_opt.msg.ctrl != OPT_VEC_REDUCE_MUL:
+      if s.recv_opt.msg.operation != OPT_VEC_REDUCE_ADD | s.recv_opt.msg.operation != OPT_VEC_REDUCE_MUL:
         s.send_out[0].msg.predicate @= b1(0) # s.recv_in[0].msg.predicate
 
     @update
@@ -103,5 +103,5 @@ class VectorAllReduceRTL(Component):
       s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace(s):
-    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + " -> " + str(s.send_out[0].msg)
+    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + " -> " + str(s.send_out[0].msg)
 

@@ -67,7 +67,7 @@ class VectorMulComboRTL(Component):
     s.reduce_add = SumUnit( TempDataType, num_lanes )
     for i in range(num_lanes):
       s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
-          if s.recv_opt.msg.ctrl == OPT_VEC_MUL else 0)
+          if s.recv_opt.msg.operation == OPT_VEC_MUL else 0)
 
     @update
     def update_input_output():
@@ -85,7 +85,7 @@ class VectorMulComboRTL(Component):
         s.Fu[i].recv_in[0].msg[0:sub_bw] @= FuDataType()
         s.Fu[i].recv_in[1].msg[0:sub_bw] @= FuDataType()
 
-      if s.recv_opt.msg.ctrl == OPT_VEC_MUL:
+      if s.recv_opt.msg.operation == OPT_VEC_MUL:
         # Connection: split into vectorized FUs
         s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
         s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
@@ -102,7 +102,7 @@ class VectorMulComboRTL(Component):
 
         s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
 
-      elif s.recv_opt.msg.ctrl == OPT_MUL: # with highest precision
+      elif s.recv_opt.msg.operation == OPT_MUL: # with highest precision
         s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
         s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
         s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
@@ -156,15 +156,15 @@ class VectorMulComboRTL(Component):
       for i in range(num_lanes):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
-        s.Fu[i].recv_opt.msg.ctrl @= OPT_NAH
+        s.Fu[i].recv_opt.msg.operation @= OPT_NAH
 
       if s.recv_opt.msg.predicate == b1(1):
         s.recv_predicate.rdy @= b1(1)
 
-      if (s.recv_opt.msg.ctrl == OPT_VEC_MUL) | \
-         (s.recv_opt.msg.ctrl == OPT_MUL):
+      if (s.recv_opt.msg.operation == OPT_VEC_MUL) | \
+         (s.recv_opt.msg.operation == OPT_MUL):
         for i in range(num_lanes):
-          s.Fu[i].recv_opt.msg.ctrl @= OPT_MUL
+          s.Fu[i].recv_opt.msg.operation @= OPT_MUL
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
     @update
@@ -178,5 +178,5 @@ class VectorMulComboRTL(Component):
       s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace(s):
-    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
+    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
 

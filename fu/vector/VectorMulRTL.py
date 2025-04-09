@@ -80,7 +80,7 @@ class VectorMulRTL(Component):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_MUL:
+        if s.recv_opt.msg.operation == OPT_MUL:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg * s.recv_in[s.in1_idx].msg
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
           s.send_out[0].val @= s.recv_all_val
@@ -102,7 +102,7 @@ class VectorMulRTL(Component):
   def line_trace( s ):
     opt_str = " #"
     if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '

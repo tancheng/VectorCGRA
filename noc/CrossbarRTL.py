@@ -74,7 +74,7 @@ class CrossbarRTL(Component):
       if s.recv_opt.msg.predicate:
         s.send_predicate.msg @= PredicateType(b1(0), b1(0))
 
-      if s.recv_opt.val & (s.recv_opt.msg.ctrl != OPT_START):
+      if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
         for i in range(num_inports):
           # Set predicate once the recv_data is stable (i.e., en == true).
           # FIXME: Let's re-think the predicate support in next PR.
