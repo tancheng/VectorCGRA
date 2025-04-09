@@ -19,8 +19,8 @@ from ..tile.TileRTL import TileRTL
 
 class CgraTemplateRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, CgraIdType, multi_cgra_rows,
+  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
                 multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -59,7 +59,7 @@ class CgraTemplateRTL(Component):
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CtrlSignalType, ctrl_mem_size,
+                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
@@ -67,7 +67,9 @@ class CgraTemplateRTL(Component):
                       FuList = FuList)
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
-    s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
+    s.data_mem = DataMemWithCrossbarRTL(NocPktType,
+                                        CgraPayloadType,
+                                        DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
@@ -78,7 +80,7 @@ class CgraTemplateRTL(Component):
                                         s.num_tiles,
                                         idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)

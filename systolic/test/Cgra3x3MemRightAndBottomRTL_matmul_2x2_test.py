@@ -35,11 +35,11 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-kMaxCycles = 100
+kMaxCycles = 150
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CtrlSignalType, NocPktType, CmdType,
+                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
                 ControllerIdType, cgra_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
@@ -53,11 +53,11 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.expected_out = expected_out
 
-    cmp_fn = lambda a, b: a.dst == b.dst and a.ctrl_action == b.ctrl_action
+    cmp_fn = lambda a, b: a.dst == b.dst and a.payload.cmd == b.payload.cmd
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType, cgra_id,
+    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, NocPktType, ControllerIdType, cgra_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -166,9 +166,9 @@ def test_CGRA_systolic(cmdline_opts):
   width = 3
   height = 3
   num_tiles = width * height
-  num_cgras = 1
-  num_commands = NUM_CMDS
-  num_ctrl_operations = NUM_OPTS
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
   num_registers_per_reg_bank = 16
   data_nbits = 32
   # 2 is enough for [2, 2] x [2, 2] matmul, however, we enable the
@@ -180,15 +180,12 @@ def test_CGRA_systolic(cmdline_opts):
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
-  AddrType = mk_bits(addr_nbits)
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   DUT = CgraSystolicArrayRTL
   FunctionUnit = FlexibleFuRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   FuList = [SeqMulAdderRTL, AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
 
-  CmdType = NUM_CMDS
   ControllerIdType = mk_bits(max(clog2(num_cgras), 1))
   cgra_id = 0
   controller2addr_map = {
@@ -203,45 +200,70 @@ def test_CGRA_systolic(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  CtrlPktType = \
-        mk_intra_cgra_pkt(num_tiles,
-                          cgra_id_nbits,
-                          num_commands,
-                          ctrl_mem_size,
-                          num_ctrl_operations,
-                          num_fu_inports,
-                          num_fu_outports,
-                          num_tile_inports,
-                          num_tile_outports,
-                          num_registers_per_reg_bank,
-                          addr_nbits,
-                          data_nbits,
-                          predicate_nbits)
+  # CtrlPktType = \
+  #       mk_intra_cgra_pkt(num_tiles,
+  #                         cgra_id_nbits,
+  #                         num_commands,
+  #                         ctrl_mem_size,
+  #                         num_ctrl_operations,
+  #                         num_fu_inports,
+  #                         num_fu_outports,
+  #                         num_tile_inports,
+  #                         num_tile_outports,
+  #                         num_registers_per_reg_bank,
+  #                         addr_nbits,
+  #                         data_nbits,
+  #                         predicate_nbits)
 
-  CtrlSignalType = \
-      mk_separate_reg_ctrl(num_ctrl_operations,
+  # CtrlSignalType = \
+  #     mk_separate_reg_ctrl(num_ctrl_operations,
+  #                          num_fu_inports,
+  #                          num_fu_outports,
+  #                          num_tile_inports,
+  #                          num_tile_outports,
+  #                          num_registers_per_reg_bank)
+
+  # NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
+  #                                    nrows = cgra_rows,
+  #                                    ntiles = num_tiles,
+  #                                    addr_nbits = addr_nbits,
+  #                                    data_nbits = data_nbits,
+  #                                    predicate_nbits = 1,
+  #                                    ctrl_actions = num_commands,
+  #                                    ctrl_mem_size = ctrl_mem_size,
+  #                                    ctrl_operations = num_ctrl_operations,
+  #                                    ctrl_fu_inports = num_fu_inports,
+  #                                    ctrl_fu_outports = num_fu_outports,
+  #                                    ctrl_tile_inports = num_tile_inports,
+  #                                    ctrl_tile_outports = num_tile_outports)
+
+  DataAddrType = mk_bits(addr_nbits)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
                            num_fu_inports,
                            num_fu_outports,
                            num_tile_inports,
                            num_tile_outports,
                            num_registers_per_reg_bank)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
-                                     nrows = cgra_rows,
-                                     ntiles = num_tiles,
-                                     addr_nbits = addr_nbits,
-                                     data_nbits = data_nbits,
-                                     predicate_nbits = 1,
-                                     ctrl_actions = num_commands,
-                                     ctrl_mem_size = ctrl_mem_size,
-                                     ctrl_operations = num_ctrl_operations,
-                                     ctrl_fu_inports = num_fu_inports,
-                                     ctrl_fu_outports = num_fu_outports,
-                                     ctrl_tile_inports = num_tile_inports,
-                                     ctrl_tile_outports = num_tile_outports)
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
 
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
-  pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
+
+  fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   '''preload_const = [
                    # The offset address used for loading input activation.
@@ -284,73 +306,109 @@ def test_CGRA_systolic(cmdline_opts):
       tile 8: [DataType(12, 1), DataType(13, 1)]
   '''
   src_opt_per_tile = [
-
       # On tile 0 ([0, 0]).
       [
        # Const
-                 # dst_cgra_id src dst vc_id opq
-       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
-       CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
+                      # src dst src_cgra dst_cgra             vc opq
+       # CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 0),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(0, 1))),
+       # CtrlPktType(0,          0,  0,  0,    0, ctrl_action = CMD_CONST, data = 1),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(1, 1))),
 
        # Pre-configure the prologue count for both operation and routing.
-       CtrlPktType(0,      0,  0,  0,    0,
-                   ctrl_action = CMD_CONFIG_PROLOGUE_FU,
-                   ctrl_addr = 0,
-                   data = 1),
-       CtrlPktType(0,      0,  0,  0,    0,
-                   ctrl_action = CMD_CONFIG_PROLOGUE_FU_CROSSBAR,
-                   # ctrl_fu_xbar_outport = [0,0,0,0,0,0,0,0], by default zeros
-                   data = 1),
+       # CtrlPktType(0,      0,  0,  0,    0,
+       #             ctrl_action = CMD_CONFIG_PROLOGUE_FU,
+       #             ctrl_addr = 0,
+       #             data = 1),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, data = DataType(1, 1), ctrl_addr = 0)),
+       # CtrlPktType(0,      0,  0,  0,    0,
+       #             ctrl_action = CMD_CONFIG_PROLOGUE_FU_CROSSBAR,
+       #             # ctrl_fu_xbar_outport = [0,0,0,0,0,0,0,0], by default zeros
+       #             data = 1),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, data = DataType(1, 1))),
 
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  0,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
+       # CtrlPktType(0,      0,  0,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  0,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
+       # CtrlPktType(0,      0,  0,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
 
                  # dst_cgra_id src dst vc_id opq cmd_type    ctrl_addr operation     predicate
-       CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,        OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       # CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,        OPT_LD_CONST, b1(0),    pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_LD_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
+       # CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,        OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 1 ([0, 1]).
       [
        # Const
-       CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 4),
-       CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 5),
-
+       # CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 4),
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(4, 1))),
+       # CtrlPktType(0,      0,  1,  0,    0, ctrl_action = CMD_CONST, data = 5),
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  1,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       # CtrlPktType(0,      0,  1,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  1,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
+       # CtrlPktType(0,      0,  1,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       # CtrlPktType(0,      0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_LD_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
 
-       CtrlPktType(0,      0,  1,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (1), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
-
+       # CtrlPktType(0,      0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  1,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 2 ([0, 2]).
       # Tile 2 doesn't need to do anything,
@@ -361,162 +419,297 @@ def test_CGRA_systolic(cmdline_opts):
 
       # On tile 3 ([1, 0]).
       [
+       # CtrlPktType(0,      0,  3,  0,    0, ctrl_action = CMD_CONST, data = 2),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  3,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  3,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,      0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,      0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+
        # Const
-       CtrlPktType(0,      0,  3,  0,    0, ctrl_action = CMD_CONST, data = 2),
-
+       IntraCgraPktType(0,  3,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  3,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  3,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  3,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
-
-       CtrlPktType(0,      0,  3,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  3,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  3,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  3,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_MUL_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
+       IntraCgraPktType(0,  3,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 4 (1, 1]).
       [
+       # # Const
+       # CtrlPktType(0,      0,  4,  0,    0, ctrl_action = CMD_CONST, data = 4),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  4,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  4,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,      0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,      0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+
        # Const
-       CtrlPktType(0,      0,  4,  0,    0, ctrl_action = CMD_CONST, data = 4),
-
+       IntraCgraPktType(0,  4,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(4, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  4,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  4,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  4,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
-
-       CtrlPktType(0,      0,  4,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  4,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  4,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  4,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
+       IntraCgraPktType(0,  4,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 5 ([1, 2]).
       [
+       # # Const
+       # CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 8),
+       # CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 9),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  5,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  5,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,      0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,      0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+
        # Const
-       CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 8),
-       CtrlPktType(0,      0,  5,  0,    0, ctrl_action = CMD_CONST, data = 9),
-
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(8, 1))),
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(9, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  5,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  5,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
-
-       CtrlPktType(0,      0,  5,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  5,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_STR_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(3), TileInType(0), TileInType(0), TileInType(0)]))),
+       IntraCgraPktType(0,  5,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 6 ([2, 0]).
       [
+       # # Const
+       # CtrlPktType(0,      0,  6,  0,    0, ctrl_action = CMD_CONST, data = 6),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  6,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  6,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,      0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,      0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+
        # Const
-       CtrlPktType(0,      0,  6,  0,    0, ctrl_action = CMD_CONST, data = 6),
-
+       IntraCgraPktType(0,  6,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(6, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  6,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  6,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  6,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
-
-       CtrlPktType(0,      0,  6,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  6,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  6,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  6,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_MUL_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
+       IntraCgraPktType(0,  6,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 7 ([2, 1]).
       [
+       # # Const
+       # CtrlPktType(0,      0,  7,  0,    0, ctrl_action = CMD_CONST, data = 8),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  7,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  7,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,      0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,      0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+
        # Const
-       CtrlPktType(0,      0,  7,  0,    0, ctrl_action = CMD_CONST, data = 8),
-
+       IntraCgraPktType(0,  7,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(8, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  7,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  7,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  7,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
-
-       CtrlPktType(0,      0,  7,  0,    0,  CMD_CONFIG, 0,   OPT_MUL_CONST_ADD, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,      0,  7,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])],
+       IntraCgraPktType(0,  7,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  7,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(2), TileInType(0), TileInType(3), TileInType(0)],
+                                                        fu_xbar_outport = \
+                                                            [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (1),
+                                                             FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]))),
+       IntraCgraPktType(0,  7,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))],
 
       # On tile 8 ([2, 2]).
       [
+       # # Const
+       # CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 12),
+       # CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 13),
+
+       # # Pre-configure per-tile config count per iter.
+       # CtrlPktType(0,      0,  8,  0,    0,
+       #             ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
+       #             data = 1),
+
+       # # Pre-configure per-tile total config count.
+       # CtrlPktType(0,      0,  8,  0,    0,
+       #             ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
+       #             data = updated_ctrl_steps),
+
+       # CtrlPktType(0,     0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
+       #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
+       # CtrlPktType(0,     0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
+       #             [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+       #              TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+       #             [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
+       #              FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])]]
+
        # Const
-       CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 12),
-       CtrlPktType(0,     0,  8,  0,    0, ctrl_action = CMD_CONST, data = 13),
-
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(12, 1))),
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONST, data = DataType(13, 1))),
        # Pre-configure per-tile config count per iter.
-       CtrlPktType(0,      0,  8,  0,    0,
-                   ctrl_action = CMD_CONFIG_COUNT_PER_ITER,
-                   data = 1),
-
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
        # Pre-configure per-tile total config count.
-       CtrlPktType(0,      0,  8,  0,    0,
-                   ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                   data = updated_ctrl_steps),
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_CONFIG,
+                                        ctrl = CtrlType(OPT_STR_CONST,
+                                                        0,
+                                                        fu_in_code,
+                                                        routing_xbar_outport = \
+                                                            [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                             TileInType(3), TileInType(0), TileInType(0), TileInType(0)]))),
+       IntraCgraPktType(0,  8,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_LAUNCH))]]
 
-       CtrlPktType(0,     0,  8,  0,    0,  CMD_CONFIG, 0,   OPT_STR_CONST, b1(0), pick_register,
-                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)]),
-       CtrlPktType(0,     0,  8,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0),    pick_register,
-                   [TileInType(2), TileInType(0), TileInType(0), TileInType(0),
-                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                   [FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0),
-                    FuOutType (0), FuOutType (0), FuOutType (0), FuOutType (0)])]]
-  
   # preload activation tensors to data mem
   '''
      # addr:  0    1    2    3
@@ -530,10 +723,19 @@ def test_CGRA_systolic(cmdline_opts):
   '''
   activation_tensor_preload_data = [
       [
-          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 0, data = 1, data_predicate = 1),
-          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 1, data = 2, data_predicate = 1),
-          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 4, data = 3, data_predicate = 1),
-          CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 5, data = 4, data_predicate = 1)
+       #    CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 0, data = 1, data_predicate = 1),
+       #    CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 1, data = 2, data_predicate = 1),
+       #    CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 4, data = 3, data_predicate = 1),
+       #    CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 5, data = 4, data_predicate = 1)
+                      # src dst src_cgra dst_cgra             vc opq
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = 0)),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_STORE_REQUEST, data = DataType(2, 1), data_addr = 1)),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_STORE_REQUEST, data = DataType(3, 1), data_addr = 4)),
+       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0, 0, 0,
+                        CgraPayloadType(CMD_STORE_REQUEST, data = DataType(4, 1), data_addr = 5)),
       ]
   ]
 
@@ -553,13 +755,25 @@ def test_CGRA_systolic(cmdline_opts):
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  # complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = \
+      [IntraCgraPktType(i, # src
+                        num_tiles, # dst
+                        cgra_id, # src_cgra_id
+                        cgra_id, # dst_cgra_id
+                        0, # src_cgra_x
+                        0, # src_cgra_y
+                        0, # dst_cgra_x
+                        0, # dst_cgra_y
+                        0, # opaque
+                        0, # vc_id
+                        CgraPayloadType(CMD_COMPLETE)) for i in range(num_tiles)]
 
   # When the max iterations are larger than the number of control signals,
   # enough ctrl_waddr needs to be provided to make execution (i.e., ctrl
   # read) continue.
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   CtrlPktType, CtrlSignalType, NocPktType, CmdType,
+                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                    ControllerIdType, cgra_id, width, height,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,

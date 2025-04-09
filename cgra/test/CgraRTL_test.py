@@ -144,7 +144,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   FunctionUnit = FlexibleFuRTL
 
   DataAddrType = mk_bits(addr_nbits)
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
   DataType = mk_data(data_bitwidth, 1)
   PredicateType = mk_predicate(1, 1)
@@ -194,11 +193,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                            num_tiles,
                                            CgraPayloadType)
 
-  tile_in_code = [TileInType(0) for _ in range(num_routing_outports)]
+  routing_xbar_code = [TileInType(0) for _ in range(num_routing_outports)]
   fu_in_code = [FuInType(0) for _ in range(num_fu_inports)]
   fu_in_code[0] = FuInType(1)
-  fu_out_code = [FuOutType(0) for _ in range(num_routing_outports)]
-  fu_out_code[num_tile_inports] = FuOutType(1)
+  fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
+  fu_xbar_code[num_tile_outports] = FuOutType(1)
   read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
   read_reg_from_code[0] = b1(1)
   read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
@@ -240,8 +239,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                        ctrl = CtrlType(OPT_INC,
                                                        0,
                                                        fu_in_code,
-                                                       tile_in_code,
-                                                       fu_out_code,
+                                                       routing_xbar_code,
+                                                       fu_xbar_code,
                                                        read_reg_from = read_reg_from_code,
                                                        read_reg_idx = read_reg_idx_code))),
 
@@ -256,8 +255,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                        0, # opaque
                        0, # vc_id
                        CgraPayloadType(CMD_LAUNCH,
-                                       ctrl = CtrlType(OPT_NAH)))
-      ] for i in range(num_tiles)]
+                                       ctrl = CtrlType(OPT_NAH)))] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   complete_signal_sink_out = \
