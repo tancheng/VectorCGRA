@@ -110,11 +110,11 @@ class CgraRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[height] //= s.controller.send_to_tile_load_request_addr
+    s.data_mem.recv_raddr[s.data_mem_num_rd_tiles] //= s.controller.send_to_tile_load_request_addr
     s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
     s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[height] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[height] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_waddr[s.data_mem_num_wr_tiles] //= s.controller.send_to_tile_store_request_addr
+    s.data_mem.recv_wdata[s.data_mem_num_wr_tiles] //= s.controller.send_to_tile_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
@@ -218,8 +218,8 @@ class CgraRTL(Component):
         s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
         s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
 
-      # Connects first col's tiles and last row's tiles to mem.
-      if (i % width == 0) or (i >= s.num_tiles - width + 1):
+      # Connects first col's tiles and first row's tiles to mem.
+      if (i % width == 0) or (i <= width - 1):
         s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[s.data_mem_rd_wr_idx]
         s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[s.data_mem_rd_wr_idx]
         s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[s.data_mem_rd_wr_idx]

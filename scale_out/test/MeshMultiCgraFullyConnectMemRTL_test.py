@@ -579,10 +579,8 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
           CtrlPktType(1, 0, num_tiles, 0, 0, ctrl_action = CMD_COMPLETE),
 
           # Expected updated value.
-          CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 62, data = 0x0a,
-                      data_predicate = 1),
-          CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 63, data = 0x0b,
-                      data_predicate = 1),
+          CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 62, data = 0x01, data_predicate = 1),
+          CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 63, data = 0x02, data_predicate = 1),
       ]
 
   src_ctrl_pkt = []
