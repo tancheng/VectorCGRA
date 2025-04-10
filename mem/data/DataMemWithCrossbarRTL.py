@@ -226,28 +226,7 @@ class DataMemWithCrossbarRTL(Component):
                        0, # opaque
                        0, # vc_id
                        CgraPayloadType(0))
-                       #     CMD_STORE_REQUEST,
-                       #     data = DataType(s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload,
-                       #                     s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate),
-                       #     data_addr = s.write_crossbar.send[num_banks_per_cgra].msg.addr)) # payload
-                       # s.write_crossbar.send[num_banks_per_cgra].msg.addr, # addr
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # data
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, # predicate
-                       # 0, # payload
-                       # CMD_STORE_REQUEST, # ctrl_action
-                       # 0, # ctrl_addr
-                       # 0, # ctrl_operation
-                       # 0, # ctrl_predicate
-                       # 0, # ctrl_fu_in
-                       # 0, # ctrl_routing_xbar_outport
-                       # 0, # ctrl_fu_xbar_outport
-                       # 0, # ctrl_routing_predicate_in
-                       # 0, # ctrl_vector_factor_power
-                       # 0, # ctrl_is_last_ctrl
-                       # 0, # ctrl_write_reg_from
-                       # 0, # ctrl_write_reg_idx
-                       # 0, # ctrl_read_reg_from
-                       # 0) # ctrl_read_reg_idx
+
       s.send_to_noc_store_pkt.val @= 0
 
       for i in range(num_xbar_in_rd_ports):
@@ -277,28 +256,6 @@ class DataMemWithCrossbarRTL(Component):
                        0, # opaque
                        0, # vc_id
                        CgraPayloadType(0))
-                       #     CMD_LOAD_REQUEST,
-                       #     data = DataType(0)),
-                       #     data_addr = s.read_crossbar.send[num_banks_per_cgra].msg.addr)) # payload
-
-                       # s.write_crossbar.send[num_banks_per_cgra].msg.addr, # addr
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # data
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, # predicate
-                       # 0, # payload
-                       # CMD_STORE_REQUEST, # ctrl_action
-                       # 0, # ctrl_addr
-                       # 0, # ctrl_operation
-                       # 0, # ctrl_predicate
-                       # 0, # ctrl_fu_in
-                       # 0, # ctrl_routing_xbar_outport
-                       # 0, # ctrl_fu_xbar_outport
-                       # 0, # ctrl_routing_predicate_in
-                       # 0, # ctrl_vector_factor_power
-                       # 0, # ctrl_is_last_ctrl
-                       # 0, # ctrl_write_reg_from
-                       # 0, # ctrl_write_reg_idx
-                       # 0, # ctrl_read_reg_from
-                       # 0) # ctrl_read_reg_idx
 
       s.send_to_noc_load_request_pkt.val @= 0
 
@@ -359,12 +316,6 @@ class DataMemWithCrossbarRTL(Component):
                                           s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate),
                           data_addr = s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr))
 
-                      # s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr,
-                      # s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
-                      # s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate,
-                      # s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
-                      # CMD_LOAD_RESPONSE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                  # )
               s.send_to_noc_load_response_pkt.val @= \
                   s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
 
@@ -400,24 +351,6 @@ class DataMemWithCrossbarRTL(Component):
                        CgraPayloadType(
                            CMD_LOAD_REQUEST,
                            data_addr = s.read_crossbar.send[num_banks_per_cgra].msg.addr))
-                       # s.read_crossbar.send[num_banks_per_cgra].msg.addr, # addr
-                       # 0, # data
-                       # 1, # predicate
-                       # 0, # payload
-                       # CMD_LOAD_REQUEST, # ctrl_action
-                       # 0, # ctrl_addr
-                       # 0, # ctrl_operation
-                       # 0, # ctrl_predicate
-                       # 0, # ctrl_fu_in
-                       # 0, # ctrl_routing_xbar_outport
-                       # 0, # ctrl_fu_xbar_outport
-                       # 0, # ctrl_routing_predicate_in
-                       # 0, # ctrl_vector_factor_power
-                       # 0, # ctrl_is_last_ctrl
-                       # 0, # ctrl_write_reg_from
-                       # 0, # ctrl_write_reg_idx
-                       # 0, # ctrl_read_reg_from
-                       # 0) # ctrl_read_reg_idx
 
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks_per_cgra].val & \
@@ -464,24 +397,6 @@ class DataMemWithCrossbarRTL(Component):
                           data = DataType(s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload,
                                           s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate),
                           data_addr = s.write_crossbar.send[num_banks_per_cgra].msg.addr))
-                       # s.write_crossbar.send[num_banks_per_cgra].msg.addr, # addr
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # data
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, # predicate
-                       # s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload, # payload
-                       # CMD_STORE_REQUEST, # ctrl_action
-                       # 0, # ctrl_addr
-                       # 0, # ctrl_operation
-                       # 0, # ctrl_predicate
-                       # 0, # ctrl_fu_in
-                       # 0, # ctrl_routing_xbar_outport
-                       # 0, # ctrl_fu_xbar_outport
-                       # 0, # ctrl_routing_predicate_in
-                       # 0, # ctrl_vector_factor_power
-                       # 0, # ctrl_is_last_ctrl
-                       # 0, # ctrl_write_reg_from
-                       # 0, # ctrl_write_reg_idx
-                       # 0, # ctrl_read_reg_from
-                       # 0) # ctrl_read_reg_idx
 
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks_per_cgra].val
         s.write_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_store_pkt.rdy

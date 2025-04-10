@@ -21,13 +21,13 @@ from ....lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
-  def construct( s, DUT, DataType, PredicateType, CtrlPktType,
-                 CtrlSignalType, ctrl_mem_size, width, height,
-                 data_mem_size, num_fu_inports, num_fu_outports,
-                 num_tile_inports, num_tile_outports, ctrl_pkts,
-                 sink_msgs):
+  def construct(s, DUT, DataType, PredicateType, CtrlPktType,
+                CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+                width, height, data_mem_size, num_fu_inports,
+                num_fu_outports, num_tile_inports, num_tile_outports,
+                ctrl_pkts, sink_msgs):
 
     s.width = width
     s.height = height
@@ -36,7 +36,7 @@ class TestHarness( Component ):
                   for i in range(width * height)]
 
     s.dut = \
-        DUT(CtrlPktType, CtrlSignalType, width, height,
+        DUT(CtrlPktType, CgraPayloadType, CtrlSignalType, width, height,
             ctrl_mem_size, num_fu_inports, num_fu_outports,
             num_tile_inports, num_tile_outports,
             len(ctrl_pkts), len(ctrl_pkts))
@@ -103,60 +103,80 @@ def test_Ctrl():
   predicate_nbits = 1
   num_registers_per_reg_bank = 16
 
-  CtrlPktType = \
-        mk_intra_cgra_pkt(num_tiles,
-                          cgra_id_nbits,
-                          num_commands,
-                          ctrl_mem_size,
-                          num_ctrl_operations,
-                          num_fu_inports,
-                          num_fu_outports,
-                          num_tile_inports,
-                          num_tile_outports,
-                          num_registers_per_reg_bank,
-                          addr_nbits,
-                          data_nbits,
-                          predicate_nbits)
+  num_cgra_columns = 1
+  num_cgra_rows = 1
 
-  CtrlSignalType = mk_separate_reg_ctrl(num_ctrl_operations,
-                                        num_fu_inports,
-                                        num_fu_outports,
-                                        num_tile_inports,
-                                        num_tile_outports,
-                                        num_registers_per_reg_bank)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
+
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
-  src_ctrl_pkt = [          # dst_cgra_id src dst opaque vc_id ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
-                  CtrlPktType(0,          0,  0,  0,     0,    CMD_CONFIG, 0,        OPT_ADD,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  1,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  2,  0,     0,    CMD_CONFIG, 0,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  3,  0,     0,    CMD_CONFIG, 1,        OPT_ADD,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  3,  0,     0,    CMD_CONFIG, 0,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  0,  0,     0,    CMD_CONFIG, 1,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  0,  0,     0,    CMD_LAUNCH, 0,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  1,  0,     0,    CMD_CONFIG, 0,        OPT_ADD,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  1,  0,     0,    CMD_LAUNCH, 0,        OPT_SUB,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  2,  0,     0,    CMD_CONFIG, 1,        OPT_ADD,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  2,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       b1(0),         pickRegister),
-                  CtrlPktType(0,          0,  3,  0,     0,    CMD_LAUNCH, 0,        OPT_ADD,       b1(0),         pickRegister)]
+  src_ctrl_pkt = [               # src dst                  opq vc
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0))]
 
   sink_out = [
-              [CtrlSignalType(OPT_ADD, 0, pickRegister),
-               CtrlSignalType(OPT_SUB, 0, pickRegister)],
+              [CtrlType(OPT_ADD, 0, pickRegister),
+               CtrlType(OPT_SUB, 0, pickRegister)],
               # Ctrl memory 1 first write into address 1, then address 0.
-              [CtrlSignalType(OPT_ADD, 0, pickRegister),
-               CtrlSignalType(OPT_SUB, 0, pickRegister)],
+              [CtrlType(OPT_ADD, 0, pickRegister),
+               CtrlType(OPT_SUB, 0, pickRegister)],
 
-              [CtrlSignalType(OPT_SUB, 0, pickRegister),
-               CtrlSignalType(OPT_ADD, 0, pickRegister)],
+              [CtrlType(OPT_SUB, 0, pickRegister),
+               CtrlType(OPT_ADD, 0, pickRegister)],
 
-              [CtrlSignalType(OPT_SUB, 0, pickRegister),
-               CtrlSignalType(OPT_ADD, 0, pickRegister)]]
+              [CtrlType(OPT_SUB, 0, pickRegister),
+               CtrlType(OPT_ADD, 0, pickRegister)]]
 
-  th = TestHarness(MemUnit, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                   ctrl_mem_size, width, height, data_mem_size, num_fu_inports,
-                   num_fu_outports, num_tile_inports, num_tile_outports,
-                   src_ctrl_pkt, sink_out)
+  th = TestHarness(MemUnit,
+                   DataType,
+                   PredicateType,
+                   IntraCgraPktType,
+                   CgraPayloadType,
+                   CtrlType,
+                   ctrl_mem_size,
+                   width,
+                   height,
+                   data_mem_size,
+                   num_fu_inports,
+                   num_fu_outports,
+                   num_tile_inports,
+                   num_tile_outports,
+                   src_ctrl_pkt,
+                   sink_out)
   run_sim(th)
 

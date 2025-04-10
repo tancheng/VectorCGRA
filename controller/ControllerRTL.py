@@ -136,7 +136,7 @@ class ControllerRTL(Component):
       kFromInterTileRingIdx = 4
 
       s.send_to_cpu_pkt_queue.recv.val @= 0
-      s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
 
       # For the command signal from inter-tile/intra-cgra control ring.
@@ -154,24 +154,6 @@ class ControllerRTL(Component):
                            0, # opaque
                            0, # vc_id. No need to specify vc_id for self produce-consume pkt thanks to the additional VC buffer.
                            s.recv_from_ctrl_ring_pkt.msg.payload)
-                           # s.recv_from_ctrl_ring_pkt.msg.addr, # addr
-                           # 0, # data
-                           # 0, # predicate
-                           # 0, # payload
-                           # s.recv_from_ctrl_ring_pkt.msg.ctrl_action, # ctrl_action
-                           # 0, # ctrl_addr
-                           # 0, # ctrl_operation
-                           # 0, # ctrl_predicate
-                           # 0, # ctrl_fu_in
-                           # 0, # ctrl_routing_xbar_outport
-                           # 0, # ctrl_fu_xbar_outport
-                           # 0, # ctrl_routing_predicate_in
-                           # 0, # ctrl_vector_factor_power
-                           # 0, # ctrl_is_last_ctrl
-                           # 0, # ctrl_write_reg_from
-                           # 0, # ctrl_write_reg_idx
-                           # 0, # ctrl_read_reg_from
-                           # 0) # ctrl_read_reg_idx
 
       # For the load request from local tiles.
       s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
@@ -184,28 +166,10 @@ class ControllerRTL(Component):
                            0, # dst_x
                            0, # dst_y
                            s.recv_from_tile_load_request_pkt_queue.send.msg.src_tile_id, # src_tile_id
-                           num_tiles, # dst_tile_id
+                           0, # num_tiles, # dst_tile_id
                            0, # opaque
                            0, # vc_id
                            s.recv_from_tile_load_request_pkt_queue.send.msg.payload)
-                           # s.recv_from_tile_load_request_pkt_queue.send.msg.addr, # addr
-                           # 0, # data
-                           # 1, # predicate
-                           # 0, # payload
-                           # CMD_LOAD_REQUEST, # ctrl_action
-                           # 0, # ctrl_addr
-                           # 0, # ctrl_operation
-                           # 0, # ctrl_predicate
-                           # 0, # ctrl_fu_in
-                           # 0, # ctrl_routing_xbar_outport
-                           # 0, # ctrl_fu_xbar_outport
-                           # 0, # ctrl_routing_predicate_in
-                           # 0, # ctrl_vector_factor_power
-                           # 0, # ctrl_is_last_ctrl
-                           # 0, # ctrl_write_reg_from
-                           # 0, # ctrl_write_reg_idx
-                           # 0, # ctrl_read_reg_from
-                           # 0) # ctrl_read_reg_idx
 
       # For the store request from local tiles.
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
@@ -222,58 +186,12 @@ class ControllerRTL(Component):
                            0, # opaque
                            0, # vc_id
                            s.recv_from_tile_store_request_pkt_queue.send.msg.payload)
-                           # s.recv_from_tile_store_request_pkt_queue.send.msg.addr, # addr
-                           # s.recv_from_tile_store_request_pkt_queue.send.msg.data, # data
-                           # s.recv_from_tile_store_request_pkt_queue.send.msg.predicate, # predicate
-                           # 0, # payload
-                           # CMD_STORE_REQUEST, # ctrl_action
-                           # 0, # ctrl_addr
-                           # 0, # ctrl_operation
-                           # 0, # ctrl_predicate
-                           # 0, # ctrl_fu_in
-                           # 0, # ctrl_routing_xbar_outport
-                           # 0, # ctrl_fu_xbar_outport
-                           # 0, # ctrl_routing_predicate_in
-                           # 0, # ctrl_vector_factor_power
-                           # 0, # ctrl_is_last_ctrl
-                           # 0, # ctrl_write_reg_from
-                           # 0, # ctrl_write_reg_idx
-                           # 0, # ctrl_read_reg_from
-                           # 0) # ctrl_read_reg_idx
 
       # For the load response (i.e., the data towards other) from local memory.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
       s.crossbar.recv[kLoadResponseInportIdx].msg @= s.recv_from_tile_load_response_pkt_queue.send.msg
-      # s.crossbar.recv[kLoadResponseInportIdx].msg @= \
-      #     InterCgraPktType(0, # s.controller_id,
-      #                0,
-      #                0, # s.idTo2d_x_lut[s.controller_id], # src_x
-      #                0, # s.idTo2d_y_lut[s.controller_id], # src_y
-      #                s.idTo2d_x_lut[0], # dst_x
-      #                s.idTo2d_y_lut[0], # dst_y
-      #                0, # tile id
-      #                0, # opaque
-      #                0, # vc_id
-      #                s.recv_from_tile_load_response_pkt_queue.send.msg.addr, # addr
-      #                s.recv_from_tile_load_response_pkt_queue.send.msg.data, # data
-      #                s.recv_from_tile_load_response_pkt_queue.send.msg.predicate, # predicate
-      #                s.recv_from_tile_load_response_pkt_queue.send.msg.payload, # payload
-      #                s.recv_from_tile_load_response_pkt_queue.send.msg.ctrl_action, # ctrl_action
-      #                0, # ctrl_addr
-      #                0, # ctrl_operation
-      #                0, # ctrl_predicate
-      #                0, # ctrl_fu_in
-      #                0, # ctrl_routing_xbar_outport
-      #                0, # ctrl_fu_xbar_outport
-      #                0, # ctrl_routing_predicate_in
-      #                0, # ctrl_vector_factor_power
-      #                0, # ctrl_is_last_ctrl
-      #                0, # ctrl_write_reg_from
-      #                0, # ctrl_write_reg_idx
-      #                0, # ctrl_read_reg_from
-      #                0) # ctrl_read_reg_idx
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
@@ -286,36 +204,19 @@ class ControllerRTL(Component):
                            0, # src_y
                            s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
                            s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
-                           0, # src_tile_id
+                           num_tiles, # src_tile_id
                            s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id 
                            0, # opaque
                            0, # vc_id
-                           s.recv_from_cpu_pkt_queue.send.msg.payload) # , # vc_id
-                           # s.recv_from_cpu_pkt_queue.send.msg.addr, # addr
-                           # s.recv_from_cpu_pkt_queue.send.msg.data, # data
-                           # s.recv_from_cpu_pkt_queue.send.msg.data_predicate, # predicate
-                           # 0, # payload
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_action, # maybe CMD_CONFIG or CMD_CONST
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_addr, # ctrl_addr
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_operation, # ctrl_operation
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_predicate, # ctrl_predicate
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_fu_in, # ctrl_fu_in
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_routing_xbar_outport, # ctrl_routing_xbar_outport
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_fu_xbar_outport, # ctrl_fu_xbar_outport
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_routing_predicate_in, # ctrl_routing_predicate_in
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_vector_factor_power,
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_is_last_ctrl,
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_write_reg_from,
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_write_reg_idx,
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_read_reg_from,
-                           # s.recv_from_cpu_pkt_queue.send.msg.ctrl_read_reg_idx)
+                           s.recv_from_cpu_pkt_queue.send.msg.payload)
       if s.recv_from_cpu_pkt_queue.send.val & \
          ((s.recv_from_cpu_pkt_queue.send.msg.payload.cmd == CMD_LOAD_REQUEST) | \
           (s.recv_from_cpu_pkt_queue.send.msg.payload.cmd == CMD_STORE_REQUEST)):
-        # Updates the dest tile id for CPU issued LOAD and STORE request,
+        # Updates the src tile id for CPU issued LOAD and STORE request,
         # indicating they are from controller/CPU, and need to come back to
         # the controller (for LOAD response).
-        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg.dst_tile_id @= num_tiles
+        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg.src_tile_id @= num_tiles
+        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg.dst_tile_id @= 0
         
       # TODO: For the other cmd types.
 
@@ -338,7 +239,7 @@ class ControllerRTL(Component):
       s.send_to_tile_load_response_data_queue.recv.msg @= DataType()
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
-      s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
@@ -352,8 +253,9 @@ class ControllerRTL(Component):
             s.recv_from_inter_cgra_noc.rdy @= 1
             s.send_to_tile_load_request_addr_queue.recv.msg @= DataAddrType(received_pkt.payload.data_addr)
             s.send_to_tile_load_request_src_cgra_queue.recv.msg @= received_pkt.src
-            # FIXME: for now, as we don't have src_tile_id, use dst_tile_id to represent it.
-            s.send_to_tile_load_request_src_tile_queue.recv.msg @= received_pkt.dst_tile_id
+            # FIXME: We can avoid this by sending the entire payload to data memory,
+            # https://github.com/tancheng/VectorCGRA/issues/117.
+            s.send_to_tile_load_request_src_tile_queue.recv.msg @= received_pkt.src_tile_id
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_STORE_REQUEST:
           s.send_to_tile_store_request_data_queue.recv.msg @= received_pkt.payload.data
@@ -366,7 +268,11 @@ class ControllerRTL(Component):
             s.recv_from_inter_cgra_noc.rdy @= 1
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LOAD_RESPONSE:
-          if s.recv_from_inter_cgra_noc.msg.dst_tile_id == num_tiles: # & \
+          # FIXME: This condition needs to check whether this controller is the
+          # one connecting to CPU, and with the help from additional field indicating
+          # whether the packet is originally from CPU.
+          # https://github.com/tancheng/VectorCGRA/issues/116.
+          if s.recv_from_inter_cgra_noc.msg.dst_tile_id == num_tiles:
             s.recv_from_inter_cgra_noc.rdy @= s.send_to_cpu_pkt_queue.recv.rdy
             s.send_to_cpu_pkt_queue.recv.val @= 1
             s.send_to_cpu_pkt_queue.recv.msg @= \
@@ -381,29 +287,6 @@ class ControllerRTL(Component):
                                  0, # opaque
                                  0, # vc_id
                                  s.recv_from_inter_cgra_noc.msg.payload)
-
-                # IntraCgraPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
-                #                  0,  # src
-                #                  s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
-                #                  s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
-                #                  s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
-                #                  s.recv_from_inter_cgra_noc.msg.addr,  # addr
-                #                  s.recv_from_inter_cgra_noc.msg.data,  # data
-                #                  s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
-                #                  s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
 
           else:
             s.recv_from_inter_cgra_noc.rdy @= s.send_to_tile_load_response_data_queue.recv.rdy
@@ -425,31 +308,6 @@ class ControllerRTL(Component):
                                0, # opaque
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
-
-
-              # IntraCgraPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
-              #            0,  # src
-              #            s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
-              #            s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
-              #            s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
-              #            s.recv_from_inter_cgra_noc.msg.addr,  # addr
-              #            s.recv_from_inter_cgra_noc.msg.data,  # data
-              #            s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
-              #            s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
-
 
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
@@ -473,30 +331,6 @@ class ControllerRTL(Component):
                                0, # opaque
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
-
-          # s.send_to_ctrl_ring_pkt.msg @= \
-          #     IntraCgraPktType(s.recv_from_inter_cgra_noc.msg.dst,  # dst_cgra_id
-          #                0,  # src
-          #                s.recv_from_inter_cgra_noc.msg.dst_tile_id,  # dst
-          #                s.recv_from_inter_cgra_noc.msg.opaque,  # opaque
-          #                s.recv_from_inter_cgra_noc.msg.vc_id,  # vc_id
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_action,  # ctrl_action
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_addr,  # ctrl_addr
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_operation,  # ctrl_operation
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_predicate,  # ctrl_predicate
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_fu_in,  # ctrl_fu_in
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_routing_xbar_outport,  # ctrl_routing_xbar_outport
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_fu_xbar_outport,  # ctrl_fu_xbar_outport
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_routing_predicate_in,  # ctrl_routing_predicate_in
-          #                s.recv_from_inter_cgra_noc.msg.addr,  # addr
-          #                s.recv_from_inter_cgra_noc.msg.data,  # data
-          #                s.recv_from_inter_cgra_noc.msg.predicate,  # data_predicate
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_vector_factor_power,  # ctrl_vector_factor_power
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_is_last_ctrl,  # ctrl_is_last_ctrl
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_from,  # ctrl_write_reg_from
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_write_reg_idx,  # ctrl_write_reg_idx
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_from,  # ctrl_read_reg_from
-          #                s.recv_from_inter_cgra_noc.msg.ctrl_read_reg_idx)  # ctrl_read_reg_idx
 
         # else:
         #   # TODO: Handle other cmd types.

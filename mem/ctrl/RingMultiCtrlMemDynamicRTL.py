@@ -18,9 +18,9 @@ from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ...noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 
 class RingMultiCtrlMemDynamicRTL(Component):
-  def construct(s, CtrlPktType, CtrlSignalType, width, height,
-                ctrl_mem_size, num_fu_inports, num_fu_outports,
-                num_tile_inports, num_tile_outports,
+  def construct(s, CtrlPktType, CgraPayloadType, CtrlSignalType,
+                width, height, ctrl_mem_size, num_fu_inports,
+                num_fu_outports, num_tile_inports, num_tile_outports,
                 ctrl_count_per_iter = 4, total_ctrl_steps = 4):
     # Constant
     num_tiles = width * height
@@ -34,7 +34,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
 
     # Components
     s.ctrl_memories = [
-        CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType, ctrl_mem_size,
+        CtrlMemDynamicRTL(CtrlPktType, CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                           num_fu_inports, num_fu_outports, num_tile_inports,
                           num_tile_outports, 1, num_tiles, ctrl_count_per_iter,
                           total_ctrl_steps) for terminal_id in range(s.num_tiles)]

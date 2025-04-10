@@ -54,10 +54,8 @@ class CrossbarRTL(Component):
     # Routing logic
     @update
     def update_signal():
-      # s.out_rdy_vector @= 0
       s.recv_predicate_vector @= 0
       s.send_predicate.val @= 0
-      # s.recv_blocked_vector @= 0
       s.send_predicate.msg @= PredicateType()
       for i in range(num_inports):
         s.recv_data[i].rdy @= 0
@@ -91,16 +89,12 @@ class CrossbarRTL(Component):
         for i in range(num_outports):
           s.send_data[i].val @= reduce_and(s.recv_valid_vector) & \
                                 s.send_required_vector[i]
-                                # FIXME: Valid shouldn't depend on rdy.
-                                # reduce_and(s.send_rdy_vector) & \
           if reduce_and(s.recv_valid_vector) & \
              s.send_required_vector[i]:
-             # reduce_and(s.send_rdy_vector) & \
             s.send_data[i].msg.payload @= s.recv_data[s.in_dir_local[i]].msg.payload
             s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local[i]].msg.predicate
 
         s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
-        # s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & reduce_and(s.recv_valid_vector)
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
 

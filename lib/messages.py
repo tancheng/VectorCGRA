@@ -68,7 +68,7 @@ def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
             prefix = "CGRAConfig"):
 
   ctrl_nbits = 6
-  CtrlType = mk_bits(ctrl_nbits)
+  OperationType = mk_bits(ctrl_nbits)
   InportsType = mk_bits(clog2(num_inports + 1))
   OutportsType = mk_bits(clog2(num_outports + 1))
   FuInType = mk_bits(clog2(num_fu_in + 1))
@@ -110,10 +110,10 @@ def mk_ctrl(num_fu_in = 2, num_inports = 5, num_outports = 5,
     out_str += '|(is_last_ctrl)'
     out_str += str(int(s.is_last_ctrl))
 
-    return f"(opt){s.ctrl}|{out_str}"
+    return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
-  field_dict['ctrl'] = CtrlType
+  field_dict['operation'] = OperationType
   # The 'predicate' indicates whether the current operation is based on
   # the partial predication or not. Note that 'predicate' is different
   # from the following 'predicate_in', which contributes to the
@@ -209,10 +209,10 @@ def mk_separate_ctrl(num_operations = 7,
     out_str += '|(is_last_ctrl)'
     out_str += str(int(s.is_last_ctrl))
 
-    return f"(opt){s.ctrl}|{out_str}"
+    return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
-  field_dict['ctrl'] = OperationType
+  field_dict['operation'] = OperationType
   # TODO: need fix to pair `predicate` with specific operation.
   # The 'predicate' indicates whether the current operation is based on
   # the partial predication or not. Note that 'predicate' is different

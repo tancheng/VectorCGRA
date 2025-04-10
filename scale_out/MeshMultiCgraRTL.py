@@ -18,10 +18,11 @@ from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 
 class MeshMultiCgraRTL(Component):
   def construct(s, CgraDataType, PredicateType, CtrlPktType,
-                CtrlSignalType, NocPktType, CmdType, cgra_rows,
-                cgra_columns, tile_rows, tile_columns, ctrl_mem_size,
-                data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, num_registers_per_reg_bank,
+                CgraPayloadType, CtrlSignalType, NocPktType,
+                cgra_rows, cgra_columns, tile_rows, tile_columns,
+                ctrl_mem_size, data_mem_size_global,
+                data_mem_size_per_bank, num_banks_per_cgra,
+                num_registers_per_reg_bank,
                 num_ctrl, total_steps, FunctionUnit, FuList,
                 controller2addr_map, preload_data = None):
 
@@ -47,7 +48,7 @@ class MeshMultiCgraRTL(Component):
         idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
     s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-                      CtrlSignalType, NocPktType, CmdType,
+                      CgraPayloadType, CtrlSignalType, NocPktType,
                       ControllerIdType, cgra_rows, cgra_columns,
                       tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
