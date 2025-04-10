@@ -77,7 +77,7 @@ def run_sim(test_harness, max_cycles = 100):
 DataType = mk_data(16, 1)
 test_msgs_0 = [DataType(7,0,1), DataType(4,1), DataType(1,1), DataType(0,1), DataType(0,0)]
 test_msgs_1 = [DataType(0,1,1), DataType(0,0), DataType(2,0), DataType(2,1), DataType(3,1)]
-sink_msgs = [DataType(0,1), DataType(4,1), DataType(1,1), DataType(0,1), DataType(3,1)]
+sink_msgs = [DataType(7,1), DataType(4,1), DataType(3,1), DataType(2,1), DataType(3,1)]
 
 def test_simple():
   th = TestHarness(DataType, test_msgs_0, test_msgs_1, sink_msgs)
