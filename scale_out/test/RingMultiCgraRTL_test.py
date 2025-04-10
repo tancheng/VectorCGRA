@@ -29,22 +29,22 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CtrlSignalType, NocPktType, CmdType,
+                IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, controller2addr_map,
                 complete_signal_sink_out):
 
-    s.num_terminals = cgra_rows * cgra_columns
+    s.num_cgras = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
-    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
+    s.src_ctrl_pkt = TestSrcRTL(IntraCgraPktType, src_ctrl_pkt)
+    s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, cgra_rows, cgra_columns, height,
-                width, ctrl_mem_size, data_mem_size_global,
+    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
+                CtrlType, InterCgraPktType, cgra_rows, cgra_columns,
+                height, width, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
                 FunctionUnit, FuList, controller2addr_map)
@@ -71,20 +71,16 @@ def test_homo_1x4(cmdline_opts):
   data_mem_size_global = 32
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
-  cgra_rows = 2
-  cgra_columns = 2
-  num_terminals = cgra_rows * cgra_columns
+  num_cgra_rows = 1
+  num_cgra_columns = 4
+  num_cgras = num_cgra_rows * num_cgra_columns
   width = 2
   height = 2
-  num_commands = NUM_CMDS
-  num_ctrl_operations = NUM_OPTS
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   ctrl_addr_nbits = clog2(ctrl_mem_size)
-  # CtrlAddrType = mk_bits(ctrl_addr_nbits)
   data_addr_nbits = clog2(data_mem_size_global)
-  DataAddrType = mk_bits(clog2(data_mem_size_global))
   num_tiles = width * height
   DUT = RingMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
@@ -93,7 +89,6 @@ def test_homo_1x4(cmdline_opts):
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   num_registers_per_reg_bank = 16
-  CmdType = NUM_CMDS
   controller2addr_map = {
           0: [0, 7],
           1: [8, 15],
@@ -106,119 +101,201 @@ def test_homo_1x4(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  CtrlPktType = \
-        mk_intra_cgra_pkt(num_tiles,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
+  # IntraCgraPktType = \
+  #       mk_intra_cgra_pkt(num_tiles,
+  #                       cgra_id_nbits,
+  #                       num_commands,
+  #                       ctrl_mem_size,
+  #                       num_ctrl_operations,
+  #                       num_fu_inports,
+  #                       num_fu_outports,
+  #                       num_tile_inports,
+  #                       num_tile_outports,
+  #                       num_registers_per_reg_bank,
+  #                       addr_nbits,
+  #                       data_nbits,
+  #                       predicate_nbits)
 
-  CtrlSignalType = \
-      mk_separate_reg_ctrl(num_ctrl_operations,
+  # CtrlType = \
+  #     mk_separate_reg_ctrl(num_ctrl_operations,
+  #                          num_fu_inports,
+  #                          num_fu_outports,
+  #                          num_tile_inports,
+  #                          num_tile_outports,
+  #                          num_registers_per_reg_bank)
+
+  # InterCgraPktType = mk_multi_cgra_noc_pkt(ncols = num_cgras,
+  #                                    nrows = 1,
+  #                                    ntiles = num_tiles,
+  #                                    addr_nbits = data_addr_nbits,
+  #                                    data_nbits = 32,
+  #                                    predicate_nbits = 1,
+  #                                    ctrl_actions = num_commands,
+  #                                    ctrl_mem_size = ctrl_mem_size,
+  #                                    ctrl_operations = num_ctrl_operations,
+  #                                    ctrl_fu_inports = num_fu_inports,
+  #                                    ctrl_fu_outports = num_fu_outports,
+  #                                    ctrl_tile_inports = num_tile_inports,
+  #                                    ctrl_tile_outports = num_tile_outports)
+
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
                            num_fu_inports,
                            num_fu_outports,
                            num_tile_inports,
                            num_tile_outports,
                            num_registers_per_reg_bank)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
-                                     nrows = 1,
-                                     ntiles = num_tiles,
-                                     addr_nbits = data_addr_nbits,
-                                     data_nbits = 32,
-                                     predicate_nbits = 1,
-                                     ctrl_actions = num_commands,
-                                     ctrl_mem_size = ctrl_mem_size,
-                                     ctrl_operations = num_ctrl_operations,
-                                     ctrl_fu_inports = num_fu_inports,
-                                     ctrl_fu_outports = num_fu_outports,
-                                     ctrl_tile_inports = num_tile_inports,
-                                     ctrl_tile_outports = num_tile_outports)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
 
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt_per_tile = [[
-                # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
-      CtrlPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        # TODO: make below as TileInType(5) to double check.
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #           # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
+      # IntraCgraPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   # TODO: make below as TileInType(5) to double check.
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                 ctrl = CtrlType(OPT_INC, 0,
+                                                                 [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                 ctrl = CtrlType(OPT_INC, 0,
+                                                                 [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
 
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
 
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
 
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                 ctrl = CtrlType(OPT_STR, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
+
+      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 4,
+                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
+
+      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
+      #                  pickRegister,
+      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+
+      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
+
+                     # src dst src_cgra dst_cgra
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 5,
+                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
+                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                  FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
+
 
       # This last one is for launching kernel.
-      CtrlPktType(0,      0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_ADD, b1(0),
-                       pickRegister,
-                       [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                        FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)])
-      ] for i in range(num_tiles)]
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src,       dst, opaque, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(          0,   0, num_tiles,      0,  1, ctrl_action = CMD_COMPLETE)]
+  expected_sink_out_pkt = [
+                      # src  dst        src/dst cgra x/y
+       IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
     src_ctrl_pkt.extend(opt_per_tile)
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, CtrlPktType,
-                   CtrlSignalType, NocPktType, CmdType, cgra_rows, cgra_columns,
+  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
+                   CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
                    width, height, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
-                   ctrl_mem_size, controller2addr_map, complete_signal_sink_out)
+                   ctrl_mem_size, controller2addr_map, expected_sink_out_pkt)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

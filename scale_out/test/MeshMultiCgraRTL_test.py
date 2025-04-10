@@ -169,7 +169,6 @@ def initialize_test_harness(cmdline_opts):
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
 
   cgra_id_nbits = clog2(num_cgras)
-  pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   CtrlType = \
       mk_separate_reg_ctrl(NUM_OPTS,
