@@ -310,7 +310,7 @@ def test_homogeneous_2x2(cmdline_opts):
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
   th = init_param(topology)
-  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL])
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL, MemUnitRTL])
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
