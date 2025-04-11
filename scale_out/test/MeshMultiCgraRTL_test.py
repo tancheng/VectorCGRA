@@ -303,4 +303,3 @@ def test_verilog_homo_2x2_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   th.apply(DefaultPassGroup())
-
