@@ -60,7 +60,7 @@ class BranchRTL(Fu):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_BRH:
+        if s.recv_opt.msg.operation == OPT_BRH:
           # Branch is only used to set predication rather than delivering value.
           s.send_out[0].msg @= DataType(ZeroType(0), b1(0), b1(0), b1(0))
           s.send_out[1].msg @= DataType(ZeroType(0), b1(0), b1(0), b1(0))
@@ -81,7 +81,7 @@ class BranchRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy & s.send_out[1].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy & s.send_out[1].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_BRH_START:
+        elif s.recv_opt.msg.operation == OPT_BRH_START:
           s.send_out[0].msg @= DataType(ZeroType(0), b1(0), b1(0), b1(0))
           s.send_out[1].msg @= DataType(ZeroType(0), b1(0), b1(0), b1(0))
           # branch_start could be the entry of a function, which runs
@@ -106,7 +106,7 @@ class BranchRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= 0
 
         if (s.recv_opt.msg.predicate == 1) & \
-           (s.recv_opt.msg.ctrl != OPT_BRH_START):
+           (s.recv_opt.msg.operation != OPT_BRH_START):
           s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy & s.send_out[1].rdy
 
     # branch_start could be the entry of a function, which is executed by
@@ -115,14 +115,14 @@ class BranchRTL(Fu):
     def br_start_once():
       if s.reset:
         s.first <<= b1(1)
-      if (s.recv_opt.msg.ctrl == OPT_BRH_START) & s.reached_vector_factor:
+      if (s.recv_opt.msg.operation == OPT_BRH_START) & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace( s ):
     symbol0 = "?"
     symbol1 = "?"
     winner  = "nobody"
-    if s.recv_opt.msg.ctrl == OPT_BRH_START:
+    if s.recv_opt.msg.operation == OPT_BRH_START:
       symbol0 = " "
       symbol1 = " "
       winner = "nobody"

@@ -47,7 +47,7 @@ class FpAddRTL(Fu):
     # Components
     s.fadd = AddFN(exp_nbits + 1, sig_nbits)
     s.fadd.roundingMode //= s.rounding_mode
-    s.fadd.subOp //= lambda: s.recv_opt.msg.ctrl == OPT_FSUB
+    s.fadd.subOp //= lambda: s.recv_opt.msg.operation == OPT_FSUB
 
     # Wires
     s.in0 = Wire(FuInType)
@@ -87,7 +87,7 @@ class FpAddRTL(Fu):
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_FADD:
+        if s.recv_opt.msg.operation == OPT_FADD:
           s.fadd.a @= s.recv_in[s.in0_idx].msg.payload
           s.fadd.b @= s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
@@ -101,7 +101,7 @@ class FpAddRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_FADD_CONST:
+        elif s.recv_opt.msg.operation == OPT_FADD_CONST:
           s.fadd.a @= s.recv_in[s.in0_idx].msg.payload
           s.fadd.b @= s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
@@ -114,7 +114,7 @@ class FpAddRTL(Fu):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_FINC:
+        elif s.recv_opt.msg.operation == OPT_FINC:
           s.fadd.a @= s.recv_in[s.in0_idx].msg.payload
           s.fadd.b @= s.FLOATING_ONE
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
@@ -126,7 +126,7 @@ class FpAddRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_FSUB:
+        elif s.recv_opt.msg.operation == OPT_FSUB:
           s.fadd.a @= s.recv_in[s.in0_idx].msg.payload
           s.fadd.b @= s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \

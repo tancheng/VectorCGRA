@@ -61,7 +61,7 @@ class LogicRTL(Fu):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_OR:
+        if s.recv_opt.msg.operation == OPT_OR:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload | s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -75,7 +75,7 @@ class LogicRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_AND:
+        elif s.recv_opt.msg.operation == OPT_AND:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload & s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -89,7 +89,7 @@ class LogicRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_NOT:
+        elif s.recv_opt.msg.operation == OPT_NOT:
           s.send_out[0].msg.payload @= ~ s.recv_in[s.in0_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
@@ -101,7 +101,7 @@ class LogicRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_XOR:
+        elif s.recv_opt.msg.operation == OPT_XOR:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload ^ s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \

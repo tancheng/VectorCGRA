@@ -33,18 +33,18 @@ class SeqMulAdderRTL(TwoSeqCombo):
       s.Fu1.recv_opt.msg.fu_in[0] @= 1
       s.Fu1.recv_opt.msg.fu_in[1] @= 2
 
-      if s.recv_opt.msg.ctrl == OPT_MUL_ADD:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl @= OPT_ADD
-      elif s.recv_opt.msg.ctrl == OPT_MUL_CONST_ADD:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL_CONST
-        s.Fu1.recv_opt.msg.ctrl @= OPT_ADD
-      elif s.recv_opt.msg.ctrl == OPT_MUL_CONST:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL_CONST
-        s.Fu1.recv_opt.msg.ctrl @= OPT_PAS
-      elif s.recv_opt.msg.ctrl == OPT_MUL_SUB:
-        s.Fu0.recv_opt.msg.ctrl @= OPT_MUL
-        s.Fu1.recv_opt.msg.ctrl @= OPT_SUB
+      if s.recv_opt.msg.operation == OPT_MUL_ADD:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL
+        s.Fu1.recv_opt.msg.operation @= OPT_ADD
+      elif s.recv_opt.msg.operation == OPT_MUL_CONST_ADD:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL_CONST
+        s.Fu1.recv_opt.msg.operation @= OPT_ADD
+      elif s.recv_opt.msg.operation == OPT_MUL_CONST:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL_CONST
+        s.Fu1.recv_opt.msg.operation @= OPT_PAS
+      elif s.recv_opt.msg.operation == OPT_MUL_SUB:
+        s.Fu0.recv_opt.msg.operation @= OPT_MUL
+        s.Fu1.recv_opt.msg.operation @= OPT_SUB
 
       # TODO: need to handle the other cases
 

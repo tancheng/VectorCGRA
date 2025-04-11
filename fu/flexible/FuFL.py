@@ -22,11 +22,11 @@ from ...lib.messages import *
 def FuFL( DataType, input_a, input_b, opt ):
   out_list = []
   for i in range( len( input_a ) ):
-    if( opt[i].ctrl == OPT_ADD):
+    if( opt[i].operation == OPT_ADD):
       out_list.append(DataType(input_a[i].payload + input_b[i].payload))
-    elif( opt[i].ctrl == OPT_SUB):
+    elif( opt[i].operation == OPT_SUB):
       out_list.append(DataType(input_a[i].payload - input_b[i].payload))
-    elif( opt[i].ctrl == OPT_MUL):
+    elif( opt[i].operation == OPT_MUL):
       out_list.append(DataType(input_a[i].payload * input_b[i].payload))
   return out_list
 

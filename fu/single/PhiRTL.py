@@ -64,7 +64,7 @@ class PhiRTL(Fu):
       # TODO: decision needs to be made. Adder could be in FU vector width. Or only effective once on the boundary.
       # if s.recv_opt.val:
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_PHI:
+        if s.recv_opt.msg.operation == OPT_PHI:
           if s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= (~s.recv_opt.msg.predicate | \
@@ -95,7 +95,7 @@ class PhiRTL(Fu):
           #   s.recv_opt.rdy @= 0
           #   s.send_out[0].val @= 0
  
-        elif s.recv_opt.msg.ctrl == OPT_PHI_CONST:
+        elif s.recv_opt.msg.operation == OPT_PHI_CONST:
           if s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
           else:
@@ -144,14 +144,14 @@ class PhiRTL(Fu):
     def br_start_once():
       if s.reset:
         s.first <<= b1(1)
-      if (s.recv_opt.msg.ctrl == OPT_PHI_CONST) & s.reached_vector_factor:
+      if (s.recv_opt.msg.operation == OPT_PHI_CONST) & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}'
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}'
 

@@ -34,7 +34,6 @@ from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 
-
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
@@ -42,23 +41,24 @@ from ...lib.opt_type import *
 class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CtrlSignalType, ctrl_mem_size, data_mem_size,
-                num_fu_inports, num_fu_outports, num_tile_inports,
+                IntraCgraPktType, CgraPayloadType, CtrlType,
+                ctrl_mem_size, data_mem_size, num_fu_inports,
+                num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
                 src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out):
 
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
 
-    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_ctrl_pkt = TestSrcRTL(IntraCgraPktType, src_ctrl_pkt)
     s.src_data = [TestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
     s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
+    s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
+    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
+                CtrlType, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,
@@ -108,6 +108,9 @@ def test_tile_alu(cmdline_opts):
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
   data_mem_size = 8
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
   num_tiles = 4
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
@@ -141,53 +144,57 @@ def test_tile_alu(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  CtrlPktType = \
-        mk_intra_cgra_pkt(num_tiles,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
 
-  CtrlSignalType = \
-      mk_separate_reg_ctrl(num_ctrl_operations, num_fu_inports,
-                           num_fu_outports, num_tile_inports,
-                           num_tile_outports, num_registers_per_reg_bank)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
+
   src_ctrl_pkt = [
                 # cgraid src dst vc_id opq cmd_type addr operation predicate
-      CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_ADD,  b1(0), pick_register0,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0),
-      CtrlPktType(0, 0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_SUB, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                 ctrl = CtrlType(OPT_SUB, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-      # for const： 5, 7
-      CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 5),
-      CtrlPktType(0, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 7),
+      # For constant 5, 7.
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
 
-      CtrlPktType(0, 0,  0,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH, b1(0), pick_register1,
-                  # routing_xbar_output
-                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                  # fu_xbar_output
-                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)], 0, 0, 0, 0, 0)]
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
+
   src_data = [[DataType(3, 1)],
               [],
               [DataType(4, 1)],
@@ -200,11 +207,12 @@ def test_tile_alu(cmdline_opts):
               [],
               # 5 + 4 = 9; 7 - 3 = 4.
               [DataType(9, 1), DataType(4, 1)]]
-  #                                       dst_cgra_id, src, dst,       opq, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+                                             # src  dst        src/dst cgra x/y
+  complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
+#          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   CtrlPktType, CtrlSignalType, ctrl_mem_size,
+                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,

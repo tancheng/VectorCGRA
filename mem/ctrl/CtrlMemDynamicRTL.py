@@ -21,10 +21,11 @@ from ...lib.util.common import *
 
 class CtrlMemDynamicRTL(Component):
 
-  def construct(s, CtrlPktType, CtrlSignalType, ctrl_mem_size,
-                num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_cgras, num_tiles,
-                ctrl_count_per_iter = 4, total_ctrl_steps = 4):
+  def construct(s, IntraCgraPktType, CgraPayloadType, CtrlType,
+                ctrl_mem_size, num_fu_inports, num_fu_outports,
+                num_tile_inports, num_tile_outports, num_cgras,
+                num_tiles, ctrl_count_per_iter = 4,
+                total_ctrl_steps = 4):
 
     # The total_ctrl_steps indicates the number of steps the ctrl
     # signals should proceed. For example, if the number of ctrl
@@ -43,18 +44,18 @@ class CtrlMemDynamicRTL(Component):
 
     # Interface
     # Stores ctrl signals into the control memory/registers.
-    s.send_ctrl = SendIfcRTL(CtrlSignalType)
+    s.send_ctrl = SendIfcRTL(CtrlType)
     # Receives the ctrl packets from the controller.
-    s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
+    s.recv_pkt_from_controller = RecvIfcRTL(IntraCgraPktType)
     # Sends the ctrl packets towards the controller.
-    s.send_pkt_to_controller = SendIfcRTL(CtrlPktType)
+    s.send_pkt_to_controller = SendIfcRTL(IntraCgraPktType)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Component
-    s.reg_file = RegisterFile(CtrlSignalType, ctrl_mem_size, 1, 1)
-    s.recv_pkt_queue = NormalQueueRTL(CtrlPktType)
+    s.reg_file = RegisterFile(CtrlType, ctrl_mem_size, 1, 1)
+    s.recv_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
@@ -82,54 +83,54 @@ class CtrlMemDynamicRTL(Component):
 
       s.recv_pkt_queue.send.rdy @= 0
       s.reg_file.wen[0] @= 0
-      s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
+      s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
       # Initializes the fields of the control signal.
-      # s.reg_file.wdata[0] @= CtrlSignalType()
-      s.reg_file.wdata[0].ctrl @= 0
+      # s.reg_file.wdata[0] @= CtrlType()
+      s.reg_file.wdata[0].operation @= 0
       s.reg_file.wdata[0].predicate @= 0
       for i in range(num_fu_inports):
         s.reg_file.wdata[0].fu_in[i] @= 0
-        s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_from[i]
-        s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_idx[i]
-        s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_from[i]
-        s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_idx[i]
+        s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_from[i]
+        s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_idx[i]
+        s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.read_reg_from[i]
+        s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.read_reg_idx[i]
       for i in range(num_routing_outports):
         s.reg_file.wdata[0].routing_xbar_outport[i] @= 0
         s.reg_file.wdata[0].fu_xbar_outport[i] @= 0
       for i in range(num_tile_inports):
         s.reg_file.wdata[0].routing_predicate_in[i] @= 0
-      s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.ctrl_vector_factor_power
+      s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.payload.ctrl.vector_factor_power
       s.reg_file.wdata[0].is_last_ctrl @= 0
 
-      if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG):
+      if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG):
         s.reg_file.wen[0] @= 1
-        s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.ctrl_addr
+        s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
         # Fills the fields of the control signal.
-        s.reg_file.wdata[0].ctrl @= s.recv_pkt_queue.send.msg.ctrl_operation
-        s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.ctrl_predicate
+        s.reg_file.wdata[0].operation @= s.recv_pkt_queue.send.msg.payload.ctrl.operation
+        s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.payload.ctrl.predicate
         for i in range(num_fu_inports):
-          s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_in[i]
-          s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_from[i]
-          s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_write_reg_idx[i]
-          s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_from[i]
-          s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.ctrl_read_reg_idx[i]
+          s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.fu_in[i]
+          s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_from[i]
+          s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_idx[i]
+          s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.read_reg_from[i]
+          s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.read_reg_idx[i]
         for i in range(num_routing_outports):
-          s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[i]
-          s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[i]
+          s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.routing_xbar_outport[i]
+          s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
         for i in range(num_tile_inports):
-          s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.ctrl_routing_predicate_in[i]
-        s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.ctrl_vector_factor_power
-        s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.ctrl_is_last_ctrl
+          s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.routing_predicate_in[i]
+        s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.payload.ctrl.vector_factor_power
+        s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.payload.ctrl.is_last_ctrl
 
-      if (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
-         (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
+      if (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
         s.recv_pkt_queue.send.rdy @= 1
       # TODO: Extend for the other commands. Maybe another queue to
       # handle complicated actions.
@@ -140,22 +141,21 @@ class CtrlMemDynamicRTL(Component):
     def update_send_out_signal():
       s.send_ctrl.val @= 0
       s.send_pkt_to_controller.val @= 0
-      s.send_pkt_to_controller.msg @= CtrlPktType(0, 0, num_tiles, 0, 0, CMD_COMPLETE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
       if s.start_iterate_ctrl == b1(1):
         if ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
-           (s.reg_file.rdata[0].ctrl == OPT_START):
+           (s.reg_file.rdata[0].operation == OPT_START):
           s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
-                CtrlPktType(0,       s.tile_id, num_tiles, 0,   0,  CMD_COMPLETE,
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1
       if s.recv_pkt_queue.send.val & \
-         ((s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE) | \
-          (s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE)):
+         ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
+          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE)):
         s.send_ctrl.val @= b1(0)
 
     @update_ff
@@ -164,11 +164,11 @@ class CtrlMemDynamicRTL(Component):
         s.start_iterate_ctrl <<= 0
       else:
         if s.recv_pkt_queue.send.val:
-          if s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH:
+          if s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH:
             s.start_iterate_ctrl <<= 1
-          elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_TERMINATE:
+          elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
             s.start_iterate_ctrl <<= 0
-          elif s.recv_pkt_queue.send.msg.ctrl_action == CMD_PAUSE:
+          elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE:
             s.start_iterate_ctrl <<= 0
 
     @update_ff
@@ -182,7 +182,7 @@ class CtrlMemDynamicRTL(Component):
         # sent to the controller.
         if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
           s.sent_complete <<= 1
-        if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_LAUNCH):
+        if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH):
           s.sent_complete <<= 0
 
     @update_ff
@@ -194,9 +194,9 @@ class CtrlMemDynamicRTL(Component):
           s.prologue_count_reg_fu[i] <<= 0
       else:
         if s.recv_pkt_queue.send.val & \
-           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU):
-          s.prologue_count_reg_fu[s.recv_pkt_queue.send.msg.ctrl_addr] <<= \
-              trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+           (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU):
+          s.prologue_count_reg_fu[s.recv_pkt_queue.send.msg.payload.ctrl_addr] <<= \
+              trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
 
         if s.start_iterate_ctrl == b1(1):
           if ((s.total_ctrl_steps_val == 0) | \
@@ -232,29 +232,29 @@ class CtrlMemDynamicRTL(Component):
           s.prologue_count_reg_fu_crossbar[i] <<= 0
       else:
         if s.recv_pkt_queue.send.val & \
-           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR):
-          temp_routing_crossbar_in = s.recv_pkt_queue.send.msg.ctrl_routing_xbar_outport[0]
-          s.prologue_count_reg_routing_crossbar[trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+           (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR):
+          temp_routing_crossbar_in = s.recv_pkt_queue.send.msg.payload.ctrl.routing_xbar_outport[0]
+          s.prologue_count_reg_routing_crossbar[trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
         elif s.recv_pkt_queue.send.val & \
-           (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
-          temp_fu_crossbar_in = s.recv_pkt_queue.send.msg.ctrl_fu_xbar_outport[0]
-          s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.data, PrologueCountType)
+           (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
+          temp_fu_crossbar_in = s.recv_pkt_queue.send.msg.payload.ctrl.fu_xbar_outport[0]
+          s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
 
     @update_ff
     def update_ctrl_count_per_iter():
       if s.reset:
         s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
-      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER):
-        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_queue.send.msg.data, PCType)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
+        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PCType)
 
     @update_ff
     def update_total_ctrl_steps():
       if s.reset:
         s.total_ctrl_steps_val <<= TimeType(total_ctrl_steps)
-      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT):
-        s.total_ctrl_steps_val <<= trunc(s.recv_pkt_queue.send.msg.data, TimeType)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT):
+        s.total_ctrl_steps_val <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, TimeType)
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.ctrl_action: {s.send_pkt_to_controller.msg.ctrl_action}, send_pkt.val: {s.send_pkt_to_controller.val}'
+    return f'recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}'
 

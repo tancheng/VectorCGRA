@@ -34,11 +34,7 @@ class LinkOrRTL(Component):
       # simultaneously (confliction would be caused if they both are valid),
       # which is guaranteed by the compiler/software.
       s.send.msg.predicate @= s.recv_fu.msg.predicate | s.recv_xbar.msg.predicate
-
-      if (s.recv_fu.msg.predicate):
-        s.send.msg.payload @= s.recv_fu.msg.payload
-      else:
-        s.send.msg.payload @= s.recv_xbar.msg.payload
+      s.send.msg.payload @= s.recv_xbar.msg.payload | s.recv_fu.msg.payload
 
       # FIXME: bypass won't be necessary any more with separate xbar design.
       # s.send.msg.bypass @= 0

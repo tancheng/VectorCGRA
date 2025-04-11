@@ -56,20 +56,21 @@ fuType2RTL["Br"   ] = BranchRTL
 class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CtrlSignalType, NocPktType, CmdType,
+                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
                 ControllerIdType, cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, TileList,
-                LinkList, dataSPM, controller2addr_map, idTo2d_map, complete_signal_sink_out):
+                LinkList, dataSPM, controller2addr_map, idTo2d_map,
+                complete_signal_sink_out):
 
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = len(TileList)
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, ControllerIdType,
+    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, NocPktType, ControllerIdType,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
@@ -196,17 +197,15 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   data_mem_size_global = 512
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 2
-  num_cgras = 4
-  num_commands = NUM_CMDS
-  num_ctrl_operations = NUM_OPTS
+  num_cgra_columns = 4
+  num_cgra_rows = 1
+  num_cgras = num_cgra_columns * num_cgra_rows
   num_registers_per_reg_bank = 16
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
-  AddrType = mk_bits(addr_nbits)
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
@@ -216,7 +215,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
 
-  CmdType = mk_bits(4)
+  DataAddrType = mk_bits(addr_nbits)
   ControllerIdType = mk_bits(clog2(num_cgras))
   cgra_id = 0
   controller2addr_map = {
@@ -238,71 +237,110 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  CtrlPktType = \
-      mk_intra_cgra_pkt(width * height,
-                        cgra_id_nbits,
-                        num_commands,
-                        ctrl_mem_size,
-                        num_ctrl_operations,
-                        num_fu_inports,
-                        num_fu_outports,
-                        num_tile_inports,
-                        num_tile_outports,
-                        num_registers_per_reg_bank,
-                        addr_nbits,
-                        data_nbits,
-                        predicate_nbits)
-
-  CtrlSignalType = \
-      mk_separate_reg_ctrl(num_ctrl_operations,
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
                            num_fu_inports,
                            num_fu_outports,
                            num_tile_inports,
                            num_tile_outports,
                            num_registers_per_reg_bank)
 
-  NocPktType = mk_multi_cgra_noc_pkt(ncols = num_cgras,
-                                     nrows = 1,
-                                     ntiles = width * height,
-                                     addr_nbits = addr_nbits,
-                                     data_nbits = data_nbits,
-                                     predicate_nbits = 1,
-                                     ctrl_actions = num_commands,
-                                     ctrl_mem_size = ctrl_mem_size,
-                                     ctrl_operations = num_ctrl_operations,
-                                     ctrl_fu_inports = num_fu_inports,
-                                     ctrl_fu_outports = num_fu_outports,
-                                     ctrl_tile_inports = num_tile_inports,
-                                     ctrl_tile_outports = num_tile_outports)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
-  pick_register = [FuInType(0) for x in range(num_fu_inports)]
-  # Note that we still need to set FU inport, and `INC` requires one input.
-  pick_register[0] = FuInType(1)
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
+
   tile_in_code = [TileInType(0) for x in range(num_routing_outports)]
+  # Note that we still need to set FU inport, and `INC` requires one input.
+  fu_in_code = [FuInType(0) for _ in range(num_fu_inports)]
+  fu_in_code[0] = FuInType(1)
   fu_out_code  = [FuOutType(0) for x in range(num_routing_outports)]
   # Note that we still need to set FU xbar, and `INC` requires one output.
   fu_out_code[num_tile_outports] = FuOutType(1)
+  read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
+  read_reg_from_code[0] = b1(1)
+  read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
+  read_reg_idx_code[0] = RegIdxType(2)
+
+  '''
+  Each tile performs independent INC, without waiting for data from
+  neighbours, instead, consuming the data inside their own register
+  cluster/file (i.e., `read_reg_from`).
+  '''
   src_opt_per_tile = [[
-      CtrlPktType(cgra_id, 0,  i,  0,     0,  ctrl_action = CMD_CONFIG_TOTAL_CTRL_COUNT,
-                  # Only execute one operation (i.e., store) is enough for this tile.
-                  # If this is set more than 1, no `COMPLETE` signal would be set back
-                  # to CPU/test_harness.
-                  data = 1),
-      CtrlPktType(cgra_id, 0,  i,  0,    0,  CMD_CONFIG, 0, OPT_INC, 0,
-                  pick_register,
-                  tile_in_code,
-                  fu_out_code,
-                  # Needs a valid input for INC.
-                  ctrl_read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
-                  ctrl_read_reg_idx = [RegIdxType(2), RegIdxType(0), RegIdxType(0), RegIdxType(0)]),
-      # This last one is for launching kernel.
-      CtrlPktType(cgra_id, 0,  i,  0,    0,  CMD_LAUNCH, 0, OPT_NAH, 0,
-                  pick_register, tile_in_code, fu_out_code)
-      ] for i in range(num_tiles)]
+      # Pre-configure per-tile total config count. As we only have single `INC` operation,
+      # we set it as one, which would trigger `COMPLETE` signal be sent back to CPU.
+      IntraCgraPktType(0, # src
+                       i, # dst
+                       cgra_id, # src_cgra_id
+                       cgra_id, # dst_cgra_id
+                       idTo2d_map[cgra_id][0], # src_cgra_x
+                       idTo2d_map[cgra_id][1], # src_cgra_y
+                       idTo2d_map[cgra_id][0], # dst_cgra_x
+                       idTo2d_map[cgra_id][1], # dst_cgra_y
+                       0, # opaque
+                       0, # vc_id
+                       # Only execute one operation (i.e., store) is enough for this tile.
+                       # If this is set more than 1, no `COMPLETE` signal would be set back to CPU.
+                       CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+
+      IntraCgraPktType(0, # src
+                       i, # dst
+                       cgra_id, # src_cgra_id
+                       cgra_id, # dst_cgra_id
+                       idTo2d_map[cgra_id][0], # src_cgra_x
+                       idTo2d_map[cgra_id][1], # src_cgra_y
+                       idTo2d_map[cgra_id][0], # dst_cgra_x
+                       idTo2d_map[cgra_id][1], # dst_cgra_y
+                       0, # opaque
+                       0, # vc_id
+                       CgraPayloadType(CMD_CONFIG,
+                                       ctrl = CtrlType(OPT_INC,
+                                                       0,
+                                                       fu_in_code,
+                                                       tile_in_code,
+                                                       fu_out_code,
+                                                       read_reg_from = read_reg_from_code,
+                                                       read_reg_idx = read_reg_idx_code))),
+
+      IntraCgraPktType(0, # src
+                       i, # dst
+                       cgra_id, # src_cgra_id
+                       cgra_id, # dst_cgra_id
+                       idTo2d_map[cgra_id][0], # src_cgra_x
+                       idTo2d_map[cgra_id][1], # src_cgra_y
+                       idTo2d_map[cgra_id][0], # dst_cgra_x
+                       idTo2d_map[cgra_id][1], # dst_cgra_y
+                       0, # opaque
+                       0, # vc_id
+                       CgraPayloadType(CMD_LAUNCH,
+                                       ctrl = CtrlType(OPT_NAH)))] for i in range(num_tiles)]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  #                                       dst_cgra_id, src, dst,       opq, vc, ctrl_action
-  complete_signal_sink_out = [CtrlPktType(cgra_id,     0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+  complete_signal_sink_out = \
+      [IntraCgraPktType(i, # src
+                        num_tiles, # dst
+                        cgra_id, # src_cgra_id
+                        cgra_id, # dst_cgra_id
+                        idTo2d_map[cgra_id][0], # src_cgra_x
+                        idTo2d_map[cgra_id][1], # src_cgra_y
+                        idTo2d_map[cgra_id][0], # dst_cgra_x
+                        idTo2d_map[cgra_id][1], # dst_cgra_y
+                        0, # opaque
+                        0, # vc_id
+                        CgraPayloadType(CMD_COMPLETE)) for i in range(num_tiles)]
 
   src_ctrl_pkt = []
   for opt_per_tile in src_opt_per_tile:
@@ -438,7 +476,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
     tiles = handleReshape(tiles)
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   CtrlPktType, CtrlSignalType, NocPktType, CmdType,
+                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                    ControllerIdType, cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
