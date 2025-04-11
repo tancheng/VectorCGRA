@@ -74,6 +74,7 @@ class TestHarness(Component):
     def conditional_issue_ctrl_or_query():
       s.dut.recv_from_cpu_pkt.val @= s.src_ctrl_pkt.send.val
       s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
+      print(f'-------- s.dut.recv_from_cpu_pkt.msg: {s.dut.recv_from_cpu_pkt.msg}')
       s.src_ctrl_pkt.send.rdy @= 0
       s.src_query_pkt.send.rdy @= 0
       if (s.complete_count >= complete_count_value) & \
@@ -99,7 +100,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim(test_harness, max_cycles = 100):
+def run_sim(test_harness, max_cycles = 500):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
