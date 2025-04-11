@@ -225,7 +225,7 @@ class DataMemWithCrossbarRTL(Component):
                        0, # dst_tile_id
                        0, # opaque
                        0, # vc_id
-                       CgraPayloadType(0))
+                       CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_store_pkt.val @= 0
 
@@ -255,7 +255,7 @@ class DataMemWithCrossbarRTL(Component):
                        0, # dst_tile_id
                        0, # opaque
                        0, # vc_id
-                       CgraPayloadType(0))
+                       CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_load_request_pkt.val @= 0
 
@@ -312,9 +312,9 @@ class DataMemWithCrossbarRTL(Component):
                       0, # vc_id
                       CgraPayloadType(
                           CMD_LOAD_RESPONSE,
-                          data = DataType(s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
-                                          s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate),
-                          data_addr = s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr))
+                          DataType(s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].payload,
+                                   s.reg_file[trunc(s.read_crossbar.packet_on_input_units[i].dst, LocalBankIndexType)].rdata[0].predicate, 0, 0),
+                          s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].msg.addr, 0, 0))
 
               s.send_to_noc_load_response_pkt.val @= \
                   s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val
@@ -350,7 +350,8 @@ class DataMemWithCrossbarRTL(Component):
                        0, # vc_id
                        CgraPayloadType(
                            CMD_LOAD_REQUEST,
-                           data_addr = s.read_crossbar.send[num_banks_per_cgra].msg.addr))
+                           0,
+                           s.read_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0))
 
         # 'send_to_noc_load_pending' avoids sending pending request multiple times.
         s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks_per_cgra].val & \
@@ -394,9 +395,9 @@ class DataMemWithCrossbarRTL(Component):
                        0, # vc_id
                       CgraPayloadType(
                           CMD_STORE_REQUEST,
-                          data = DataType(s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload,
-                                          s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate),
-                          data_addr = s.write_crossbar.send[num_banks_per_cgra].msg.addr))
+                          DataType(s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload,
+                                   s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, 0, 0),
+                          s.write_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0))
 
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks_per_cgra].val
         s.write_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_store_pkt.rdy
