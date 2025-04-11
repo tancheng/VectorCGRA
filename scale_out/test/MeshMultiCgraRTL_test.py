@@ -286,7 +286,7 @@ def initialize_test_harness(cmdline_opts,
                    ctrl_steps, controller2addr_map, expected_sink_out_pkt)
   return th
 
-def test_sim_homo_2x2_3x3(cmdline_opts):
+def test_sim_homo_2x2_2x2(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
                                num_cgra_rows = 2,
                                num_cgra_columns = 2,
@@ -301,18 +301,18 @@ def test_sim_homo_2x2_3x3(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-# def test_verilog_homo_3x3_4x4(cmdline_opts):
-#   th = initialize_test_harness(cmdline_opts,
-#                                num_cgra_rows = 2,
-#                                num_cgra_columns = 2,
-#                                num_x_tiles_per_cgra = 3,
-#                                num_y_tiles_per_cgra = 3,
-#                                num_banks_per_cgra = 4,
-#                                data_mem_size_per_bank = 1024)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   th.apply(DefaultPassGroup())
+def test_verilog_homo_2x2_4x4(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 4,
+                               num_y_tiles_per_cgra = 4,
+                               num_banks_per_cgra = 8,
+                               data_mem_size_per_bank = 256)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  th.apply(DefaultPassGroup())
 

@@ -70,7 +70,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     # Connections
-    s.dut.controller_id //= cgra_id
+    s.dut.cgra_id //= cgra_id
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.

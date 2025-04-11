@@ -78,8 +78,8 @@ class CgraRTL(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
-                                        height + width, # left and bottom connecting to data mem
-                                        height + width,
+                                        height + width - 1, # left and bottom connecting to data mem
+                                        height + width - 1,
                                         multi_cgra_rows,
                                         multi_cgra_columns,
                                         s.num_tiles,
@@ -92,7 +92,7 @@ class CgraRTL(Component):
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
-    s.controller_id = InPort(CgraIdType)
+    s.cgra_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -100,19 +100,19 @@ class CgraRTL(Component):
 
     # Connections
     # Connects the controller id.
-    s.controller.controller_id //= s.controller_id
-    s.data_mem.cgra_id //= s.controller_id
+    s.controller.cgra_id //= s.cgra_id
+    s.data_mem.cgra_id //= s.cgra_id
 
     # Connects the address lower and upper bound.
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[height + width - 1] //= s.controller.send_to_tile_load_request_addr
-    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
-    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[height + width - 1] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[height + width - 1] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_raddr[height + width - 1] //= s.controller.send_to_mem_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
+    s.data_mem.recv_waddr[height + width - 1] //= s.controller.send_to_mem_store_request_addr
+    s.data_mem.recv_wdata[height + width - 1] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
@@ -128,7 +128,7 @@ class CgraRTL(Component):
     # Assigns tile id.
     for i in range(s.num_tiles):
       s.tile[i].tile_id //= i
-      s.tile[i].cgra_id //= s.controller_id
+      s.tile[i].cgra_id //= s.cgra_id
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):

@@ -30,14 +30,14 @@ class TestHarness(Component):
                 MsgType,
                 AddrType,
                 PktType,
-                controller_id,
+                cgra_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
                 from_tile_store_request_pkt_msgs,
-                expected_to_tile_load_request_addr_msgs,
-                expected_to_tile_load_response_data_msgs,
-                expected_to_tile_store_request_addr_msgs,
-                expected_to_tile_store_request_data_msgs,
+                expected_to_mem_load_request_addr_msgs,
+                expected_to_mem_load_response_data_msgs,
+                expected_to_mem_store_request_addr_msgs,
+                expected_to_mem_store_request_data_msgs,
                 from_noc_pkts,
                 expected_to_noc_pkts,
                 controller2addr_map,
@@ -49,10 +49,10 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
     s.src_from_tile_store_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_store_request_pkt_msgs)
 
-    s.sink_to_tile_load_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_tile_load_request_addr_msgs)
-    s.sink_to_tile_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_tile_load_response_data_msgs)
-    s.sink_to_tile_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_tile_store_request_addr_msgs)
-    s.sink_to_tile_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_tile_store_request_data_msgs)
+    s.sink_to_mem_load_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_load_request_addr_msgs)
+    s.sink_to_mem_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_load_response_data_msgs)
+    s.sink_to_mem_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
+    s.sink_to_mem_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
 
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestSinkRTL(PktType, expected_to_noc_pkts)
@@ -69,17 +69,17 @@ class TestHarness(Component):
                           idTo2d_map)
 
     # Connections
-    s.dut.controller_id //= controller_id
+    s.dut.cgra_id //= cgra_id
     s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_tile_load_request_pkt
     s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
 
-    s.dut.send_to_tile_store_request_addr //= s.sink_to_tile_store_request_addr_en_rdy.recv
-    s.dut.send_to_tile_store_request_data //= s.sink_to_tile_store_request_data_en_rdy.recv
-    s.dut.send_to_tile_load_response_data //= s.sink_to_tile_load_response_data_en_rdy.recv
-    s.dut.send_to_tile_load_request_addr //= s.sink_to_tile_load_request_addr_en_rdy.recv
-    s.dut.send_to_tile_load_request_src_cgra.rdy //= 1
-    s.dut.send_to_tile_load_request_src_tile.rdy //= 1
+    s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr_en_rdy.recv
+    s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data_en_rdy.recv
+    s.dut.send_to_mem_load_response_data //= s.sink_to_mem_load_response_data_en_rdy.recv
+    s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr_en_rdy.recv
+    s.dut.send_to_mem_load_request_src_cgra.rdy //= 1
+    s.dut.send_to_mem_load_request_src_tile.rdy //= 1
 
     s.src_from_noc_val_rdy.send //= s.dut.recv_from_inter_cgra_noc
     s.dut.send_to_inter_cgra_noc //= s.sink_to_noc_val_rdy.recv
@@ -95,10 +95,10 @@ class TestHarness(Component):
     return s.src_from_tile_load_request_pkt_en_rdy.done()  and \
            s.src_from_tile_load_response_pkt_en_rdy.done() and \
            s.src_from_tile_store_request_pkt_en_rdy.done() and \
-           s.sink_to_tile_load_request_addr_en_rdy.done()  and \
-           s.sink_to_tile_load_response_data_en_rdy.done() and \
-           s.sink_to_tile_store_request_addr_en_rdy.done() and \
-           s.sink_to_tile_store_request_data_en_rdy.done() and \
+           s.sink_to_mem_load_request_addr_en_rdy.done()  and \
+           s.sink_to_mem_load_response_data_en_rdy.done() and \
+           s.sink_to_mem_store_request_addr_en_rdy.done() and \
+           s.sink_to_mem_store_request_data_en_rdy.done() and \
            s.src_from_noc_val_rdy.done() and \
            s.sink_to_noc_val_rdy.done()
 
@@ -165,7 +165,7 @@ num_tile_outports = 4
 data_mem_size_global = 16
 addr_nbits = clog2(data_mem_size_global)
 num_registers_per_reg_bank = 16
-controller_id = 0
+cgra_id = 0
 
 idTo2d_map = {
         0: [0, 0],
@@ -227,11 +227,11 @@ from_tile_store_request_pkts = [
     InterCgraPktType(payload = CgraPayloadType(cmd = CMD_STORE_REQUEST, data = DataType(150, 1), data_addr = 15)),
 ]
 
-expected_to_tile_load_request_addr_msgs =  [DataAddrType(2)]
-expected_to_tile_load_response_addr_msgs = [DataAddrType(8), DataAddrType(9)]
-expected_to_tile_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
-expected_to_tile_store_request_addr_msgs = [DataAddrType(5)]
-expected_to_tile_store_request_data_msgs = [DataType(50, 1)]
+expected_to_mem_load_request_addr_msgs =  [DataAddrType(2)]
+expected_to_mem_load_response_addr_msgs = [DataAddrType(8), DataAddrType(9)]
+expected_to_mem_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
+expected_to_mem_store_request_addr_msgs = [DataAddrType(5)]
+expected_to_mem_store_request_data_msgs = [DataType(50, 1)]
 
 from_noc_pkts = [
                    # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                 cmd
@@ -264,14 +264,14 @@ def test_simple(cmdline_opts):
                    DataType,
                    DataAddrType,
                    InterCgraPktType,
-                   controller_id,
+                   cgra_id,
                    from_tile_load_request_pkts,
                    from_tile_load_response_pkts,
                    from_tile_store_request_pkts,
-                   expected_to_tile_load_request_addr_msgs,
-                   expected_to_tile_load_response_data_msgs,
-                   expected_to_tile_store_request_addr_msgs,
-                   expected_to_tile_store_request_data_msgs,
+                   expected_to_mem_load_request_addr_msgs,
+                   expected_to_mem_load_response_data_msgs,
+                   expected_to_mem_store_request_addr_msgs,
+                   expected_to_mem_store_request_data_msgs,
                    from_noc_pkts,
                    expected_to_noc_pkts,
                    controller2addr_map,
