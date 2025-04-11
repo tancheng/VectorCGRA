@@ -119,22 +119,22 @@ def run_sim(test_harness, max_cycles = 100):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-def initialize_test_harness(cmdline_opts):
-  num_tile_inports  = 4
+def initialize_test_harness(cmdline_opts,
+                            num_cgra_rows = 2,
+                            num_cgra_columns = 2,
+                            num_x_tiles_per_cgra = 2,
+                            num_y_tiles_per_cgra = 2,
+                            num_banks_per_cgra = 2,
+                            data_mem_size_per_bank = 16):
+  num_tile_inports = 4
   num_tile_outports = 4
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 16
-  data_mem_size_global = 128
-  num_cgra_rows = 2
-  num_cgra_columns = 2
   num_cgras = num_cgra_rows * num_cgra_columns
-  num_banks_per_cgra = 2
-  data_mem_size_per_bank = data_mem_size_global // num_cgras // num_banks_per_cgra
-  x_tiles = 2
-  y_tiles = 2
-  num_tiles = x_tiles * y_tiles
+  data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
+  num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -280,14 +280,20 @@ def initialize_test_harness(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
                    CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
-                   x_tiles, y_tiles, ctrl_mem_size, data_mem_size_global,
+                   num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps, controller2addr_map, expected_sink_out_pkt)
   return th
 
-def test_sim_homo_2x2_2x2(cmdline_opts):
-  th = initialize_test_harness(cmdline_opts)
+def test_sim_homo_2x2_3x3(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
@@ -295,12 +301,18 @@ def test_sim_homo_2x2_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-def test_verilog_homo_2x2_2x2(cmdline_opts):
-  th = initialize_test_harness(cmdline_opts)
-  th.elaborate()
-  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                       'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  th.apply(DefaultPassGroup())
+# def test_verilog_homo_3x3_4x4(cmdline_opts):
+#   th = initialize_test_harness(cmdline_opts,
+#                                num_cgra_rows = 2,
+#                                num_cgra_columns = 2,
+#                                num_x_tiles_per_cgra = 3,
+#                                num_y_tiles_per_cgra = 3,
+#                                num_banks_per_cgra = 4,
+#                                data_mem_size_per_bank = 1024)
+#   th.elaborate()
+#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+#                        'ALWCOMBORDER'])
+#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+#   th.apply(DefaultPassGroup())
 

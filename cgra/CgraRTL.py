@@ -78,7 +78,8 @@ class CgraRTL(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
-                                        height, height,
+                                        height + width, # left and bottom connecting to data mem
+                                        height + width,
                                         multi_cgra_rows,
                                         multi_cgra_columns,
                                         s.num_tiles,
@@ -107,11 +108,11 @@ class CgraRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[height] //= s.controller.send_to_tile_load_request_addr
+    s.data_mem.recv_raddr[height + width - 1] //= s.controller.send_to_tile_load_request_addr
     s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
     s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[height] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[height] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_waddr[height + width - 1] //= s.controller.send_to_tile_store_request_addr
+    s.data_mem.recv_wdata[height + width - 1] //= s.controller.send_to_tile_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
@@ -164,38 +165,38 @@ class CgraRTL(Component):
         if i // width == 0:
           s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
           s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
           s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
           s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
 
         if i // width == height - 1:
           s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
           s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
           s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
           s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
 
         if i % width == 0 and i // width > 0:
           s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
           s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
 
         if i % width == 0 and i // width < height - 1:
           s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
           s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
 
         if i % width == width - 1 and i // width > 0:
           s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
           s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
 
         if i % width == width - 1 and i // width < height - 1:
           s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
           s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType( 0, 0 )
+          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
 
 
       if i // width == 0:
@@ -214,11 +215,11 @@ class CgraRTL(Component):
         s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
         s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
 
-      if i % width == 0:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[i//width]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[i//width]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[i//width]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[i//width]
+      if i % width == 0 or i // width == 0:
+        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
+        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[width + i // width - 1 if i >= width else i % width]
+        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[width + i // width - 1 if i >= width else i % width]
+        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[width + i // width - 1 if i >= width else i % width]
       else:
         s.tile[i].to_mem_raddr.rdy   //= 0
         s.tile[i].from_mem_rdata.val //= 0

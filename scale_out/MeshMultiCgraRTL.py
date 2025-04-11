@@ -15,8 +15,8 @@ from ..lib.opt_type import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 
-
 class MeshMultiCgraRTL(Component):
+
   def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CgraPayloadType, CtrlSignalType, NocPktType,
                 cgra_rows, cgra_columns, tile_rows, tile_columns,
