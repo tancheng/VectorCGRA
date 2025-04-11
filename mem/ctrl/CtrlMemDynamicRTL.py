@@ -141,7 +141,7 @@ class CtrlMemDynamicRTL(Component):
     def update_send_out_signal():
       s.send_ctrl.val @= 0
       s.send_pkt_to_controller.val @= 0
-      s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE)) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
       if s.start_iterate_ctrl == b1(1):
         if ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
@@ -149,7 +149,7 @@ class CtrlMemDynamicRTL(Component):
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE)) # ,
+                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
         else:
           s.send_ctrl.val @= 1

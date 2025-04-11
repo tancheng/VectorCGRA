@@ -210,7 +210,7 @@ class TileRTL(Component):
 
     @update
     def feed_pkt():
-        s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         s.const_mem.recv_const.msg @= DataType(0, 0, 0, 0)
         s.ctrl_mem.recv_pkt_from_controller.val @= 0
         s.const_mem.recv_const.val @= 0
@@ -236,7 +236,7 @@ class TileRTL(Component):
     @update
     def update_send_out_signal():
         s.send_to_controller_pkt.val @= 0
-        s.send_to_controller_pkt.msg @= CtrlPktType(0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.send_to_controller_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         if s.ctrl_mem.send_pkt_to_controller.val:
             s.send_to_controller_pkt.val @= 1
             s.send_to_controller_pkt.msg @= s.ctrl_mem.send_pkt_to_controller.msg
