@@ -76,7 +76,7 @@ class TestHarness(Component):
 
     s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr_en_rdy.recv
     s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data_en_rdy.recv
-    s.dut.send_to_mem_load_response_data //= s.sink_to_mem_load_response_data_en_rdy.recv
+    s.dut.send_to_tile_load_response_data //= s.sink_to_mem_load_response_data_en_rdy.recv
     s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr_en_rdy.recv
     s.dut.send_to_mem_load_request_src_cgra.rdy //= 1
     s.dut.send_to_mem_load_request_src_tile.rdy //= 1
