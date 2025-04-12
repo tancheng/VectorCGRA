@@ -45,7 +45,8 @@ class DataMemWithCrossbarRTL(Component):
                 data_mem_size_global,
                 data_mem_size_per_bank,
                 num_banks_per_cgra = 4,
-                num_rd_tiles = 4, num_wr_tiles = 4,
+                num_rd_tiles = 4,
+                num_wr_tiles = 4,
                 multi_cgra_rows = 2,
                 multi_cgra_columns = 2,
                 num_tiles = 16,
@@ -445,12 +446,9 @@ class DataMemWithCrossbarRTL(Component):
     content_str = "content: {"
     send_rdata_str = "send_to_tile_read_data: {"
 
-    # send_to_noc_raddr_str = "send_to_noc_read_addr: {"
     send_to_noc_load_request_pkt_str = "send_to_noc_load_request_pkt: {"
     send_to_noc_load_response_pkt_str = "send_to_noc_load_response_pkt: {"
     recv_from_noc_rdata_str = "recv_from_noc_read_data: {"
-    # send_to_noc_waddr_str = "send_to_noc_write_addr: {"
-    # send_to_noc_wdata_str = "send_to_noc_write_data: {"
     send_to_noc_store_pkt_str = "send_to_noc_store_pkt: {"
 
 
@@ -460,31 +458,23 @@ class DataMemWithCrossbarRTL(Component):
       recv_wdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_wdata]) + ";"
       content_str +=  " bank[" + str(b) + "]: " + "|".join([str(data) for data in s.reg_file[b].regs]) + ";"
       send_rdata_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
-      # send_to_noc_load_request_pkt_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.send_rdata]) + ";"
 
-    # send_to_noc_raddr_str += str(s.send_to_noc_raddr.msg) + ";"
     send_to_noc_load_request_pkt_str += str(s.send_to_noc_load_request_pkt.msg) + ";"
     send_to_noc_load_response_pkt_str += " " + str(s.send_to_noc_load_response_pkt.msg) + " "
     recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
-    # send_to_noc_waddr_str += str(s.send_to_noc_waddr.msg) + ";"
-    # send_to_noc_wdata_str += str(s.send_to_noc_wdata.msg) + ";"
     send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ", val: " + str(s.send_to_noc_store_pkt.val) + ";"
 
     recv_raddr_str += "}"
     send_rdata_str += "}"
     recv_waddr_str += "}"
     recv_wdata_str += "}"
-    # send_to_noc_raddr_str += "}"
     send_to_noc_load_request_pkt_str += "}"
     send_to_noc_load_response_pkt_str += "}"
     recv_from_noc_rdata_str += "}"
-    # send_to_noc_waddr_str += "}"
-    # send_to_noc_wdata_str += "}"
     send_to_noc_store_pkt_str += "}"
     read_crossbar_str = "read_crossbar: " + s.read_crossbar.line_trace()
     write_crossbar_str = "write_crossbar: " + s.write_crossbar.line_trace()
     content_str += "}"
 
-    # return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_raddr_str} || {recv_from_noc_rdata_str} || {send_to_noc_waddr_str} || {send_to_noc_wdata_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
     return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_rdata_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
 
