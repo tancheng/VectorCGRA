@@ -75,6 +75,7 @@ class TestHarness(Component):
       s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
       s.src_ctrl_pkt.send.rdy @= 0
       s.src_query_pkt.send.rdy @= 0
+      print(f"-----> CPU pkt: {s.src_ctrl_pkt.send.msg}")
       if (s.complete_count >= complete_count_value) & \
          ~s.src_ctrl_pkt.send.val:
         s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
@@ -315,3 +316,736 @@ def test_verilog_homo_2x2_4x4(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   th.apply(DefaultPassGroup())
+
+def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
+                                     num_cgra_rows = 2,
+                                     num_cgra_columns = 2,
+                                     num_x_tiles_per_cgra = 2,
+                                     num_y_tiles_per_cgra = 2,
+                                     num_banks_per_cgra = 2,
+                                     data_mem_size_per_bank = 16):
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_tile_outports + num_fu_inports
+  ctrl_mem_size = 16
+  num_cgras = num_cgra_rows * num_cgra_columns
+  data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
+  num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
+  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  ctrl_addr_nbits = clog2(ctrl_mem_size)
+  data_addr_nbits = clog2(data_mem_size_global)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
+  DUT = MeshMultiCgraRTL
+  FunctionUnit = FlexibleFuRTL
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  predicate_nbits = 1
+  PredicateType = mk_predicate(1, 1)
+  num_registers_per_reg_bank = 16
+  per_cgra_data_size = int(data_mem_size_global / num_cgras)
+  controller2addr_map = {}
+  for i in range(num_cgras):
+    controller2addr_map[i] = [i * per_cgra_data_size,
+                              (i + 1) * per_cgra_data_size - 1]
+  print("[LOG] controller2addr_map: ", controller2addr_map)
+
+  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
+
+  cgra_id_nbits = clog2(num_cgras)
+
+  CtrlType = \
+      mk_separate_reg_ctrl(NUM_OPTS,
+                           num_fu_inports,
+                           num_fu_outports,
+                           num_tile_inports,
+                           num_tile_outports,
+                           num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
+                                           num_cgra_rows,
+                                           num_tiles,
+                                           CgraPayloadType)
+
+  activation_tensor_preload_data = [
+      [
+          # CGRA 2, tile 2: [1, 2, 3]
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = 64)),
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(2, 1), data_addr = 65)),
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(3, 1), data_addr = 66)),
+
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 64, data = 1, data_predicate = 1),
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 65, data = 2, data_predicate = 1),
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 66, data = 3, data_predicate = 1),
+
+          # CGRA 2, tile 0: [4, 5, 6]
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(4, 1), data_addr = 67)),
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(5, 1), data_addr = 68)),
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(6, 1), data_addr = 69)),
+
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 67, data = 4, data_predicate = 1),
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 68, data = 5, data_predicate = 1),
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 69, data = 6, data_predicate = 1),
+
+
+          # CGRA 0, tile 2: [7, 8, 9]
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(7, 1), data_addr = 0)),
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(8, 1), data_addr = 1)),
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(9, 1), data_addr = 2)),
+
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 0, data = 7, data_predicate = 1),
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 1, data = 8, data_predicate = 1),
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_STORE_REQUEST, addr = 2, data = 9, data_predicate = 1),
+      ]
+  ]
+
+  src_opt_pkt = [
+      # CGRA 2, tile 2.
+      [
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(64, 1))),
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(65, 1))),
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(66, 1))),
+
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 64),
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 65),
+          # CtrlPktType(2, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 66),
+
+          # LD_CONST indicates the address is a const.
+          IntraCgraPktType(0, 2, 0, 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_LD_CONST, 0,
+                                                                     [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     # Sends to east tiles: [(CGRA 2, tile 3), (CGRA 3, tile 2), (CGRA 3, tile 3)].
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+
+          #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(2,      0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             # Sends to east tiles: [(CGRA 2, tile 3), (CGRA 3, tile 2), (CGRA 3, tile 3)].
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]
+          #             ),
+          #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(2,      0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH,      b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 2, tile 0.
+      [
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(67, 1))),
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(68, 1))),
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(69, 1))),
+
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 67),
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 68),
+          # CtrlPktType(2, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 69),
+
+          # LD_CONST indicates the address is a const.
+          IntraCgraPktType(0, 0, 0, 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_LD_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     # Sends to east tiles: [(CGRA 2, tile 1), (CGRA 3, tile 0), (CGRA 3, tile 1)]
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # LD_CONST indicates the address is a const.
+          #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(2,      0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             # Sends to east tiles: [(CGRA 2, tile 1), (CGRA 3, tile 0), (CGRA 3, tile 1)]
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]
+          #             ),
+          # #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(2,      0,  1,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH,      b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 0, tile 2.
+      [
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 1))),
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(1, 1))),
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 0),
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 1),
+          # CtrlPktType(0, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 2),
+
+          # LD_CONST indicates the address is a const.
+          IntraCgraPktType(0, 2, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_LD_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     # Sends to east tiles: [(CGRA 0, tile 3), (CGRA 1, tile 2), (CGRA 1, tile 3)]
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # LD_CONST indicates the address is a const.
+          #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(0,      0,  2,  0,    0,  CMD_CONFIG, 0,   OPT_LD_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             # Sends to east tiles: [(CGRA 0, tile 3), (CGRA 1, tile 2), (CGRA 1, tile 3)]
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]
+          #             ),
+          # #           cgra_id src dst vc_id opq cmd_type    addr operation     predicate
+          # CtrlPktType(0,      0,  2,  0,    0,  CMD_LAUNCH, 0,   OPT_NAH,      b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 2, tile 3.
+      [
+          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+
+          # CtrlPktType(2, 0, 3, 0, 0, ctrl_action = CMD_CONST, data = 2),
+
+          IntraCgraPktType(0, 3, 0, 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 2, tile 2) to east (CGRA 3, tile 2).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 2, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     #              Sends mul to south tile(CGRA 2, tile1).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(2, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #              # Forward data from west(CGRA 2, tile 2) to east (CGRA 3, tile 2).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 2, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+          #              TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+          #              #             Sends mul to south tile(CGRA 2, tile1).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(2, 0, 3, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 2, tile 1.
+      [
+          IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(4, 1))),
+
+          # CtrlPktType(2, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 4),
+
+          IntraCgraPktType(0, 1, 0, 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 2, tile 0) to east (CGRA 3, tile 0).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 2, tile 0) to first inport of FU, to do MUL_CONST (const 4).
+                                                                      # Put data from north(CGRA 2, tile 3) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                     #              Sends mul_add to south tile(CGRA 0, tile 3).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+
+
+          # CtrlPktType(2, 0, 1, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #              # Forward data from west(CGRA 2, tile 0) to east (CGRA 3, tile 0).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 2, tile 0) to first inport of FU, to do MUL_CONST (const 4).
+          #              # Put data from north(CGRA 2, tile 3) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #              #             Sends mul_add to south tile(CGRA 0, tile 3).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(2, 0, 1, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 0, tile 3.
+      [
+          IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(6, 1))),
+          # CtrlPktType(0, 0, 3, 0, 0, ctrl_action = CMD_CONST, data = 6),
+
+          IntraCgraPktType(0, 3, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 0, tile 2) to east (CGRA 1, tile 2).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 0, tile 2) to first inport of FU, to do MUL_CONST (const 6).
+                                                                      # Put data from north(CGRA 2, tile 1) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                     #              Sends mul_add to south tile(CGRA 0, tile 1).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(0, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             # Forward data from west(CGRA 0, tile 2) to east (CGRA 1, tile 2).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 0, tile 2) to first inport of FU, to do MUL_CONST (const 6).
+          #              # Put data from north(CGRA 2, tile 1) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #             #              Sends mul_add to south tile(CGRA 0, tile 1).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(0, 0, 3, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 0, tile 1.
+      [
+          # Const
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(29, 1))), # 60
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(30, 1))), # 72
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(31, 1))), # 84
+
+          # CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 29), # 60
+          # CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 30), # 72
+          # CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 31), # 84
+
+
+          IntraCgraPktType(0, 1, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Stores data from north(CGRA 0, tile 3).
+                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+
+
+          # CtrlPktType(0, 0, 1, 0, 0, CMD_CONFIG, 0, OPT_STR_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Stores data from north(CGRA 0, tile 3).
+          #              TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(0, 0, 1, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 3, tile 2.
+      [
+          IntraCgraPktType(0, 2, 0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(8, 1))),
+          # CtrlPktType(3, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 8),
+
+          IntraCgraPktType(0, 2, 0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 2, tile 3) to east (CGRA 3, tile 3).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 2, tile 3) to first inport of FU, to do OPT_MUL_CONST.
+                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     #              Sends mul to south tile(CGRA 3, tile 0).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 2, 0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(3, 0, 2, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             # Forward data from west(CGRA 2, tile 3) to east (CGRA 3, tile 3).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 2, tile 3) to first inport of FU, to do OPT_MUL_CONST.
+          #              TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+          #              #             Sends mul to south tile(CGRA 3, tile 0).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(3, 0, 2, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 3, tile 0.
+      [
+          IntraCgraPktType(0, 0, 0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(10, 1))),
+          # CtrlPktType(3, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 10),
+
+          IntraCgraPktType(0, 0, 0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 2, tile 1) to east (CGRA 3, tile 1).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 2, tile 1) to first inport of FU, to do MUL_CONST (const 10).
+                                                                      # Put data from north(CGRA 3, tile 2) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                      #             Sends mul_add to south tile(CGRA 1, tile 2).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 0, 0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(3, 0, 0, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             # Forward data from west(CGRA 2, tile 1) to east (CGRA 3, tile 1).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 2, tile 1) to first inport of FU, to do MUL_CONST (const 10).
+          #              # Put data from north(CGRA 3, tile 2) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #              #             Sends mul_add to south tile(CGRA 1, tile 2).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(3, 0, 0, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 1, tile 2.
+      [
+          IntraCgraPktType(0, 2, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(12, 1))),
+          # CtrlPktType(1, 0, 2, 0, 0, ctrl_action = CMD_CONST, data = 12),
+
+          IntraCgraPktType(0, 2, 0, 1,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     # Forward data from west(CGRA 0, tile 3) to east (CGRA 1, tile 3).
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                      # Put data from west(CGRA 0, tile 3) to first inport of FU, to do MUL_CONST (const 12).
+                                                                      # Put data from north(CGRA 3, tile 0) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                      #             Sends mul_add to south tile(CGRA 1, tile 0).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 2, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(1, 0, 2, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             # Forward data from west(CGRA 0, tile 3) to east (CGRA 1, tile 3).
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+          #              # Put data from west(CGRA 0, tile 3) to first inport of FU, to do MUL_CONST (const 12).
+          #              # Put data from north(CGRA 3, tile 0) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #              #             Sends mul_add to south tile(CGRA 1, tile 0).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(1, 0, 2, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 1, tile 0.
+      [
+          # Const
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(58, 1))), # 132
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(59, 1))), # 162
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(60, 1))), # 192
+
+          # CtrlPktType(1, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 58),  # 132
+          # CtrlPktType(1, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 59),  # 162
+          # CtrlPktType(1, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 60),  # 192
+
+          IntraCgraPktType(0, 0, 0, 1,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Stores data from north(CGRA 1, tile 2).
+                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(1, 0, 0, 0, 0, CMD_CONFIG, 0, OPT_STR_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Stores data from north(CGRA 1, tile 2).
+          #              TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(1, 0, 0, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 3, tile 3.
+      [
+          IntraCgraPktType(0, 3, 0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(14, 1))),
+
+          # CtrlPktType(3, 0, 3, 0, 0, ctrl_action = CMD_CONST, data = 14),
+
+          IntraCgraPktType(0, 3, 0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Put data from west(CGRA 3, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      #             Sends mul to south tile(CGRA 3, tile 1).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 3, 0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(3, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Put data from west(CGRA 3, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+          #              TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+          #              #             Sends mul to south tile(CGRA 3, tile 1).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(3, 0, 3, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 3, tile 1.
+      [
+          IntraCgraPktType(0, 1, 0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(16, 1))),
+
+          # CtrlPktType(3, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 16),
+
+          IntraCgraPktType(0, 1, 0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Put data from west(CGRA 3, tile 0) to first inport of FU, to do MUL_CONST (const 16).
+                                                                      # Put data from north(CGRA 3, tile 3) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                      #             Sends mul_add to south tile(CGRA 1, tile 3).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 1, 0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(3, 0, 1, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Put data from west(CGRA 3, tile 0) to first inport of FU, to do MUL_CONST (const 16).
+          #              # Put data from north(CGRA 3, tile 3) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #              #             Sends mul_add to south tile(CGRA 1, tile 3).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(3, 0, 1, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 1, tile 3.
+      [
+          IntraCgraPktType(0, 3, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(18, 1))),
+
+          # CtrlPktType(1, 0, 3, 0, 0, ctrl_action = CMD_CONST, data = 18),
+
+          IntraCgraPktType(0, 3, 0, 1,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Put data from west(CGRA 1, tile 2) to first inport of FU, to do MUL_CONST (const 18).
+                                                                      # Put data from north(CGRA 3, tile 1) to third inport to do ADD.
+                                                                      TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                      #             Sends mul_add to south tile(CGRA 1, tile 1).
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 3, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(1, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Put data from west(CGRA 1, tile 2) to first inport of FU, to do MUL_CONST (const 18).
+          #              # Put data from north(CGRA 3, tile 1) to third inport to do ADD.
+          #              TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+          #              #             Sends mul_add to south tile(CGRA 1, tile 1).
+          #             [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(1, 0, 3, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ],
+
+      # CGRA 1, tile 1.
+      [
+          # Const
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(61, 1))), # 204
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(62, 1))), # 252
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(63, 1))), # 300
+
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 61),  # 204
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 62),  # 252
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 63),  # 300
+
+          IntraCgraPktType(0, 1, 0, 1,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                                     [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # Stores data from north(CGRA 1, tile 3).
+                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+
+          # CtrlPktType(1, 0, 1, 0, 0, CMD_CONFIG, 0, OPT_STR_CONST, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              # Stores data from north(CGRA 1, tile 3).
+          #              TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          # CtrlPktType(1, 0, 1, 0, 0, CMD_LAUNCH, 0, OPT_NAH, b1(0),
+          #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+          #             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+          #              TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+          #             [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #              FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)])
+      ]
+  ]
+
+  src_query_pkt = \
+      [
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 62)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 63)),
+
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 62),
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_REQUEST, addr = 63),
+      ]
+
+  # vc_id needs to be 1 due to the message might traverse across the date line via ring.
+  expected_sink_out_pkt = \
+      [
+          IntraCgraPktType(1,   num_tiles, 1, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+          IntraCgraPktType(1,   num_tiles, 1, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+
+          IntraCgraPktType(1,   num_tiles, 1, 1, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 62)),
+          IntraCgraPktType(1,   num_tiles, 1, 1, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 63)),
+          # dst_cgra, src, dst_tile,  opq, vc_id ctrl_action
+          # Expected updated value.
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 62, data = 0x01, data_predicate = 1),
+          # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_LOAD_RESPONSE, addr = 63, data = 0x02, data_predicate = 1),
+      ]
+
+  src_ctrl_pkt = []
+  for activation in activation_tensor_preload_data:
+      src_ctrl_pkt.extend(activation)
+  for src_opt in src_opt_pkt:
+      src_ctrl_pkt.extend(src_opt)
+
+  # We only needs 3 steps to finish this test.
+  ctrl_steps = 3
+
+  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
+                   CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
+                   num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
+                   data_mem_size_per_bank, num_banks_per_cgra,
+                   num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
+                   ctrl_steps, controller2addr_map, expected_sink_out_pkt)
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
