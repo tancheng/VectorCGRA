@@ -107,7 +107,7 @@ class CgraSystolicArrayRTL(Component):
 
     # Connections
     # Connects controller id.
-    s.controller.controller_id //= cgra_id
+    s.controller.cgra_id //= cgra_id
     s.data_mem.cgra_id //= cgra_id
 
     # Connects the address lower and upper bound.
@@ -115,11 +115,11 @@ class CgraSystolicArrayRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[4] //= s.controller.send_to_tile_load_request_addr
-    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
-    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[4] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[4] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_raddr[4] //= s.controller.send_to_mem_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
+    s.data_mem.recv_waddr[4] //= s.controller.send_to_mem_store_request_addr
+    s.data_mem.recv_wdata[4] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt

@@ -15,8 +15,8 @@ from ..lib.opt_type import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 
-
 class MeshMultiCgraRTL(Component):
+
   def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CgraPayloadType, CtrlSignalType, NocPktType,
                 cgra_rows, cgra_columns, tile_rows, tile_columns,
@@ -69,7 +69,7 @@ class MeshMultiCgraRTL(Component):
 
     # Connects controller id.
     for cgra_id in range(s.num_cgras):
-      s.cgra[cgra_id].controller_id //= cgra_id
+      s.cgra[cgra_id].cgra_id //= cgra_id
 
     # Connects memory address upper and lower bound for each CGRA.
     for cgra_id in range(s.num_cgras):

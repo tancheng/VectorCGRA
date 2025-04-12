@@ -70,7 +70,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
     # Connections
-    s.dut.controller_id //= cgra_id
+    s.dut.cgra_id //= cgra_id
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
@@ -310,7 +310,7 @@ def test_homogeneous_2x2(cmdline_opts):
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
   th = init_param(topology)
-  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL])
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL, MemUnitRTL])
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

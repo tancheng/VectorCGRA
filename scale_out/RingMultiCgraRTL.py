@@ -68,7 +68,7 @@ class RingMultiCgraRTL(Component):
 
     # Connects the controller id.
     for cgra_id in range(s.num_cgras):
-      s.cgra[cgra_id].controller_id //= cgra_id
+      s.cgra[cgra_id].cgra_id //= cgra_id
 
     # Connects memory address upper and lower bound for each CGRA.
     for cgra_id in range(s.num_cgras):
