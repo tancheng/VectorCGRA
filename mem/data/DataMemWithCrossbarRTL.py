@@ -338,10 +338,10 @@ class DataMemWithCrossbarRTL(Component):
 
         # Handles the request (not response) towards the others via the NoC.
         s.send_to_noc_load_request_pkt.msg @= \
-            NocPktType(0, # src
+            NocPktType(s.cgra_id, # src
                        0, # dst
-                       0, # src_x
-                       0, # src_y
+                       s.idTo2d_x_lut[s.cgra_id], # src_x
+                       s.idTo2d_y_lut[s.cgra_id], # src_y
                        0, # dst_x
                        0, # dst_y
                        0, # src_tile_id
@@ -383,10 +383,10 @@ class DataMemWithCrossbarRTL(Component):
 
         # Handles the one connecting to the NoC.
         s.send_to_noc_store_pkt.msg @= \
-            NocPktType(0, # src
+            NocPktType(s.cgra_id, # src
                        0, # dst
-                       0, # src_x
-                       0, # src_y
+                       s.idTo2d_x_lut[s.cgra_id], # src_x
+                       s.idTo2d_y_lut[s.cgra_id], # src_y
                        0, # dst_x
                        0, # dst_y
                        0, # src_tile_id
