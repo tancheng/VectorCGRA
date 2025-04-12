@@ -59,7 +59,7 @@ class Fu(Component):
     #     s.send_rdy_vector[j] @= s.send_out[j].rdy
     #   s.recv_const.rdy @= reduce_and(s.send_rdy_vector) & (s.latency == latency - 1)
     #   # OPT_NAH doesn't require consuming any input.
-    #   s.recv_opt.rdy @= ((s.recv_opt.msg.ctrl == OPT_NAH) | \
+    #   s.recv_opt.rdy @= ((s.recv_opt.msg.operation == OPT_NAH) | \
     #                       reduce_and(s.send_rdy_vector)) & \
     #                      (s.latency == latency - 1)
 
@@ -75,7 +75,7 @@ class Fu(Component):
 
     @update_ff
     def proceed_latency():
-      if s.recv_opt.msg.ctrl == OPT_START:
+      if s.recv_opt.msg.operation == OPT_START:
         s.latency <<= LatencyType(0)
       elif s.latency == latency - 1:
         s.latency <<= LatencyType(0)
@@ -109,7 +109,7 @@ class Fu(Component):
   def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(opt_predicate:{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val})'
+    return f'[recv: {recv_str}] {opt_str}(opt_predicate:{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val})'

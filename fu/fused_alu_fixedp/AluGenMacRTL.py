@@ -31,14 +31,14 @@ class AluGenMacRTL(Fu):
 
     # Components
     s.fALU = AluGenMacWrapperRTL()
-    s.fALU.rhs_2 //= lambda:   0 if s.recv_opt.msg.ctrl == OPT_ADD     else \
-                             ( 1 if s.recv_opt.msg.ctrl == OPT_SUB     else \
-                             ( 3 if s.recv_opt.msg.ctrl == OPT_LT      else \
-                             ( 7 if s.recv_opt.msg.ctrl == OPT_GTE     else \
-                             (10 if s.recv_opt.msg.ctrl == OPT_GT      else \
-                             (14 if s.recv_opt.msg.ctrl == OPT_LTE     else \
-                             (16 if s.recv_opt.msg.ctrl == OPT_MUL     else \
-                             (48 if s.recv_opt.msg.ctrl == OPT_MUL_ADD else 0)))))))
+    s.fALU.rhs_2 //= lambda:   0 if s.recv_opt.msg.operation == OPT_ADD     else \
+                             ( 1 if s.recv_opt.msg.operation == OPT_SUB     else \
+                             ( 3 if s.recv_opt.msg.operation == OPT_LT      else \
+                             ( 7 if s.recv_opt.msg.operation == OPT_GTE     else \
+                             (10 if s.recv_opt.msg.operation == OPT_GT      else \
+                             (14 if s.recv_opt.msg.operation == OPT_LTE     else \
+                             (16 if s.recv_opt.msg.operation == OPT_MUL     else \
+                             (48 if s.recv_opt.msg.operation == OPT_MUL_ADD else 0)))))))
 
     # Wires
     s.in0 = Wire( FuInType )
@@ -86,14 +86,14 @@ class AluGenMacRTL(Fu):
       if s.recv_opt.val:
         # FIXME: Handle recv_all_val for different cases, e.g., some ops do not need
         # 3 operands, some ops do not need const.
-        if (s.recv_opt.msg.ctrl == OPT_ADD    ) | \
-           (s.recv_opt.msg.ctrl == OPT_SUB    ) | \
-           (s.recv_opt.msg.ctrl == OPT_LT     ) | \
-           (s.recv_opt.msg.ctrl == OPT_GTE    ) | \
-           (s.recv_opt.msg.ctrl == OPT_GT     ) | \
-           (s.recv_opt.msg.ctrl == OPT_LTE    ) | \
-           (s.recv_opt.msg.ctrl == OPT_MUL    ) | \
-           (s.recv_opt.msg.ctrl == OPT_MUL_ADD):
+        if (s.recv_opt.msg.operation == OPT_ADD    ) | \
+           (s.recv_opt.msg.operation == OPT_SUB    ) | \
+           (s.recv_opt.msg.operation == OPT_LT     ) | \
+           (s.recv_opt.msg.operation == OPT_GTE    ) | \
+           (s.recv_opt.msg.operation == OPT_GT     ) | \
+           (s.recv_opt.msg.operation == OPT_LTE    ) | \
+           (s.recv_opt.msg.operation == OPT_MUL    ) | \
+           (s.recv_opt.msg.operation == OPT_MUL_ADD):
           s.fALU.rhs_0  @= s.recv_in[s.in0_idx].msg.payload
           s.fALU.rhs_1  @= s.recv_in[s.in1_idx].msg.payload
           s.fALU.rhs_1b @= s.recv_in[s.in2_idx].msg.payload

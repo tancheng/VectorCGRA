@@ -56,7 +56,7 @@ class RetRTL(Fu):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_RET:
+        if s.recv_opt.msg.operation == OPT_RET:
           # Branch is only used to set predication rather than delivering value.
           #                             payload,                          predicate, bypass,  delay
           s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1(0),     b1(0),   b1(0))
@@ -81,8 +81,8 @@ class RetRTL(Fu):
   def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) '
 

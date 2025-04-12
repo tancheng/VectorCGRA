@@ -19,8 +19,8 @@ from ..tile.TileRTL import TileRTL
 
 class CgraTemplateRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, CgraIdType, multi_cgra_rows,
+  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
                 multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -59,7 +59,7 @@ class CgraTemplateRTL(Component):
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CtrlSignalType, ctrl_mem_size,
+                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
@@ -67,7 +67,9 @@ class CgraTemplateRTL(Component):
                       FuList = FuList)
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
-    s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
+    s.data_mem = DataMemWithCrossbarRTL(NocPktType,
+                                        CgraPayloadType,
+                                        DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
@@ -78,7 +80,7 @@ class CgraTemplateRTL(Component):
                                         s.num_tiles,
                                         idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
@@ -86,7 +88,7 @@ class CgraTemplateRTL(Component):
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
-    s.controller_id = InPort(CgraIdType)
+    s.cgra_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -94,19 +96,19 @@ class CgraTemplateRTL(Component):
 
     # Connections
     # Connects controller id.
-    s.controller.controller_id //= s.controller_id
-    s.data_mem.cgra_id //= s.controller_id
+    s.controller.cgra_id //= s.cgra_id
+    s.data_mem.cgra_id //= s.cgra_id
 
     # Connects the address lower and upper bound.
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_tile_load_request_addr
-    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
-    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_mem_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
+    s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_addr
+    s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
@@ -121,7 +123,7 @@ class CgraTemplateRTL(Component):
 
     # Assigns tile id.
     for i in range(s.num_tiles):
-      s.tile[i].cgra_id //= s.controller_id
+      s.tile[i].cgra_id //= s.cgra_id
       s.tile[i].tile_id //= i
 
     # Connects ring with each control memory.

@@ -99,33 +99,33 @@ class VectorAdderComboRTL(Component):
       for i in range(num_lanes):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
-        s.Fu[i].recv_opt.msg.ctrl @= OPT_NAH
+        s.Fu[i].recv_opt.msg.operation @= OPT_NAH
 
       if s.recv_opt.msg.predicate == b1( 1 ):
         s.recv_predicate.rdy @= b1( 1 )
 
-      if ( s.recv_opt.msg.ctrl == OPT_VEC_ADD ) | \
-         ( s.recv_opt.msg.ctrl == OPT_ADD ):
+      if ( s.recv_opt.msg.operation == OPT_VEC_ADD ) | \
+         ( s.recv_opt.msg.operation == OPT_ADD ):
         for i in range(num_lanes):
-          s.Fu[i].recv_opt.msg.ctrl @= OPT_ADD
+          s.Fu[i].recv_opt.msg.operation @= OPT_ADD
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
-      elif ( s.recv_opt.msg.ctrl == OPT_VEC_SUB ) | \
-           ( s.recv_opt.msg.ctrl == OPT_SUB ):
+      elif ( s.recv_opt.msg.operation == OPT_VEC_SUB ) | \
+           ( s.recv_opt.msg.operation == OPT_SUB ):
         for i in range(num_lanes):
-          s.Fu[i].recv_opt.msg.ctrl @= OPT_SUB
+          s.Fu[i].recv_opt.msg.operation @= OPT_SUB
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
-      elif ( s.recv_opt.msg.ctrl == OPT_VEC_ADD_CONST ) | \
-           ( s.recv_opt.msg.ctrl == OPT_ADD_CONST ):
+      elif ( s.recv_opt.msg.operation == OPT_VEC_ADD_CONST ) | \
+           ( s.recv_opt.msg.operation == OPT_ADD_CONST ):
         for i in range(num_lanes):
-          s.Fu[i].recv_opt.msg.ctrl @= OPT_ADD_CONST
+          s.Fu[i].recv_opt.msg.operation @= OPT_ADD_CONST
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
 
-      elif (s.recv_opt.msg.ctrl == OPT_VEC_SUB_CONST ) | \
-           (s.recv_opt.msg.ctrl == OPT_SUB_CONST ):
+      elif (s.recv_opt.msg.operation == OPT_VEC_SUB_CONST ) | \
+           (s.recv_opt.msg.operation == OPT_SUB_CONST ):
         for i in range(num_lanes):
-          s.Fu[i].recv_opt.msg.ctrl @= OPT_SUB_CONST
+          s.Fu[i].recv_opt.msg.operation @= OPT_SUB_CONST
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
 
       else:
@@ -143,5 +143,5 @@ class VectorAdderComboRTL(Component):
       s.from_mem_rdata.rdy @= b1( 0 )
 
   def line_trace(s):
-    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
+    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
 

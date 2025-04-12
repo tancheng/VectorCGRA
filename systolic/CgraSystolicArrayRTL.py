@@ -20,8 +20,8 @@ from ..tile.TileRTL import TileRTL
 
 class CgraSystolicArrayRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                NocPktType, CmdType, CgraIdType, cgra_id,
+  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, NocPktType, CgraIdType, cgra_id,
                 width, height, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -65,7 +65,7 @@ class CgraSystolicArrayRTL(Component):
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CtrlSignalType, ctrl_mem_size,
+                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2,
                       s.num_mesh_ports,
@@ -76,7 +76,9 @@ class CgraSystolicArrayRTL(Component):
                       FuList = FuList)
                for i in range(s.num_tiles)]
     idTo2d_map = {0: [0, 0]}
-    s.data_mem = DataMemWithCrossbarRTL(NocPktType, DataType,
+    s.data_mem = DataMemWithCrossbarRTL(NocPktType,
+                                        CgraPayloadType,
+                                        DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
@@ -88,7 +90,7 @@ class CgraSystolicArrayRTL(Component):
                                         s.num_tiles,
                                         idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(CgraIdType, CmdType, CtrlPktType,
+    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows,
                                  multi_cgra_columns,
@@ -105,7 +107,7 @@ class CgraSystolicArrayRTL(Component):
 
     # Connections
     # Connects controller id.
-    s.controller.controller_id //= cgra_id
+    s.controller.cgra_id //= cgra_id
     s.data_mem.cgra_id //= cgra_id
 
     # Connects the address lower and upper bound.
@@ -113,11 +115,11 @@ class CgraSystolicArrayRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[4] //= s.controller.send_to_tile_load_request_addr
-    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_tile_load_request_src_cgra
-    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_tile_load_request_src_tile
-    s.data_mem.recv_waddr[4] //= s.controller.send_to_tile_store_request_addr
-    s.data_mem.recv_wdata[4] //= s.controller.send_to_tile_store_request_data
+    s.data_mem.recv_raddr[4] //= s.controller.send_to_mem_load_request_addr
+    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
+    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
+    s.data_mem.recv_waddr[4] //= s.controller.send_to_mem_store_request_addr
+    s.data_mem.recv_wdata[4] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt

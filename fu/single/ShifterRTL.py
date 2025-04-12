@@ -62,7 +62,7 @@ class ShifterRTL(Fu):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_LLS:
+        if s.recv_opt.msg.operation == OPT_LLS:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload << s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
@@ -76,7 +76,7 @@ class ShifterRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_LRS:
+        elif s.recv_opt.msg.operation == OPT_LRS:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload >> s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \

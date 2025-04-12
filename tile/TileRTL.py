@@ -36,9 +36,9 @@ from ..rf.RegisterRTL import RegisterRTL
 
 class TileRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CtrlSignalType,
-                ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
-                num_fu_inports, num_fu_outports, num_tile_inports,
+  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                CtrlSignalType, ctrl_mem_size, data_mem_size, num_ctrl,
+                total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
@@ -89,12 +89,18 @@ class TileRTL(Component):
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
-    s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType, CtrlSignalType,
+    s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
+                                   CgraPayloadType,
+                                   CtrlSignalType,
                                    ctrl_mem_size,
-                                   num_fu_inports, num_fu_outports,
-                                   num_tile_inports, num_tile_outports,
-                                   num_cgras, num_tiles,
-                                   num_ctrl, total_steps)
+                                   num_fu_inports,
+                                   num_fu_outports,
+                                   num_tile_inports,
+                                   num_tile_outports,
+                                   num_cgras,
+                                   num_tiles,
+                                   num_ctrl,
+                                   total_steps)
 
     # The `tile_in_channel` indicates the outport channels that are
     # connected to the next tiles.
@@ -204,33 +210,33 @@ class TileRTL(Component):
 
     @update
     def feed_pkt():
-        s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         s.const_mem.recv_const.msg @= DataType(0, 0, 0, 0)
         s.ctrl_mem.recv_pkt_from_controller.val @= 0
         s.const_mem.recv_const.val @= 0
         s.recv_from_controller_pkt.rdy @= 0
 
         if s.recv_from_controller_pkt.val & \
-           ((s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONFIG_COUNT_PER_ITER) | \
-            (s.recv_from_controller_pkt.msg.ctrl_action == CMD_LAUNCH)):
+           ((s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
-        elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.ctrl_action == CMD_CONST):
+        elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONST):
             s.const_mem.recv_const.val @= 1
-            s.const_mem.recv_const.msg.payload @= s.recv_from_controller_pkt.msg.data
-            s.const_mem.recv_const.msg.predicate @= 1
+            s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
+            # s.const_mem.recv_const.msg.predicate @= 1
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
 
     @update
     def update_send_out_signal():
         s.send_to_controller_pkt.val @= 0
-        s.send_to_controller_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.send_to_controller_pkt.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         if s.ctrl_mem.send_pkt_to_controller.val:
             s.send_to_controller_pkt.val @= 1
             s.send_to_controller_pkt.msg @= s.ctrl_mem.send_pkt_to_controller.msg

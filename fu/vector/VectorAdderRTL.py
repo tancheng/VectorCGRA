@@ -81,7 +81,7 @@ class VectorAdderRTL(Component):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
 
       if s.recv_opt.val:
-        if s.recv_opt.msg.ctrl == OPT_ADD:
+        if s.recv_opt.msg.operation == OPT_ADD:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg + s.recv_in[s.in1_idx].msg + s.carry_in_temp
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
           s.send_out[0].val @= s.recv_all_val
@@ -89,7 +89,7 @@ class VectorAdderRTL(Component):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_ADD_CONST:
+        elif s.recv_opt.msg.operation == OPT_ADD_CONST:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg + s.recv_const.msg + s.carry_in_temp
           s.recv_const.rdy @= s.send_out[0].rdy
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
@@ -98,14 +98,14 @@ class VectorAdderRTL(Component):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_INC:
+        elif s.recv_opt.msg.operation == OPT_INC:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg + s.const_one
           s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_SUB:
+        elif s.recv_opt.msg.operation == OPT_SUB:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg - s.recv_in[s.in1_idx].msg - s.carry_in_temp
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
           s.send_out[0].val @= s.recv_all_val
@@ -113,7 +113,7 @@ class VectorAdderRTL(Component):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_SUB_CONST:
+        elif s.recv_opt.msg.operation == OPT_SUB_CONST:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg - s.recv_const.msg - s.carry_in_temp
           s.recv_const.rdy @= s.send_out[0].rdy
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
@@ -122,7 +122,7 @@ class VectorAdderRTL(Component):
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-        elif s.recv_opt.msg.ctrl == OPT_PAS:
+        elif s.recv_opt.msg.operation == OPT_PAS:
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
           s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
@@ -142,8 +142,8 @@ class VectorAdderRTL(Component):
   def line_trace( s ):
     opt_str = " #"
     if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]
+      opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.ctrl]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
 
