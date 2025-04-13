@@ -318,7 +318,7 @@ def mk_intra_cgra_pkt(num_cgra_columns,
 
   def str_func(s):
     return f"IntraCgraPkt: {s.src}->{s.dst} || " \
-           f"cgra_id:{s.src_cgra_id}->{s.dst_cgra_id} || " \
+           f"cgra_id:{s.src_cgra_id}({s.src_cgra_x}, {s.src_cgra_y})->{s.dst_cgra_id}({s.dst_cgra_x}, {s.dst_cgra_y}) || " \
            f"{s.opaque}:{s.vc_id} || " \
            f"payload:{s.payload}\n"
 

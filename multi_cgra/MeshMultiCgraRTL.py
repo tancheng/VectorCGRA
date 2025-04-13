@@ -124,7 +124,7 @@ class MeshMultiCgraRTL(Component):
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
 
   def line_trace(s):
-    res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())
+    res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())
                        for (i,x) in enumerate(s.cgra)])
     res += " ## mesh: " + s.mesh.line_trace()
     return res

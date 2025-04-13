@@ -229,7 +229,7 @@ class CgraRTL(Component):
 
   # Line trace
   def line_trace(s):
-    res = "||\n".join([(("[tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
+    res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
     res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
