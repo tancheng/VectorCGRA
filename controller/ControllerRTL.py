@@ -19,7 +19,6 @@ from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 
-
 class ControllerRTL(Component):
 
   def construct(s,
@@ -165,17 +164,6 @@ class ControllerRTL(Component):
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
           ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
                                 s.recv_from_tile_load_request_pkt_queue.send.msg)
-          # InterCgraPktType(s.cgra_id,
-          #                  0,
-          #                  s.idTo2d_x_lut[s.cgra_id], # src_x
-          #                  s.idTo2d_y_lut[s.cgra_id], # src_y
-          #                  0, # dst_x
-          #                  0, # dst_y
-          #                  s.recv_from_tile_load_request_pkt_queue.send.msg.src_tile_id, # src_tile_id
-          #                  0, # num_tiles, # dst_tile_id
-          #                  0, # opaque
-          #                  0, # vc_id
-          #                  s.recv_from_tile_load_request_pkt_queue.send.msg.payload)
 
       # For the store request from local tiles.
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
@@ -183,17 +171,6 @@ class ControllerRTL(Component):
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
           ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
                                 s.recv_from_tile_store_request_pkt_queue.send.msg)
-          # InterCgraPktType(s.cgra_id,
-          #                  0,
-          #                  s.idTo2d_x_lut[s.cgra_id], # src_x
-          #                  s.idTo2d_y_lut[s.cgra_id], # src_y
-          #                  0, # dst_x
-          #                  0, # dst_y
-          #                  s.recv_from_tile_store_request_pkt_queue.send.msg.src_tile_id, # src_tile_id
-          #                  num_tiles, # dst_tile_id
-          #                  0, # opaque
-          #                  0, # vc_id
-          #                  s.recv_from_tile_store_request_pkt_queue.send.msg.payload)
 
       # For the load response (i.e., the data towards other) from local memory.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \

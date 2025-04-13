@@ -92,10 +92,10 @@ def test_mul():
   DataType      = mk_data(1 + exp_nbits + sig_nbits, 1)
   f2b           = mk_float_to_bits_fn(DataType, exp_nbits, sig_nbits)
   PredType      = mk_predicate(1, 1)
-  ConfigType    = mk_ctrl()
   data_mem_size = 8
   num_inports   = 2
   num_outports  = 1
+  ConfigType    = mk_ctrl(num_inports, num_outports)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pick_register = [ FuInType(x + 1) for x in range(num_inports) ]
   src_predicate = [ PredType(1, 0), PredType(1, 0), PredType(1, 1) ]
