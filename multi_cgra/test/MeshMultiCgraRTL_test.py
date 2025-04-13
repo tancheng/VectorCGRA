@@ -14,6 +14,8 @@ from pymtl3.stdlib.test_utils import (run_sim,
 
 from ..MeshMultiCgraRTL import MeshMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
+from ...fu.double.PrlMulAdderRTL import PrlMulAdderRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
 from ...fu.single.CompRTL import CompRTL
@@ -154,6 +156,8 @@ def initialize_test_harness(cmdline_opts,
             BranchRTL,
             MemUnitRTL,
             SelRTL,
+            SeqMulAdderRTL,
+            PrlMulAdderRTL,
             VectorMulComboRTL,
             VectorAdderComboRTL]
   predicate_nbits = 1
