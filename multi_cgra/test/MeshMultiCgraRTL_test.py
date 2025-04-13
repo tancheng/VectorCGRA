@@ -366,13 +366,11 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
 
   cgra_id_nbits = clog2(num_cgras)
 
-  CtrlType = \
-      mk_separate_reg_ctrl(NUM_OPTS,
-                           num_fu_inports,
-                           num_fu_outports,
-                           num_tile_inports,
-                           num_tile_outports,
-                           num_registers_per_reg_bank)
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
 
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -386,10 +384,10 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                        num_tiles,
                                        CgraPayloadType)
 
-  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                           num_cgra_rows,
-                                           num_tiles,
-                                           CgraPayloadType)
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
   activation_tensor_preload_data = [
       [
