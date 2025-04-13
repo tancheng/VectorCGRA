@@ -77,28 +77,28 @@ def run_sim(test_harness, max_cycles= 20):
 
 def test_mul_alu_shifter():
   FU            = ThreeMulAdderShifterRTL
-  DataType      = mk_data( 16, 1 )
-  PredicateType = mk_predicate( 1, 1 )
+  DataType      = mk_data(16, 1)
+  PredicateType = mk_predicate(1, 1)
   num_inports   = 4
   num_outports  = 2
   data_mem_size = 8
-  CtrlType      = mk_ctrl( num_fu_in=num_inports )
+  CtrlType      = mk_ctrl(num_inports, num_outports)
 
-  FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  pickRegister  = [ FuInType(x + 1) for x in range(num_inports) ]
+  FuInType      = mk_bits(clog2(num_inports + 1))
+  pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
 
-  src_in0       = [ DataType(1, 1), DataType(2, 1),  DataType(4, 1) ]
-  src_in1       = [ DataType(2, 1), DataType(3, 1),  DataType(3, 1) ]
-  src_in2       = [ DataType(1, 1), DataType(3, 1),  DataType(3, 1) ]
-  src_in3       = [ DataType(1, 1), DataType(2, 1),  DataType(2, 1) ]
-  src_predicate = [ PredicateType(1, 1), PredicateType(1, 0), PredicateType(1, 1) ]
-  sink_out      = [ DataType(8, 1), DataType(12, 1), DataType(6, 0) ]
-  src_opt       = [ CtrlType( OPT_MUL_ADD_LLS, b1( 0 ), pickRegister ),
-                    CtrlType( OPT_MUL_SUB_LLS, b1( 1 ), pickRegister ),
-                    CtrlType( OPT_MUL_SUB_LRS, b1( 1 ), pickRegister ) ]
-  th = TestHarness( FU, DataType, PredicateType, CtrlType,
-                    num_inports, num_outports, data_mem_size,
-                    src_in0, src_in1, src_in2, src_in3, src_predicate,
-                    src_opt, sink_out )
-  run_sim( th )
+  src_in0       = [DataType(1, 1), DataType(2, 1), DataType(4, 1)]
+  src_in1       = [DataType(2, 1), DataType(3, 1), DataType(3, 1)]
+  src_in2       = [DataType(1, 1), DataType(3, 1), DataType(3, 1)]
+  src_in3       = [DataType(1, 1), DataType(2, 1), DataType(2, 1)]
+  src_predicate = [PredicateType(1, 1), PredicateType(1, 0), PredicateType(1, 1)]
+  sink_out      = [DataType(8, 1), DataType(12, 1), DataType(6, 0)]
+  src_opt       = [CtrlType(OPT_MUL_ADD_LLS, b1(0), pickRegister),
+                   CtrlType(OPT_MUL_SUB_LLS, b1(1), pickRegister),
+                   CtrlType(OPT_MUL_SUB_LRS, b1(1), pickRegister)]
+  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+                   num_inports, num_outports, data_mem_size,
+                   src_in0, src_in1, src_in2, src_in3, src_predicate,
+                   src_opt, sink_out)
+  run_sim(th)
 

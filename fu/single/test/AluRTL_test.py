@@ -79,10 +79,10 @@ def test_add_sub():
   FU = AdderRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   data_mem_size = 8
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 = [DataType(1, 1), DataType(7, 1), DataType(4, 1)]
@@ -102,9 +102,9 @@ def test_logic():
   FU = LogicRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   src_predicate = [PredicateType(1, 0), PredicateType(1, 0), PredicateType(1, 1)]
@@ -127,9 +127,9 @@ def test_shifter():
   FU = ShifterRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
@@ -151,9 +151,9 @@ def test_mul():
   FU = MulRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]

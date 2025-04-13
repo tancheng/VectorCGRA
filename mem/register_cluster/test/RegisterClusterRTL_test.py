@@ -98,12 +98,11 @@ def test_reg_bank():
   num_reg_banks = 4
   reg_bank_id = 1
 
-  ConfigType = mk_separate_reg_ctrl(num_ctrl_operations,
-                                    num_fu_inports,
-                                    num_fu_outports,
-                                    num_tile_inports,
-                                    num_tile_outports,
-                                    num_registers_per_reg_bank)
+  ConfigType = mk_ctrl(num_fu_inports,
+                       num_fu_outports,
+                       num_tile_inports,
+                       num_tile_outports,
+                       num_registers_per_reg_bank)
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 

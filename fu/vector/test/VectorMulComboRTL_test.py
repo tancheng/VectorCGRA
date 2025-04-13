@@ -76,7 +76,7 @@ def test_vector_mul_combo():
   num_inports   = 4
   num_outports  = 1
   data_mem_size = 8
-  CtrlType      = mk_ctrl( num_fu_in=num_inports )
+  CtrlType      = mk_ctrl( num_inports )
 
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]

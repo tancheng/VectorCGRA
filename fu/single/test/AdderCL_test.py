@@ -80,10 +80,10 @@ def test_alu():
   FU = AdderCL
   DataType = mk_data(16, 1)
   PredType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   data_mem_size = 8
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   latency = 4
   FuInType = mk_bits(clog2(num_inports + 1))
 

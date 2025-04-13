@@ -201,53 +201,14 @@ def test_CGRA_systolic(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  # CtrlPktType = \
-  #       mk_intra_cgra_pkt(num_tiles,
-  #                         cgra_id_nbits,
-  #                         num_commands,
-  #                         ctrl_mem_size,
-  #                         num_ctrl_operations,
-  #                         num_fu_inports,
-  #                         num_fu_outports,
-  #                         num_tile_inports,
-  #                         num_tile_outports,
-  #                         num_registers_per_reg_bank,
-  #                         addr_nbits,
-  #                         data_nbits,
-  #                         predicate_nbits)
-
-  # CtrlSignalType = \
-  #     mk_separate_reg_ctrl(num_ctrl_operations,
-  #                          num_fu_inports,
-  #                          num_fu_outports,
-  #                          num_tile_inports,
-  #                          num_tile_outports,
-  #                          num_registers_per_reg_bank)
-
-  # NocPktType = mk_multi_cgra_noc_pkt(ncols = cgra_columns,
-  #                                    nrows = cgra_rows,
-  #                                    ntiles = num_tiles,
-  #                                    addr_nbits = addr_nbits,
-  #                                    data_nbits = data_nbits,
-  #                                    predicate_nbits = 1,
-  #                                    ctrl_actions = num_commands,
-  #                                    ctrl_mem_size = ctrl_mem_size,
-  #                                    ctrl_operations = num_ctrl_operations,
-  #                                    ctrl_fu_inports = num_fu_inports,
-  #                                    ctrl_fu_outports = num_fu_outports,
-  #                                    ctrl_tile_inports = num_tile_inports,
-  #                                    ctrl_tile_outports = num_tile_outports)
-
   DataAddrType = mk_bits(addr_nbits)
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
-  CtrlType = \
-      mk_separate_reg_ctrl(NUM_OPTS,
-                           num_fu_inports,
-                           num_fu_outports,
-                           num_tile_inports,
-                           num_tile_outports,
-                           num_registers_per_reg_bank)
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
 
   CgraPayloadType = mk_cgra_payload(DataType,
                                     DataAddrType,
@@ -259,10 +220,10 @@ def test_CGRA_systolic(cmdline_opts):
                                        num_tiles,
                                        CgraPayloadType)
 
-  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                           num_cgra_rows,
-                                           num_tiles,
-                                           CgraPayloadType)
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
   fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 

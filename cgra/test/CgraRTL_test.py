@@ -168,13 +168,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  CtrlType = \
-      mk_separate_reg_ctrl(NUM_OPTS,
-                           num_fu_inports,
-                           num_fu_outports,
-                           num_tile_inports,
-                           num_tile_outports,
-                           num_registers_per_reg_bank)
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
   
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -188,10 +186,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                        num_tiles,
                                        CgraPayloadType)
 
-  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                           num_cgra_rows,
-                                           num_tiles,
-                                           CgraPayloadType)
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
   routing_xbar_code = [TileInType(0) for _ in range(num_routing_outports)]
   fu_in_code = [FuInType(0) for _ in range(num_fu_inports)]
