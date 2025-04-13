@@ -7,7 +7,6 @@ Author : Cheng Tan
 """
 
 # Constants for routing directions.
-
 PORT_NORTH     = 0
 PORT_SOUTH     = 1
 PORT_WEST      = 2
@@ -27,9 +26,15 @@ LINK_FROM_MEM = 1
 LINK_TO_MEM   = 2
 
 # Constant for maximum control-message count.
-
 MAX_CTRL_COUNT = 1024
 
 # Constant for prologue max count.
-
 PROLOGUE_MAX_COUNT = 7
+
+# Constant for number of inports on the controller xbar towards NoC.
+# Crossbar with 4 inports (load and store requests towards remote
+# memory, load response from local memory, ctrl&data packet from cpu,
+# and command signal from inter-tile, i.e., intra-cgra, ring) and 1
+# outport (only allow one request be sent out per cycle).
+CONTROLLER_CROSSBAR_INPORTS = 5
+

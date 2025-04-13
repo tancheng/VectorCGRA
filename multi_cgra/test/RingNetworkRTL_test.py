@@ -31,7 +31,7 @@ class TestHarness(Component):
 
     s.num_routers = num_routers
     RingPos = mk_ring_pos(num_routers)
-    cmp_fn = lambda a, b : a.data == b.data
+    cmp_fn = lambda a, b : a.payload.data == b.payload.data
 
     s.srcs  = [TestSrcRTL(MsgType, src_msgs[i])
                for i in range(num_routers)]
@@ -82,20 +82,34 @@ class RingNetwork_Tests:
     cls.DutType = RingNetworkRTL
 
   def _test_cgra_data(s, translation = ''):
-    DataType = mk_data(16, 1)
-    nterminals = 4
-    addr_nbits = 8
-    Pkt = mk_ring_multi_cgra_pkt(nterminals, addr_nbits = addr_nbits,
-                                 data_nbits = 32, predicate_nbits = 1)
-    src_pkts = mk_src_pkts(nterminals, [
-      #   src  dst opq vc cmd addr data        predicate
-      Pkt(0,   1,  0,  0, 0,  0,   0xfaceb00c, 1),
-      Pkt(1,   2,  1,  0, 0,  0,   0xdeadbeef, 0),
-      Pkt(2,   3,  2,  0, 0,  0,   0xbaadface, 1),
-      Pkt(3,   0,  0,  0, 0,  0,   0xfaceb00c, 0),
+    DataType = mk_data(32, 1)
+    num_cgras = 4
+    num_tiles = 4
+    CtrlType = mk_ctrl()
+  
+    CtrlAddrType = mk_bits(4)
+    DataAddrType = mk_bits(8)
+  
+    CgraPayloadType = mk_cgra_payload(DataType,
+                                      DataAddrType,
+                                      CtrlType,
+                                      CtrlAddrType)
+  
+    InterCgraPktType = mk_inter_cgra_pkt(num_cgras,
+                                         1,
+                                         num_tiles,
+                                         CgraPayloadType)
+    # Pkt = mk_inter_cgra_pkt(nterminals, 1, 4, addr_nbits = addr_nbits,
+    #                              data_nbits = 32, predicate_nbits = 1)
+    src_pkts = mk_src_pkts(num_cgras, [
+                     # src  dst opq
+      InterCgraPktType(0,   1,  0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 1))),
+      InterCgraPktType(1,   2,  1,  payload = CgraPayloadType(data = DataType(0xdeadbeef, 0))),
+      InterCgraPktType(2,   3,  2,  payload = CgraPayloadType(data = DataType(0xbaadface, 1))),
+      InterCgraPktType(3,   0,  0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 0))),
     ])
     dst_pkts = ringnet_fl(src_pkts)
-    th = TestHarness(Pkt, nterminals, src_pkts, dst_pkts)
+    th = TestHarness(InterCgraPktType, num_cgras, src_pkts, dst_pkts)
     # cmdline_opts={'dump_vcd': False, 'test_verilog': translation,
     cmdline_opts={'dump_vcd': False, 'test_verilog': False,
                   'dump_vtb': False}

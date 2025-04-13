@@ -72,11 +72,11 @@ def test_vector_all_reduce():
   FU            = VectorAllReduceRTL
   DataType      = mk_data( 16, 1 )
   PredType      = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
   num_inports   = 2
   num_outports  = 1
   data_mem_size = 8
 
+  CtrlType      = mk_ctrl(num_inports, num_outports)
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
 

@@ -27,7 +27,9 @@ class TestHarness(Component):
 
   def construct(s, NocPktType, CgraPayloadType, DataType, DataAddrType,
                 data_mem_size_global, data_mem_size_per_bank, num_banks,
-                rd_tiles, wr_tiles, read_addr, read_data, write_addr,
+                rd_tiles, wr_tiles, num_cgra_rows, num_cgra_columns,
+                num_tiles,
+                read_addr, read_data, write_addr,
                 write_data, noc_recv_load_data,
                 send_to_noc_load_request_pkt, send_to_noc_store_pkt,
                 preload_data_per_bank):
@@ -58,6 +60,9 @@ class TestHarness(Component):
                                         num_banks,
                                         rd_tiles,
                                         wr_tiles,
+                                        num_cgra_rows,
+                                        num_cgra_columns,
+                                        num_tiles,
                                         preload_data_per_bank = preload_data_per_bank)
 
     for i in range(rd_tiles):
@@ -125,7 +130,6 @@ def test_const_queue(cmdline_opts):
   data_mem_size_per_bank = 16
   num_banks = 2
   nterminals = 4
-  addr_nbits = clog2(data_mem_size_global)
 
   num_registers_per_reg_bank = 16
   num_cgra_columns = 1
@@ -139,16 +143,14 @@ def test_const_queue(cmdline_opts):
   num_fu_inports = 4
   num_fu_outports = 2
 
-  DataAddrType = mk_bits(addr_nbits)
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
-  CtrlType = \
-      mk_separate_reg_ctrl(NUM_OPTS,
-                           num_fu_inports,
-                           num_fu_outports,
-                           num_tile_inports,
-                           num_tile_outports,
-                           num_registers_per_reg_bank)
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
 
   CgraPayloadType = mk_cgra_payload(DataType,
                                     DataAddrType,
@@ -160,24 +162,10 @@ def test_const_queue(cmdline_opts):
                                        num_tiles,
                                        CgraPayloadType)
 
-  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                           num_cgra_rows,
-                                           num_tiles,
-                                           CgraPayloadType)
-
-  # NocPktType = mk_multi_cgra_noc_pkt(ncols = num_terminals,
-  #                                    nrows = 1,
-  #                                    ntiles = width * height,
-  #                                    addr_nbits = addr_nbits,
-  #                                    data_nbits = data_nbits,
-  #                                    predicate_nbits = 1,
-  #                                    ctrl_actions = num_ctrl_actions,
-  #                                    ctrl_mem_size = ctrl_mem_size,
-  #                                    ctrl_operations = num_ctrl_operations,
-  #                                    ctrl_fu_inports = num_fu_inports,
-  #                                    ctrl_fu_outports = num_fu_outports,
-  #                                    ctrl_tile_inports = num_tile_inports,
-  #                                    ctrl_tile_outports = num_tile_outports)
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
   test_meta_data = [
       # addr:  0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15
@@ -228,8 +216,6 @@ def test_const_queue(cmdline_opts):
   noc_recv_load_data = [DataType(0xbbbb, 1)]
 
   # Expected.
-  # noc_send_write_addr = [DataAddrType(40), DataAddrType(45)]
-  # noc_send_write_data = [DataType(0xd040, 1), DataType(0xd545, 1)]
   send_to_noc_store_pkt = [
                      # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                                                      data_addr
       InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_STORE_REQUEST, DataType(0xd040, 1), 40)),
@@ -245,6 +231,9 @@ def test_const_queue(cmdline_opts):
                    num_banks,
                    rd_tiles,
                    wr_tiles,
+                   num_cgra_rows,
+                   num_cgra_columns,
+                   num_tiles,
                    read_addr,
                    read_data,
                    write_addr,

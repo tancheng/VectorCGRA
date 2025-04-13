@@ -184,12 +184,11 @@ controller2addr_map = {
 DataType = mk_data(data_nbits, predicate_nbits)
 DataAddrType = mk_bits(addr_nbits)
 
-CtrlType = mk_separate_reg_ctrl(NUM_OPTS,
-                                num_fu_inports,
-                                num_fu_outports,
-                                num_tile_inports,
-                                num_tile_outports,
-                                num_registers_per_reg_bank)
+CtrlType = mk_ctrl(num_fu_inports,
+                   num_fu_outports,
+                   num_tile_inports,
+                   num_tile_outports,
+                   num_registers_per_reg_bank)
 
 CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -203,10 +202,10 @@ InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                      num_tiles,
                                      CgraPayloadType)
 
-IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                         num_cgra_rows,
-                                         num_tiles,
-                                         CgraPayloadType)
+IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                     num_cgra_rows,
+                                     num_tiles,
+                                     CgraPayloadType)
 
 from_tile_load_request_pkts = [
                    # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                 cmd
@@ -243,18 +242,18 @@ from_noc_pkts = [
 ]
 
 expected_to_noc_pkts = [
-                   # src  dst src_x src_y dst_x dst_y src_tile dst_tile   opq vc                 cmd
-    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 1)),
-    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(11,  1), data_addr = 11)),
-    InterCgraPktType(0,   2,  0,    0,    2,    0,    0,       num_tiles, 0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(110, 1), data_addr = 11)),
+                   # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                 cmd
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 1)),
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(11,  1), data_addr = 11)),
+    InterCgraPktType(0,   2,  0,    0,    2,    0,    0,       0,       0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(110, 1), data_addr = 11)),
 
-    InterCgraPktType(0,   2,  0,    0,    2,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 8)),
-    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(14,  1), data_addr = 14)),
-    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       num_tiles, 0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(300, 1), data_addr = 3)),
+    InterCgraPktType(0,   2,  0,    0,    2,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 8)),
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(14,  1), data_addr = 14)),
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(300, 1), data_addr = 3)),
 
-    InterCgraPktType(0,   3,  0,    0,    3,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 13)),
-    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,         0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(12,  1), data_addr = 12)),
-    InterCgraPktType(0,   3,  0,    0,    3,    0,    0,       num_tiles, 0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(150, 1), data_addr = 15)),
+    InterCgraPktType(0,   3,  0,    0,    3,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_REQUEST,  data = DataType(0,   0), data_addr = 13)),
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(12,  1), data_addr = 12)),
+    InterCgraPktType(0,   3,  0,    0,    3,    0,    0,       0,       0,  0, CgraPayloadType(CMD_STORE_REQUEST, data = DataType(150, 1), data_addr = 15)),
 ]
 
 def test_simple(cmdline_opts):

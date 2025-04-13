@@ -13,10 +13,11 @@ from ..lib.basic.val_rdy.ifcs import RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..lib.cmd_type import *
+from ..lib.messages import *
 from ..lib.opt_type import *
+from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
-
 
 class ControllerRTL(Component):
 
@@ -38,6 +39,7 @@ class ControllerRTL(Component):
     XType = mk_bits(max(clog2(multi_cgra_columns), 1))
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
     TileIdType = mk_bits(clog2(num_tiles + 1))
+    ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
 
     # Interface
     s.cgra_id = InPort(CgraIdType)
@@ -80,7 +82,7 @@ class ControllerRTL(Component):
     # memory, load response from local memory, ctrl&data packet from cpu,
     # and command signal from inter-tile, i.e., intra-cgra, ring) and 1 
     # outport (only allow one request be sent out per cycle).
-    s.crossbar = XbarBypassQueueRTL(InterCgraPktType, 5, 1)
+    s.crossbar = XbarBypassQueueRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
@@ -143,81 +145,59 @@ class ControllerRTL(Component):
       s.crossbar.recv[kFromInterTileRingIdx].val @= s.recv_from_ctrl_ring_pkt.val
       s.recv_from_ctrl_ring_pkt.rdy @= s.crossbar.recv[kFromInterTileRingIdx].rdy
       s.crossbar.recv[kFromInterTileRingIdx].msg @= \
-          InterCgraPktType(s.cgra_id,
-                           0, # dst is always 0 to align with the single outport of the crossbar.
-                           s.idTo2d_x_lut[s.cgra_id], # src_x
-                           s.idTo2d_y_lut[s.cgra_id], # src_y
-                           s.idTo2d_x_lut[0], # dst_x
-                           s.idTo2d_y_lut[0], # dst_y
-                           s.recv_from_ctrl_ring_pkt.msg.src, # src_tile_id
-                           num_tiles, # dst_tile_id
-                           0, # opaque
-                           0, # vc_id. No need to specify vc_id for self produce-consume pkt thanks to the additional VC buffer.
-                           s.recv_from_ctrl_ring_pkt.msg.payload)
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                InterCgraPktType(s.cgra_id,
+                                                 s.recv_from_ctrl_ring_pkt.msg.dst_cgra_id,
+                                                 s.idTo2d_x_lut[s.cgra_id], # src_x
+                                                 s.idTo2d_y_lut[s.cgra_id], # src_y
+                                                 s.recv_from_ctrl_ring_pkt.msg.dst_cgra_x, # dst_x
+                                                 s.recv_from_ctrl_ring_pkt.msg.dst_cgra_y, # dst_y
+                                                 s.recv_from_ctrl_ring_pkt.msg.src, # src_tile_id
+                                                 s.recv_from_ctrl_ring_pkt.msg.dst, # dst_tile_id
+                                                 0, # opaque
+                                                 0, # vc_id. No need to specify vc_id for self produce-consume pkt thanks to the additional VC buffer.
+                                                 s.recv_from_ctrl_ring_pkt.msg.payload))
 
       # For the load request from local tiles.
       s.crossbar.recv[kLoadRequestInportIdx].val @= s.recv_from_tile_load_request_pkt_queue.send.val
       s.recv_from_tile_load_request_pkt_queue.send.rdy @= s.crossbar.recv[kLoadRequestInportIdx].rdy
       s.crossbar.recv[kLoadRequestInportIdx].msg @= \
-          InterCgraPktType(s.cgra_id,
-                           0,
-                           s.idTo2d_x_lut[s.cgra_id], # src_x
-                           s.idTo2d_y_lut[s.cgra_id], # src_y
-                           0, # dst_x
-                           0, # dst_y
-                           s.recv_from_tile_load_request_pkt_queue.send.msg.src_tile_id, # src_tile_id
-                           0, # num_tiles, # dst_tile_id
-                           0, # opaque
-                           0, # vc_id
-                           s.recv_from_tile_load_request_pkt_queue.send.msg.payload)
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                s.recv_from_tile_load_request_pkt_queue.send.msg)
 
       # For the store request from local tiles.
       s.crossbar.recv[kStoreRequestInportIdx].val @= s.recv_from_tile_store_request_pkt_queue.send.val
       s.recv_from_tile_store_request_pkt_queue.send.rdy @= s.crossbar.recv[kStoreRequestInportIdx].rdy
       s.crossbar.recv[kStoreRequestInportIdx].msg @= \
-          InterCgraPktType(s.cgra_id,
-                           0,
-                           s.idTo2d_x_lut[s.cgra_id], # src_x
-                           s.idTo2d_y_lut[s.cgra_id], # src_y
-                           0, # dst_x
-                           0, # dst_y
-                           s.recv_from_tile_store_request_pkt_queue.send.msg.src_tile_id, # src_tile_id
-                           num_tiles, # dst_tile_id
-                           0, # opaque
-                           0, # vc_id
-                           s.recv_from_tile_store_request_pkt_queue.send.msg.payload)
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                s.recv_from_tile_store_request_pkt_queue.send.msg)
 
       # For the load response (i.e., the data towards other) from local memory.
       s.crossbar.recv[kLoadResponseInportIdx].val @= \
           s.recv_from_tile_load_response_pkt_queue.send.val
       s.recv_from_tile_load_response_pkt_queue.send.rdy @= s.crossbar.recv[kLoadResponseInportIdx].rdy
-      s.crossbar.recv[kLoadResponseInportIdx].msg @= s.recv_from_tile_load_response_pkt_queue.send.msg
+      s.crossbar.recv[kLoadResponseInportIdx].msg @= \
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                s.recv_from_tile_load_response_pkt_queue.send.msg)
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
           s.recv_from_cpu_pkt_queue.send.val
       s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
-          InterCgraPktType(0, # src
-                           s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
-                           0, # src_x
-                           0, # src_y
-                           s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
-                           s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
-                           num_tiles, # src_tile_id
-                           s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id 
-                           0, # opaque
-                           0, # vc_id
-                           s.recv_from_cpu_pkt_queue.send.msg.payload)
-      if s.recv_from_cpu_pkt_queue.send.val & \
-         ((s.recv_from_cpu_pkt_queue.send.msg.payload.cmd == CMD_LOAD_REQUEST) | \
-          (s.recv_from_cpu_pkt_queue.send.msg.payload.cmd == CMD_STORE_REQUEST)):
-        # Updates the src tile id for CPU issued LOAD and STORE request,
-        # indicating they are from controller/CPU, and need to come back to
-        # the controller (for LOAD response).
-        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg.src_tile_id @= num_tiles
-        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg.dst_tile_id @= 0
-        
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                InterCgraPktType(s.cgra_id, # src
+                                                 s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
+                                                 0, # src_x
+                                                 0, # src_y
+                                                 s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
+                                                 s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
+                                                 num_tiles, # src_tile_id, num_tiles is used to indicate the request is from CPU, so the LOAD response can come back.
+                                                 s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id
+                                                 0, # opaque
+                                                 0, # vc_id
+                                                 s.recv_from_cpu_pkt_queue.send.msg.payload))
+
       # TODO: For the other cmd types.
 
 
@@ -340,10 +320,10 @@ class ControllerRTL(Component):
     def update_sending_to_noc_msg():
       s.send_to_inter_cgra_noc.val @= s.crossbar.send[0].val
       s.crossbar.send[0].rdy @= s.send_to_inter_cgra_noc.rdy
-      s.send_to_inter_cgra_noc.msg @= s.crossbar.send[0].msg
-      if (s.crossbar.send[0].msg.payload.cmd == CMD_LOAD_REQUEST) | \
-         (s.crossbar.send[0].msg.payload.cmd == CMD_STORE_REQUEST):
-        addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.payload.data_addr >> addr_offset_nbits, CgraIdType)]
+      s.send_to_inter_cgra_noc.msg @= s.crossbar.send[0].msg.inter_cgra_pkt
+      if (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_LOAD_REQUEST) | \
+         (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_STORE_REQUEST):
+        addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
         s.send_to_inter_cgra_noc.msg.dst @= addr_dst_id
         s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[addr_dst_id]
         s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[addr_dst_id]

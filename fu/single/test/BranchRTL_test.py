@@ -72,9 +72,9 @@ def test_Branch():
   FU = BranchRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlType = mk_ctrl()
   num_inports = 2
   num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   src_comp = [DataType(0, 1), DataType(1, 1), DataType(0, 1)]
@@ -93,9 +93,9 @@ def test_Branch_Start():
   FU = BranchRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlType = mk_ctrl()
   num_inports = 2
   num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   src_comp = [DataType(0, 1), DataType(1, 1), DataType(0, 1)]

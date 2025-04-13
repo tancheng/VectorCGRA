@@ -80,20 +80,11 @@ def test_alu():
   FU = AdderRTL
   DataType = mk_data(16, 1)
   PredType = mk_predicate(1, 1)
-  ConfigType = mk_ctrl()
   data_mem_size = 8
   num_inports = 2
   num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
-  # pickRegister = [FuInType(x + 1) for x in range(num_inports)]
-  # src_in0 = [DataType(1, 1), DataType(7, 1), DataType(4, 1)]
-  # src_in1 = [DataType(2, 1), DataType(3, 1), DataType(1, 1)]
-  # src_predicate = [PredicateType(1, 0), PredicateType(1, 0), PredicateType(1, 1)]
-  # src_const = [DataType(5, 1), DataType(4, 0), DataType(7, 1)]
-  # sink_out = [DataType(6, 0), DataType(4, 0), DataType(8, 1)]
-  # src_opt = [ConfigType( OPT_ADD_CONST, b1(1), pickRegister),
-  #            ConfigType(OPT_SUB, b1(1), pickRegister),
-  #            ConfigType(OPT_ADD_CONST, b1(1), pickRegister)]
 
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   src_predicate = [PredType(1, 0), PredType(1, 0), PredType(1, 1)]
