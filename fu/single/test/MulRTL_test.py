@@ -88,7 +88,7 @@ def test_mul0(input_a, input_b):
   PredicateType = mk_predicate(1, 1)
   num_inports = 4
   num_outports = 1
-  ConfigType = mk_ctrl(num_inports)
+  ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
   src_in0 = [DataType(input_a, 1)]

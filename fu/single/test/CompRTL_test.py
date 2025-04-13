@@ -71,9 +71,9 @@ def test_Comp():
   FU = CompRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlType = mk_ctrl()
   num_inports = 2
   num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]

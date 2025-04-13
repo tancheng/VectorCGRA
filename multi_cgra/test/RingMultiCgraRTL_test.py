@@ -22,12 +22,12 @@ from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 
-
 #-------------------------------------------------------------------------
 # Test harness
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
+
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
@@ -101,50 +101,11 @@ def test_homo_1x4(cmdline_opts):
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
-  # IntraCgraPktType = \
-  #       mk_intra_cgra_pkt(num_tiles,
-  #                       cgra_id_nbits,
-  #                       num_commands,
-  #                       ctrl_mem_size,
-  #                       num_ctrl_operations,
-  #                       num_fu_inports,
-  #                       num_fu_outports,
-  #                       num_tile_inports,
-  #                       num_tile_outports,
-  #                       num_registers_per_reg_bank,
-  #                       addr_nbits,
-  #                       data_nbits,
-  #                       predicate_nbits)
-
-  # CtrlType = \
-  #     mk_separate_reg_ctrl(num_ctrl_operations,
-  #                          num_fu_inports,
-  #                          num_fu_outports,
-  #                          num_tile_inports,
-  #                          num_tile_outports,
-  #                          num_registers_per_reg_bank)
-
-  # InterCgraPktType = mk_multi_cgra_noc_pkt(ncols = num_cgras,
-  #                                    nrows = 1,
-  #                                    ntiles = num_tiles,
-  #                                    addr_nbits = data_addr_nbits,
-  #                                    data_nbits = 32,
-  #                                    predicate_nbits = 1,
-  #                                    ctrl_actions = num_commands,
-  #                                    ctrl_mem_size = ctrl_mem_size,
-  #                                    ctrl_operations = num_ctrl_operations,
-  #                                    ctrl_fu_inports = num_fu_inports,
-  #                                    ctrl_fu_outports = num_fu_outports,
-  #                                    ctrl_tile_inports = num_tile_inports,
-  #                                    ctrl_tile_outports = num_tile_outports)
-
-  CtrlType = \
-      mk_separate_reg_ctrl(NUM_OPTS,
-                           num_fu_inports,
-                           num_fu_outports,
-                           num_tile_inports,
-                           num_tile_outports,
-                           num_registers_per_reg_bank)
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
 
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
   DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -159,23 +120,14 @@ def test_homo_1x4(cmdline_opts):
                                        num_tiles,
                                        CgraPayloadType)
 
-  IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                           num_cgra_rows,
-                                           num_tiles,
-                                           CgraPayloadType)
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
 
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt_per_tile = [[
-      #           # dst_cgra_id src dst vc_id opq cmd_type    addr operation predicate
-      # IntraCgraPktType(0,          0,  0,  0,    0,  CMD_CONFIG, 0,   OPT_INC,  b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   # TODO: make below as TileInType(5) to double check.
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
@@ -185,14 +137,6 @@ def test_homo_1x4(cmdline_opts):
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
-
-      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 1,   OPT_INC, b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
 
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
@@ -205,14 +149,6 @@ def test_homo_1x4(cmdline_opts):
                                                                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
 
 
-      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 2,   OPT_ADD, b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -222,14 +158,6 @@ def test_homo_1x4(cmdline_opts):
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
-
-      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 3,   OPT_STR, b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
 
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
@@ -241,14 +169,6 @@ def test_homo_1x4(cmdline_opts):
                                                                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
 
-      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 4,   OPT_ADD, b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
-
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 4,
@@ -258,14 +178,6 @@ def test_homo_1x4(cmdline_opts):
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]))),
-
-      # IntraCgraPktType(0,      0,  0,  0,    0,  CMD_CONFIG, 5,   OPT_ADD, b1(0),
-      #                  pickRegister,
-      #                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
-      #                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-
-      #                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-      #                   FuOutType(1), FuOutType(1), FuOutType(1), FuOutType(1)]),
 
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,

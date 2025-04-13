@@ -78,9 +78,9 @@ def test_mul_alu():
   FU            = SeqMulAdderRTL
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
   num_inports   = 4
   num_outports  = 2
+  CtrlType      = mk_ctrl( num_inports, num_outports )
   data_mem_size = 8
   src_in0       = [ DataType(1, 1), DataType(2, 1), DataType(4, 1) ]
   src_in1       = [ DataType(2, 1), DataType(3, 1), DataType(3, 1) ]
@@ -103,7 +103,7 @@ def test_mul_shifter():
   num_inports   = 4
   num_outports  = 2
   data_mem_size = 8
-  CtrlType      = mk_ctrl( num_fu_in=num_inports )
+  CtrlType      = mk_ctrl( num_inports, num_outports )
 
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]

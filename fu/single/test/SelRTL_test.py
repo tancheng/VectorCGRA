@@ -76,9 +76,9 @@ def test_Select():
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   # Selector needs more than 2 inputs
-  CtrlType = mk_ctrl(num_fu_in = 4)
   num_inports = 4
   num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]

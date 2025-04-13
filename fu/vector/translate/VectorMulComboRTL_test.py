@@ -20,7 +20,7 @@ from ....lib.messages    import *
 DataType      = mk_data( 64, 1 )
 PredicateType = mk_predicate( 1, 1 )
 num_inports   = 4
-CtrlType      = mk_ctrl( num_fu_in = num_inports )
+CtrlType      = mk_ctrl( num_inports )
 num_outports  = 2
 data_mem_size = 8
 

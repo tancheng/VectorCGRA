@@ -91,10 +91,10 @@ def test_vadder():
   InDataType    = mk_bits( bandwidth )
   OutDataType   = mk_bits( bandwidth * 2 )
   PredicateType = mk_predicate( 1, 1 )
-  ConfigType    = mk_ctrl()
   data_mem_size = 8
   num_inports   = 2
   num_outports  = 1
+  ConfigType    = mk_ctrl( num_inports, num_outports )
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   src_in0       = [ InDataType(2),  InDataType(129),  InDataType(4) ]

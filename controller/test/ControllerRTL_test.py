@@ -184,12 +184,11 @@ controller2addr_map = {
 DataType = mk_data(data_nbits, predicate_nbits)
 DataAddrType = mk_bits(addr_nbits)
 
-CtrlType = mk_separate_reg_ctrl(NUM_OPTS,
-                                num_fu_inports,
-                                num_fu_outports,
-                                num_tile_inports,
-                                num_tile_outports,
-                                num_registers_per_reg_bank)
+CtrlType = mk_ctrl(num_fu_inports,
+                   num_fu_outports,
+                   num_tile_inports,
+                   num_tile_outports,
+                   num_registers_per_reg_bank)
 
 CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -203,10 +202,10 @@ InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                      num_tiles,
                                      CgraPayloadType)
 
-IntraCgraPktType = mk_new_intra_cgra_pkt(num_cgra_columns,
-                                         num_cgra_rows,
-                                         num_tiles,
-                                         CgraPayloadType)
+IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                     num_cgra_rows,
+                                     num_tiles,
+                                     CgraPayloadType)
 
 from_tile_load_request_pkts = [
                    # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                 cmd

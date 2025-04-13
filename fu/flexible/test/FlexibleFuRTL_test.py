@@ -99,10 +99,10 @@ def test_flexible_alu():
   FuList = [AdderRTL]
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlType = mk_ctrl()
   data_mem_size = 8
   num_inports = 2
   num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 = [DataType(1, 1), DataType(2, 1), DataType(9, 1)]
@@ -124,10 +124,10 @@ def test_flexible_mul():
   FuList        = [AdderRTL, MulRTL]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
   data_mem_size = 8
   num_inports   = 2
   num_outports  = 2
+  CtrlType      = mk_ctrl(num_inports, num_outports)
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
   src_in0       = [ DataType(1, 1), DataType(2, 1), DataType(9, 1) ]
@@ -149,10 +149,10 @@ def test_flexible_universal():
   FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
-  CtrlType      = mk_ctrl()
   data_mem_size = 8
   num_inports   = 2
   num_outports  = 2
+  CtrlType      = mk_ctrl(num_inports, num_outports)
   FuInType      = mk_bits( clog2( num_inports + 1 ) )
   src_predicate = [ PredicateType(1, 0), PredicateType(1, 1), PredicateType(1, 0) ]
   pickRegister  = [ FuInType( x+1 ) for x in range( num_inports )  ]
@@ -168,5 +168,4 @@ def test_flexible_universal():
                     src_in0, src_in1, src_predicate, src_opt,
                     sink_out0, sink_out1 )
   run_sim( th )
-
 

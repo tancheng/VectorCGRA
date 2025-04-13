@@ -94,10 +94,10 @@ FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
 DataType = mk_data(16, 1)
 PredicateType = mk_predicate(1, 1)
-CtrlType = \
-    mk_separate_ctrl(num_ctrl_operations, num_fu_inports,
-                     num_fu_outports, num_tile_inports,
-                     num_tile_outports)
+CtrlType = mk_ctrl(num_fu_inports,
+                   num_fu_outports,
+                   num_tile_inports,
+                   num_tile_outports)
 pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
 def test_crossbar():

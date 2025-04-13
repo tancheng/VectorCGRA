@@ -124,8 +124,8 @@ def test_hypothesis(functions, inputs):
   src_a, src_b, src_opt = [], [], []
   DataType      = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  CtrlType      = mk_ctrl()
   num_inports   = 2
+  CtrlType      = mk_ctrl(num_inports)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   for value in input_list:
