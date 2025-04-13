@@ -871,9 +871,12 @@ def mk_new_tile_sram_xbar_pkt(number_inports,
     namespace = {'__str__': str_func}
   )
 
-def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
-                          mem_size_global = 64, num_cgras = 4,
-                          num_tiles = 17, prefix="TileSramXbarPacket"):
+def mk_tile_sram_xbar_pkt(number_src = 5,
+                          number_dst = 5,
+                          mem_size_global = 64,
+                          num_cgras = 4,
+                          num_tiles = 17,
+                          prefix="TileSramXbarPacket"):
 
   SrcType = mk_bits(clog2(number_src))
   DstType = mk_bits(clog2(number_dst))
@@ -896,4 +899,29 @@ def mk_tile_sram_xbar_pkt(number_src = 5, number_dst = 5,
     namespace = {'__str__': str_func}
   )
 
+#=========================================================================
+# Crossbar (controller <-> NoC) packet
+#=========================================================================
+
+# def mk_controller_noc_xbar_pkt(number_inports,
+# def mk_controller_noc_xbar_pkt(number_outports,
+def mk_controller_noc_xbar_pkt(InterCgraPktType,
+                               prefix="ControllerNocXbarPacket"):
+
+  # SrcType = mk_bits(clog2(number_inports))
+  DstType = mk_bits(1) # clog2(number_outports))
+
+  # new_name = f"{prefix}_{number_inports}_{number_outports}_InterCgraPktType"
+  new_name = f"{prefix}_InterCgraPktType"
+
+  def str_func(s):
+    return f"->{s.dst}:(inter_cgra_pkt){s.inter_cgra_pkt}"
+
+  return mk_bitstruct(new_name, {
+      # 'src': SrcType,
+      'dst': DstType,
+      'inter_cgra_pkt': InterCgraPktType,
+    },
+    namespace = {'__str__': str_func}
+  )
 
