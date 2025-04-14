@@ -20,24 +20,26 @@ class TwoPrlCombo(Component):
 
     # Constants
     num_entries   = 2
-    AddrType      = mk_bits( clog2( data_mem_size ) )
-    CountType     = mk_bits( clog2( num_entries + 1 ) )
+    AddrType      = mk_bits(clog2(data_mem_size))
+    CountType     = mk_bits(clog2(num_entries + 1))
+    s.const_zero  = DataType(0, 0)
 
     # Interface
-    s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports  ) ]
-    s.recv_predicate = RecvIfcRTL( PredicateType )
-    s.recv_opt       = RecvIfcRTL( CtrlType )
-    s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
+    s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_predicate = RecvIfcRTL(PredicateType)
+    s.recv_const     = RecvIfcRTL(DataType)
+    s.recv_opt       = RecvIfcRTL(CtrlType)
+    s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
     # Redundant interfaces for MemUnit
-    s.to_mem_raddr   = SendIfcRTL( AddrType )
-    s.from_mem_rdata = RecvIfcRTL( DataType )
-    s.to_mem_waddr   = SendIfcRTL( AddrType )
-    s.to_mem_wdata   = SendIfcRTL( DataType )
+    s.to_mem_raddr   = SendIfcRTL(AddrType)
+    s.from_mem_rdata = RecvIfcRTL(DataType)
+    s.to_mem_waddr   = SendIfcRTL(AddrType)
+    s.to_mem_wdata   = SendIfcRTL(DataType)
 
     # Components
-    s.Fu0 = Fu0( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
-    s.Fu1 = Fu1( DataType, PredicateType, CtrlType, 2, 1, data_mem_size )
+    s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 2, 1, data_mem_size)
+    s.Fu1 = Fu1(DataType, PredicateType, CtrlType, 2, 1, data_mem_size)
 
     # Connections
     s.recv_in[0].msg      //= s.Fu0.recv_in[0].msg
@@ -47,6 +49,8 @@ class TwoPrlCombo(Component):
 
     s.Fu0.send_out[0].msg //= s.send_out[0].msg
     s.Fu1.send_out[0].msg //= s.send_out[1].msg
+
+    s.Fu0.recv_const //= s.recv_const
 
     @update
     def update_signal():
@@ -85,6 +89,16 @@ class TwoPrlCombo(Component):
 
       s.Fu0.recv_predicate.msg @= s.recv_predicate.msg
       s.Fu1.recv_predicate.msg @= s.recv_predicate.msg
+
+    @update
+    def update_mem():
+      s.to_mem_waddr.val   @= b1(0)
+      s.to_mem_wdata.val   @= b1(0)
+      s.to_mem_wdata.msg   @= s.const_zero
+      s.to_mem_waddr.msg   @= AddrType(0)
+      s.to_mem_raddr.msg   @= AddrType(0)
+      s.to_mem_raddr.val   @= b1(0)
+      s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace( s ):
     return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace()

@@ -166,6 +166,12 @@ class DataMemWithCrossbarRTL(Component):
 
     @update
     def assemble_xbar_pkt():
+      for i in range(num_xbar_in_rd_ports):
+        s.rd_pkt[i] @= TileSramXbarRdPktType(i, 0, 0, 0, 0)
+
+      for i in range(num_xbar_in_wr_ports):
+        s.wr_pkt[i] @= TileSramXbarWrPktType(i, 0, 0, 0, 0)
+
       if s.init_mem_done != b1(0):
         for i in range(num_xbar_in_rd_ports):
           # Calculates the target bank index.
@@ -210,23 +216,37 @@ class DataMemWithCrossbarRTL(Component):
         s.send_rdata[i].msg @= DataType()
       s.send_to_noc_load_response_pkt.val @= 0
 
+      s.send_to_noc_load_response_pkt.msg @= \
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
+
+
       for i in range(num_xbar_in_wr_ports):
         s.recv_wdata[i].rdy @= 0
         s.recv_wdata_bypass_q[i].recv.val @= 0
         s.recv_wdata_bypass_q[i].recv.msg @= DataType()
 
       s.send_to_noc_store_pkt.msg @= \
-            NocPktType(0, # src
-                       0, # dst
-                       0, # src_x
-                       0, # src_y
-                       0, # dst_x
-                       0, # dst_y
-                       0, # src_tile_id
-                       0, # dst_tile_id
-                       0, # opaque
-                       0, # vc_id
-                       CgraPayloadType(0, 0, 0, 0, 0))
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_store_pkt.val @= 0
 
@@ -240,23 +260,27 @@ class DataMemWithCrossbarRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0, 0, 0)
 
+      for i in range(num_xbar_out_wr_ports):
+        s.write_crossbar.send[i].rdy @= 0
+
+      for i in range(num_xbar_out_rd_ports):
+        s.read_crossbar.send[i].rdy @= 0
+
       for b in range(num_banks_per_cgra):
-        s.write_crossbar.send[b].rdy @= 0
-        s.read_crossbar.send[b].rdy @= 0
         s.reg_file[b].raddr[0] @= PerBankAddrType(0)
 
       s.send_to_noc_load_request_pkt.msg @= \
-            NocPktType(0, # src
-                       0, # dst
-                       0, # src_x
-                       0, # src_y
-                       0, # dst_x
-                       0, # dst_y
-                       0, # src_tile_id
-                       0, # dst_tile_id
-                       0, # opaque
-                       0, # vc_id
-                       CgraPayloadType(0, 0, 0, 0, 0))
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_load_request_pkt.val @= 0
 
