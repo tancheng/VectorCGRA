@@ -357,6 +357,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
             BranchRTL,
             MemUnitRTL,
             SelRTL,
+            SeqMulAdderRTL,
             VectorMulComboRTL,
             VectorAdderComboRTL]
   predicate_nbits = 1
@@ -613,7 +614,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-          # IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
 
           # CtrlPktType(2, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST, b1(0),
           #             [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
@@ -660,7 +661,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+          # IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
 
 
@@ -708,6 +709,8 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
+          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+          # IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
 
           # CtrlPktType(0, 0, 3, 0, 0, CMD_CONFIG, 0, OPT_MUL_CONST_ADD, b1(0),
@@ -731,9 +734,9 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
       # CGRA 0, tile 1.
       [
           # Const
-          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(29, 1))), # 60
-          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(30, 1))), # 72
-          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(31, 1))), # 84
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))), # 60
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(4, 1))), # 72
+          IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))), # 84
 
           # CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 29), # 60
           # CtrlPktType(0, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 30), # 72
@@ -914,9 +917,9 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
       # CGRA 1, tile 0.
       [
           # Const
-          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(58, 1))), # 132
-          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(59, 1))), # 162
-          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(60, 1))), # 192
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(32, 1))), # 132
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(33, 1))), # 162
+          IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(34, 1))), # 192
 
           # CtrlPktType(1, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 58),  # 132
           # CtrlPktType(1, 0, 0, 0, 0, ctrl_action = CMD_CONST, data = 59),  # 162
@@ -1093,9 +1096,9 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
       # CGRA 1, tile 1.
       [
           # Const
-          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(61, 1))), # 204
-          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(62, 1))), # 252
-          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(63, 1))), # 300
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(35, 1))), # 204
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(36, 1))), # 252
+          IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(37, 1))), # 300
 
           # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 61),  # 204
           # CtrlPktType(1, 0, 1, 0, 0, ctrl_action = CMD_CONST, data = 62),  # 252
