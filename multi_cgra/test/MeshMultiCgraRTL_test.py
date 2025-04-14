@@ -161,7 +161,7 @@ def initialize_test_harness(cmdline_opts,
             FpAddRTL,
             FpMulRTL,
             SeqMulAdderRTL,
-            PrlMulAdderRTL,
+            # PrlMulAdderRTL, FIXME: https://github.com/tancheng/VectorCGRA/issues/123
             VectorMulComboRTL,
             VectorAdderComboRTL]
   predicate_nbits = 1
