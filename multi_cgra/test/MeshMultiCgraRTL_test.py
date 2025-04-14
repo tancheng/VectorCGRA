@@ -102,7 +102,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim(test_harness, max_cycles = 200):
+def run_sim(test_harness, max_cycles = 100):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
@@ -1174,7 +1174,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
       src_ctrl_pkt.extend(src_opt)
 
   # We only needs 3 steps to finish this test.
-  ctrl_steps = 10
+  ctrl_steps = 3
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
                    CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
