@@ -16,6 +16,8 @@ from ..MeshMultiCgraRTL import MeshMultiCgraRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.double.PrlMulAdderRTL import PrlMulAdderRTL
+from ...fu.float.FpAddRTL import FpAddRTL
+from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.BranchRTL import BranchRTL
 from ...fu.single.CompRTL import CompRTL
@@ -156,6 +158,8 @@ def initialize_test_harness(cmdline_opts,
             BranchRTL,
             MemUnitRTL,
             SelRTL,
+            FpAddRTL,
+            FpMulRTL,
             SeqMulAdderRTL,
             PrlMulAdderRTL,
             VectorMulComboRTL,

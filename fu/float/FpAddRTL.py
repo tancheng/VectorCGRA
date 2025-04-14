@@ -24,8 +24,8 @@ from ...lib.opt_type import *
 class FpAddRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, exp_nbits = 4,
-                sig_nbits = 11):
+                num_inports, num_outports, data_mem_size, exp_nbits = 8,
+                sig_nbits = 23):
 
     super(FpAddRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
