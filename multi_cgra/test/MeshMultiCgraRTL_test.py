@@ -517,6 +517,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
+          # IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_LAUNCH))
 
           # LD_CONST indicates the address is a const.
@@ -567,6 +568,8 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
+          # IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+          # IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
 
           # LD_CONST indicates the address is a const.
@@ -709,7 +712,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-          IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+          # IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           # IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
           IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
 
