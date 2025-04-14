@@ -262,6 +262,10 @@ class TileRTL(Component):
                                   (s.routing_crossbar.recv_opt.rdy | s.routing_crossbar_done) & \
                                   (s.fu_crossbar.recv_opt.rdy | s.fu_crossbar_done)
 
+    @update
+    def notify_const_mem():
+      s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
+
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
     def already_done():
