@@ -13,9 +13,8 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..MeshMultiCgraRTL import MeshMultiCgraRTL
-from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
-from ...fu.double.PrlMulAdderRTL import PrlMulAdderRTL
+from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
@@ -31,7 +30,6 @@ from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 
@@ -55,7 +53,7 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(IntraCgraPktType, src_ctrl_pkt)
     s.src_query_pkt = TestSrcRTL(IntraCgraPktType, src_query_pkt)
 
-    cmp_fn = lambda a, b : a.payload.data == b.payload.data
+    cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_fn)
 
     s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
