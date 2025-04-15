@@ -102,7 +102,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim(test_harness, max_cycles = 100):
+def run_sim(test_harness, max_cycles = 200):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 

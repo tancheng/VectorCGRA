@@ -39,6 +39,8 @@ class ConstQueueDynamicRTL(Component):
     s.send_const = SendIfcRTL(DataType)
     s.recv_const = RecvIfcRTL(DataType)
 
+    s.ctrl_proceed = InPort(b1)
+
     # Component
     # 1 rd_port: number of read port is 0.
     # 1 wr_port: number of write port is 0.
@@ -90,10 +92,10 @@ class ConstQueueDynamicRTL(Component):
     def update_rd_cur():
       if s.reset:
         s.rd_cur <<= 0
-      # Checks whether the "reader" successfully read the data at rd_cur,
-      # and proceed rd_cur accordingly.
       else:
-        if s.send_const.rdy:
+        # Checks whether the "reader" successfully read the data at rd_cur,
+        # and proceed rd_cur accordingly.
+        if s.send_const.rdy & s.ctrl_proceed:
           if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
             s.rd_cur <<= s.rd_cur + 1
           else:
