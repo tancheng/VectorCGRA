@@ -33,6 +33,9 @@ class SeqMulAdderRTL(TwoSeqCombo):
       s.Fu1.recv_opt.msg.fu_in[0] @= 1
       s.Fu1.recv_opt.msg.fu_in[1] @= 2
 
+      s.Fu0.recv_opt.msg @= s.recv_opt.msg
+      s.Fu1.recv_opt.msg @= s.recv_opt.msg
+  
       if s.recv_opt.msg.operation == OPT_MUL_ADD:
         s.Fu0.recv_opt.msg.operation @= OPT_MUL
         s.Fu1.recv_opt.msg.operation @= OPT_ADD
