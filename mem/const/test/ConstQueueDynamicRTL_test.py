@@ -29,8 +29,7 @@ class TestHarness(Component):
 
     @update
     def set_ctrl_proceed():
-      s.const_queue.ctrl_proceed @= s.const_queue.send_const.rdy & s.const_queue.send_const.val
-      print(f"s.const_queue.ctrl_proceed: {s.const_queue.ctrl_proceed}")
+      s.const_queue.ctrl_proceed @= 1
 
   def done(self):
     return self.src_const_pkt.done()

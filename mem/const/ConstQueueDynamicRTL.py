@@ -96,7 +96,6 @@ class ConstQueueDynamicRTL(Component):
         # Checks whether the "reader" successfully read the data at rd_cur,
         # and proceed rd_cur accordingly.
         if s.send_const.rdy & s.ctrl_proceed:
-          print(f"===> s.wr_cur: {s.wr_cur}, s.rd_cur: {s.rd_cur}")
           if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
             s.rd_cur <<= s.rd_cur + 1
           else:
