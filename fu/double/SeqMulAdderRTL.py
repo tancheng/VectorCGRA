@@ -36,6 +36,11 @@ class SeqMulAdderRTL(TwoSeqCombo):
       s.Fu1.recv_opt.msg.fu_in[0] @= 1
       s.Fu1.recv_opt.msg.fu_in[1] @= 2
 
+      # Note that the predication for a combined FU should be identical/shareable,
+      # which means the computation in different basic block cannot be combined.
+      s.Fu0.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
+      s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
+
       if s.recv_opt.msg.operation == OPT_MUL_ADD:
         s.Fu0.recv_opt.msg.operation @= OPT_MUL
         s.Fu1.recv_opt.msg.operation @= OPT_ADD
