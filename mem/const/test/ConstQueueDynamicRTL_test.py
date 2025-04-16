@@ -26,10 +26,7 @@ class TestHarness(Component):
     s.const_queue = MemUnit(DataType, const_mem_size)
     s.src_const_pkt.send //= s.const_queue.recv_const
     s.read_data.recv //= s.const_queue.send_const
-
-    @update
-    def set_ctrl_proceed():
-      s.const_queue.ctrl_proceed @= 1
+    s.const_queue.ctrl_proceed //= 1
 
   def done(self):
     return self.src_const_pkt.done()
