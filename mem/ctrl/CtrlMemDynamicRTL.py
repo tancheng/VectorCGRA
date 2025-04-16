@@ -205,7 +205,7 @@ class CtrlMemDynamicRTL(Component):
             s.times <<= s.times + TimeType(1)
 
           # Reads the next ctrl signal only when the current one is done.
-          if s.send_ctrl.rdy:
+          if s.send_ctrl.rdy & s.send_ctrl.val:
             if s.reg_file.raddr[0] == trunc(s.ctrl_count_per_iter_val - 1, CtrlAddrType):
               s.reg_file.raddr[0] <<= 0
             else:

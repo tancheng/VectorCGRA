@@ -272,10 +272,15 @@ class TileRTL(Component):
       else:
         if s.element.recv_opt.rdy:
           s.element_done <<= 1
-        elif s.fu_crossbar.recv_opt.rdy:
+        if s.fu_crossbar.recv_opt.rdy:
           s.fu_crossbar_done <<= 1
-        elif s.routing_crossbar.recv_opt.rdy:
+        if s.routing_crossbar.recv_opt.rdy:
           s.routing_crossbar_done <<= 1
+
+    @update
+    def notify_crossbars_compute_status():
+      s.routing_crossbar.compute_done @= s.element_done
+      s.fu_crossbar.compute_done @= s.element_done
 
   # Line trace
   def line_trace(s):
