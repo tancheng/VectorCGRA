@@ -43,6 +43,7 @@ class CrossbarRTL(Component):
 
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.crossbar_id = InPort(b1)
+    s.compute_done = InPort(b1)
 
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
@@ -137,7 +138,12 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         s.in_dir[i] @= s.crossbar_outport[i]
-        if s.in_dir[i] > 0:
+        # The `num_inports` indicates the number of outports that go to other tiles.
+        # Specifically, if the compute already done, we shouldn't care the ones
+        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
+        # the rdy checking on the FU's inports (connecting from crossbar_outport) if
+        # the compute is already completed.
+        if (s.in_dir[i] > 0) & (~s.compute_done | (i < num_inports)):
           s.in_dir_local[i] @= trunc(s.in_dir[i] - 1, NumInportType)
 
     @update
