@@ -96,6 +96,7 @@ class ConstQueueDynamicRTL(Component):
         # Checks whether the "reader" successfully read the data at rd_cur,
         # and proceed rd_cur accordingly.
         if s.send_const.rdy & s.ctrl_proceed:
+          print(f"===> s.wr_cur: {s.wr_cur}, s.rd_cur: {s.rd_cur}")
           if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
             s.rd_cur <<= s.rd_cur + 1
           else:
@@ -110,18 +111,18 @@ class ConstQueueDynamicRTL(Component):
       return s.verbose_trace(verbosity = verbosity)
 
 
-  def verbose_trace(self, verbosity = 1):
+  def verbose_trace(s, verbosity = 1):
     reg_list = []
-    for addr, data in enumerate(self.reg_file.regs):
+    for addr, data in enumerate(s.reg_file.regs):
       reg_dict = {
         'addr': addr,
         'payload': data.payload,
         'predicate': data.predicate,
-        'wr_cur': '<-' if addr == self.wr_cur else '',
-        'rd_cur': '<-' if addr == self.rd_cur else ''
+        'wr_cur': '<-' if addr == s.wr_cur else '',
+        'rd_cur': '<-' if addr == s.rd_cur else ''
       }
       reg_list.append(reg_dict)
     res_md = markdown_table(reg_list).set_params(quote = False).get_markdown()
-    return (f"wr_cur: {self.wr_cur}, rd_cur: {self.rd_cur}, send.val: {self.send_const.val}, send_const.rdy: {self.send_const.rdy}, send_const.msg: {self.send_const.msg}"
+    return (f"wr_cur: {s.wr_cur}, rd_cur: {s.rd_cur}, send_const.val: {s.send_const.val}, send_const.rdy: {s.send_const.rdy}, send_const.msg: {s.send_const.msg}, ctrl_proceed: {s.ctrl_proceed}"
             f"{res_md}")
 
