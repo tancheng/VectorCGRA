@@ -8,7 +8,13 @@ Author : Cheng Tan
   Date : Jan 8, 2024
 """
 
-from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
+from pymtl3.passes.backends.verilog import (
+  VerilogTranslationImportPass,
+  VerilogVerilatorImportPass,
+  VerilogPlaceholderPass,
+)
+from pymtl3.passes.backends.verilog.translation.VerilogTranslationPass import VerilogTranslationPass
+from pymtl3.passes.backends.verilog.import_.VerilogVerilatorImportPass import VerilogVerilatorImportPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
@@ -86,7 +92,7 @@ class TestHarness(Component):
         s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
       else:
         s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
-  
+
     @update_ff
     def update_complete_count():
       if s.reset:
@@ -307,18 +313,25 @@ def test_sim_homo_2x2_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-# def test_verilog_homo_2x2_4x4(cmdline_opts):
-#   th = initialize_test_harness(cmdline_opts,
-#                                num_cgra_rows = 2,
-#                                num_cgra_columns = 2,
-#                                num_x_tiles_per_cgra = 4,
-#                                num_y_tiles_per_cgra = 4,
-#                                num_banks_per_cgra = 8,
-#                                data_mem_size_per_bank = 256)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   th.apply(DefaultPassGroup())
+def _enable_translate_recursively(m):
+  m.set_metadata(VerilogTranslationPass.enable, True)
+  for child in m.get_child_components(repr):
+    _enable_translate_recursively( child )
 
+def translate_model(top, submodules_to_translate):
+  top.elaborate()
+  top.apply(VerilogPlaceholderPass())
+  for submodule in submodules_to_translate:
+    m = getattr(top, submodule)
+    _enable_translate_recursively(m)
+  top.apply(VerilogTranslationPass())
+
+def test_verilog_homo_2x2_4x4(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 4,
+                               num_y_tiles_per_cgra = 4,
+                               num_banks_per_cgra = 8,
+                               data_mem_size_per_bank = 256)
+  translate_model(th, ['dut'])
