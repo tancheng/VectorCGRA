@@ -82,10 +82,12 @@ class TestHarness(Component):
       print(f"-----> CPU pkt: {s.src_ctrl_pkt.send.msg}")
       if (s.complete_count >= complete_count_value) & \
          ~s.src_ctrl_pkt.send.val:
+        print(f"-----> CPU_if pkt: {s.src_query_pkt.send.msg}")
         s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
         s.dut.recv_from_cpu_pkt.msg @= s.src_query_pkt.send.msg
         s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
       else:
+        print(f"-----> CPU_else pkt: {s.dut.recv_from_cpu_pkt.msg}")
         s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
   
     @update_ff
@@ -95,6 +97,7 @@ class TestHarness(Component):
       else:
         if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy:
           s.complete_count <<= s.complete_count + CompleteCountType(1)
+          print(f'update_complete_count: {s.complete_count}')
 
   def done(s):
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and s.expected_sink_out.done()
@@ -851,37 +854,35 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
   src_query_pkt = \
       [
           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 3)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 4)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 5)),
-          #
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 32)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 33)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
-          #
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 35)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 36)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 37))
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 4)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 5)),
+
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 32)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 33)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
+
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 35)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 36)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 37))
       ]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(15)]
+  expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(9)]
   expected_mem_sink_out_pkt = \
       [
           # cgra 0
-          IntraCgraPktType(1,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x3c, 1), data_addr = 3)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x3c, 1), data_addr = 3)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x48, 1), data_addr = 4)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x54, 1), data_addr = 5)),
 
-          # IntraCgraPktType(payload = CgraPayloadType(0,   num_tiles, 0, 0, 0, 0, 0, 0, CMD_LOAD_RESPONSE, data = DataType(0x0000003c, 1), data_addr = 3)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x48, 1), data_addr = 4)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x54, 1), data_addr = 5)),
-          #
-          # # cgra 1
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x84, 1), data_addr = 32)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xa2, 1), data_addr = 33)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xc0, 1), data_addr = 34)),
-          #
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xcc, 1), data_addr = 35)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfc, 1), data_addr = 36)),
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x12c, 1), data_addr = 37))
+          # cgra 1
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x84, 1), data_addr = 32)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xa2, 1), data_addr = 33)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xc0, 1), data_addr = 34)),
+
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xcc, 1), data_addr = 35)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfc, 1), data_addr = 36)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x12c, 1), data_addr = 37))
       ]
 
   src_ctrl_pkt = []
