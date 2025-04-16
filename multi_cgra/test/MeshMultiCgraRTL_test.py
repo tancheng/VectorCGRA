@@ -8,13 +8,19 @@ Author : Cheng Tan
   Date : Jan 8, 2024
 """
 
-from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
+from re import sub
+from pymtl3.passes.backends.verilog import (
+  VerilogVerilatorImportPass,
+  VerilogPlaceholderPass,
+)
+from pymtl3.passes.backends.verilog.translation.VerilogTranslationPass import VerilogTranslationPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..MeshMultiCgraRTL import MeshMultiCgraRTL
-from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
+from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
+from ...fu.double.PrlMulAdderRTL import PrlMulAdderRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
@@ -30,6 +36,7 @@ from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 
@@ -79,15 +86,12 @@ class TestHarness(Component):
       s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
       s.src_ctrl_pkt.send.rdy @= 0
       s.src_query_pkt.send.rdy @= 0
-      print(f"-----> CPU pkt: {s.src_ctrl_pkt.send.msg}")
       if (s.complete_count >= complete_count_value) & \
          ~s.src_ctrl_pkt.send.val:
-        print(f"-----> CPU_if pkt: {s.src_query_pkt.send.msg}")
         s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
         s.dut.recv_from_cpu_pkt.msg @= s.src_query_pkt.send.msg
         s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
       else:
-        print(f"-----> CPU_else pkt: {s.dut.recv_from_cpu_pkt.msg}")
         s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
   
     @update_ff
@@ -97,10 +101,10 @@ class TestHarness(Component):
       else:
         if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy:
           s.complete_count <<= s.complete_count + CompleteCountType(1)
-          print(f'update_complete_count: {s.complete_count}')
 
   def done(s):
-    return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and s.expected_sink_out.done()
+    return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
+           s.expected_sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -113,7 +117,7 @@ def run_sim(test_harness, max_cycles = 200):
 
   ncycles = 0
   print()
-  print(">>>>>>>>>>>>>>> cycle {}:{}".format(ncycles, test_harness.line_trace()))
+  print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
@@ -310,21 +314,31 @@ def test_sim_homo_2x2_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-# def test_verilog_homo_2x2_4x4(cmdline_opts):
-#   th = initialize_test_harness(cmdline_opts,
-#                                num_cgra_rows = 2,
-#                                num_cgra_columns = 2,
-#                                num_x_tiles_per_cgra = 4,
-#                                num_y_tiles_per_cgra = 4,
-#                                num_banks_per_cgra = 8,
-#                                data_mem_size_per_bank = 256)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   th.apply(DefaultPassGroup())
+def _enable_translate_recursively(m):
+  m.set_metadata(VerilogTranslationPass.enable, True)
+  for child in m.get_child_components(repr):
+    _enable_translate_recursively( child )
 
+def translate_model(top, submodules_to_translate):
+  top.elaborate()
+  top.apply(VerilogPlaceholderPass())
+  if not submodules_to_translate:
+    _enable_translate_recursively(top)
+  else:
+    for submodule in submodules_to_translate:
+      m = getattr(top, submodule)
+      _enable_translate_recursively(m)
+  top.apply(VerilogTranslationPass())
+
+def test_verilog_homo_2x2_4x4(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 4,
+                               num_y_tiles_per_cgra = 4,
+                               num_banks_per_cgra = 8,
+                               data_mem_size_per_bank = 256)
+  translate_model(th, ['dut'])
 def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
                                      num_cgra_rows = 2,
                                      num_cgra_columns = 2,
