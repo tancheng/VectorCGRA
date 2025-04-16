@@ -8,6 +8,7 @@ Author : Cheng Tan
   Date : Jan 8, 2024
 """
 
+from re import sub
 from pymtl3.passes.backends.verilog import (
   VerilogVerilatorImportPass,
   VerilogPlaceholderPass,
@@ -319,9 +320,12 @@ def _enable_translate_recursively(m):
 def translate_model(top, submodules_to_translate):
   top.elaborate()
   top.apply(VerilogPlaceholderPass())
-  for submodule in submodules_to_translate:
-    m = getattr(top, submodule)
-    _enable_translate_recursively(m)
+  if not submodules_to_translate:
+    _enable_translate_recursively(top)
+  else:
+    for submodule in submodules_to_translate:
+      m = getattr(top, submodule)
+      _enable_translate_recursively(m)
   top.apply(VerilogTranslationPass())
 
 def test_verilog_homo_2x2_4x4(cmdline_opts):
