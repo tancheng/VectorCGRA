@@ -76,6 +76,9 @@ class FpMulRTL(Fu):
       s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
+      s.fmul.a @= 0
+      s.fmul.b @= 0
+
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)

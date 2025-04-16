@@ -76,11 +76,6 @@ class TwoPrlCombo(Component):
       s.Fu0.send_out[0].rdy @= s.send_out[0].rdy
       s.Fu1.send_out[0].rdy @= s.send_out[1].rdy
 
-      # Note that the predication for a combined FU should be identical/shareable,
-      # which means the computation in different basic block cannot be combined.
-      s.Fu0.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-      s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-
       s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy & \
                                   s.Fu1.recv_predicate.rdy
 
