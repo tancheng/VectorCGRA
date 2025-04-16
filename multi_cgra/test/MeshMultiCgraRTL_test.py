@@ -9,12 +9,10 @@ Author : Cheng Tan
 """
 
 from pymtl3.passes.backends.verilog import (
-  VerilogTranslationImportPass,
   VerilogVerilatorImportPass,
   VerilogPlaceholderPass,
 )
 from pymtl3.passes.backends.verilog.translation.VerilogTranslationPass import VerilogTranslationPass
-from pymtl3.passes.backends.verilog.import_.VerilogVerilatorImportPass import VerilogVerilatorImportPass
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
