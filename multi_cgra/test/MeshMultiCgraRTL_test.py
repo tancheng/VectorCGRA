@@ -97,7 +97,8 @@ class TestHarness(Component):
       if s.reset:
         s.complete_count <<= 0
       else:
-        if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy:
+        if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy & \
+           (s.complete_count < complete_count_value):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
 
   def done(s):
