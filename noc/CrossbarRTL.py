@@ -138,19 +138,19 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         s.in_dir[i] @= s.crossbar_outport[i]
-        # The `num_inports` indicates the number of outports that go to other tiles.
-        # Specifically, if the compute already done, we shouldn't care the ones
-        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
-        # the rdy checking on the FU's inports (connecting from crossbar_outport) if
-        # the compute is already completed.
-        if (s.in_dir[i] > 0) & (~s.compute_done | (i < num_inports)):
+        if s.in_dir[i] > 0:
           s.in_dir_local[i] @= trunc(s.in_dir[i] - 1, NumInportType)
 
     @update
     def update_rdy_vector():
       s.send_rdy_vector @= 0
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        # The `num_inports` indicates the number of outports that go to other tiles.
+        # Specifically, if the compute already done, we shouldn't care the ones
+        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
+        # the rdy checking on the FU's inports (connecting from crossbar_outport) if
+        # the compute is already completed.
+        if (s.in_dir[i] > 0) & (~s.compute_done | (i < num_inports)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
         else:
           s.send_rdy_vector[i] @= 1

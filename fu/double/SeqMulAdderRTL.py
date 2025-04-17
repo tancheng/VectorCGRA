@@ -53,6 +53,12 @@ class SeqMulAdderRTL(TwoSeqCombo):
       elif s.recv_opt.msg.operation == OPT_MUL_SUB:
         s.Fu0.recv_opt.msg.operation @= OPT_MUL
         s.Fu1.recv_opt.msg.operation @= OPT_SUB
+      else:
+        # Indicates no computation should happen no this fused FU.
+        # This is necessary to avoid the OPT_MUL_CONST be executed
+        # by both Mul and MulAdder.
+        s.Fu0.recv_opt.msg.operation @= OPT_START
+        s.Fu1.recv_opt.msg.operation @= OPT_START
 
       # TODO: need to handle the other cases
 
