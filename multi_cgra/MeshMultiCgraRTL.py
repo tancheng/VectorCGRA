@@ -84,7 +84,7 @@ class MeshMultiCgraRTL(Component):
       s.cgra[i].recv_from_cpu_pkt.msg //= CtrlPktType()
       s.cgra[i].send_to_cpu_pkt.rdy //= 0
 
-    # Connects the tiles on the boundary of each two ajacent CGRAs.
+    # Connects the tiles on the boundary of each two adjacent CGRAs.
     for cgra_row in range(cgra_rows):
       for cgra_col in range(cgra_columns):
         if cgra_row != 0:
@@ -124,7 +124,7 @@ class MeshMultiCgraRTL(Component):
             s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
 
   def line_trace(s):
-    res = "||\n".join([(("[cgra["+str(i)+"]: ") + x.line_trace())
+    res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())
                        for (i,x) in enumerate(s.cgra)])
     res += " ## mesh: " + s.mesh.line_trace()
     return res
