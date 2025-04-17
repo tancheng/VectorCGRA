@@ -118,7 +118,6 @@ def run_sim(test_harness, max_cycles = 200):
   # Run simulation
 
   ncycles = 0
-  print()
   print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
