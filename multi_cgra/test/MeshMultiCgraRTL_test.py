@@ -101,6 +101,7 @@ class TestHarness(Component):
       else:
         if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy:
           s.complete_count <<= s.complete_count + CompleteCountType(1)
+      print(f"complete_count: {s.complete_count}")
 
   def done(s):
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
@@ -881,7 +882,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
       ]
 
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
-  expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(9)]
+  expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(15)]
   expected_mem_sink_out_pkt = \
       [
           # cgra 0
