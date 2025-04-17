@@ -882,6 +882,7 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts,
           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 37))
       ]
 
+  # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_weight_stationary_systolic_array.png
   # vc_id needs to be 1 due to the message might traverse across the date line via ring.
   expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(15)]
   expected_mem_sink_out_pkt = \
