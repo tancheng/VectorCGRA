@@ -75,7 +75,7 @@ class TileRTL(Component):
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, num_tiles, FuList)
-    s.const_mem = ConstQueueDynamicRTL(DataType, data_mem_size)
+    s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
