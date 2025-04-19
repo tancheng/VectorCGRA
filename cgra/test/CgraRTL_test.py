@@ -327,6 +327,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       idTo2d_map = {0: [0, 0]}
       fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
+      # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
       activation_tensor_preload_data = [
           [
               # tile 6
