@@ -244,12 +244,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   ctrl_steps = 0
   src_query_pkt = []
   if test_name == 'default':
-      # idTo2d_map = {
-      #         0: [0, 0],
-      #         1: [1, 0],
-      #         2: [2, 0],
-      #         3: [3, 0],
-      # }
       '''
       Each tile performs independent INC, without waiting for data from
       neighbours, instead, consuming the data inside their own register
