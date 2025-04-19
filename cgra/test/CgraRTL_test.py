@@ -81,7 +81,6 @@ class TestHarness(Component):
     # As we always first issue request pkt from CPU to NoC, 
     # when there is no NoC for single CGRA test, 
     # we have to connect from_noc and to_noc in testbench.
-    # s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
     s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
     s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
 
@@ -116,7 +115,6 @@ class TestHarness(Component):
         if s.complete_signal_sink_out.recv.val & s.complete_signal_sink_out.recv.rdy & \
            (s.complete_count < complete_count_value):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
-      print(f"complete_count: {s.complete_count}")
 
     # Connects memory address upper and lower bound for each CGRA.
     s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
@@ -141,7 +139,8 @@ class TestHarness(Component):
       s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
-    return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and s.complete_signal_sink_out.done()
+    return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
+            and s.complete_signal_sink_out.done())
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -372,13 +371,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
 
               # Pre-configure per-tile config count per iter.
-              # Set config_mem data as 1.
-              # Set 1, read the 1st always
-              # Set 2, read 1, 2 repeatedly
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
               # Pre-configure per-tile total config count.
-              # Total run 2 times.
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
 
               # LD_CONST indicates the address is a const.
@@ -429,8 +424,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               # Pre-configure per-tile total config count.
               IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
-              # load request ---> to return response, return to whom(who issue the request)
-              # tile (!, ?), cgra (1, ?) ? according to address, ! according to code(infer by code(0 -> n-1)) or cpu (num_tiles)
+
               IntraCgraPktType(0, 4,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                          ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,

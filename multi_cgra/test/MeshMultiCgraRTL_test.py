@@ -99,7 +99,6 @@ class TestHarness(Component):
         if s.expected_sink_out.recv.val & s.expected_sink_out.recv.rdy & \
            (s.complete_count < complete_count_value):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
-      print(f"complete_count: {s.complete_count}")
 
   def done(s):
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
@@ -354,14 +353,10 @@ def initialize_test_harness(cmdline_opts,
               IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(69, 1))),
 
               # Pre-configure per-tile config count per iter.
-              # Set config_mem data as 1.
-              # Set 1, read the 1st always
-              # Set 2, read 1, 2 repeatedly
               IntraCgraPktType(0, 0, 0, 2,       0, 0, 0, 0, 0, 0,
                                CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
               # Pre-configure per-tile total config count.
-              # Total run 3 times.
               IntraCgraPktType(0, 0, 0, 2,       0, 0, 0, 0, 0, 0,
                                CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
 
@@ -448,8 +443,7 @@ def initialize_test_harness(cmdline_opts,
               # Pre-configure per-tile total config count.
               IntraCgraPktType(0, 1, 0, 2,       0, 0, 0, 0, 0, 0,
                                CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
-              # load request ---> to return response, return to whom(who issue the request)
-              # tile (!, ?), cgra (1, ?) ? according to address, ! according to code(infer by code(0 -> n-1)) or cpu (num_tiles)
+
               IntraCgraPktType(0, 1, 0, 2,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                          ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
