@@ -73,8 +73,6 @@ jobs:
         # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
         # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
         pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # 3x3 CGRA performs 2x2 matmul simulation/translation.
-        pytest ../systolic/test/Cgra3x3MemRightAndBottomRTL_matmul_2x2_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Ring network simulation.
         pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
         # CGRAs are interconnected with ring topology. The CGRA contains
