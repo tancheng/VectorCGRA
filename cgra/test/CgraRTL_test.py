@@ -198,12 +198,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   for i in range(num_cgras):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  idTo2d_map = {
-          0: [0, 0],
-          1: [1, 0],
-          2: [2, 0],
-          3: [3, 0],
-  }
+  idTo2d_map = {}
 
   cgra_id_nbits = clog2(num_cgras)
   addr_nbits = clog2(data_mem_size_global)
@@ -248,6 +243,12 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   src_query_pkt = []
   multi_cgra_rows, multi_cgra_columns = 1, 4
   if test_name == 'default':
+      idTo2d_map = {
+              0: [0, 0],
+              1: [1, 0],
+              2: [2, 0],
+              3: [3, 0],
+      }
       '''
       Each tile performs independent INC, without waiting for data from
       neighbours, instead, consuming the data inside their own register
@@ -324,7 +325,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       updated_ctrl_steps = 2
       ctrl_steps = 2
       multi_cgra_rows, multi_cgra_columns = 1, 1
-
+      idTo2d_map = {0: [0, 0]}
       fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
       activation_tensor_preload_data = [
@@ -530,9 +531,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
               IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
               # Pre-configure per-tile total config count.
-              IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+              IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
 
-              IntraCgraPktType(0, 3,
+              IntraCgraPktType(0, 2,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                          ctrl = CtrlType(OPT_STR_CONST, 0,
                                                                          fu_in_code,
@@ -542,7 +543,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                                                          [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-              IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+              IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_LAUNCH))
           ]
       ]
 
@@ -684,7 +685,7 @@ def test_systolic_3x3(cmdline_opts):
 
   data_bitwidth = 32
   th = init_param(topology, FuList, x_tiles = 3, y_tiles = 3,
-                  data_bitwidth = data_bitwidth)
+                  data_bitwidth = data_bitwidth, test_name = 'systolic')
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
