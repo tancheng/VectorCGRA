@@ -167,8 +167,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   data_mem_size_per_bank = 16
   num_banks_per_cgra = 2
   num_cgra_columns = 4
-  if test_name == 'systolic':
-      num_cgra_columns = 1
   num_cgra_rows = 1
   num_cgras = num_cgra_columns * num_cgra_rows
   num_ctrl_operations = 64
@@ -197,7 +195,12 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   for i in range(num_cgras):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  idTo2d_map = {}
+  idTo2d_map = {
+          0: [0, 0],
+          1: [1, 0],
+          2: [2, 0],
+          3: [3, 0],
+  }
 
   cgra_id_nbits = clog2(num_cgras)
   addr_nbits = clog2(data_mem_size_global)
@@ -240,14 +243,13 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   complete_signal_sink_out = []
   ctrl_steps = 0
   src_query_pkt = []
-  multi_cgra_rows, multi_cgra_columns = 1, 4
   if test_name == 'default':
-      idTo2d_map = {
-              0: [0, 0],
-              1: [1, 0],
-              2: [2, 0],
-              3: [3, 0],
-      }
+      # idTo2d_map = {
+      #         0: [0, 0],
+      #         1: [1, 0],
+      #         2: [2, 0],
+      #         3: [3, 0],
+      # }
       '''
       Each tile performs independent INC, without waiting for data from
       neighbours, instead, consuming the data inside their own register
@@ -323,8 +325,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   elif test_name == 'systolic':
       updated_ctrl_steps = 2
       ctrl_steps = 2
-      multi_cgra_rows, multi_cgra_columns = 1, 1
-      idTo2d_map = {0: [0, 0]}
       fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
       # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
@@ -579,7 +579,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_steps, topology,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
-                   multi_cgra_rows, multi_cgra_columns,
+                   num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
   return th
 
