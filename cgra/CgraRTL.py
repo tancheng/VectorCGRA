@@ -38,6 +38,10 @@ class CgraRTL(Component):
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
+    # left and bottom connecting to data mem
+    s.data_mem_num_rd_tiles = height + width - 1
+    s.data_mem_num_wr_tiles = height + width - 1
+
     num_cgras = multi_cgra_rows * multi_cgra_columns
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
@@ -78,8 +82,8 @@ class CgraRTL(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
-                                        height + width - 1, # left and bottom connecting to data mem
-                                        height + width - 1,
+                                        s.data_mem_num_rd_tiles, # left and bottom connecting to data mem
+                                        s.data_mem_num_wr_tiles,
                                         multi_cgra_rows,
                                         multi_cgra_columns,
                                         s.num_tiles,
@@ -108,11 +112,19 @@ class CgraRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[height + width - 1] //= s.controller.send_to_mem_load_request_addr
+
+
+    # Replace below with one noc pkt port and decouple in DataMem itself.
+    # 1. can reduce number of recv_raddr, recv_waddr and recv_wdata to height + width - 2
+    s.data_mem.recv_raddr[s.data_mem_num_rd_tiles] //= s.controller.send_to_mem_load_request_addr
     s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
     s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
-    s.data_mem.recv_waddr[height + width - 1] //= s.controller.send_to_mem_store_request_addr
-    s.data_mem.recv_wdata[height + width - 1] //= s.controller.send_to_mem_store_request_data
+    s.data_mem.recv_waddr[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_addr
+    s.data_mem.recv_wdata[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_data
+
+
+
+
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
