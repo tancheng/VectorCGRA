@@ -59,9 +59,14 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt = RecvIfcRTL(InterCgraPktType)
     s.recv_from_tile_store_request_pkt = RecvIfcRTL(InterCgraPktType)
 
+    # Replace with NoC pkt
     s.send_to_mem_load_request_addr = SendIfcRTL(DataAddrType)
     s.send_to_mem_load_request_src_cgra = SendIfcRTL(CgraIdType)
     s.send_to_mem_load_request_src_tile = SendIfcRTL(TileIdType)
+
+    s.send_to_mem_load_request = SendIfcRTL(InterCgraPktType)
+
+
     s.send_to_tile_load_response_data = SendIfcRTL(DataType)
     s.send_to_mem_store_request_addr = SendIfcRTL(DataAddrType)
     s.send_to_mem_store_request_data = SendIfcRTL(DataType)
@@ -71,9 +76,12 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt_queue = ChannelRTL(InterCgraPktType, latency = 1)
     s.recv_from_tile_store_request_pkt_queue = ChannelRTL(InterCgraPktType, latency = 1)
 
-    s.send_to_mem_load_request_addr_queue = ChannelRTL(DataAddrType, latency = 1)
-    s.send_to_mem_load_request_src_cgra_queue = ChannelRTL(CgraIdType, latency = 1)
-    s.send_to_mem_load_request_src_tile_queue = ChannelRTL(TileIdType, latency = 1)
+    # Replace
+    # s.send_to_mem_load_request_addr_queue = ChannelRTL(DataAddrType, latency = 1)
+    # s.send_to_mem_load_request_src_cgra_queue = ChannelRTL(CgraIdType, latency = 1)
+    # s.send_to_mem_load_request_src_tile_queue = ChannelRTL(TileIdType, latency = 1)
+    s.send_to_mem_load_request_queue = ChannelRTL(InterCgraPktType, latency = 1)
+
     s.send_to_tile_load_response_data_queue = ChannelRTL(DataType, latency = 1)
     s.send_to_mem_store_request_addr_queue = ChannelRTL(DataAddrType, latency = 1)
     s.send_to_mem_store_request_data_queue = ChannelRTL(DataType, latency = 1)
@@ -118,9 +126,11 @@ class ControllerRTL(Component):
     s.recv_from_tile_store_request_pkt_queue.recv //= s.recv_from_tile_store_request_pkt
 
     # Requests towards local from others, 1 cycle delay to improve timing.
-    s.send_to_mem_load_request_addr_queue.send //= s.send_to_mem_load_request_addr
-    s.send_to_mem_load_request_src_cgra_queue.send //= s.send_to_mem_load_request_src_cgra
-    s.send_to_mem_load_request_src_tile_queue.send //= s.send_to_mem_load_request_src_tile
+    # s.send_to_mem_load_request_addr_queue.send //= s.send_to_mem_load_request_addr
+    # s.send_to_mem_load_request_src_cgra_queue.send //= s.send_to_mem_load_request_src_cgra
+    # s.send_to_mem_load_request_src_tile_queue.send //= s.send_to_mem_load_request_src_tile
+    s.send_to_mem_load_request_queue.send //= s.send_to_mem_load_request
+
     s.send_to_tile_load_response_data_queue.send //= s.send_to_tile_load_response_data
     s.send_to_mem_store_request_addr_queue.send //= s.send_to_mem_store_request_addr
     s.send_to_mem_store_request_data_queue.send //= s.send_to_mem_store_request_data
@@ -205,15 +215,20 @@ class ControllerRTL(Component):
     # def update_received_msg_from_noc():
 
       # Initiates the signals.
-      s.send_to_mem_load_request_addr_queue.recv.val @= 0
-      s.send_to_mem_load_request_src_cgra_queue.recv.val @= 0
-      s.send_to_mem_load_request_src_tile_queue.recv.val @= 0
+      # s.send_to_mem_load_request_addr_queue.recv.val @= 0
+      # s.send_to_mem_load_request_src_cgra_queue.recv.val @= 0
+      # s.send_to_mem_load_request_src_tile_queue.recv.val @= 0
+      s.send_to_mem_load_request_queue.recv.val @= 0
+
       s.send_to_mem_store_request_addr_queue.recv.val @= 0
       s.send_to_mem_store_request_data_queue.recv.val @= 0
       s.send_to_tile_load_response_data_queue.recv.val @= 0
-      s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType()
-      s.send_to_mem_load_request_src_cgra_queue.recv.msg @= CgraIdType()
-      s.send_to_mem_load_request_src_tile_queue.recv.msg @= TileIdType()
+
+      # s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType()
+      # s.send_to_mem_load_request_src_cgra_queue.recv.msg @= CgraIdType()
+      # s.send_to_mem_load_request_src_tile_queue.recv.msg @= TileIdType()
+      s.send_to_mem_load_request_queue.recv.msg @= InterCgraPktType()
+
       s.send_to_mem_store_request_addr_queue.recv.msg @= DataAddrType()
       s.send_to_mem_store_request_data_queue.recv.msg @= DataType()
       s.send_to_tile_load_response_data_queue.recv.msg @= DataType()
@@ -225,17 +240,20 @@ class ControllerRTL(Component):
       received_pkt = s.recv_from_inter_cgra_noc.msg
       if s.recv_from_inter_cgra_noc.val:
         if s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LOAD_REQUEST:
-          s.send_to_mem_load_request_addr_queue.recv.val @= 1
-          s.send_to_mem_load_request_src_cgra_queue.recv.val @= 1
-          s.send_to_mem_load_request_src_tile_queue.recv.val @= 1
+          # s.send_to_mem_load_request_addr_queue.recv.val @= 1
+          # s.send_to_mem_load_request_src_cgra_queue.recv.val @= 1
+          # s.send_to_mem_load_request_src_tile_queue.recv.val @= 1
+          s.send_to_mem_load_request_queue.recv.val @= 1
 
-          if s.send_to_mem_load_request_addr_queue.recv.rdy:
+          if s.send_to_mem_load_request_queue.recv.rdy:
             s.recv_from_inter_cgra_noc.rdy @= 1
-            s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType(received_pkt.payload.data_addr)
-            s.send_to_mem_load_request_src_cgra_queue.recv.msg @= received_pkt.src
-            # FIXME: We can avoid this by sending the entire payload to data memory,
-            # https://github.com/tancheng/VectorCGRA/issues/117.
-            s.send_to_mem_load_request_src_tile_queue.recv.msg @= received_pkt.src_tile_id
+
+            # s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType(received_pkt.payload.data_addr)
+            # s.send_to_mem_load_request_src_cgra_queue.recv.msg @= received_pkt.src
+            # # FIXME: We can avoid this by sending the entire payload to data memory,
+            # # https://github.com/tancheng/VectorCGRA/issues/117.
+            # s.send_to_mem_load_request_src_tile_queue.recv.msg @= received_pkt.src_tile_id
+            s.send_to_mem_load_request_queue.recv.msg @= received_pkt
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_STORE_REQUEST:
           s.send_to_mem_store_request_data_queue.recv.msg @= received_pkt.payload.data
