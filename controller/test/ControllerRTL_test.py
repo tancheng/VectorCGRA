@@ -36,8 +36,7 @@ class TestHarness(Component):
                 from_tile_store_request_pkt_msgs,
                 expected_to_mem_load_request_msgs,
                 expected_to_mem_load_response_data_msgs,
-                expected_to_mem_store_request_addr_msgs,
-                expected_to_mem_store_request_data_msgs,
+                expected_to_mem_store_request_msgs,
                 from_noc_pkts,
                 expected_to_noc_pkts,
                 controller2addr_map,
@@ -54,8 +53,9 @@ class TestHarness(Component):
     s.sink_to_mem_load_request_en_rdy = TestSinkRTL(PktType, expected_to_mem_load_request_msgs, cmp_fn = cmp_fn)
 
     s.sink_to_mem_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_load_response_data_msgs)
-    s.sink_to_mem_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
-    s.sink_to_mem_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
+    # s.sink_to_mem_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
+    # s.sink_to_mem_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
+    s.sink_to_mem_store_request_en_rdy = TestSinkRTL(PktType, expected_to_mem_store_request_msgs, cmp_fn = cmp_fn)
 
     s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc_val_rdy = TestSinkRTL(PktType, expected_to_noc_pkts)
@@ -77,8 +77,10 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
 
-    s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr_en_rdy.recv
-    s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data_en_rdy.recv
+    # s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr_en_rdy.recv
+    # s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data_en_rdy.recv
+    s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request_en_rdy.recv
+
     s.dut.send_to_tile_load_response_data //= s.sink_to_mem_load_response_data_en_rdy.recv
 
     # s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr_en_rdy.recv
@@ -102,8 +104,7 @@ class TestHarness(Component):
            s.src_from_tile_store_request_pkt_en_rdy.done() and \
            s.sink_to_mem_load_request_en_rdy.done()  and \
            s.sink_to_mem_load_response_data_en_rdy.done() and \
-           s.sink_to_mem_store_request_addr_en_rdy.done() and \
-           s.sink_to_mem_store_request_data_en_rdy.done() and \
+           s.sink_to_mem_store_request_en_rdy.done() and \
            s.src_from_noc_val_rdy.done() and \
            s.sink_to_noc_val_rdy.done()
 
@@ -236,8 +237,9 @@ expected_to_mem_load_request_msgs =  [InterCgraPktType(payload = CgraPayloadType
 
 expected_to_mem_load_response_addr_msgs = [DataAddrType(8), DataAddrType(9)]
 expected_to_mem_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
-expected_to_mem_store_request_addr_msgs = [DataAddrType(5)]
-expected_to_mem_store_request_data_msgs = [DataType(50, 1)]
+# expected_to_mem_store_request_addr_msgs = [DataAddrType(5)]
+# expected_to_mem_store_request_data_msgs = [DataType(50, 1)]
+expected_to_mem_store_request_msgs =  [InterCgraPktType(payload = CgraPayloadType(cmd = CMD_STORE_REQUEST,  data = DataType(50,  1), data_addr = 5))]
 
 from_noc_pkts = [
                    # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc                 cmd
@@ -276,8 +278,7 @@ def test_simple(cmdline_opts):
                    from_tile_store_request_pkts,
                    expected_to_mem_load_request_msgs,
                    expected_to_mem_load_response_data_msgs,
-                   expected_to_mem_store_request_addr_msgs,
-                   expected_to_mem_store_request_data_msgs,
+                   expected_to_mem_store_request_msgs,
                    from_noc_pkts,
                    expected_to_noc_pkts,
                    controller2addr_map,
