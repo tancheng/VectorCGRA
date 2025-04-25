@@ -346,6 +346,7 @@ class DataMemWithCrossbarRTL(Component):
           s.write_crossbar.recv[i].val @= s.recv_waddr[i].val
           s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
           s.recv_waddr[i].rdy @= s.write_crossbar.recv[i].rdy
+        # [-1] indicates the element of [num_xbar_in_wr_ports - 1] or [s.num_wr_tiles] index.
         s.write_crossbar.recv[-1].val @= s.recv_from_noc_store_request.val
         s.write_crossbar.recv[-1].msg @= s.wr_pkt[-1]
         s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[-1].rdy
