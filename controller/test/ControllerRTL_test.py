@@ -13,10 +13,9 @@ from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
 from ..ControllerRTL import ControllerRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
-from ...noc.PyOCN.pymtl3_net.ocnlib.test.stream_sinks import NetSinkRTL as TestNetSinkRTL
+
 
 #-------------------------------------------------------------------------
 # TestHarness
@@ -44,21 +43,21 @@ class TestHarness(Component):
                 num_cgras,
                 num_tiles):
 
-    s.src_from_tile_load_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_request_pkt_msgs)
-    s.src_from_tile_load_response_pkt_en_rdy = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
-    s.src_from_tile_store_request_pkt_en_rdy = TestSrcRTL(PktType, from_tile_store_request_pkt_msgs)
+    s.src_from_tile_load_request_pkt = TestSrcRTL(PktType, from_tile_load_request_pkt_msgs)
+    s.src_from_tile_load_response_pkt = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
+    s.src_from_tile_store_request_pkt = TestSrcRTL(PktType, from_tile_store_request_pkt_msgs)
 
-    # s.sink_to_mem_load_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_load_request_addr_msgs)
+    # s.sink_to_mem_load_request_addr = TestSinkRTL(AddrType, expected_to_mem_load_request_addr_msgs)
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
-    s.sink_to_mem_load_request_en_rdy = TestSinkRTL(PktType, expected_to_mem_load_request_msgs, cmp_fn = cmp_fn)
+    s.sink_to_mem_load_request = TestSinkRTL(PktType, expected_to_mem_load_request_msgs, cmp_fn = cmp_fn)
 
-    s.sink_to_mem_load_response_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_load_response_data_msgs)
-    # s.sink_to_mem_store_request_addr_en_rdy = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
-    # s.sink_to_mem_store_request_data_en_rdy = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
-    s.sink_to_mem_store_request_en_rdy = TestSinkRTL(PktType, expected_to_mem_store_request_msgs, cmp_fn = cmp_fn)
+    s.sink_to_mem_load_response_data = TestSinkRTL(MsgType, expected_to_mem_load_response_data_msgs)
+    # s.sink_to_mem_store_request_addr = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
+    # s.sink_to_mem_store_request_data = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
+    s.sink_to_mem_store_request = TestSinkRTL(PktType, expected_to_mem_store_request_msgs, cmp_fn = cmp_fn)
 
-    s.src_from_noc_val_rdy = TestSrcRTL(PktType, from_noc_pkts)
-    s.sink_to_noc_val_rdy = TestSinkRTL(PktType, expected_to_noc_pkts)
+    s.src_from_noc = TestSrcRTL(PktType, from_noc_pkts)
+    s.sink_to_noc = TestSinkRTL(PktType, expected_to_noc_pkts)
 
     s.dut = ControllerRTL(ControllerIdType,
                           CpuPktType,
@@ -73,23 +72,23 @@ class TestHarness(Component):
 
     # Connections
     s.dut.cgra_id //= cgra_id
-    s.src_from_tile_load_request_pkt_en_rdy.send //= s.dut.recv_from_tile_load_request_pkt
-    s.src_from_tile_load_response_pkt_en_rdy.send //= s.dut.recv_from_tile_load_response_pkt
-    s.src_from_tile_store_request_pkt_en_rdy.send //= s.dut.recv_from_tile_store_request_pkt
+    s.src_from_tile_load_request_pkt.send //= s.dut.recv_from_tile_load_request_pkt
+    s.src_from_tile_load_response_pkt.send //= s.dut.recv_from_tile_load_response_pkt
+    s.src_from_tile_store_request_pkt.send //= s.dut.recv_from_tile_store_request_pkt
 
-    # s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr_en_rdy.recv
-    # s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data_en_rdy.recv
-    s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request_en_rdy.recv
+    # s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr.recv
+    # s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data.recv
+    s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request.recv
 
-    s.dut.send_to_tile_load_response_data //= s.sink_to_mem_load_response_data_en_rdy.recv
+    s.dut.send_to_tile_load_response_data //= s.sink_to_mem_load_response_data.recv
 
-    # s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr_en_rdy.recv
+    # s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr.recv
     # s.dut.send_to_mem_load_request_src_cgra.rdy //= 1
     # s.dut.send_to_mem_load_request_src_tile.rdy //= 1
-    s.dut.send_to_mem_load_request //= s.sink_to_mem_load_request_en_rdy.recv
+    s.dut.send_to_mem_load_request //= s.sink_to_mem_load_request.recv
 
-    s.src_from_noc_val_rdy.send //= s.dut.recv_from_inter_cgra_noc
-    s.dut.send_to_inter_cgra_noc //= s.sink_to_noc_val_rdy.recv
+    s.src_from_noc.send //= s.dut.recv_from_inter_cgra_noc
+    s.dut.send_to_inter_cgra_noc //= s.sink_to_noc.recv
 
     s.dut.recv_from_cpu_pkt.val //= 0
     s.dut.recv_from_cpu_pkt.msg //= CpuPktType()
@@ -99,14 +98,14 @@ class TestHarness(Component):
     s.dut.recv_from_ctrl_ring_pkt.msg //= CpuPktType()
 
   def done(s):
-    return s.src_from_tile_load_request_pkt_en_rdy.done()  and \
-           s.src_from_tile_load_response_pkt_en_rdy.done() and \
-           s.src_from_tile_store_request_pkt_en_rdy.done() and \
-           s.sink_to_mem_load_request_en_rdy.done()  and \
-           s.sink_to_mem_load_response_data_en_rdy.done() and \
-           s.sink_to_mem_store_request_en_rdy.done() and \
-           s.src_from_noc_val_rdy.done() and \
-           s.sink_to_noc_val_rdy.done()
+    return s.src_from_tile_load_request_pkt.done()  and \
+           s.src_from_tile_load_response_pkt.done() and \
+           s.src_from_tile_store_request_pkt.done() and \
+           s.sink_to_mem_load_request.done()  and \
+           s.sink_to_mem_load_response_data.done() and \
+           s.sink_to_mem_store_request.done() and \
+           s.src_from_noc.done() and \
+           s.sink_to_noc.done()
 
   def line_trace(s):
     return s.dut.line_trace()
