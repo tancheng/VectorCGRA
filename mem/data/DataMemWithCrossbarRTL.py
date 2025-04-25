@@ -96,8 +96,8 @@ class DataMemWithCrossbarRTL(Component):
 
     # [0, ..., num_rd_tiles - 1] indicate the requests from/to the tiles,
     s.recv_raddr = [RecvIfcRTL(AddrType) for _ in range(s.num_rd_tiles)]
-    s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(num_xbar_in_wr_ports)]
-    s.recv_wdata = [RecvIfcRTL(DataType) for _ in range(num_xbar_in_wr_ports)]
+    s.recv_waddr = [RecvIfcRTL(AddrType) for _ in range(s.num_wr_tiles)]
+    s.recv_wdata = [RecvIfcRTL(DataType) for _ in range(s.num_wr_tiles)]
 
 
     s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_rd_tiles)]
@@ -172,6 +172,10 @@ class DataMemWithCrossbarRTL(Component):
 
     @update
     def assemble_xbar_pkt():
+      cgra_id = s.cgra_id
+      # FIXME: change to exact tile id.
+      tile_id = 0 # i * (num_tiles // num_rd_tiles)
+
       for i in range(num_xbar_in_rd_ports):
         s.rd_pkt[i] @= TileSramXbarRdPktType(i, 0, 0, 0, 0)
 
@@ -180,16 +184,12 @@ class DataMemWithCrossbarRTL(Component):
 
       if s.init_mem_done != b1(0):
         for i in range(num_xbar_in_rd_ports):
-
           if i == num_xbar_in_rd_ports - 1:
             recv_raddr = s.recv_from_noc_load_request.msg.payload.data_addr
             cgra_id = s.recv_from_noc_load_request.msg.src
             tile_id = s.recv_from_noc_load_request.msg.src_tile_id
           else:
             recv_raddr = s.recv_raddr[i].msg
-            cgra_id = s.cgra_id
-            # FIXME: change to exact tile id.
-            tile_id = 0 # i * (num_tiles // num_rd_tiles)
 
           # Calculates the target bank index.
           if (recv_raddr >= s.address_lower) & (recv_raddr <= s.address_upper):
@@ -206,13 +206,17 @@ class DataMemWithCrossbarRTL(Component):
         # s.rd_pkt[num_rd_tiles].src_tile @= s.recv_from_noc_load_src_tile.msg
 
         for i in range(num_xbar_in_wr_ports):
+          if i == num_xbar_in_wr_ports - 1:
+            recv_waddr = s.recv_from_noc_store_request.msg.payload.data_addr
+          else:
+            recv_waddr = s.recv_waddr[i].msg
           # Calculates the target bank index.
-          if (s.recv_waddr[i].msg >= s.address_lower) & (s.recv_waddr[i].msg <= s.address_upper):
-            bank_index = trunc((s.recv_waddr[i].msg - s.address_lower) >> per_bank_addr_nbits,
+          if (recv_waddr >= s.address_lower) & (recv_waddr <= s.address_upper):
+            bank_index = trunc((recv_waddr - s.address_lower) >> per_bank_addr_nbits,
                                XbarOutWrType)
           else:
             bank_index = XbarOutWrType(num_banks_per_cgra)
-          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, s.recv_waddr[i].msg, 0, 0)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, recv_waddr, 0, 0)
 
 
     # Connects xbar with the sram.
@@ -224,11 +228,13 @@ class DataMemWithCrossbarRTL(Component):
           s.recv_raddr[i].rdy @= 0
       s.recv_from_noc_load_request.rdy @= 0
 
-      for i in range(num_xbar_in_rd_ports):
+      for i in range(s.num_wr_tiles):
         # s.recv_from_noc_load_src_cgra.rdy @= 0
         # s.recv_from_noc_load_src_tile.rdy @= 0
         s.recv_waddr[i].rdy @= 0
         s.recv_wdata_bypass_q[i].send.rdy @= 0
+      s.recv_from_noc_store_request.rdy @= 0
+      s.recv_wdata_bypass_q[-1].send.rdy @= 0
 
       for i in range(num_rd_tiles):
         s.send_rdata[i].val @= 0
@@ -249,10 +255,12 @@ class DataMemWithCrossbarRTL(Component):
                      CgraPayloadType(0, 0, 0, 0, 0))
 
 
-      for i in range(num_xbar_in_wr_ports):
+      for i in range(s.num_wr_tiles):
         s.recv_wdata[i].rdy @= 0
         s.recv_wdata_bypass_q[i].recv.val @= 0
         s.recv_wdata_bypass_q[i].recv.msg @= DataType()
+      s.recv_wdata_bypass_q[-1].recv.val @= 0
+      s.recv_wdata_bypass_q[-1].recv.msg @= DataType()
 
       s.send_to_noc_store_pkt.msg @= \
           NocPktType(0, # src
@@ -310,10 +318,13 @@ class DataMemWithCrossbarRTL(Component):
           s.reg_file[b].wen[0] @= b1(1)
 
       else:
-        for i in range(num_xbar_in_wr_ports):
+        for i in range(s.num_wr_tiles):
           s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].recv.rdy
           s.recv_wdata_bypass_q[i].recv.val @= s.recv_wdata[i].val
           s.recv_wdata_bypass_q[i].recv.msg @= s.recv_wdata[i].msg
+        s.recv_from_noc_store_request.rdy @= s.recv_wdata_bypass_q[-1].recv.rdy
+        s.recv_wdata_bypass_q[-1].recv.val @= s.recv_from_noc_store_request.val
+        s.recv_wdata_bypass_q[-1].recv.msg @= s.recv_from_noc_store_request.msg.payload.data
 
         for i in range(s.num_rd_tiles):
             s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
@@ -330,10 +341,13 @@ class DataMemWithCrossbarRTL(Component):
         # s.recv_from_noc_load_src_cgra.rdy @= s.read_crossbar.recv[-1].rdy
         # s.recv_from_noc_load_src_tile.rdy @= s.read_crossbar.recv[-1].rdy
   
-        for i in range(num_xbar_in_wr_ports):
+        for i in range(s.num_wr_tiles):
           s.write_crossbar.recv[i].val @= s.recv_waddr[i].val
           s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
           s.recv_waddr[i].rdy @= s.write_crossbar.recv[i].rdy
+        s.write_crossbar.recv[-1].val @= s.recv_from_noc_store_request.val
+        s.write_crossbar.recv[-1].msg @= s.wr_pkt[-1]
+        s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[-1].rdy
 
         # Connects the read ports towards SRAM and NoC from the xbar.
         for b in range(num_banks_per_cgra):

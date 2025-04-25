@@ -38,7 +38,7 @@ class CgraRTL(Component):
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
-    # left and bottom connecting to data mem
+    # The left and bottom tiles are connected to the data memory.
     s.data_mem_num_rd_tiles = height + width - 1
     s.data_mem_num_wr_tiles = height + width - 1
 
@@ -82,7 +82,7 @@ class CgraRTL(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
-                                        s.data_mem_num_rd_tiles, # left and bottom connecting to data mem
+                                        s.data_mem_num_rd_tiles,
                                         s.data_mem_num_wr_tiles,
                                         multi_cgra_rows,
                                         multi_cgra_columns,
@@ -122,8 +122,9 @@ class CgraRTL(Component):
     # s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
 
-    s.data_mem.recv_waddr[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_addr
-    s.data_mem.recv_wdata[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_data
+    # s.data_mem.recv_waddr[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_addr
+    # s.data_mem.recv_wdata[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_data
+    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
 
     s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
