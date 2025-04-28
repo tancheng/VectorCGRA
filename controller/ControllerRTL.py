@@ -233,13 +233,13 @@ class ControllerRTL(Component):
       # s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType()
       # s.send_to_mem_load_request_src_cgra_queue.recv.msg @= CgraIdType()
       # s.send_to_mem_load_request_src_tile_queue.recv.msg @= TileIdType()
-      s.send_to_mem_load_request_queue.recv.msg @= InterCgraPktType()
+      s.send_to_mem_load_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # s.send_to_mem_store_request_addr_queue.recv.msg @= DataAddrType()
       # s.send_to_mem_store_request_data_queue.recv.msg @= DataType()
-      s.send_to_mem_store_request_queue.recv.msg @= InterCgraPktType()
+      s.send_to_mem_store_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-      s.send_to_tile_load_response_data_queue.recv.msg @= DataType()
+      s.send_to_tile_load_response_data_queue.recv.msg @= DataType(0, 0, 0, 0)
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
