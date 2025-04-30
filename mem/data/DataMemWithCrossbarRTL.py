@@ -364,9 +364,9 @@ class DataMemWithCrossbarRTL(Component):
             s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
             s.read_crossbar.recv[i].msg @= s.rd_pkt[i]
             s.recv_raddr[i].rdy @= s.read_crossbar.recv[i].rdy
-        s.read_crossbar.recv[s.num_rd_tiles].val @= s.recv_from_noc_load_request.val
-        s.read_crossbar.recv[s.num_rd_tiles].msg @= s.rd_pkt[s.num_rd_tiles]
-        s.recv_from_noc_load_request.rdy @= s.read_crossbar.recv[s.num_rd_tiles].rdy
+        s.read_crossbar.recv[-1].val @= s.recv_from_noc_load_request.val
+        s.read_crossbar.recv[-1].msg @= s.rd_pkt[s.num_rd_tiles]
+        s.recv_from_noc_load_request.rdy @= s.read_crossbar.recv[-1].rdy
 
         # for i in range(num_xbar_in_rd_ports):
         #   s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
@@ -379,9 +379,9 @@ class DataMemWithCrossbarRTL(Component):
           s.write_crossbar.recv[i].val @= s.recv_waddr[i].val
           s.write_crossbar.recv[i].msg @= s.wr_pkt[i]
           s.recv_waddr[i].rdy @= s.write_crossbar.recv[i].rdy
-        s.write_crossbar.recv[s.num_wr_tiles].val @= s.recv_from_noc_store_request.val
-        s.write_crossbar.recv[s.num_wr_tiles].msg @= s.wr_pkt[s.num_wr_tiles]
-        s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[s.num_wr_tiles].rdy
+        s.write_crossbar.recv[-1].val @= s.recv_from_noc_store_request.val
+        s.write_crossbar.recv[-1].msg @= s.wr_pkt[s.num_wr_tiles]
+        s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[-1].rdy
 
         # Connects the read ports towards SRAM and NoC from the xbar.
         for b in range(num_banks_per_cgra):
