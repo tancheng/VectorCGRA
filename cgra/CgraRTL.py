@@ -39,8 +39,8 @@ class CgraRTL(Component):
 
     s.num_tiles = width * height
     # The left and bottom tiles are connected to the data memory.
-    s.data_mem_num_rd_tiles = height + width - 1
-    s.data_mem_num_wr_tiles = height + width - 1
+    data_mem_num_rd_tiles = height + width - 1
+    data_mem_num_wr_tiles = height + width - 1
 
     num_cgras = multi_cgra_rows * multi_cgra_columns
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
@@ -82,8 +82,8 @@ class CgraRTL(Component):
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks_per_cgra,
-                                        s.data_mem_num_rd_tiles,
-                                        s.data_mem_num_wr_tiles,
+                                        data_mem_num_rd_tiles,
+                                        data_mem_num_wr_tiles,
                                         multi_cgra_rows,
                                         multi_cgra_columns,
                                         s.num_tiles,
