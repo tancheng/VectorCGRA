@@ -13,7 +13,7 @@ module division #(
     output  [WIDTH-1:0] q_o
 );
 
-    reg [WIDTH:0] r;      // 33-bit remainder (extra bit for overflow)
+    reg [WIDTH:0]   r;      // 33-bit remainder (extra bit for overflow)
     reg [WIDTH-1:0] q;    // Quotient
 
     always @(*) begin
@@ -43,7 +43,7 @@ endmodule
 
 module pipeline_division #(
     parameter WIDTH = 32,
-    parameter CYCLE = 9
+    parameter CYCLE = 8
 ) (
     input  clk,
     input  reset,
@@ -56,25 +56,26 @@ module pipeline_division #(
     parameter num_div = WIDTH / CYCLE;
     parameter res_div = WIDTH - CYCLE * num_div;
 
-    reg [WIDTH-1:0] qq[0:CYCLE-1] ;
-    reg [WIDTH:0] rr[0:CYCLE-1] ;
-    wire [WIDTH-1:0] q[0:CYCLE-1] ;
-    wire [WIDTH:0] r[0:CYCLE-1] ;
+    reg [WIDTH-1:0] qq[0:CYCLE-1];
+    reg [WIDTH:0]   rr[0:CYCLE-1];
+    wire [WIDTH-1:0] q[0:CYCLE-1];
+    wire [WIDTH:0]   r[0:CYCLE-1];
 
     genvar i; 
     generate
-            for (i = 0; i < CYCLE - 1; i++) begin
-                always @(posedge clk) begin
+        for (i = 0; i < CYCLE; i++) begin
+            always @(posedge clk or posedge reset) begin
+                if (reset) begin
+                    qq[i] = 0;
+                    rr[i] = 0;
+                end
+                else if (i < CYCLE - 1) begin
                     qq[i+1] = q[i];
                     rr[i+1] = r[i];
                 end
-
-            always @(posedge reset) begin
-                if (reset) begin
-                    for (integer i = 0; i < CYCLE; i++) begin
-                        qq[i] = 0;
-                        rr[i] = 0;
-                    end
+                else begin
+                    qq[i] = 0;
+                    rr[i] = 0;
                 end
             end
         end
