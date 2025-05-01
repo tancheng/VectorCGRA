@@ -137,4 +137,7 @@ OPT_SYMBOL_DICT = {
   OPT_GT  : "(?>)",
   OPT_LTE : "(?<=)",
 
+  OPT_DIV_START  : "(/st)",
+  OPT_DIV_END    : "(/ed)",
+
 }
