@@ -75,6 +75,9 @@ OPT_GTE = Bits6( 61 )
 OPT_GT  = Bits6( 62 )
 OPT_LTE = Bits6( 63 )
 
+OPT_DIV_START = Bits6( 48 )
+OPT_DIV_END   = Bits6( 49 )
+
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
   OPT_NAH           : "(NAH)",

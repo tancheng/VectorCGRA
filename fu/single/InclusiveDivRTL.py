@@ -27,8 +27,6 @@ class InclusiveDivRTL(Fu):
     num_cycles = latency
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
-    OPT_DIV_START = 10
-    OPT_DIV_END   = 11
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
