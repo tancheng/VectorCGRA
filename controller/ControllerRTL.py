@@ -66,7 +66,7 @@ class ControllerRTL(Component):
 
     s.send_to_mem_load_request = SendIfcRTL(InterCgraPktType)
 
-    s.send_to_tile_load_response_data = SendIfcRTL(DataType)
+    s.send_to_tile_load_response = SendIfcRTL(InterCgraPktType)
 
     # s.send_to_mem_store_request_addr = SendIfcRTL(DataAddrType)
     # s.send_to_mem_store_request_data = SendIfcRTL(DataType)
@@ -83,7 +83,7 @@ class ControllerRTL(Component):
     # s.send_to_mem_load_request_src_tile_queue = ChannelRTL(TileIdType, latency = 1)
     s.send_to_mem_load_request_queue = ChannelRTL(InterCgraPktType, latency = 1)
 
-    s.send_to_tile_load_response_data_queue = ChannelRTL(DataType, latency = 1)
+    s.send_to_tile_load_response_queue = ChannelRTL(InterCgraPktType, latency = 1)
 
     # s.send_to_mem_store_request_addr_queue = ChannelRTL(DataAddrType, latency = 1)
     # s.send_to_mem_store_request_data_queue = ChannelRTL(DataType, latency = 1)
@@ -134,7 +134,7 @@ class ControllerRTL(Component):
     # s.send_to_mem_load_request_src_tile_queue.send //= s.send_to_mem_load_request_src_tile
     s.send_to_mem_load_request_queue.send //= s.send_to_mem_load_request
 
-    s.send_to_tile_load_response_data_queue.send //= s.send_to_tile_load_response_data
+    s.send_to_tile_load_response_queue.send //= s.send_to_tile_load_response
     # s.send_to_mem_store_request_addr_queue.send //= s.send_to_mem_store_request_addr
     # s.send_to_mem_store_request_data_queue.send //= s.send_to_mem_store_request_data
     s.send_to_mem_store_request_queue.send //= s.send_to_mem_store_request
@@ -228,7 +228,7 @@ class ControllerRTL(Component):
       # s.send_to_mem_store_request_data_queue.recv.val @= 0
       s.send_to_mem_store_request_queue.recv.val @= 0
 
-      s.send_to_tile_load_response_data_queue.recv.val @= 0
+      s.send_to_tile_load_response_queue.recv.val @= 0
 
       # s.send_to_mem_load_request_addr_queue.recv.msg @= DataAddrType()
       # s.send_to_mem_load_request_src_cgra_queue.recv.msg @= CgraIdType()
@@ -239,7 +239,7 @@ class ControllerRTL(Component):
       # s.send_to_mem_store_request_data_queue.recv.msg @= DataType()
       s.send_to_mem_store_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-      s.send_to_tile_load_response_data_queue.recv.msg @= DataType(0, 0, 0, 0)
+      s.send_to_tile_load_response_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -296,9 +296,9 @@ class ControllerRTL(Component):
                                  s.recv_from_inter_cgra_noc.msg.payload)
 
           else:
-            s.recv_from_inter_cgra_noc.rdy @= s.send_to_tile_load_response_data_queue.recv.rdy
-            s.send_to_tile_load_response_data_queue.recv.msg @= received_pkt.payload.data
-            s.send_to_tile_load_response_data_queue.recv.val @= 1
+            s.recv_from_inter_cgra_noc.rdy @= s.send_to_tile_load_response_queue.recv.rdy
+            s.send_to_tile_load_response_queue.recv.msg @= received_pkt
+            s.send_to_tile_load_response_queue.recv.val @= 1
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_COMPLETE:
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_cpu_pkt_queue.recv.rdy

@@ -113,7 +113,7 @@ class CgraTemplateRTL(Component):
     # s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
 
-    s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
+    s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt

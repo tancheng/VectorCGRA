@@ -109,7 +109,7 @@ class DataMemWithCrossbarRTL(Component):
     s.send_to_noc_load_response_pkt = SendIfcRTL(NocPktType)
 
     # Response that is from a remote SRAM.
-    s.recv_from_noc_rdata = RecvIfcRTL(DataType)
+    s.recv_from_noc_load_response_pkt = RecvIfcRTL(NocPktType)
 
     # Requests that targets remote SRAMs.
     s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
@@ -315,7 +315,7 @@ class DataMemWithCrossbarRTL(Component):
         s.read_crossbar.recv[i].val @= 0
         s.read_crossbar.recv[i].msg @= TileSramXbarRdPktType(0, 0, 0, 0, 0)
 
-      s.recv_from_noc_rdata.rdy @= 0
+      s.recv_from_noc_load_response_pkt.rdy @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.write_crossbar.recv[i].val @= 0
@@ -426,11 +426,11 @@ class DataMemWithCrossbarRTL(Component):
             # as the request can come from the NoC, it meant to access this local SRAM,
             # which should be guarded by the controller and NoC routers.
             # assert(i < num_banks_per_cgra)
-            s.send_rdata[RdTileIdType(i)].msg @= s.recv_from_noc_rdata.msg
+            s.send_rdata[RdTileIdType(i)].msg @= s.recv_from_noc_load_response_pkt.msg.payload.data
             # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
             s.send_rdata[RdTileIdType(i)].val @= \
                 s.read_crossbar.send[s.read_crossbar.packet_on_input_units[i].dst].val & \
-                s.recv_from_noc_rdata.val
+                s.recv_from_noc_load_response_pkt.val
                 # FIXME: The msg would come back one by one in order, so no
                 # need to check the src_tile, which can be improved.
                 # s.recv_from_noc_rdata.en & \
@@ -463,11 +463,11 @@ class DataMemWithCrossbarRTL(Component):
         # for a long time waiting for the response.
         # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
         # 'val` indicates the data is arbitrated successfully.
-        s.recv_from_noc_rdata.rdy @= s.read_crossbar.send[num_banks_per_cgra].val
+        s.recv_from_noc_load_response_pkt.rdy @= s.read_crossbar.send[num_banks_per_cgra].val
         # Only allows releasing the pending request until the required load data is back,
         # i.e., though the request already sent out to NoC (the port is still blocked until
         # response is back).
-        s.read_crossbar.send[num_banks_per_cgra].rdy @= s.recv_from_noc_rdata.val
+        s.read_crossbar.send[num_banks_per_cgra].rdy @= s.recv_from_noc_load_response_pkt.val
 
         # Connects the write ports towards SRAM and NoC from the xbar.
         for b in range(num_banks_per_cgra):
@@ -533,7 +533,7 @@ class DataMemWithCrossbarRTL(Component):
       if s.reset:
         s.send_to_noc_load_pending <<= 0
       else:
-        if s.recv_from_noc_rdata.val:
+        if s.recv_from_noc_load_response_pkt.val:
           s.send_to_noc_load_pending <<= 0
         elif s.send_to_noc_load_request_pkt.val & s.send_to_noc_load_request_pkt.rdy:
           s.send_to_noc_load_pending <<= 1
@@ -547,7 +547,7 @@ class DataMemWithCrossbarRTL(Component):
 
     send_to_noc_load_request_pkt_str = "send_to_noc_load_request_pkt: {"
     send_to_noc_load_response_pkt_str = "send_to_noc_load_response_pkt: {"
-    recv_from_noc_rdata_str = "recv_from_noc_read_data: {"
+    recv_from_noc_load_response_pkt_str = "recv_from_noc_load_response_pkt: {"
     send_to_noc_store_pkt_str = "send_to_noc_store_pkt: {"
 
 
@@ -560,7 +560,7 @@ class DataMemWithCrossbarRTL(Component):
 
     send_to_noc_load_request_pkt_str += str(s.send_to_noc_load_request_pkt.msg) + ";"
     send_to_noc_load_response_pkt_str += " " + str(s.send_to_noc_load_response_pkt.msg) + " "
-    recv_from_noc_rdata_str += str(s.recv_from_noc_rdata.msg) + ";"
+    recv_from_noc_load_response_pkt_str += str(s.recv_from_noc_load_response_pkt.msg) + ";"
     send_to_noc_store_pkt_str += str(s.send_to_noc_store_pkt.msg) + ", val: " + str(s.send_to_noc_store_pkt.val) + ";"
 
     recv_raddr_str += "}"
@@ -569,11 +569,11 @@ class DataMemWithCrossbarRTL(Component):
     recv_wdata_str += "}"
     send_to_noc_load_request_pkt_str += "}"
     send_to_noc_load_response_pkt_str += "}"
-    recv_from_noc_rdata_str += "}"
+    recv_from_noc_load_response_pkt_str += "}"
     send_to_noc_store_pkt_str += "}"
     read_crossbar_str = "read_crossbar: " + s.read_crossbar.line_trace()
     write_crossbar_str = "write_crossbar: " + s.write_crossbar.line_trace()
     content_str += "}"
 
-    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_rdata_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
+    return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_load_response_pkt_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
 

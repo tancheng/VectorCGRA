@@ -34,7 +34,7 @@ class TestHarness(Component):
                 from_tile_load_response_pkt_msgs,
                 from_tile_store_request_pkt_msgs,
                 expected_to_mem_load_request_msgs,
-                expected_to_mem_load_response_data_msgs,
+                expected_to_mem_load_response,
                 expected_to_mem_store_request_msgs,
                 from_noc_pkts,
                 expected_to_noc_pkts,
@@ -51,7 +51,7 @@ class TestHarness(Component):
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.sink_to_mem_load_request = TestSinkRTL(PktType, expected_to_mem_load_request_msgs, cmp_fn = cmp_fn)
 
-    s.sink_to_mem_load_response_data = TestSinkRTL(MsgType, expected_to_mem_load_response_data_msgs)
+    s.sink_to_mem_load_response = TestSinkRTL(PktType, expected_to_mem_load_response, cmp_fn = cmp_fn)
     # s.sink_to_mem_store_request_addr = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
     # s.sink_to_mem_store_request_data = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
     s.sink_to_mem_store_request = TestSinkRTL(PktType, expected_to_mem_store_request_msgs, cmp_fn = cmp_fn)
@@ -80,7 +80,7 @@ class TestHarness(Component):
     # s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data.recv
     s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request.recv
 
-    s.dut.send_to_tile_load_response_data //= s.sink_to_mem_load_response_data.recv
+    s.dut.send_to_tile_load_response //= s.sink_to_mem_load_response.recv
 
     # s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr.recv
     # s.dut.send_to_mem_load_request_src_cgra.rdy //= 1
@@ -102,7 +102,7 @@ class TestHarness(Component):
            s.src_from_tile_load_response_pkt.done() and \
            s.src_from_tile_store_request_pkt.done() and \
            s.sink_to_mem_load_request.done()  and \
-           s.sink_to_mem_load_response_data.done() and \
+           s.sink_to_mem_load_response.done() and \
            s.sink_to_mem_store_request.done() and \
            s.src_from_noc.done() and \
            s.sink_to_noc.done()
@@ -235,7 +235,10 @@ from_tile_store_request_pkts = [
 expected_to_mem_load_request_msgs =  [InterCgraPktType(payload = CgraPayloadType(cmd = CMD_LOAD_REQUEST,  data = DataType(0,  1), data_addr = 2))]
 
 expected_to_mem_load_response_addr_msgs = [DataAddrType(8), DataAddrType(9)]
-expected_to_mem_load_response_data_msgs = [DataType(80, 1), DataType(90, 1)]
+expected_to_mem_load_response = [
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, DataType(80, 1), data_addr = 8)),
+    InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, DataType(90, 1), data_addr = 9))
+]
 # expected_to_mem_store_request_addr_msgs = [DataAddrType(5)]
 # expected_to_mem_store_request_data_msgs = [DataType(50, 1)]
 expected_to_mem_store_request_msgs =  [InterCgraPktType(payload = CgraPayloadType(cmd = CMD_STORE_REQUEST,  data = DataType(50,  1), data_addr = 5))]
@@ -276,7 +279,7 @@ def test_simple(cmdline_opts):
                    from_tile_load_response_pkts,
                    from_tile_store_request_pkts,
                    expected_to_mem_load_request_msgs,
-                   expected_to_mem_load_response_data_msgs,
+                   expected_to_mem_load_response,
                    expected_to_mem_store_request_msgs,
                    from_noc_pkts,
                    expected_to_noc_pkts,
