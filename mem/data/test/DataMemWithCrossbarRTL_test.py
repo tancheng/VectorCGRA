@@ -8,16 +8,15 @@ Author : Cheng Tan
   Date : Dec 6, 2024
 """
 
-from pymtl3 import *
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+from pymtl3.passes.backends.verilog import (VerilogTranslationPass)
 from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
+
 from ..DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
-from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
-from ....lib.cmd_type import *
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -208,7 +207,6 @@ def test_const_queue(cmdline_opts):
                ]
 
   # Input data.
-  # noc_send_read_addr = [DataAddrType(42)]
   send_to_noc_load_request_pkt = [
                      # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc
       InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 42)),

@@ -7,7 +7,6 @@ Author : Cheng Tan
   Date : Dec 30, 2024
 """
 
-from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
@@ -104,13 +103,8 @@ class CgraTemplateRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    # s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_mem_load_request_addr
-    # s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
-    # s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
 
-    # s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_addr
-    # s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
 
     s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response

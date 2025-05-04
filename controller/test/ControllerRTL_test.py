@@ -47,13 +47,9 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
     s.src_from_tile_store_request_pkt = TestSrcRTL(PktType, from_tile_store_request_pkt_msgs)
 
-    # s.sink_to_mem_load_request_addr = TestSinkRTL(AddrType, expected_to_mem_load_request_addr_msgs)
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.sink_to_mem_load_request = TestSinkRTL(PktType, expected_to_mem_load_request_msgs, cmp_fn = cmp_fn)
-
     s.sink_to_mem_load_response = TestSinkRTL(PktType, expected_to_mem_load_response, cmp_fn = cmp_fn)
-    # s.sink_to_mem_store_request_addr = TestSinkRTL(AddrType, expected_to_mem_store_request_addr_msgs)
-    # s.sink_to_mem_store_request_data = TestSinkRTL(MsgType, expected_to_mem_store_request_data_msgs)
     s.sink_to_mem_store_request = TestSinkRTL(PktType, expected_to_mem_store_request_msgs, cmp_fn = cmp_fn)
 
     s.src_from_noc = TestSrcRTL(PktType, from_noc_pkts)
@@ -76,15 +72,8 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt.send //= s.dut.recv_from_tile_store_request_pkt
 
-    # s.dut.send_to_mem_store_request_addr //= s.sink_to_mem_store_request_addr.recv
-    # s.dut.send_to_mem_store_request_data //= s.sink_to_mem_store_request_data.recv
     s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request.recv
-
     s.dut.send_to_tile_load_response //= s.sink_to_mem_load_response.recv
-
-    # s.dut.send_to_mem_load_request_addr  //= s.sink_to_mem_load_request_addr.recv
-    # s.dut.send_to_mem_load_request_src_cgra.rdy //= 1
-    # s.dut.send_to_mem_load_request_src_tile.rdy //= 1
     s.dut.send_to_mem_load_request //= s.sink_to_mem_load_request.recv
 
     s.src_from_noc.send //= s.dut.recv_from_inter_cgra_noc
@@ -231,7 +220,6 @@ from_tile_store_request_pkts = [
     InterCgraPktType(payload = CgraPayloadType(cmd = CMD_STORE_REQUEST, data = DataType(150, 1), data_addr = 15)),
 ]
 
-# expected_to_mem_load_request_addr_msgs =  [DataAddrType(2)]
 expected_to_mem_load_request_msgs =  [InterCgraPktType(payload = CgraPayloadType(cmd = CMD_LOAD_REQUEST,  data = DataType(0,  1), data_addr = 2))]
 
 expected_to_mem_load_response_addr_msgs = [DataAddrType(8), DataAddrType(9)]
@@ -239,8 +227,6 @@ expected_to_mem_load_response = [
     InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, DataType(80, 1), data_addr = 8)),
     InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, DataType(90, 1), data_addr = 9))
 ]
-# expected_to_mem_store_request_addr_msgs = [DataAddrType(5)]
-# expected_to_mem_store_request_data_msgs = [DataType(50, 1)]
 expected_to_mem_store_request_msgs =  [InterCgraPktType(payload = CgraPayloadType(cmd = CMD_STORE_REQUEST,  data = DataType(50,  1), data_addr = 5))]
 
 from_noc_pkts = [

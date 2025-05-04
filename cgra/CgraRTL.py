@@ -112,18 +112,8 @@ class CgraRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-
-
-    # Replace below with one noc pkt port and decouple in DataMem itself.
-    # 1. can reduce number of recv_raddr to num_rd_tiles - 1
-    # 2. can also do with store request?
-    # s.data_mem.recv_raddr[s.data_mem_num_rd_tiles] //= s.controller.send_to_mem_load_request_addr
-    # s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
-    # s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
 
-    # s.data_mem.recv_waddr[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_addr
-    # s.data_mem.recv_wdata[s.data_mem_num_wr_tiles] //= s.controller.send_to_mem_store_request_data
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
 
     s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
