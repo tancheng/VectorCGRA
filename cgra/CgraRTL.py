@@ -9,6 +9,7 @@ Author : Cheng Tan
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
@@ -26,7 +27,8 @@ class CgraRTL(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, cgra_topology,
-                controller2addr_map, idTo2d_map, preload_data = None):
+                controller2addr_map, idTo2d_map, preload_data = None,
+                is_multi_cgra = True):
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
@@ -121,8 +123,13 @@ class CgraRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
-    s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
-    s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    if not is_multi_cgra:
+      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+      s.send_to_inter_cgra_noc //= s.bypass_queue.recv
+      s.recv_from_inter_cgra_noc //= s.bypass_queue.send
+    else:
+      s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+      s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
