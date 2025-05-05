@@ -123,13 +123,13 @@ class CgraRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
-    if not is_multi_cgra:
-      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
-      s.send_to_inter_cgra_noc //= s.bypass_queue.recv
-      s.recv_from_inter_cgra_noc //= s.bypass_queue.send
-    else:
+    if is_multi_cgra:
       s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
       s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    else:
+      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+      s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
+      s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
