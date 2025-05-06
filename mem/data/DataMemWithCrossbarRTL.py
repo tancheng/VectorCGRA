@@ -183,7 +183,11 @@ class DataMemWithCrossbarRTL(Component):
           else:
             bank_index_load_local = XbarOutRdType(num_banks_per_cgra)
           # FIXME: change to exact tile id.
-          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index_load_local, recv_raddr, s.cgra_id, 0)
+          s.rd_pkt[i] @= TileSramXbarRdPktType(i,                       # src
+                                               bank_index_load_local,   # dst
+                                               recv_raddr,              # addr
+                                               s.cgra_id,               # src_cgra
+                                               0)                       # src_tile
 
         recv_raddr_from_noc = s.recv_from_noc_load_request.msg.payload.data_addr
         # Calculates the target bank index.
@@ -191,7 +195,11 @@ class DataMemWithCrossbarRTL(Component):
           bank_index_load_from_noc = trunc((recv_raddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
         else:
           bank_index_load_from_noc = XbarOutRdType(num_banks_per_cgra)
-        s.rd_pkt[num_rd_tiles] @= TileSramXbarRdPktType(num_rd_tiles, bank_index_load_from_noc, recv_raddr_from_noc, s.recv_from_noc_load_request.msg.src, s.recv_from_noc_load_request.msg.src_tile_id)
+        s.rd_pkt[num_rd_tiles] @= TileSramXbarRdPktType(num_rd_tiles,                                   # src
+                                                        bank_index_load_from_noc,                       # dst
+                                                        recv_raddr_from_noc,                            # addr
+                                                        s.recv_from_noc_load_request.msg.src,           # src_cgra
+                                                        s.recv_from_noc_load_request.msg.src_tile_id)   # src_tile
 
         for i in range(num_wr_tiles):
           recv_waddr = s.recv_waddr[i].msg
@@ -200,14 +208,22 @@ class DataMemWithCrossbarRTL(Component):
             bank_index_store_local = trunc((recv_waddr - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
           else:
             bank_index_store_local = XbarOutWrType(num_banks_per_cgra)
-          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index_store_local, recv_waddr, 0, 0)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i,                       # src
+                                               bank_index_store_local,  # dst
+                                               recv_waddr,              # addr
+                                               0,                       # src_cgra
+                                               0)                       # src_tile
 
         recv_waddr_from_noc = s.recv_from_noc_store_request.msg.payload.data_addr
         if (recv_waddr_from_noc >= s.address_lower) & (recv_waddr_from_noc <= s.address_upper):
           bank_index_store_from_noc = trunc((recv_waddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
         else:
           bank_index_store_from_noc = XbarOutWrType(num_banks_per_cgra)
-        s.wr_pkt[num_wr_tiles] @= TileSramXbarWrPktType(num_wr_tiles, bank_index_store_from_noc, recv_waddr_from_noc, 0, 0)
+        s.wr_pkt[num_wr_tiles] @= TileSramXbarWrPktType(num_wr_tiles,               # src
+                                                        bank_index_store_from_noc,  # dst
+                                                        recv_waddr_from_noc,        # addr
+                                                        0,                          # src_cgra
+                                                        0)                          # src_tile
 
 
     # Connects xbar with the sram.
