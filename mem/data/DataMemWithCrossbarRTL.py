@@ -65,7 +65,6 @@ class DataMemWithCrossbarRTL(Component):
     LocalBankIndexType = mk_bits(clog2(num_banks_per_cgra))
     s.num_rd_tiles = num_rd_tiles
     s.num_wr_tiles = num_wr_tiles
-    TileIdType = mk_bits(clog2(num_tiles + 1))
     RdTileIdType = mk_bits(clog2(num_rd_tiles))
     # The additional port is for the request from inter-cgra NoC via controller.
     num_xbar_in_rd_ports = num_rd_tiles + 1
@@ -178,39 +177,37 @@ class DataMemWithCrossbarRTL(Component):
       if s.init_mem_done != b1(0):
         for i in range(num_rd_tiles):
           recv_raddr = s.recv_raddr[i].msg
-          # Calculates the target bank index.
+          # Calculates the target bank index for load.
           if (recv_raddr >= s.address_lower) & (recv_raddr <= s.address_upper):
-            bank_index = trunc((recv_raddr - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
+            bank_index_load_local = trunc((recv_raddr - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
           else:
-            bank_index = XbarOutRdType(num_banks_per_cgra)
+            bank_index_load_local = XbarOutRdType(num_banks_per_cgra)
           # FIXME: change to exact tile id.
-          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index, recv_raddr, s.cgra_id, 0)
+          s.rd_pkt[i] @= TileSramXbarRdPktType(i, bank_index_load_local, recv_raddr, s.cgra_id, 0)
 
         recv_raddr_from_noc = s.recv_from_noc_load_request.msg.payload.data_addr
         # Calculates the target bank index.
         if (recv_raddr_from_noc >= s.address_lower) & (recv_raddr_from_noc <= s.address_upper):
-          bank_index = trunc((recv_raddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
+          bank_index_load_from_noc = trunc((recv_raddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
         else:
-          bank_index = XbarOutRdType(num_banks_per_cgra)
-        src_cgra_id = s.recv_from_noc_load_request.msg.src
-        src_tile_id = TileIdType(s.recv_from_noc_load_request.msg.src_tile_id)
-        s.rd_pkt[num_rd_tiles] @= TileSramXbarRdPktType(num_rd_tiles, bank_index, recv_raddr_from_noc, src_cgra_id, src_tile_id)
+          bank_index_load_from_noc = XbarOutRdType(num_banks_per_cgra)
+        s.rd_pkt[num_rd_tiles] @= TileSramXbarRdPktType(num_rd_tiles, bank_index_load_from_noc, recv_raddr_from_noc, s.recv_from_noc_load_request.msg.src, s.recv_from_noc_load_request.msg.src_tile_id)
 
         for i in range(num_wr_tiles):
           recv_waddr = s.recv_waddr[i].msg
-          # Calculates the target bank index.
+          # Calculates the target bank index for store.
           if (recv_waddr >= s.address_lower) & (recv_waddr <= s.address_upper):
-            bank_index = trunc((recv_waddr - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
+            bank_index_store_local = trunc((recv_waddr - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
           else:
-            bank_index = XbarOutWrType(num_banks_per_cgra)
-          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index, recv_waddr, 0, 0)
+            bank_index_store_local = XbarOutWrType(num_banks_per_cgra)
+          s.wr_pkt[i] @= TileSramXbarWrPktType(i, bank_index_store_local, recv_waddr, 0, 0)
 
         recv_waddr_from_noc = s.recv_from_noc_store_request.msg.payload.data_addr
         if (recv_waddr_from_noc >= s.address_lower) & (recv_waddr_from_noc <= s.address_upper):
-          bank_index = trunc((recv_waddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
+          bank_index_store_from_noc = trunc((recv_waddr_from_noc - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
         else:
-          bank_index = XbarOutWrType(num_banks_per_cgra)
-        s.wr_pkt[num_wr_tiles] @= TileSramXbarWrPktType(num_wr_tiles, bank_index, recv_waddr_from_noc, 0, 0)
+          bank_index_store_from_noc = XbarOutWrType(num_banks_per_cgra)
+        s.wr_pkt[num_wr_tiles] @= TileSramXbarWrPktType(num_wr_tiles, bank_index_store_from_noc, recv_waddr_from_noc, 0, 0)
 
 
     # Connects xbar with the sram.
