@@ -32,7 +32,6 @@ from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.basic.val_rdy.queues import BypassQueueRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 
@@ -67,23 +66,14 @@ class TestHarness(Component):
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps, FunctionUnit,
-                FuList, topology, controller2addr_map, idTo2d_map)
+                FuList, topology, controller2addr_map, idTo2d_map,
+                is_multi_cgra = False)
 
-    # Uses a bypass queue here to enable the verilator simulation.
-    # Without bypass queue, the connection will not be translated and
-    # recognized.
-    s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     # Connections
     s.dut.cgra_id //= cgra_id
-    # As we always first issue request pkt from CPU to NoC, 
-    # when there is no NoC for single CGRA test, 
-    # we have to connect from_noc and to_noc in testbench.
-    s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
-    s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
-
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
     complete_count_value = \

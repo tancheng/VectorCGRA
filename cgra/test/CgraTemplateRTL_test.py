@@ -29,8 +29,6 @@ from ...fu.single.SelRTL import SelRTL
 from ...fu.single.ShifterRTL import ShifterRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ...lib.basic.val_rdy.queues import BypassQueueRTL
-from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
@@ -79,20 +77,11 @@ class TestHarness(Component):
                 num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps, FunctionUnit, FuList,
                 TileList, LinkList, dataSPM, controller2addr_map,
-                idTo2d_map)
+                idTo2d_map, is_multi_cgra = False)
 
-    # Uses a bypass queue here to enable the verilator simulation.
-    # Without bypass queue, the connection will not be translated and
-    # recognized.
-    s.bypass_queue = BypassQueueRTL(NocPktType, 1)
     # Connections
     s.dut.cgra_id //= cgra_id
     s.src_ctrl_pkt.send //= s.dut.recv_from_cpu_pkt
-    # As we always first issue request pkt from CPU to NoC,
-    # when there is no NoC for single CGRA test,
-    # we have to connect from_noc and to_noc in testbench.
-    s.dut.send_to_inter_cgra_noc //= s.bypass_queue.recv
-    s.bypass_queue.send //= s.dut.recv_from_inter_cgra_noc
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
     # Connects memory address upper and lower bound for each CGRA.

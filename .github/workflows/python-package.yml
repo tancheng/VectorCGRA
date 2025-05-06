@@ -82,3 +82,5 @@ jobs:
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
         # Const Queue
         pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
+        # Data Mem
+        pytest ../mem/data/test/DataMemWithCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd

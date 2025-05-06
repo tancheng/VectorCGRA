@@ -6,16 +6,16 @@ CgraTemplateRTL.py
 Author : Cheng Tan
   Date : Dec 30, 2024
 """
-
-from pymtl3 import *
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
 from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+
 
 class CgraTemplateRTL(Component):
 
@@ -26,7 +26,8 @@ class CgraTemplateRTL(Component):
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                preload_data = None):
+                preload_data = None,
+                is_multi_cgra = True):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
@@ -104,18 +105,20 @@ class CgraTemplateRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_raddr[dataSPM.getNumOfValidReadPorts()] //= s.controller.send_to_mem_load_request_addr
-    s.data_mem.recv_from_noc_load_src_cgra //= s.controller.send_to_mem_load_request_src_cgra
-    s.data_mem.recv_from_noc_load_src_tile //= s.controller.send_to_mem_load_request_src_tile
-    s.data_mem.recv_waddr[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_addr
-    s.data_mem.recv_wdata[dataSPM.getNumOfValidWritePorts()] //= s.controller.send_to_mem_store_request_data
-    s.data_mem.recv_from_noc_rdata //= s.controller.send_to_tile_load_response_data
+    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
+    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
+    s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
-    s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
-    s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    if is_multi_cgra:
+      s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+      s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    else:
+      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+      s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
+      s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
