@@ -23,8 +23,11 @@ RUN mkdir ${HOME}/cgra \
     && pip list \
     && git clone https://github.com/tancheng/VectorCGRA.git \
     && cd VectorCGRA \
-    && git submodule update --init
+    && git submodule update --init \
+    && mkdir -p build && cd build
 
-COPY run_docker.bash /script/
+ENV PATH="/root/verilator/bin:$PATH"
+ENV VERILATOR_ROOT=/root/verilator
+ENV PYMTL_VERILATOR_INCLUDE_DIR=/root/verilator/share/verilator/include
 
-CMD ["/bin/bash", "/script/run_docker.bash"]
+CMD ["tail", "-f", "/dev/null"]
