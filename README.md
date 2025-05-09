@@ -146,8 +146,8 @@ $ docker build -t vectorcgra:v1 .
 
 ### Run Docker container
 ```shell
-$ docker run --name mycontainer vectorcgra:v1 &
-$ docker exec -it mycontainer bash
+$ docker run --name myvectorcgra vectorcgra:v1 &
+$ docker exec -it myvectorcgra bash
 ```
 
 ### Run test in Docker container
