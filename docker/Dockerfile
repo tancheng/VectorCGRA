@@ -20,11 +20,10 @@ RUN mkdir ${HOME}/cgra \
     && pip install hypothesis \
     && pip install pytest \
     && pip install py-markdown-table \
-    && pip list \
     && git clone https://github.com/tancheng/VectorCGRA.git \
     && cd VectorCGRA \
     && git submodule update --init \
-    && mkdir -p build && cd build
+    && mkdir -p build
 
 ENV PATH="/root/verilator/bin:$PATH"
 ENV VERILATOR_ROOT=/root/verilator
