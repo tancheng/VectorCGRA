@@ -57,10 +57,12 @@ class CrossbarRTL(Component):
     s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [Wire(PrologueCountType) for _ in range(num_inports)]
     s.prologue_count_inport = [InPort(PrologueCountType) for _ in range(num_inports)]
-    s.prologue_count_inport_temp = [Wire(PrologueCountType) for _ in range(num_inports)]
+    # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
+    # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
+    s.prologue_count_wire = [Wire(PrologueCountType) for _ in range(num_inports)]
 
     for i in range(num_inports):
-      s.prologue_count_inport[i] //= s.prologue_count_inport_temp[i]
+      s.prologue_count_inport[i] //= s.prologue_count_wire[i]
 
     # Routing logic
     @update
@@ -117,7 +119,7 @@ class CrossbarRTL(Component):
       elif s.recv_opt.rdy:
         for i in range(num_outports):
           if (s.in_dir[i] > 0) & \
-             (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport_temp[s.in_dir_local[i]]):
+             (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_wire[s.in_dir_local[i]]):
             s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
 
     @update
@@ -128,10 +130,7 @@ class CrossbarRTL(Component):
           # Records whether the prologue steps have already been satisfied.
           s.prologue_allowing_vector[i] @= \
             (s.prologue_counter[s.in_dir_local[i]] < \
-             s.prologue_count_inport_temp[s.in_dir_local[i]])
-          # s.prologue_allowing_vector[i] @= \
-              # (s.prologue_counter[s.in_dir_local[i]] < \
-               # s.prologue_count_inport[s.in_dir_local[i]])
+             s.prologue_count_wire[s.in_dir_local[i]])
         else:
           s.prologue_allowing_vector[i] @= 1
 
