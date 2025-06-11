@@ -28,6 +28,12 @@ class CrossbarRTL(Component):
     # Interface
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.recv_data = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_data_msg = [Wire(DataType) for _ in range(num_inports)]
+    s.recv_data_val = [Wire(b1) for _ in range(num_inports)]
+    for i in range(num_inports):
+      s.recv_data_msg[i] //= s.recv_data[i].msg
+      s.recv_data_val[i] //= s.recv_data[i].val
+
     s.crossbar_outport = [InPort(InType) for _ in range(num_outports)]
     s.send_data = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
@@ -51,6 +57,12 @@ class CrossbarRTL(Component):
     s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [Wire(PrologueCountType) for _ in range(num_inports)]
     s.prologue_count_inport = [InPort(PrologueCountType) for _ in range(num_inports)]
+    # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
+    # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
+    s.prologue_count_wire = [Wire(PrologueCountType) for _ in range(num_inports)]
+
+    for i in range(num_inports):
+      s.prologue_count_inport[i] //= s.prologue_count_wire[i]
 
     # Routing logic
     @update
@@ -92,8 +104,8 @@ class CrossbarRTL(Component):
                                 s.send_required_vector[i]
           if reduce_and(s.recv_valid_vector) & \
              s.send_required_vector[i]:
-            s.send_data[i].msg.payload @= s.recv_data[s.in_dir_local[i]].msg.payload
-            s.send_data[i].msg.predicate @= s.recv_data[s.in_dir_local[i]].msg.predicate
+            s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
+            s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
         s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
@@ -107,7 +119,7 @@ class CrossbarRTL(Component):
       elif s.recv_opt.rdy:
         for i in range(num_outports):
           if (s.in_dir[i] > 0) & \
-             (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_inport[s.in_dir_local[i]]):
+             (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_wire[s.in_dir_local[i]]):
             s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
 
     @update
@@ -117,8 +129,8 @@ class CrossbarRTL(Component):
         if s.in_dir[i] > 0:
           # Records whether the prologue steps have already been satisfied.
           s.prologue_allowing_vector[i] @= \
-              (s.prologue_counter[s.in_dir_local[i]] < \
-               s.prologue_count_inport[s.in_dir_local[i]])
+            (s.prologue_counter[s.in_dir_local[i]] < \
+             s.prologue_count_wire[s.in_dir_local[i]])
         else:
           s.prologue_allowing_vector[i] @= 1
 
@@ -160,7 +172,7 @@ class CrossbarRTL(Component):
       s.recv_valid_vector @= 0
       for i in range(num_outports):
         if s.in_dir[i] > 0:
-          s.recv_valid_vector[i] @= s.recv_data[s.in_dir_local[i]].val
+          s.recv_valid_vector[i] @= s.recv_data_val[s.in_dir_local[i]]
         else:
           s.recv_valid_vector[i] @= 1
 
