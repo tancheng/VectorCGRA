@@ -183,8 +183,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 6
   width = paramCGRA.rows if paramCGRA != None else 2
   height = paramCGRA.columns if paramCGRA != None else 2
-  data_mem_size_global = 512
-  data_mem_size_per_bank = 32
+  data_mem_size_global = 16
+  data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
   num_cgra_columns = 4
   num_cgra_rows = 1
@@ -198,8 +198,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  # FuList = [MemUnitRTL, AdderRTL]
-  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
+  FuList = [MemUnitRTL, AdderRTL]
+  # FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
