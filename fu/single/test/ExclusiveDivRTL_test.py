@@ -1,6 +1,6 @@
 """
 ==========================================================================
-DivRTL_test.py
+ExclusiveDivRTL_test.py
 ==========================================================================
 Test cases for Divider.
 
@@ -8,16 +8,19 @@ Author : Jiajun Qin
   Date : May 2, 2025
 """
 
+
 import pytest
 import hypothesis
 from hypothesis import strategies as st
 from itertools import product
 from pymtl3 import *
-from ..DivRTL import DivRTL
+from pymtl3.stdlib.test_utils import (run_sim,
+                                      config_model_with_cmdline_opts)
+from ..ExclusiveDivRTL import ExclusiveDivRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
-from ....lib.opt_type import *
 from ....lib.messages import *
+from ....lib.opt_type import *
 from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 #-------------------------------------------------------------------------
@@ -51,39 +54,14 @@ class TestHarness(Component):
     connect(s.dut.send_out[0], s.sink_out.recv)
 
   def done(s):
-    return s.src_in0.done() and s.src_in2.done() and \
-           s.src_opt.done() and s.sink_out.done()
+    return s.sink_out.done()
 
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim(test_harness, max_cycles = 20):
-  test_harness.elaborate()
-  test_harness.apply(DefaultPassGroup())
-  test_harness.sim_reset()
 
-  # Run simulation
-  ncycles = 0
-  print()
-  print("{}:{}".format( ncycles, test_harness.line_trace()))
-  while not test_harness.done() and ncycles < max_cycles:
-    test_harness.sim_tick()
-    ncycles += 1
-    print("{}:{}".format( ncycles, test_harness.line_trace()))
-
-  # Check timeout
-  assert ncycles < max_cycles
-
-  test_harness.sim_tick()
-  test_harness.sim_tick()
-  test_harness.sim_tick()
-
-@pytest.mark.parametrize(
-  'input_a, input_b',
-  product(range(5, 8), range(2, 4))
-)
-def test_div0(input_a, input_b):
-  FU = DivRTL
+def test_mul():
+  FU       = ExclusiveDivRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports = 4
@@ -91,13 +69,16 @@ def test_div0(input_a, input_b):
   ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
-  src_in0 = [DataType(input_a, 1)]
-  src_in1 = [DataType(input_b, 1)]
-  src_predicate = [PredicateType(1,1)]
-  src_const = [DataType(0, 1) ]
-  sink_out = [DataType(input_a // input_b, 1)]
-  src_opt = [ConfigType(OPT_DIV, b1(0),
-             [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])]
+  PredType      = mk_predicate(1, 1)
+  src_predicate = [ PredType(1, 0), PredType(1, 0), PredType(1, 1) ]
+  src_in0       = [ DataType(4,  1), DataType(7,  1), DataType(12,   1) ]
+  src_in1       = [               DataType(3,  1)                ]
+  src_const     = [ DataType(1,  1),               DataType(2,   1) ]
+  sink_out      = [ DataType(1, 0), DataType(2, 0), DataType(4, 1) ] 
+  pick_register = [ FuInType(x + 1) for x in range(num_inports) ]
+  src_opt       = [ ConfigType( OPT_DIV, b1(1), pick_register ),
+                    ConfigType( OPT_DIV, b1(1), pick_register ),
+                    ConfigType( OPT_DIV, b1(1), pick_register ) ]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_predicate, src_const,

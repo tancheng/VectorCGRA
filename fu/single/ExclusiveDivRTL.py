@@ -2,10 +2,10 @@
 ==========================================================================
 ExclusiveDivRTL.py
 ==========================================================================
-Exclusive divisor for CGRA tile.
+Exclusive integer divisor for CGRA tile.
 
-Author : Cheng Tan
-  Date : November 28, 2019
+Author : Jiajun Qin
+  Date : May 2, 2025
 """
 
 from pymtl3 import *
@@ -39,23 +39,26 @@ class ExclusiveDivRTL(Fu):
     s.in0_idx = Wire(idx_nbits)
     s.in1_idx = Wire(idx_nbits)
     LatencyType = mk_bits(clog2(latency) + 1)
-    s.now_cycle = Wire(LatencyType)
+    s.cur_cycle = Wire(LatencyType)
 
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
 
     s.recv_all_val = Wire(1)
+    s.do_div       = Wire(1)
 
     @update_ff
     def comb_ff():
-      if (s.now_cycle == latency - 1) & s.send_out[0].rdy:
-          s.now_cycle <<= 0
-      elif s.now_cycle == latency - 1:
-        s.now_cycle <<= s.now_cycle
-      elif s.recv_all_val & (s.recv_opt.msg.operation == OPT_DIV):
-        s.now_cycle <<= s.now_cycle + 1
+      if (s.cur_cycle == latency - 1) & s.send_out[0].rdy:
+          s.cur_cycle <<= 0
+      elif s.cur_cycle == latency - 1:
+        s.cur_cycle <<= s.cur_cycle
+      elif s.do_div:
+        s.cur_cycle <<= s.cur_cycle + 1
+      elif (s.recv_all_val & (s.recv_opt.msg.operation == OPT_DIV)):
+        s.cur_cycle <<= 1
       else:
-        s.now_cycle <<= 0
+        s.cur_cycle <<= 0
 
     @update
     def comb_logic():
@@ -80,44 +83,46 @@ class ExclusiveDivRTL(Fu):
         if s.recv_opt.msg.fu_in[1] != 0:
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
+      # print(s.recv_opt.msg.operation, OPT_DIV)
       if s.recv_opt.val:
-        if s.recv_opt.msg.operation == OPT_DIV:
+        if (s.recv_opt.msg.operation == OPT_DIV) | (s.recv_opt.msg.operation == OPT_REM):
           s.div.dividend @= s.recv_in[s.in0_idx].msg.payload
           s.div.divisor @= s.recv_in[s.in1_idx].msg.payload
-          s.send_out[0].msg.payload @= s.div.quotient
-          s.send_out[1].msg.payload @= s.div.remainder
+          if s.recv_opt.msg.operation == OPT_DIV:
+            s.send_out[0].msg.payload @= s.div.quotient
+          else:
+            s.send_out[0].msg.payload @= s.div.remainder
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
                                           s.recv_predicate.msg.predicate) & \
                                          s.reached_vector_factor
-          s.send_out[1].msg.predicate @= s.send_out[0].msg.predicate
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
-          s.send_out[0].val @= (latency - 1 == s.now_cycle)
-          s.send_out[1].val @= (latency - 1 == s.now_cycle)
-          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.send_out[0].val @= (latency - 1 == s.cur_cycle)
+          s.recv_in[s.in0_idx].rdy @= s.send_out[0].val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= s.send_out[0].val & s.send_out[0].rdy
+          s.do_div @= 1
           # TODO: if single-cycle?
-          s.recv_opt.rdy @= (latency - 1 == s.now_cycle) & s.send_out[0].rdy
-
+          if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
+            s.recv_predicate.rdy @= s.send_out[0].val & s.send_out[0].rdy
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
-
-        if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
-          s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.do_div @= 0
+          if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
+            s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy
+      else:
+        s.do_div @= 0
 
 class Div( VerilogPlaceholder, Component ):
 
   # Constructor
-
   def construct( s, WIDTH = 32, CYCLE = 8 ):
 
     # Interface
-
     s.dividend              = InPort ( WIDTH )
     s.divisor              = InPort ( WIDTH )
 
@@ -125,13 +130,15 @@ class Div( VerilogPlaceholder, Component ):
     s.remainder            = OutPort ( WIDTH )
 
     # Configurations
-
     from os import path
     srcdir = path.dirname(__file__) + path.sep
 
     s.set_metadata( VerilogPlaceholderPass.src_file, srcdir + 'division.v' )
     s.set_metadata( VerilogPlaceholderPass.top_module, 'pipeline_division' )
-    # s.set_metadata( VerilogPlaceholderPass.v_include, [ srcdir ] )
+    s.set_metadata( VerilogPlaceholderPass.v_include, [ srcdir ] )
+    # s.set_metadata( VerilogPlaceholderPass.v_libs, [
+    #   srcdir + 'division.v',
+    # ])
     s.set_metadata( VerilogPlaceholderPass.has_clk, True )
     s.set_metadata( VerilogPlaceholderPass.has_reset, True )
 

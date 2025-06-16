@@ -2,10 +2,10 @@
 ==========================================================================
 DivRTL.py
 ==========================================================================
-Divider for CGRA tile.
+Integer divider for CGRA tile.
 
-Author : Cheng Tan
-  Date : November 28, 2019
+Author : Jiajun Qin
+  Date : May 2, 2025
 """
 
 from pymtl3 import *

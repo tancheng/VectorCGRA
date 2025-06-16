@@ -2,10 +2,10 @@
 ==========================================================================
 InclusiveDivRTL.py
 ==========================================================================
-Inclusive divisor for CGRA tile.
+Inclusive integer divisor for CGRA tile.
 
-Author : Cheng Tan
-  Date : November 28, 2019
+Author : Jiajun Qin
+  Date : May 2, 2025
 """
 
 from pymtl3 import *
@@ -67,39 +67,33 @@ class InclusiveDivRTL(Fu):
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
       if s.recv_opt.val:
-        if (s.recv_opt.msg.operation == OPT_DIV_START):
+        if (s.recv_opt.msg.operation == OPT_DIV_INCLUSIVE_START) | (s.recv_opt.msg.operation == OPT_REM_INCLUSIVE_START):
           s.div.dividend @= s.recv_in[s.in0_idx].msg.payload
           s.div.divisor @= s.recv_in[s.in1_idx].msg.payload
           s.send_out[0].msg.payload @= 0
-          s.send_out[1].msg.payload @= 0
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
                                           s.recv_predicate.msg.predicate) & \
                                          s.reached_vector_factor
-          s.send_out[1].msg.predicate @= s.send_out[0].msg.predicate
-          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
-                            ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
-          s.send_out[1].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val
-          s.recv_in[s.in1_idx].rdy @= s.recv_all_val
-          s.recv_opt.rdy @= s.recv_all_val
-        elif s.recv_opt.msg.operation == OPT_DIV_END:
-          s.send_out[0].msg.payload @= s.div.quotient
-          s.send_out[1].msg.payload @= s.div.remainder
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+        elif (s.recv_opt.msg.operation == OPT_DIV_INCLUSIVE_END) | (s.recv_opt.msg.operation == OPT_REM_INCLUSIVE_END):
+          if s.recv_opt.msg.operation == OPT_DIV_INCLUSIVE_END:
+            s.send_out[0].msg.payload @= s.div.quotient
+          else:
+            s.send_out[0].msg.payload @= s.div.remainder
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          (~s.recv_opt.msg.predicate | \
                                           s.recv_predicate.msg.predicate) & \
                                          s.reached_vector_factor
-          s.send_out[1].msg.predicate @= s.send_out[0].msg.predicate
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
           s.send_out[0].val @= s.recv_all_val
-          s.send_out[1].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:
@@ -115,20 +109,15 @@ class InclusiveDivRTL(Fu):
 class Div( VerilogPlaceholder, Component ):
 
   # Constructor
-
   def construct( s, WIDTH = 32, CYCLE = 8 ):
 
     # Interface
-
-    
     s.dividend              = InPort ( WIDTH )
-    s.divisor              = InPort ( WIDTH )
-
-    s.quotient            = OutPort ( WIDTH )
-    s.remainder            = OutPort ( WIDTH )
+    s.divisor               = InPort ( WIDTH )
+    s.quotient              = OutPort ( WIDTH )
+    s.remainder             = OutPort ( WIDTH )
 
     # Configurations
-
     from os import path
     srcdir = path.dirname(__file__) + path.sep
 
