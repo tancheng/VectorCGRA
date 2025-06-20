@@ -301,7 +301,6 @@ class ControllerRTL(Component):
       if (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_LOAD_REQUEST) | \
          (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_STORE_REQUEST):
         addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
-        # addr_dst_id = 0
         s.send_to_inter_cgra_noc.msg.dst @= addr_dst_id
         s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[addr_dst_id]
         s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[addr_dst_id]
