@@ -198,8 +198,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  # FuList = [MemUnitRTL, AdderRTL]
-  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
+  FuList = [MemUnitRTL, AdderRTL]
+  # FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, BranchRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
@@ -209,16 +209,16 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   cgra_id = 0
   controller2addr_map = {
           0: [0, 3],
-          # 1: [4, 7],
-          # 2: [8, 11],
-          # 3: [12, 15],
+          1: [4, 7],
+          2: [8, 11],
+          3: [12, 15],
   }
 
   idTo2d_map = {
           0: [0, 0],
-          # 1: [1, 0],
-          # 2: [2, 0],
-          # 3: [3, 0],
+          1: [1, 0],
+          2: [2, 0],
+          3: [3, 0],
   }
 
   cgra_id_nbits = 2
