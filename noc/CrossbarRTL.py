@@ -120,7 +120,7 @@ class CrossbarRTL(Component):
         for i in range(num_outports):
           if (s.in_dir[i] > 0) & \
              (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_wire[s.in_dir_local[i]]):
-            s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
+            s.prologue_counter[0] <<= s.prologue_counter[s.in_dir_local[i]] + 1
 
     @update
     def update_prologue_allowing_vector():
@@ -183,7 +183,7 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         if s.in_dir[i] > 0:
-          s.recv_required_vector[s.in_dir_local[i]] @= 1
+          s.recv_required_vector[0] @= 1
 
     @update
     def update_send_required_vector():
