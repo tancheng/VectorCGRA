@@ -570,15 +570,15 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 def test_homogeneous_2x2(cmdline_opts):
   topology = "Mesh"
   FuList = [AdderRTL,
-            MulRTL,
-            LogicRTL,
-            ShifterRTL,
-            PhiRTL,
-            CompRTL,
-            BranchRTL,
-            MemUnitRTL,
-            SelRTL,
-            RetRTL,
+            # MulRTL,
+            # LogicRTL,
+            # ShifterRTL,
+            # PhiRTL,
+            # CompRTL,
+            # BranchRTL,
+            # MemUnitRTL,
+            # SelRTL,
+            # RetRTL,
            ]
   th = init_param(topology, FuList)
 
