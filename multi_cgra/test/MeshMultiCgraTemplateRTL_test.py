@@ -134,12 +134,21 @@ def initialize_test_harness(cmdline_opts,
                             multiCgraParam = None):
   # TODO
   # Read properties from multiCgraParam
+  num_cgra_rows = multiCgraParam.rows if multiCgraParam != None else num_cgra_rows
+  num_cgra_columns = multiCgraParam.cols if multiCgraParam != None else num_cgra_columns
+  num_x_tiles_per_cgra = multiCgraParam.cgras[0][0].columns if multiCgraParam != None else num_x_tiles_per_cgra
+  num_y_tiles_per_cgra = multiCgraParam.cgras[0][0].rows if multiCgraParam != None else num_x_tiles_per_cgra
+  ctrl_mem_size = multiCgraParam.cgras[0][0].configMemSize if multiCgraParam != None else 16
+  print(f"""[LOG] num_cgra_rows: {num_cgra_rows}, num_cgra_columns: {num_cgra_columns}, 
+                  num_x_tiles_per_cgra: {num_x_tiles_per_cgra}, num_y_tiles_per_cgra: {num_y_tiles_per_cgra},
+                  ctrl_mem_size: {ctrl_mem_size}""")
+
   num_tile_inports = 4
   num_tile_outports = 4
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = 16
+  
   num_cgras = num_cgra_rows * num_cgra_columns
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
