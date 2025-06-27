@@ -171,7 +171,8 @@ class Link:
 
 
 def test_multi_CGRA_universal(cmdline_opts, multiCgraParam = None):
-  paramCGRA = multiCgraParam.cgras[0][0] if multiCgraParam != None else None
+  # paramCGRA = multiCgraParam.cgras[0][0] if multiCgraParam != None else None
+  paramCGRA = None
   num_tile_inports  = 8
   num_tile_outports = 8
   num_fu_inports = 4
