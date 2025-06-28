@@ -17,7 +17,7 @@ class ExclusiveDivRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                latency = 8, vector_factor_power = 0):
+                latency = 4, vector_factor_power = 0):
 
     super(ExclusiveDivRTL, s).construct(DataType, PredicateType, CtrlType,
                                num_inports, num_outports, data_mem_size,
@@ -83,7 +83,6 @@ class ExclusiveDivRTL(Fu):
         if s.recv_opt.msg.fu_in[1] != 0:
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
 
-      # print(s.recv_opt.msg.operation, OPT_DIV)
       if s.recv_opt.val:
         if (s.recv_opt.msg.operation == OPT_DIV) | (s.recv_opt.msg.operation == OPT_REM):
           s.div.dividend @= s.recv_in[s.in0_idx].msg.payload
@@ -102,6 +101,7 @@ class ExclusiveDivRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.send_out[0].val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.send_out[0].val & s.send_out[0].rdy
           s.do_div @= 1
+          s.recv_opt.rdy @= s.send_out[0].val & s.send_out[0].rdy
           # TODO: if single-cycle?
           if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
             s.recv_predicate.rdy @= s.send_out[0].val & s.send_out[0].rdy
