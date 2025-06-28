@@ -25,6 +25,8 @@ from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
 from ...fu.single.SelRTL import SelRTL
 from ...fu.single.ShifterRTL import ShifterRTL
+from ...fu.single.ExclusiveDivRTL import ExclusiveDivRTL
+from ...fu.single.InclusiveDivRTL import InclusiveDivRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
@@ -222,3 +224,241 @@ def test_tile_alu(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+def test_tile_multicycle_exclusive(cmdline_opts):
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_fu_inports + num_tile_outports
+  ctrl_mem_size = 3
+  data_mem_size = 8
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
+  num_tiles = 4
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
+  num_registers_per_reg_bank = 16
+  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
+  DUT = TileRTL
+  FunctionUnit = FlexibleFuRTL
+  # FuList = [AdderRTL, MulRTL, MemUnitRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            ExclusiveDivRTL]
+  # 64-bit to satisfy the default bitwidth of vector FUs.
+  DataType = mk_data(32, 1)
+  PredicateType = mk_predicate(1, 1)
+  cgra_id_nbits = 1
+  data_nbits = 32
+  data_mem_size_global = 16
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  src_ctrl_pkt = [
+                # cgraid src dst vc_id opq cmd_type addr operation predicate
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                 ctrl = CtrlType(OPT_DIV, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+      # For constant 5, 7.
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
+
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
+
+  src_data = [[DataType(3, 1)],
+              [],
+              [DataType(4, 1)],
+              [DataType(12, 1), DataType(8, 1)]]
+
+  sink_out = [
+              # 8 + 3 = 11.
+              [DataType(11, 1)],
+              [],
+              [],
+              # 12 ÷ 4 = 3; 8 + 3 = 11.
+              [DataType(3, 1), DataType(11, 1)]]
+                                             # src  dst        src/dst cgra x/y
+  complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
+#          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+
+  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
+                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
+                   data_mem_size, num_fu_inports, num_fu_outports,
+                   num_tile_inports, num_tile_outports,
+                   num_registers_per_reg_bank, src_data,
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_tile_multicycle_inclusive(cmdline_opts):
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_fu_inports + num_tile_outports
+  ctrl_mem_size = 3
+  data_mem_size = 8
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
+  num_tiles = 4
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
+  num_registers_per_reg_bank = 16
+  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
+  DUT = TileRTL
+  FunctionUnit = FlexibleFuRTL
+  # FuList = [AdderRTL, MulRTL, MemUnitRTL]
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            InclusiveDivRTL]
+  # 64-bit to satisfy the default bitwidth of vector FUs.
+  DataType = mk_data(32, 1)
+  PredicateType = mk_predicate(1, 1)
+  cgra_id_nbits = 1
+  data_nbits = 32
+  data_mem_size_global = 16
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  src_ctrl_pkt = [
+                # cgraid src dst vc_id opq cmd_type addr operation predicate
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                 ctrl = CtrlType(OPT_DIV_INCLUSIVE_START, 0,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+      
+      IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
+                  payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                            ctrl = CtrlType(OPT_DIV_INCLUSIVE_END, 0,
+                                                            [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                            [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                            TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+                                                            [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                            FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),         
+      # For constant 5, 7.
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
+
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
+
+  src_data = [[DataType(3, 1)],
+              [],
+              [DataType(4, 1)],
+              [DataType(12, 1), DataType(8, 1)]]
+
+  sink_out = [
+              [DataType(3, 1)],
+              [],
+              [],
+              # div start; div ends;
+              [DataType(0, 1), DataType(3, 1)]]
+                                             # src  dst        src/dst cgra x/y
+  complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
+#          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+
+  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
+                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
+                   data_mem_size, num_fu_inports, num_fu_outports,
+                   num_tile_inports, num_tile_outports,
+                   num_registers_per_reg_bank, src_data,
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)

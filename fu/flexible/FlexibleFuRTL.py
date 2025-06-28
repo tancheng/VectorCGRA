@@ -23,7 +23,7 @@ class FlexibleFuRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                num_tiles, FuList):
+                num_tiles, FuList, exec_lantency = {}):
 
     # Constant
     num_entries = 2
@@ -51,7 +51,8 @@ class FlexibleFuRTL(Component):
 
     # Components
     s.fu = [FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
-                      data_mem_size) for i in range(s.fu_list_size)]
+                      data_mem_size) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
+                      data_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_predicate_rdy_vector = Wire(s.fu_list_size)
