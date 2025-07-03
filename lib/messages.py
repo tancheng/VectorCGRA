@@ -38,7 +38,7 @@ def mk_data(payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
       'delay'    : DelayType,
     },
     namespace = { '__str__': str_func }
-  )
+  )  
 
 #=========================================================================
 # Predicate signal
@@ -200,7 +200,7 @@ def mk_ctrl(num_fu_inports = 4,
 # Address message for non-blocking execution mode
 #=========================================================================
 
-def nb_addr(addr_nbits=8, kernel_id_nbits=2, ld_id_nbits=5,
+def mk_nb_addr(addr_nbits=8, kernel_id_nbits=2, ld_id_nbits=5,
             prefix="NonblockingAddr"):
 
   AddrType   = mk_bits( addr_nbits   )
@@ -219,33 +219,6 @@ def nb_addr(addr_nbits=8, kernel_id_nbits=2, ld_id_nbits=5,
     },
     namespace = { '__str__': str_func }
   )
-
-#=========================================================================
-# Data message for non-blocking execution mode
-#=========================================================================
-
-def nb_data(payload_nbits=16, predicate_nbits=1, kernel_id_nbits=2, ld_id_nbits=5,
-            prefix="NonblockingData"):
-
-  PayloadType   = mk_bits( payload_nbits   )
-  PredicateType = mk_bits( predicate_nbits )
-  KernelIdType = mk_bits( kernel_id_nbits )
-  LdIdType    = mk_bits( ld_id_nbits )
-
-  new_name = f"{prefix}_{payload_nbits}_{predicate_nbits}_{kernel_id_nbits}_{ld_id_nbits}"
-
-  def str_func( s ):
-    return f"{s.payload}.{s.predicate}.{s.kernel_id}.{s.ld_id}"
-
-  return mk_bitstruct( new_name, {
-      'payload'  : PayloadType,
-      'predicate': PredicateType,
-      'kernel_id': KernelIdType,
-      'ld_id'   : LdIdType,
-    },
-    namespace = { '__str__': str_func }
-  )
-
 
 #=========================================================================
 # Cmd message
@@ -420,50 +393,26 @@ def mk_tile_sram_xbar_pkt(number_src = 5,
                           mem_size_global = 64,
                           num_cgras = 4,
                           num_tiles = 17,
-                          prefix="TileSramXbarPacket"):
+                          prefix="TileSramXbarPacket",
+                          non_blocking = False,
+                          kernel_id_nbits = 2,
+                          ld_id_nbits = 5):
 
   SrcType = mk_bits(clog2(number_src))
   DstType = mk_bits(clog2(number_dst))
   AddrType = mk_bits(clog2(mem_size_global))
   CgraIdType = mk_bits(max(1, clog2(num_cgras)))
   TileIdType = mk_bits(clog2(num_tiles + 1))
+  KernelIdType = mk_bits(kernel_id_nbits)
+  LdIdType = mk_bits(ld_id_nbits)
 
   new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
 
   def str_func(s):
     return f"{s.src}>{s.dst}:(addr){s.addr}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}"
 
-  return mk_bitstruct(new_name, {
-      'src': SrcType,
-      'dst': DstType,
-      'addr': AddrType,
-      'src_cgra': CgraIdType,
-      'src_tile': TileIdType,
-    },
-    namespace = {'__str__': str_func}
-  )
-
-def nb_tile_sram_xbar_pkt(number_src = 5,
-                          number_dst = 5,
-                          mem_size_global = 64,
-                          num_cgras = 4,
-                          num_tiles = 17,
-                          prefix="TileSramXbarPacket"):
-
-  SrcType = mk_bits(clog2(number_src))
-  DstType = mk_bits(clog2(number_dst))
-  AddrType = mk_bits(clog2(mem_size_global))
-  CgraIdType = mk_bits(max(1, clog2(num_cgras)))
-  TileIdType = mk_bits(clog2(num_tiles + 1))
-  KernelIdType = mk_bits(2)
-  LdIdType = mk_bits(5)
-
-  new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
-
-  def str_func(s):
-    return f"{s.src}>{s.dst}:(addr){s.addr}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}.(kernel_id){s.kernel_id}.(ld_id){s.ld_id}"
-
-  return mk_bitstruct(new_name, {
+  if non_blocking:
+    return mk_bitstruct(new_name, {
       'src': SrcType,
       'dst': DstType,
       'addr': AddrType,
@@ -471,10 +420,19 @@ def nb_tile_sram_xbar_pkt(number_src = 5,
       'src_tile': TileIdType,
       'kernel_id': KernelIdType,
       'ld_id': LdIdType
-    },
-    namespace = {'__str__': str_func}
-  )
-
+      },
+      namespace = {'__str__': str_func}
+    )
+  else:
+    return mk_bitstruct(new_name, {
+      'src': SrcType,
+      'dst': DstType,
+      'addr': AddrType,
+      'src_cgra': CgraIdType,
+      'src_tile': TileIdType,
+      },
+      namespace = {'__str__': str_func}
+    )
 
 #=========================================================================
 # Crossbar (controller <-> NoC) packet
