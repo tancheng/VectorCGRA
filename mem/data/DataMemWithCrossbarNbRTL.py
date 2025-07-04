@@ -9,7 +9,6 @@ Author : Yufei Yang
 """
 
 from pymtl3.stdlib.primitive import RegisterFile
-
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import BypassQueueRTL
@@ -71,7 +70,6 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
     # [0, ..., num_rd_tiles - 1] indicate the requests from/to the tiles,
     s.recv_raddr = [RecvIfcRTL(DataAddrType_NB) for _ in range(num_rd_tiles)]
     s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_rd_tiles)]
-    
     s.send_to_noc_load_response_pkt = SendIfcRTL(NocPktType_NB)
 
     # Response that is from a remote SRAM.
@@ -84,8 +82,7 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
     s.recv_from_noc_buffer = [RegisterFile(DataType, nregs=32, rd_ports=num_banks_per_cgra, wr_ports=2) for _ in range(4)]
 
     # Component
-    s.read_crossbar = XbarBypassQueueRTL(TileSramXbarRdPktType, num_xbar_in_rd_ports,
-                                         num_xbar_out_rd_ports)
+    s.read_crossbar = XbarBypassQueueRTL(TileSramXbarRdPktType, num_xbar_in_rd_ports, num_xbar_out_rd_ports)
     s.rd_pkt = [Wire(TileSramXbarRdPktType) for _ in range(num_xbar_in_rd_ports)]
 
     @update
@@ -134,8 +131,8 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
       for i in range(num_rd_tiles):
         s.send_rdata[i].val @= 0
         s.send_rdata[i].msg @= DataType()
+
       s.send_to_noc_load_response_pkt.val @= 0
-      
       s.send_to_noc_load_response_pkt.msg @= \
           NocPktType_NB(0, # src
                      0, # dst
@@ -173,7 +170,6 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
                      0, # opaque
                      0, # vc_id
                      CgraPayloadType_NB(0, 0, 0, 0, 0))
-
       s.send_to_noc_load_request_pkt.val @= 0
 
       # Connects read xbar with the sram.
@@ -301,7 +297,6 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
     recv_from_noc_load_response_pkt_str = "recv_from_noc_load_response_pkt: {"
     send_to_noc_store_pkt_str = "send_to_noc_store_pkt: {"
 
-
     for b in range(s.num_banks_per_cgra):
       recv_raddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_raddr]) + ";"
       recv_waddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_waddr]) + ";"
@@ -327,5 +322,3 @@ class DataMemWithCrossbarNbRTL(DataMemWithCrossbarBasicRTL):
     content_str += "}"
 
     return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_load_response_pkt_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
-   
-

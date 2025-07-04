@@ -9,7 +9,6 @@ Author : Yufei Yang
 """
 
 from pymtl3.stdlib.primitive import RegisterFile
-
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import BypassQueueRTL
@@ -68,8 +67,7 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
 
     # [0, ..., num_rd_tiles - 1] indicate the requests from/to the tiles,
     s.recv_raddr = [RecvIfcRTL(s.AddrType) for _ in range(num_rd_tiles)]
-    s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_rd_tiles)]
-    
+    s.send_rdata = [SendIfcRTL(DataType) for _ in range(num_rd_tiles)] 
     s.send_to_noc_load_response_pkt = SendIfcRTL(NocPktType)
 
     # Response that is from a remote SRAM.
@@ -79,8 +77,7 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
     s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
 
     # Component
-    s.read_crossbar = XbarBypassQueueRTL(TileSramXbarRdPktType, num_xbar_in_rd_ports,
-                                         num_xbar_out_rd_ports)
+    s.read_crossbar = XbarBypassQueueRTL(TileSramXbarRdPktType, num_xbar_in_rd_ports, num_xbar_out_rd_ports)
     s.rd_pkt = [Wire(TileSramXbarRdPktType) for _ in range(num_xbar_in_rd_ports)]
 
     @update
@@ -115,7 +112,6 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
                                                         s.recv_from_noc_load_request.msg.src,           # src_cgra
                                                         s.recv_from_noc_load_request.msg.src_tile_id)   # src_tile
 
-
     @update
     def update_read():
       # Initializes read signals.
@@ -126,8 +122,8 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
       for i in range(num_rd_tiles):
         s.send_rdata[i].val @= 0
         s.send_rdata[i].msg @= DataType()
-      s.send_to_noc_load_response_pkt.val @= 0
-      
+
+      s.send_to_noc_load_response_pkt.val @= 0      
       s.send_to_noc_load_response_pkt.msg @= \
           NocPktType(0, # src
                      0, # dst
@@ -165,13 +161,10 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
                      0, # opaque
                      0, # vc_id
                      CgraPayloadType(0, 0, 0, 0, 0))
-
       s.send_to_noc_load_request_pkt.val @= 0
 
       # Connects read xbar with the sram.
-      if s.init_mem_done == 0:
-        pass
-      else:
+      if s.init_mem_done != 0:
         for i in range(num_rd_tiles):
             s.read_crossbar.recv[i].val @= s.recv_raddr[i].val
             s.read_crossbar.recv[i].msg @= s.rd_pkt[i]
@@ -265,7 +258,18 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
         # i.e., though the request already sent out to NoC (the port is still blocked until
         # response is back).
         s.read_crossbar.send[num_banks_per_cgra].rdy @= s.recv_from_noc_load_response_pkt.val
-      
+
+    # Indicates whether the remote (towards others via NoC) load is pending on response.
+    @update_ff
+    def update_remote_load_pending():
+      if s.reset:
+        s.send_to_noc_load_pending <<= 0
+      else:
+        if s.recv_from_noc_load_response_pkt.val:
+          s.send_to_noc_load_pending <<= 0
+        elif s.send_to_noc_load_request_pkt.val & s.send_to_noc_load_request_pkt.rdy:
+          s.send_to_noc_load_pending <<= 1
+
   def line_trace(s):
     recv_raddr_str = "recv_from_tile_read_addr: {"
     recv_waddr_str = "recv_from_tile_write_addr: {"
@@ -277,7 +281,6 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
     send_to_noc_load_response_pkt_str = "send_to_noc_load_response_pkt: {"
     recv_from_noc_load_response_pkt_str = "recv_from_noc_load_response_pkt: {"
     send_to_noc_store_pkt_str = "send_to_noc_store_pkt: {"
-
 
     for b in range(s.num_banks_per_cgra):
       recv_raddr_str += " bank[" + str(b) + "]: " + "|".join([str(data.msg) for data in s.recv_raddr]) + ";"
@@ -304,5 +307,3 @@ class DataMemWithCrossbarRTL(DataMemWithCrossbarBasicRTL):
     content_str += "}"
 
     return f'{recv_raddr_str} || {recv_waddr_str} || {recv_wdata_str} || {send_rdata_str} || {send_to_noc_load_request_pkt_str} || {send_to_noc_load_response_pkt_str} || {recv_from_noc_load_response_pkt_str} || {send_to_noc_store_pkt_str} || {read_crossbar_str} || {write_crossbar_str} || [{content_str}]'
-   
-

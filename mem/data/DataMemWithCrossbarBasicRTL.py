@@ -10,7 +10,6 @@ Author : Yufei Yang
 """
 
 from pymtl3.stdlib.primitive import RegisterFile
-
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.queues import BypassQueueRTL
@@ -74,7 +73,6 @@ class DataMemWithCrossbarBasicRTL(Component):
     # we prefer as few as possible number of ports.
     rd_ports_per_bank = 1
     wr_ports_per_bank = 1
-
     s.reg_file = [RegisterFile(DataType, data_mem_size_per_bank,
                                rd_ports_per_bank, wr_ports_per_bank)
                   for _ in range(num_banks_per_cgra)]
@@ -87,15 +85,10 @@ class DataMemWithCrossbarBasicRTL(Component):
                     for _ in range(num_banks_per_cgra)]
     s.init_mem_done = Wire(b1)
     s.init_mem_addr = Wire(s.PerBankAddrType)
-
     s.wr_pkt = [Wire(TileSramXbarWrPktType) for _ in range(num_xbar_in_wr_ports)]
-
     s.recv_wdata_bypass_q = [BypassQueueRTL(DataType, 1) for _ in range(num_xbar_in_wr_ports)]
-
     s.send_to_noc_load_pending = Wire(b1)
-
     s.cgra_id = InPort(mk_bits(max(1, clog2(s.num_cgras))))
-
     s.address_lower = InPort(s.AddrType)
     s.address_upper = InPort(s.AddrType)
 
@@ -180,7 +173,6 @@ class DataMemWithCrossbarBasicRTL(Component):
                      0, # opaque
                      0, # vc_id
                      CgraPayloadType(0, 0, 0, 0, 0))
-
       s.send_to_noc_store_pkt.val @= 0
 
       for i in range(num_xbar_in_wr_ports):
@@ -196,7 +188,6 @@ class DataMemWithCrossbarBasicRTL(Component):
           s.reg_file[b].waddr[0] @= trunc(s.init_mem_addr, s.PerBankAddrType)
           s.reg_file[b].wdata[0] @= s.preload_data_per_bank[b][trunc(s.init_mem_addr, PreloadDataPerBankSizeType)]
           s.reg_file[b].wen[0] @= b1(1)
-
       else:
         for i in range(num_wr_tiles):
           s.recv_wdata[i].rdy @= s.recv_wdata_bypass_q[i].recv.rdy
@@ -243,7 +234,6 @@ class DataMemWithCrossbarBasicRTL(Component):
                           DataType(s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.payload,
                                    s.recv_wdata_bypass_q[s.write_crossbar.send[num_banks_per_cgra].msg.src].send.msg.predicate, 0, 0),
                           s.write_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0))
-
         s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks_per_cgra].val
         s.write_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_store_pkt.rdy
 
