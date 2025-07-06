@@ -1,7 +1,7 @@
 module division #(
-    parameter WIDTH = 32,
+    parameter WIDTH      = 32,
     parameter ITER_BEGIN = 0,
-    parameter ITER_END = 32
+    parameter ITER_END   = 32
 ) (
     input  clk,
     input  reset,
@@ -13,8 +13,10 @@ module division #(
     output  [WIDTH-1:0] q_o
 );
 
-    reg [WIDTH:0]   r;      // 33-bit remainder (extra bit for overflow)
+    reg [WIDTH:0]   r;    // 33-bit remainder (extra bit for overflow)
     reg [WIDTH-1:0] q;    // Quotient
+
+    parameter HIGHEST_BIT = WIDTH - 1;
 
     always @(*) begin
         integer i;
@@ -24,12 +26,12 @@ module division #(
 
         for (i = ITER_BEGIN; i < ITER_END; i = i + 1) begin
             // Shift remainder left and insert next bit of dividend
-            r = (r << 1) | ((dividend >> (31 - i)) & 1'b1);
+            r = (r << 1) | ((dividend >> (HIGHEST_BIT - i)) & 1'b1);
             
             // Compare and subtract if possible
             if (r >= divisor) begin
                 r = r - divisor;
-                q[31 - i] = 1'b1;  // Set current quotient bit
+                q[31 - i] = 1'b1;  // Set cur_ient quotient bit
             end else begin
                 q[31 - i] = 1'b0;
             end
@@ -56,26 +58,35 @@ module pipeline_division #(
     parameter num_div = WIDTH / CYCLE;
     parameter res_div = WIDTH - CYCLE * num_div;
 
-    reg [WIDTH-1:0] qq[0:CYCLE-1];
-    reg [WIDTH:0]   rr[0:CYCLE-1];
-    wire [WIDTH-1:0] q[0:CYCLE-1];
-    wire [WIDTH:0]   r[0:CYCLE-1];
+    // Pipeline registers between stages
+    reg [WIDTH-1:0] q_i[0:CYCLE-1];                 
+    reg [WIDTH:0]   r_i[0:CYCLE-1];
+    reg [WIDTH-1:0] dividend_reg[0:CYCLE-1];
+    reg [WIDTH-1:0] divisor_reg [0:CYCLE-1];
+    wire [WIDTH-1:0] q_o[0:CYCLE-1];
+    wire [WIDTH:0]   r_o[0:CYCLE-1];
 
     genvar i; 
+
+    assign dividend_reg[0] = dividend;
+    assign divisor_reg[0]  = divisor;
+    assign q_i[0] = 0;
+    assign r_i[0] = 0;
+
     generate
         for (i = 0; i < CYCLE; i++) begin
             always @(posedge clk or posedge reset) begin
                 if (reset) begin
-                    qq[i] = 0;
-                    rr[i] = 0;
+                    q_i[i] <= 0;
+                    r_i[i] <= 0;
+                    dividend_reg[i] <= 0;
+                    divisor_reg[i]  <= 0;
                 end
-                else if (i < CYCLE - 1) begin
-                    qq[i+1] = q[i];
-                    rr[i+1] = r[i];
-                end
-                else begin
-                    qq[i] = 0;
-                    rr[i] = 0;
+                else if (i > 0) begin           // Propagate values through pipeline
+                    q_i[i] <= q_i[i-1];           // Temporal quotient to next stage
+                    r_i[i] <= r_i[i-1];           // Temporal remainder to next stage
+                    dividend_reg[i] <= dividend_reg[i-1];       // Forward dividend
+                    divisor_reg[i]  <= divisor_reg[i-1];        // Forward divisor
                 end
             end
         end
@@ -85,22 +96,23 @@ module pipeline_division #(
         for (i = 0; i < CYCLE; i++) begin
             division #(
                 .WIDTH(WIDTH),
-                .ITER_BEGIN(i*num_div),
-                .ITER_END((i+1)*num_div)
+                .ITER_BEGIN(i * num_div),
+                .ITER_END((i + 1) * num_div)
             ) u0 (
                 .clk(clk),
                 .reset(reset),
-                .dividend(dividend),
-                .divisor(divisor),
-                .q_i(qq[i]),
-                .r_i(rr[i]),
-                .q_o(q[i]),
-                .r_o(r[i])
+                .dividend(dividend_reg[i]),
+                .divisor(divisor_reg[i]),
+                .q_i(q_i[i]),
+                .r_i(r_i[i]),
+                .q_o(q_o[i]),
+                .r_o(r_o[i])
             );
         end
     endgenerate
 
-    assign quotient  = q[CYCLE-1];
-    assign remainder = r[CYCLE-1][WIDTH-1:0];
+    // Final outputs from last pipeline stage
+    assign quotient  = q_o[CYCLE-1];
+    assign remainder = r_o[CYCLE-1][WIDTH-1:0];
 
 endmodule
