@@ -25,11 +25,13 @@ CMD_CONFIG_PROLOGUE_FU_CROSSBAR      = 5
 CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR = 6
 CMD_CONFIG_TOTAL_CTRL_COUNT          = 7
 CMD_CONFIG_COUNT_PER_ITER            = 8
-CMD_LOAD_REQUEST                     = 9
-CMD_LOAD_RESPONSE                    = 10
-CMD_STORE_REQUEST                    = 11
-CMD_CONST                            = 12
-CMD_COMPLETE                         = 13
+CMD_CONFIG_CTRL_UPPER_BOUND          = 9
+CMD_CONFIG_CTRL_LOWER_BOUND          = 10
+CMD_LOAD_REQUEST                     = 11
+CMD_LOAD_RESPONSE                    = 12
+CMD_STORE_REQUEST                    = 13
+CMD_CONST                            = 14
+CMD_COMPLETE                         = 15
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -41,6 +43,8 @@ CMD_SYMBOL_DICT = {
   CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR: "(PRELOADING_PROLOGUE_ROUTING_CROSSBAR)",
   CMD_CONFIG_TOTAL_CTRL_COUNT:          "(PRELOAD_CONFIG_COUNT)",
   CMD_CONFIG_COUNT_PER_ITER:            "(PRELOAD_CONFIG_COUNT_PER_ITER)",
+  CMD_CONFIG_CTRL_UPPER_BOUND:          "(READING_CONFIG_START_ADDR)",
+  CMD_CONFIG_CTRL_LOWER_BOUND:          "(READING_CONFIG_END_ADDR)",
   CMD_LOAD_REQUEST:                     "(LOAD_REQUEST)",
   CMD_LOAD_RESPONSE:                    "(LOAD_RESPONSE)",
   CMD_STORE_REQUEST:                    "(STORE_REQUEST)",
