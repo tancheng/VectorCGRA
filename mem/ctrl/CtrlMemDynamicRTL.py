@@ -59,7 +59,7 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
-    s.ctrl_count_upper_bound = Wire(CtrlAddrType)
+    s.ctrl_count_per_iter_val = Wire(CtrlAddrType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
     s.total_ctrl_steps_val = Wire(TimeType)
 
@@ -131,7 +131,7 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
-         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_UPPER_BOUND) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
         s.recv_pkt_queue.send.rdy @= 1
@@ -211,7 +211,7 @@ class CtrlMemDynamicRTL(Component):
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy & s.send_ctrl.val:
-            if s.reg_file.raddr[0] == s.ctrl_count_upper_bound:
+            if s.reg_file.raddr[0] == s.ctrl_count_per_iter_val - 1:
               s.reg_file.raddr[0] <<= s.ctrl_count_lower_bound
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
@@ -246,11 +246,11 @@ class CtrlMemDynamicRTL(Component):
           s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
 
     @update_ff
-    def update_upper_bound():
+    def update_ctrl_count_per_iter():
       if s.reset:
-        s.ctrl_count_upper_bound <<= CtrlAddrType(ctrl_count_per_iter - 1)
-      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_UPPER_BOUND):
-        s.ctrl_count_upper_bound <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, CtrlAddrType)
+        s.ctrl_count_per_iter_val <<= CtrlAddrType(ctrl_count_per_iter)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
+        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, CtrlAddrType)
 
     @update_ff
     def update_lower_bound():
@@ -268,5 +268,5 @@ class CtrlMemDynamicRTL(Component):
 
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
-    return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_upper_bound: {s.ctrl_count_upper_bound}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
+    return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
 
