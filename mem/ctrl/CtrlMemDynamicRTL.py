@@ -61,6 +61,7 @@ class CtrlMemDynamicRTL(Component):
     s.sent_complete = Wire(b1)
     s.ctrl_count_per_iter_val = Wire(CtrlAddrType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
+    s.ctrl_count_upper_bound = Wire(CtrlAddrType)
     s.total_ctrl_steps_val = Wire(TimeType)
 
     s.prologue_count_reg_fu = [Wire(PrologueCountType) for _ in range(ctrl_mem_size)]
@@ -211,7 +212,7 @@ class CtrlMemDynamicRTL(Component):
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy & s.send_ctrl.val:
-            if s.reg_file.raddr[0] == s.ctrl_count_per_iter_val - 1:
+            if s.reg_file.raddr[0] == s.ctrl_count_upper_bound - 1:
               s.reg_file.raddr[0] <<= s.ctrl_count_lower_bound
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
@@ -258,6 +259,10 @@ class CtrlMemDynamicRTL(Component):
         s.ctrl_count_lower_bound <<= CtrlAddrType(0)
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND):
         s.ctrl_count_lower_bound <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, CtrlAddrType)
+
+    @update
+    def update_upper_bound():
+      s.ctrl_count_upper_bound @= s.ctrl_count_lower_bound + s.ctrl_count_per_iter_val
 
     @update_ff
     def update_total_ctrl_steps():
