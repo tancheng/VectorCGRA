@@ -1,3 +1,13 @@
+/*
+==========================================================================
+division.v
+==========================================================================
+Integer division module for VectorCGRA.
+
+Author : Jiajun Qin
+  Date : 9 July, 2025
+*/
+
 module division #(
     parameter WIDTH      = 32,
     parameter ITER_BEGIN = 0,
@@ -59,12 +69,16 @@ module pipeline_division #(
     parameter res_div = WIDTH - CYCLE * num_div;
 
     // Pipeline registers between stages
-    reg [WIDTH-1:0] q_i[0:CYCLE-1];                 
-    reg [WIDTH:0]   r_i[0:CYCLE-1];
-    reg [WIDTH-1:0] dividend_reg[0:CYCLE-1];
-    reg [WIDTH-1:0] divisor_reg [0:CYCLE-1];
+    reg [WIDTH-1:0] q_i[0:CYCLE-1];             // Temporal quotient          
+    reg [WIDTH:0]   r_i[0:CYCLE-1];             // Temporal remainder
     wire [WIDTH-1:0] q_o[0:CYCLE-1];
     wire [WIDTH:0]   r_o[0:CYCLE-1];
+
+    // Pipeline registers for dividend and divisor
+    // Since there could be CYCLE divisions in parallel,
+    // we need to store the dividend and divisor for each stage.
+    reg [WIDTH-1:0] dividend_reg[0:CYCLE-1];    
+    reg [WIDTH-1:0] divisor_reg [0:CYCLE-1];
 
     genvar i; 
 
@@ -82,7 +96,7 @@ module pipeline_division #(
                     dividend_reg[i] <= 0;
                     divisor_reg[i]  <= 0;
                 end
-                else if (i > 0) begin           // Propagate values through pipeline
+                else if (i > 0) begin             // Propagate values through pipeline
                     q_i[i] <= q_i[i-1];           // Temporal quotient to next stage
                     r_i[i] <= r_i[i-1];           // Temporal remainder to next stage
                     dividend_reg[i] <= dividend_reg[i-1];       // Forward dividend

@@ -33,7 +33,7 @@ class ExclusiveDivRTL(Fu):
     s.in1 = Wire(FuInType)
 
     # TODO: how to parameterize the bit widths
-    s.div = Div(WIDTH=32, CYCLE=num_cycles)
+    s.div = Div(WIDTH = 32, CYCLE = num_cycles)
 
     idx_nbits = clog2(num_inports)
     s.in0_idx = Wire(idx_nbits)
