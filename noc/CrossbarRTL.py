@@ -119,7 +119,7 @@ class CrossbarRTL(Component):
           s.prologue_counter[i] <<= 0
       elif s.recv_opt.rdy:
         for i in range(num_inports):
-          s.prologue_counter[i] <= s.prologue_counter_next[i]
+          s.prologue_counter[i] <<= s.prologue_counter_next[i]
 
     @update
     def update_prologue_counter_next():
