@@ -56,6 +56,7 @@ class CrossbarRTL(Component):
     s.prologue_allowing_vector = Wire(num_outports)
     s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [Wire(PrologueCountType) for _ in range(num_inports)]
+    s.prologue_counter_next = [Wire(PrologueCountType) for _ in range(num_inports)]
     s.prologue_count_inport = [InPort(PrologueCountType) for _ in range(num_inports)]
     # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
     # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
@@ -117,10 +118,20 @@ class CrossbarRTL(Component):
         for i in range(num_inports):
           s.prologue_counter[i] <<= 0
       elif s.recv_opt.rdy:
-        for i in range(num_outports):
-          if (s.in_dir[i] > 0) & \
-             (s.prologue_counter[s.in_dir_local[i]] < s.prologue_count_wire[s.in_dir_local[i]]):
-            s.prologue_counter[s.in_dir_local[i]] <<= s.prologue_counter[s.in_dir_local[i]] + 1
+        for i in range(num_inports):
+          s.prologue_counter[i] <= s.prologue_counter_next[i]
+
+    @update
+    def update_prologue_counter_next():
+      # Nested-loop to update the prologue counter, to avoid dynamic indexing to
+      # work-around Yosys issue: https://github.com/tancheng/VectorCGRA/issues/148
+      for i in range(num_inports):
+        s.prologue_counter_next[i] @= s.prologue_counter[i]
+        for j in range(num_outports):
+          if (s.in_dir[j] > 0) & \
+             (s.in_dir[j] == i) & \
+             (s.prologue_counter[i] < s.prologue_count_wire[i]):
+            s.prologue_counter_next[i] @= s.prologue_counter[i] + 1
 
     @update
     def update_prologue_allowing_vector():
