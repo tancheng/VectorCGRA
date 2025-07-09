@@ -240,7 +240,7 @@ def test_Ctrl_Bound():
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, 0, pick_register), ctrl_addr = 0))]
   
   # As ctrl signals with ctrl_addr = 1 and ctrl_addr = 2 are both OPT_SUB,
-  # The outputs are    1-4              5-1
+  # The outputs are    1-6              5-1
   sink_out = [DataType(-5, 1), DataType(4, 1)]
   complete_signal_sink_out = [
       IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE))]
