@@ -117,7 +117,7 @@ class CrossbarRTL(Component):
       if s.reset:
         for i in range(num_inports):
           s.prologue_counter[i] <<= 0
-      elif s.recv_opt.rdy:
+      else:
         for i in range(num_inports):
           s.prologue_counter[i] <<= s.prologue_counter_next[i]
 
@@ -128,7 +128,8 @@ class CrossbarRTL(Component):
       for i in range(num_inports):
         s.prologue_counter_next[i] @= s.prologue_counter[i]
         for j in range(num_outports):
-          if (s.in_dir[j] > 0) & \
+          if s.recv_opt.rdy & \
+             (s.in_dir[j] > 0) & \
              (s.in_dir[j] == i) & \
              (s.prologue_counter[i] < s.prologue_count_wire[i]):
             s.prologue_counter_next[i] @= s.prologue_counter[i] + 1
