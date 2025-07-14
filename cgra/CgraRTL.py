@@ -54,20 +54,20 @@ class CgraRTL(Component):
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
-    s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
-    s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
+    # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
-    s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
 
-    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
@@ -207,21 +207,21 @@ class CgraRTL(Component):
           s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
 
 
-      if i // width == 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
-        s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
+      # if i // width == 0:
+      #   s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
+      #   s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
 
-      if i // width == height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
-        s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
+      # if i // width == height - 1:
+      #   s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
+      #   s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
 
-      if i % width == 0:
-        s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
-        s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
+      # if i % width == 0:
+      #   s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
+      #   s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
 
-      if i % width == width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
-        s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+      # if i % width == width - 1:
+      #   s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
+      #   s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
 
       if i % width == 0 or i // width == 0:
         s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
