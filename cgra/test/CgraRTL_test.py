@@ -110,23 +110,23 @@ class TestHarness(Component):
     s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
     s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
-    for tile_col in range(width):
-      s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
-      s.dut.recv_data_on_boundary_north[tile_col].val //= 0
-      s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
+    # for tile_col in range(width):
+    #   s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
+    #   s.dut.recv_data_on_boundary_north[tile_col].val //= 0
+    #   s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
 
-      s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
-      s.dut.recv_data_on_boundary_south[tile_col].val //= 0
-      s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
+    #   s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
+    #   s.dut.recv_data_on_boundary_south[tile_col].val //= 0
+    #   s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
 
-    for tile_row in range(height):
-      s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
-      s.dut.recv_data_on_boundary_west[tile_row].val //= 0
-      s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
+    # for tile_row in range(height):
+    #   s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
+    #   s.dut.recv_data_on_boundary_west[tile_row].val //= 0
+    #   s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
 
-      s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
-      s.dut.recv_data_on_boundary_east[tile_row].val //= 0
-      s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
+    #   s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
+    #   s.dut.recv_data_on_boundary_east[tile_row].val //= 0
+    #   s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
     return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
@@ -156,7 +156,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   data_mem_size_global = 128
   data_mem_size_per_bank = 16
   num_banks_per_cgra = 2
-  num_cgra_columns = 4
+  num_cgra_columns = 1
   num_cgra_rows = 1
   num_cgras = num_cgra_columns * num_cgra_rows
   num_ctrl_operations = 64
@@ -187,9 +187,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                               (i + 1) * per_cgra_data_size - 1]
   idTo2d_map = {
           0: [0, 0],
-          1: [1, 0],
-          2: [2, 0],
-          3: [3, 0],
   }
 
   cgra_id_nbits = clog2(num_cgras)
