@@ -1,9 +1,0 @@
-{"vcs1":{"timestamp_begin":1752254555.409768404, "rt":1.31, "ut":1.13, "st":0.12}}
-{"vcselab":{"timestamp_begin":1752254556.792647743, "rt":0.25, "ut":0.15, "st":0.07}}
-{"link":{"timestamp_begin":1752254557.098459156, "rt":0.10, "ut":0.05, "st":0.05}}
-{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1752254555.088488158}
-{"VCS_COMP_START_TIME": 1752254555.088488158}
-{"VCS_COMP_END_TIME": 1752254557.478263537}
-{"VCS_USER_OPTIONS": "-full64 -sverilog -debug_access+all -timescale=1ns/1ps CgraRTL__3a88a11f64521291__pickled.v CgraRTL__3a88a11f64521291_test_homogeneous_2x2_tb.v -o cgra_sim"}
-{"vcs1": {"peak_mem": 133615}}
-{"stitch_vcselab": {"peak_mem": 133674}}
