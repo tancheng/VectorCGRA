@@ -27,7 +27,9 @@ class CgraTemplateRTL(Component):
                 total_steps, FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 preload_data = None,
-                is_multi_cgra = True):
+                is_multi_cgra = True,
+                cgraWidth = 2,
+                cgraHeight = 2):
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
@@ -131,11 +133,23 @@ class CgraTemplateRTL(Component):
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+      row = 1 // cgraWidth
+      col = i % cgraWidth
+      if row % 2 == 0:
+        tile_index = i
+      else:
+        tile_index = (row + 1) * cgraWidth - (i - row * cgraWidth) - 1
+      s.ctrl_ring.send[i] //= s.tile[tile_index].recv_from_controller_pkt
     s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+      row = 1 // cgraWidth
+      col = i % cgraWidth
+      if row % 2 == 0:
+        tile_index = i
+      else:
+        tile_index = (row + 1) * cgraWidth - (i - row * cgraWidth) - 1
+      s.ctrl_ring.recv[i] //= s.tile[tile_index].send_to_controller_pkt
     s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for link in LinkList:
