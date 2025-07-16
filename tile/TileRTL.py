@@ -24,6 +24,7 @@ from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.cmd_type import *
+from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
@@ -115,6 +116,10 @@ class TileRTL(Component):
     # Additional one register for partial predication
     s.reg_predicate = RegisterRTL(PredicateType)
 
+    # Registers for context switching.
+    s.reg_pause_status = RegisterRTL(PredicateType)
+    s.reg_progress = RegisterRTL(DataType)
+
     # Signals indicating whether certain modules already done their jobs.
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
@@ -178,8 +183,8 @@ class TileRTL(Component):
     s.reg_predicate.send //= s.element.recv_predicate
 
     # Connections on the `fu_crossbar`.
-    for i in range(num_fu_outports):
-      s.element.send_out[i] //= s.fu_crossbar.recv_data[i]
+    #for i in range(num_fu_outports):
+    #  s.element.send_out[i] //= s.fu_crossbar.recv_data[i]
 
     # The data going out to the other tiles should be from the
     # `routing_crossbar`. Note that there are also data being fed into
@@ -286,6 +291,59 @@ class TileRTL(Component):
     def notify_crossbars_compute_status():
       s.routing_crossbar.compute_done @= s.element_done
       s.fu_crossbar.compute_done @= s.element_done
+
+    @update
+    def update_reg_pause_status():
+      s.reg_pause_status.recv.val @= 1
+      s.reg_pause_status.send.rdy @= 1
+      # Sets after receving CMD_PAUSE.
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PAUSE):
+        s.reg_pause_status.recv.msg @= PredicateType(1,1)
+      # Resets after receiving CMD_LAUNCH.
+      elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH):
+        s.reg_pause_status.recv.msg @= PredicateType(0,1)
+      # Remains unchanged in other cases.
+      else:
+        s.reg_pause_status.recv.msg @= s.reg_pause_status.recv.msg
+
+    @update
+    def update_reg_progress():
+      s.reg_progress.recv.val @= 1
+      s.reg_progress.send.rdy @= 1
+      # Records progress (PHI's output i, s.element.send_out[0].msg) in reg_progress, only when: 
+      #   Under PAUSE status                        &  The first DFGNode                                    &  Progress hasn't been recorded.
+      if (s.reg_pause_status.send.msg.payload == 1) & (s.ctrl_mem.send_ctrl.msg.operation == OPT_PHI_CONST) & (s.reg_progress.send.msg.predicate == 0):
+        s.reg_progress.recv.msg @= s.element.send_out[0].msg
+      # Clears reg_progress, only when:
+      #     Under LAUNCH status                       &  The first DFGNode.
+      elif (s.reg_pause_status.send.msg.payload == 0) & (s.ctrl_mem.send_ctrl.msg.operation == OPT_PHI_CONST):
+        s.reg_progress.recv.msg.payload @= 0
+        s.reg_progress.recv.msg.predicate @= 0
+      # Remains unchanged in other cases.
+      else:
+        s.reg_progress.recv.msg @= s.reg_progress.recv.msg
+
+    @update
+    def update_fu_crossbar_recv():
+      for i in range(num_fu_outports):
+        s.fu_crossbar.recv_data[i].val @= s.element.send_out[i].val
+        s.element.send_out[i].rdy @= s.fu_crossbar.recv_data[i].rdy
+      # Resets the predicate of fu_crossbar's input, so that predicate=0 will broadcast to all other operations. Do this only when:
+      #   Under PAUSE status                        &  The first DFGNode.
+      if (s.reg_pause_status.send.msg.payload == 1) & (s.ctrl_mem.send_ctrl.msg.operation == OPT_PHI_CONST):
+        for i in range(num_fu_outports):
+          s.fu_crossbar.recv_data[i].msg.payload @= s.element.send_out[i].msg.payload
+          s.fu_crossbar.recv_data[i].msg.predicate @= 0
+      # Recovers the progress in reg_progress, only when:
+      #     Under LAUNCH status                       &  The first DFGNode                                    &  Progress hasn't been recovered
+      elif (s.reg_pause_status.send.msg.payload == 0) & (s.ctrl_mem.send_ctrl.msg.operation == OPT_PHI_CONST) & (s.reg_progress.send.msg.predicate == 1):
+        for i in range(num_fu_outports):
+          s.fu_crossbar.recv_data[i].msg.payload @= s.reg_progress.send.msg.payload
+          s.fu_crossbar.recv_data[i].msg.predicate @= s.reg_progress.send.msg.predicate
+      # Normally passes the message in other cases
+      else:
+        for i in range(num_fu_outports):
+          s.fu_crossbar.recv_data[i].msg @= s.element.send_out[i].msg
 
   # Line trace
   def line_trace(s):
