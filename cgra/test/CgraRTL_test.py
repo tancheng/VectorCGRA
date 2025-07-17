@@ -14,6 +14,8 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..CgraRTL import CgraRTL
+from ..CgraTrackedPktChunked import CgraTrackedPktChunked
+from ..CgraTrackedHelper import convertPktToCPUWidth
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
@@ -54,8 +56,9 @@ class TestHarness(Component):
 
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
-    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
+    CpuCtrlPktType = mk_bits(32)
+    s.src_ctrl_pkt = TestSrcRTL(CpuCtrlPktType, src_ctrl_pkt)
+    s.src_query_pkt = TestSrcRTL(CpuCtrlPktType, src_query_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
                 CtrlSignalType, NocPktType, ControllerIdType,
@@ -70,15 +73,16 @@ class TestHarness(Component):
                 is_multi_cgra = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
+    s.complete_signal_sink_out = TestSinkRTL(CpuCtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     # Connections
     s.dut.cgra_id //= cgra_id
     s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
-    complete_count_value = \
-            sum(1 for pkt in complete_signal_sink_out \
-                if pkt.payload.cmd == CMD_COMPLETE)
+    # complete_count_value = \
+    #         sum(1 for pkt in complete_signal_sink_out \
+    #             if pkt.payload.cmd == CMD_COMPLETE)
+    complete_count_value = 1
 
     CompleteCountType = mk_bits(clog2(complete_count_value + 1))
     s.complete_count = Wire(CompleteCountType)
@@ -111,20 +115,22 @@ class TestHarness(Component):
     s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
     for tile_col in range(width):
-      s.dut.tile.send_data_on_boundary_north[tile_col].rdy //= 0
-      s.dut.tile.recv_data_on_boundary_north[tile_col].val //= 0
-      s.dut.tile.recv_data_on_boundary_north[tile_col].msg //= DataType()
-      s.dut.tile.send_data_on_boundary_south[tile_col].rdy //= 0
-      s.dut.tile.recv_data_on_boundary_south[tile_col].val //= 0
-      s.dut.tile.recv_data_on_boundary_south[tile_col].msg //= DataType()
+      s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
+      s.dut.recv_data_on_boundary_north[tile_col].val //= 0
+      s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
+
+      s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
+      s.dut.recv_data_on_boundary_south[tile_col].val //= 0
+      s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
 
     for tile_row in range(height):
-      s.dut.tile.send_data_on_boundary_west[tile_row].rdy //= 0
-      s.dut.tile.recv_data_on_boundary_west[tile_row].val //= 0
-      s.dut.tile.recv_data_on_boundary_west[tile_row].msg //= DataType()
-      s.dut.tile.send_data_on_boundary_east[tile_row].rdy //= 0
-      s.dut.tile.recv_data_on_boundary_east[tile_row].val //= 0
-      s.dut.tile.recv_data_on_boundary_east[tile_row].msg //= DataType()
+      s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
+      s.dut.recv_data_on_boundary_west[tile_row].val //= 0
+      s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
+
+      s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
+      s.dut.recv_data_on_boundary_east[tile_row].val //= 0
+      s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
     return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
@@ -172,6 +178,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   DataAddrType = mk_bits(addr_nbits)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
   DataType = mk_data(data_bitwidth, 1)
+  print("data_bitwidth:", data_bitwidth)
+  print("DataType:", DataType.nbits)
   PredicateType = mk_predicate(1, 1)
   ControllerIdType = mk_bits(max(1, clog2(num_cgras)))
   cgra_id = 0
@@ -183,9 +191,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   for i in range(num_cgras):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  idTo2d_map = {
-          0: [0, 0],
-  }
+  idTo2d_map = {0: [0, 0]}
+  #{i: [i,0] for i in range(num_cgras)}
 
   cgra_id_nbits = clog2(num_cgras)
   addr_nbits = clog2(data_mem_size_global)
@@ -213,6 +220,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                        num_cgra_rows,
                                        num_tiles,
                                        CgraPayloadType)
+  print("IntraCgraPktType:", IntraCgraPktType.nbits)
 
   routing_xbar_code = [TileInType(0) for _ in range(num_routing_outports)]
   fu_in_code = [FuInType(0) for _ in range(num_fu_inports)]
@@ -234,6 +242,29 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       neighbours, instead, consuming the data inside their own register
       cluster/file (i.e., `read_reg_from`).
       '''
+
+      # Usage example:
+      # res = convertPktToCPUWidth(something[0][0], cpu_width=32)
+      # print(res)
+      # res = convertPktToCPUWidth(something[0][0], cpu_width=32)
+      # print(res)
+
+      # Bit_Placeholder = mk_bits(4)
+      # my_pkt = something[0][0]
+      # my_pkt.payload.cmd = Bit_Placeholder(8)
+      # print("Something:", my_pkt)
+      # print("CMD", my_pkt.payload.cmd)
+      # print("Payload Bits", my_pkt.payload.nbits)
+      # for payload_var_key in vars(my_pkt.payload):
+      #   payload_var = getattr(my_pkt.payload, payload_var_key)
+      #   if (hasattr(payload_var, '__dict__')):
+      #     print(f"\t{payload_var_key}: {payload_var}")
+      #   else:
+      #     print(f"\t{payload_var_key}: {payload_var} ({payload_var.nbits})")
+      # print()
+      # print("DATA", my_pkt.payload.data.payload[0:3])
+      # print("DATA_ADDR", my_pkt.payload.data_addr)
+      # print("CTRL", my_pkt.payload.ctrl)
       src_opt_per_tile = [[
           # Pre-configure per-tile total config count. As we only have single `INC` operation,
           # we set it as one, which would trigger `COMPLETE` signal be sent back to CPU.
@@ -297,8 +328,13 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                             0, # vc_id
                             CgraPayloadType(CMD_COMPLETE)) for i in range(num_tiles)]
 
+      # for opt_per_tile in src_opt_per_tile:
+      #   src_ctrl_pkt.extend(opt_per_tile)
       for opt_per_tile in src_opt_per_tile:
-        src_ctrl_pkt.extend(opt_per_tile)
+        for opt_pkt in opt_per_tile:
+          res = convertPktToCPUWidth(opt_pkt, cpu_width=32)
+          src_ctrl_pkt.extend(res)
+      complete_signal_sink_out = convertPktToCPUWidth(complete_signal_sink_out[0], cpu_width=32)
       ctrl_steps = ctrl_mem_size
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,

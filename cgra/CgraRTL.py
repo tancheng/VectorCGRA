@@ -16,7 +16,8 @@ from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
-
+from ..cgra.DeSerializeRTL import DeSerializeRTL
+from ..cgra.SerializeRTL import SerializeRTL
 
 class CgraRTL(Component):
 
@@ -51,23 +52,25 @@ class CgraRTL(Component):
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
+    
+    CpuCtrlPktType = mk_bits(32)
 
     # Interfaces
-    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
-    # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
-    # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
-    s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CpuCtrlPktType)
+    s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
+    s.send_to_cpu_pkt = SendIfcRTL(CpuCtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
-    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+    s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+    s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+    s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+    s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
 
-    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+    s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+    s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
@@ -78,6 +81,9 @@ class CgraRTL(Component):
                       num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]
+    
+    s.cpu_to_controller_deserializer = DeSerializeRTL(CtrlPktType)
+    s.cpu_to_controller_serializer = SerializeRTL(CtrlPktType)
     s.data_mem = DataMemWithCrossbarRTL(NocPktType,
                                         CgraPayloadType,
                                         DataType,
@@ -113,6 +119,14 @@ class CgraRTL(Component):
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
+    # Connects cpu_to_controller_deserializer Unit with cpu packet
+    s.cpu_to_controller_deserializer.recv //= s.recv_from_cpu_pkt
+    s.cpu_to_controller_deserializer.send //= s.controller.recv_from_cpu_pkt
+
+    # Connects cpu_to_controller_serializer Unit with cpu packet
+    s.cpu_to_controller_serializer.recv //= s.controller.send_to_cpu_pkt
+    s.cpu_to_controller_serializer.send //= s.send_to_cpu_pkt
+
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
@@ -130,8 +144,8 @@ class CgraRTL(Component):
       s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
 
     # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
-    s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+    # s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    # s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
     # Assigns tile id.
     for i in range(s.num_tiles):
@@ -207,21 +221,21 @@ class CgraRTL(Component):
           s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
 
 
-      # if i // width == 0:
-      #   s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
-      #   s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
+      if i // width == 0:
+        s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
+        s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
 
-      # if i // width == height - 1:
-      #   s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
-      #   s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
+      if i // width == height - 1:
+        s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
+        s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
 
-      # if i % width == 0:
-      #   s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
-      #   s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
+      if i % width == 0:
+        s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
+        s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
 
-      # if i % width == width - 1:
-      #   s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
-      #   s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+      if i % width == width - 1:
+        s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
+        s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
 
       if i % width == 0 or i // width == 0:
         s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
