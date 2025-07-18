@@ -41,9 +41,9 @@ module division #(
             // Compare and subtract if possible
             if (r >= divisor) begin
                 r = r - divisor;
-                q[31 - i] = 1'b1;  // Set cur_ient quotient bit
+                q[HIGHEST_BIT - i] = 1'b1;  // Set cur_ient quotient bit
             end else begin
-                q[31 - i] = 1'b0;
+                q[HIGHEST_BIT - i] = 1'b0;
             end
         end
     end
