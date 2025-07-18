@@ -81,13 +81,13 @@ class TileRTL(Component):
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
                                      num_tiles,
-                                     num_routing_xbar_outports)
+                                     num_tile_outports)
     s.fu_crossbar = CrossbarRTL(DataType, PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
                                 num_tiles,
-                                num_routing_xbar_outports)
+                                num_tile_outports)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
