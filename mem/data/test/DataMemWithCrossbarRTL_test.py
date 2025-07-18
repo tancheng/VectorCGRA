@@ -8,16 +8,15 @@ Author : Cheng Tan
   Date : Dec 6, 2024
 """
 
-from pymtl3 import *
-from pymtl3.passes.backends.verilog import (VerilogTranslationPass,
-                                            VerilogVerilatorImportPass)
+from pymtl3.passes.backends.verilog import (VerilogTranslationPass)
 from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
+
 from ..DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
-from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
-from ....lib.cmd_type import *
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -30,7 +29,7 @@ class TestHarness(Component):
                 rd_tiles, wr_tiles, num_cgra_rows, num_cgra_columns,
                 num_tiles,
                 read_addr, read_data, write_addr,
-                write_data, noc_recv_load_data,
+                write_data, noc_recv_load,
                 send_to_noc_load_request_pkt, send_to_noc_store_pkt,
                 preload_data_per_bank):
 
@@ -47,7 +46,7 @@ class TestHarness(Component):
     s.recv_wdata = [TestSrcRTL(DataType, write_data[i])
                     for i in range(wr_tiles)]
 
-    s.recv_from_noc_rdata = TestSrcRTL(DataType, noc_recv_load_data)
+    s.recv_from_noc = TestSrcRTL(NocPktType, noc_recv_load)
 
     s.send_to_noc_load_request_pkt = TestSinkRTL(NocPktType, send_to_noc_load_request_pkt)
     s.send_to_noc_store_pkt = TestSinkRTL(NocPktType, send_to_noc_store_pkt)
@@ -73,7 +72,7 @@ class TestHarness(Component):
       s.data_mem.recv_waddr[i] //= s.recv_waddr[i].send
       s.data_mem.recv_wdata[i] //= s.recv_wdata[i].send
 
-    s.data_mem.recv_from_noc_rdata //= s.recv_from_noc_rdata.send
+    s.data_mem.recv_from_noc_load_response_pkt //= s.recv_from_noc.send
     s.data_mem.send_to_noc_load_request_pkt //= s.send_to_noc_load_request_pkt.recv
     s.data_mem.send_to_noc_store_pkt //= s.send_to_noc_store_pkt.recv
 
@@ -93,7 +92,7 @@ class TestHarness(Component):
 
     if not s.send_to_noc_load_request_pkt.done() or \
        not s.send_to_noc_store_pkt.done() or \
-       not s.recv_from_noc_rdata.done():
+       not s.recv_from_noc.done():
       return False
 
     return True
@@ -208,12 +207,12 @@ def test_const_queue(cmdline_opts):
                ]
 
   # Input data.
-  # noc_send_read_addr = [DataAddrType(42)]
   send_to_noc_load_request_pkt = [
                      # src  dst src_x src_y dst_x dst_y src_tile dst_tile opq vc
       InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 42)),
   ]
-  noc_recv_load_data = [DataType(0xbbbb, 1)]
+
+  noc_recv_load = [InterCgraPktType(0,   0,  0,    0,    0,    0,    0,       0,       0,  0, CgraPayloadType(CMD_LOAD_RESPONSE, DataType(0xbbbb, 1)))]
 
   # Expected.
   send_to_noc_store_pkt = [
@@ -238,7 +237,7 @@ def test_const_queue(cmdline_opts):
                    read_data,
                    write_addr,
                    write_data,
-                   noc_recv_load_data,
+                   noc_recv_load,
                    send_to_noc_load_request_pkt,
                    send_to_noc_store_pkt,
                    preload_data_per_bank)

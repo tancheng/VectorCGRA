@@ -16,7 +16,7 @@ VectorCGRA (vectorizable Coarse-Grained Reconfigurable Accelerator) generator is
 Installation
 --------------------------------------------------------
 
-VectorCGRA should work well on Python 3.7/3.8/3.9/3.10 with the following additional prerequisites:
+VectorCGRA should work well on Python 3.7/3.8/3.9/3.10/3.12 with the following additional prerequisites:
 
  - graphviz, verilator
  - git, Python headers, and libffi
@@ -25,7 +25,7 @@ VectorCGRA should work well on Python 3.7/3.8/3.9/3.10 with the following additi
 
 The steps for installing these prerequisites and VectorCGRA on a fresh Ubuntu
 distribution are shown below. They have been tested with Ubuntu Trusty
-14.04 ~ 20.04.
+14.04 ~ 22.04.
 
 ### Install python3
 
@@ -127,6 +127,34 @@ When you're done testing/developing, you can deactivate the virtualenv::
 
 ```
  % deactivate
+```
+
+Docker
+--------------------------------------------------------
+### Clone VectorCGRA repo
+```shell
+$ mkdir -p ${HOME}/cgra
+$ cd ${HOME}/cgra
+$ git clone https://github.com/tancheng/VectorCGRA.git
+$ cd VectorCGRA/docker/
+```
+
+### Build Docker image
+```shell
+$ docker build -t vectorcgra:v1 .
+```
+
+### Run Docker container
+```shell
+$ docker run --name myvectorcgra vectorcgra:v1 &
+$ docker exec -it myvectorcgra bash
+```
+
+### Run test in Docker container
+```shell
+root@host:/# source ${HOME}/venv/bin/activate
+root@host:/# cd ${HOME}/cgra/VectorCGRA/build
+(venv) root@host:~/cgra/VectorCGRA/build# pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 ```
 
 Publication

@@ -41,6 +41,7 @@ class TestHarness(Component):
     for i in range(num_inports):
       s.src_data[i].send //= s.dut.recv_data[i]
       s.dut.send_data[i] //= s.sink_out[i].recv
+      s.dut.prologue_count_inport[i] //= 0
     s.src_opt.send //= s.dut.recv_opt
 
     for i in range(num_outports):
