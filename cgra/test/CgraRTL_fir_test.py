@@ -265,7 +265,9 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   # Corresponding DFG:
   # TODO: Need to support grant predicate operations, and
   # connect that with operation 1(phi_const).
-  # https://github.com/tancheng/VectorCGRA/issues/149
+  # https://github.com/tancheng/VectorCGRA/issues/149, and
+  # fine-grained prologue is needed:
+  # https://github.com/tancheng/VectorCGRA/issues/156.
   '''
          0(phi_const) <--┐
          /     |     \   |
