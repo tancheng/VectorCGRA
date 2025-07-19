@@ -18,7 +18,8 @@ from ..lib.util.common import *
 class CrossbarRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
-                num_outports = 5, num_tiles = 4):
+                num_outports = 5, num_tiles = 4,
+                outport_towards_local_base_id = 4):
 
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2
@@ -130,7 +131,7 @@ class CrossbarRTL(Component):
         for j in range(num_outports):
           if s.recv_opt.rdy & \
              (s.in_dir[j] > 0) & \
-             (s.in_dir[j] == i) & \
+             (s.in_dir_local[j] == i) & \
              (s.prologue_counter[i] < s.prologue_count_wire[i]):
             s.prologue_counter_next[i] @= s.prologue_counter[i] + 1
 
@@ -174,7 +175,8 @@ class CrossbarRTL(Component):
         # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
         # the rdy checking on the FU's inports (connecting from crossbar_outport) if
         # the compute is already completed.
-        if (s.in_dir[i] > 0) & (~s.compute_done | (i < num_inports)):
+        if (s.in_dir[i] > 0) & \
+           (~s.compute_done | (i < outport_towards_local_base_id)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
         else:
           s.send_rdy_vector[i] @= 1
