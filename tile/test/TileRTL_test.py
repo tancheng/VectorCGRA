@@ -253,7 +253,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             ExclusiveDivRTL]
@@ -373,7 +373,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             InclusiveDivRTL]
