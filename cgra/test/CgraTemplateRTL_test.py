@@ -45,7 +45,7 @@ fuType2RTL["MAC"  ] = SeqMulAdderRTL
 fuType2RTL["Ret"  ] = RetRTL
 fuType2RTL["Mul"  ] = MulRTL
 fuType2RTL["Logic"] = LogicRTL
-fuType2RTL["Br"   ] = GrantRTL
+fuType2RTL["Grant"] = GrantRTL
 
 #-------------------------------------------------------------------------
 # Test harness
