@@ -11,7 +11,7 @@ Author : Cheng Tan
 
 from ..opt_type import *
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MulRTL import MulRTL
@@ -30,7 +30,7 @@ unit_map = { "Adder"           : AdderRTL,
              "Mul"             : MulRTL,
              "Phi"             : PhiRTL,
              "Comp"            : CompRTL,
-             "Branch"          : BranchRTL,
+             "Grant"           : GrantRTL,
              "Ret"             : RetRTL,
              "Logic"           : LogicRTL,
              "Shifter"         : ShifterRTL,
@@ -59,8 +59,8 @@ opt_map  = { "OPT_START"       : OPT_START,
              "OPT_LTE"         : OPT_LTE,
              "OPT_GTE"         : OPT_GTE,
              "OPT_RET"         : OPT_RET,
-             "OPT_BRH"         : OPT_BRH,
-             "OPT_BRH_START"   : OPT_BRH_START,
+             "OPT_GRT_PRED"    : OPT_GRT_PRED,
+             "OPT_GRT_ALWAYS"  : OPT_GRT_ALWAYS,
              "OPT_PHI"         : OPT_PHI,
              "OPT_PHI_CONST"   : OPT_PHI_CONST,
              "OPT_MUL_ADD"     : OPT_MUL_ADD,

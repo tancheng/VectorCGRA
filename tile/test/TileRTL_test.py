@@ -17,7 +17,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
 from ..TileRTL import TileRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -131,7 +131,7 @@ def test_tile_alu(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             ThreeMulAdderShifterRTL,
