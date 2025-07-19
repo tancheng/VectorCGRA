@@ -39,8 +39,8 @@ OPT_STR                   = Bits6( 13 )
 OPT_EQ                    = Bits6( 14 )
 OPT_EQ_CONST              = Bits6( 33 )
 OPT_RET                   = Bits6( 35 )
-OPT_BRH                   = Bits6( 16 )
-OPT_BRH_START             = Bits6( 34 )
+OPT_GRT_PRED              = Bits6( 16 )
+OPT_GRT_ALWAYS            = Bits6( 34 )
 OPT_PHI                   = Bits6( 17 )
 OPT_PHI_CONST             = Bits6( 32 )
 OPT_SEL                   = Bits6( 27 )
@@ -103,9 +103,9 @@ OPT_SYMBOL_DICT = {
   OPT_STR           : "(st)",
   OPT_EQ            : "(?=)",
   OPT_EQ_CONST      : "(?=')",
-  OPT_BRH           : "(br)",
+  OPT_GRT_PRED      : "(grt_pred)",
   OPT_RET           : "(ret)",
-  OPT_BRH_START     : "(br*)",
+  OPT_GRT_ALWAYS    : "(grt_always)",
   OPT_PHI           : "(ph)",
   OPT_PHI_CONST     : "(ph')",
   OPT_SEL           : "(sel)",

@@ -19,7 +19,7 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -330,11 +330,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
       activation_tensor_preload_data = [
           [
-              # tile 6
+              # Will be read by tile 6.
               IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = 0)),
               IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(2, 1), data_addr = 1)),
 
-              # tile 3
+              # Will be read by tile 3.
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(3, 1), data_addr = 2)),
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(4, 1), data_addr = 3)),
           ]
@@ -591,7 +591,7 @@ def test_homogeneous_2x2(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             RetRTL,
@@ -613,7 +613,7 @@ def test_homogeneous_2x2_ctrl_count_2(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             RetRTL,
@@ -646,7 +646,7 @@ def test_vector_king_mesh_2x2(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             VectorMulComboRTL,
@@ -668,7 +668,7 @@ def test_vector_mesh_4x4(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             VectorMulComboRTL,
@@ -691,7 +691,7 @@ def test_systolic_3x3(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             FpAddRTL,

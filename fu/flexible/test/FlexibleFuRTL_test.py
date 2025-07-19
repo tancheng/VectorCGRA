@@ -11,7 +11,7 @@ Author : Cheng Tan
 from pymtl3 import *
 from ..FlexibleFuRTL import FlexibleFuRTL
 from ...single.AdderRTL import AdderRTL
-from ...single.BranchRTL import BranchRTL
+from ...single.GrantRTL import GrantRTL
 from ...single.CompRTL import CompRTL
 from ...single.LogicRTL import LogicRTL
 from ...single.MemUnitRTL import MemUnitRTL
@@ -146,7 +146,7 @@ def test_flexible_mul():
 
 def test_flexible_universal():
   FU            = FlexibleFuRTL
-  FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, BranchRTL, MemUnitRTL]
+  FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, GrantRTL, MemUnitRTL]
   DataType      = mk_data( 16, 1 )
   PredicateType = mk_predicate( 1, 1 )
   data_mem_size = 8

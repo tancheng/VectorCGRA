@@ -14,7 +14,7 @@ from hypothesis import strategies as st
 from ..FlexibleFuRTL import FlexibleFuRTL
 from ..FuFL import *
 from ...single.AdderRTL import AdderRTL
-from ...single.BranchRTL import BranchRTL
+from ...single.GrantRTL import GrantRTL
 from ...single.CompRTL import CompRTL
 from ...single.LogicRTL import LogicRTL
 from ...single.MemUnitRTL import MemUnitRTL
