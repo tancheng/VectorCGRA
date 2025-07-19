@@ -137,7 +137,7 @@ class TestHarness(Component):
 
 def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
-               test_name = 'default'):
+               test_name = 'default', total_execute_ctrl_count = 1):
   tile_ports = 4
   assert(topology == "Mesh" or topology == "KingMesh")
   if topology == "Mesh":
@@ -240,8 +240,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       cluster/file (i.e., `read_reg_from`).
       '''
       src_opt_per_tile = [[
-          # Pre-configure per-tile total config count. As we only have single `INC` operation,
-          # we set it as one, which would trigger `COMPLETE` signal be sent back to CPU.
+          # Pre-configure per-tile total iteration count. As we only have single `INC` operation,
+          # `total_execute_ctrl_count` indicates the `INC` would be run `total_execute_ctrl_count`
+          # times, then `COMPLETE` signal is sent back to CPU.
           IntraCgraPktType(0, # src
                            i, # dst
                            cgra_id, # src_cgra_id
@@ -252,9 +253,24 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                            idTo2d_map[cgra_id][1], # dst_cgra_y
                            0, # opaque
                            0, # vc_id
-                           # Only execute one operation (i.e., store) is enough for this tile.
-                           # If this is set more than 1, no `COMPLETE` signal would be set back to CPU.
-                           CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+                           # Only execute one operation (i.e., `INC`) is enough for this tile.
+                           # If this is set more than 1, `INC` would be run multiple times before
+                           # `COMPLETE` signal is sent back to CPU.
+                           CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_execute_ctrl_count))),
+
+          # Pre-configure per-tile config count per iter, i.e., 1, as we only have one `INC` operation.
+          IntraCgraPktType(0, # src
+                           i, # dst
+                           cgra_id, # src_cgra_id
+                           cgra_id, # dst_cgra_id
+                           idTo2d_map[cgra_id][0], # src_cgra_x
+                           idTo2d_map[cgra_id][1], # src_cgra_y
+                           idTo2d_map[cgra_id][0], # dst_cgra_x
+                           idTo2d_map[cgra_id][1], # dst_cgra_y
+                           0, # opaque
+                           0, # vc_id
+                           # Only execute one operation (i.e., `INC`) is enough for this tile.
+                           CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1))),
 
           IntraCgraPktType(0, # src
                            i, # dst
@@ -581,6 +597,28 @@ def test_homogeneous_2x2(cmdline_opts):
             RetRTL,
            ]
   th = init_param(topology, FuList)
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                        'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_homogeneous_2x2_ctrl_count_2(cmdline_opts):
+  topology = "Mesh"
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            BranchRTL,
+            MemUnitRTL,
+            SelRTL,
+            RetRTL,
+           ]
+  th = init_param(topology, FuList, total_execute_ctrl_count = 2)
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
