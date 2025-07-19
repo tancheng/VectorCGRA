@@ -19,7 +19,7 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -143,7 +143,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             RetRTL,
@@ -285,10 +285,12 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   # Corresponding mapping:
   '''
        ↑ Y
-  (0,3)|       🔳
-  (0,2)|    ...
+  (0,5)|         🔳
+  (0,4)|        .
+  (0,3)|      .
+  (0,2)|    .
   (0,1)| 🔳
-  (0,0)+--------→ X
+  (0,0)+-------------→ X
        (1,0)(2,0)(3,0)
   ===================================================
   cycle 0:
