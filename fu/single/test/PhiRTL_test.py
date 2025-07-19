@@ -116,10 +116,11 @@ def test_Phi_const():
   # https://github.com/tancheng/VectorCGRA/issues/27.
   src_const = [DataType(3, 0), DataType(6, 1), DataType(9, 1)]
   src_predicate = [PredicateType(0, 1), PredicateType(1, 0), PredicateType(1, 1)]
+  # TODO: No necessary once https://github.com/tancheng/VectorCGRA/issues/149 is done.
   src_opt = [CtrlType(OPT_PHI_CONST, b1(1), pickRegister),
              CtrlType(OPT_PHI_CONST, b1(1), pickRegister),
              CtrlType(OPT_PHI_CONST, b1(1), pickRegister) ]
-  sink_out = [DataType(3, 1), DataType(4, 0), DataType(9, 0)]
+  sink_out = [DataType(3, 1), DataType(4, 0), DataType(7, 0)]
   th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_predicate, src_opt, sink_out)

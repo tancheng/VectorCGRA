@@ -96,14 +96,16 @@ class PhiRTL(Fu):
           #   s.send_out[0].val @= 0
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:
-          if s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
-            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
-          else:
+          if s.first:
             s.send_out[0].msg.payload @= s.recv_const.msg.payload
+          else:
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
 
-          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val & \
-                            ((s.recv_opt.msg.predicate == b1(0)) | \
-                             (s.recv_predicate.val & ~s.first) | s.first)
+          # s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val & \
+          #                   ((s.recv_opt.msg.predicate == b1(0)) | \
+          #                    (s.recv_predicate.val & ~s.first) | s.first)
+          s.recv_all_val @= ((s.first & s.recv_const.val) | \
+                             (~s.first & s.recv_in[s.in0_idx].val))
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
