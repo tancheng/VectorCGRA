@@ -98,9 +98,9 @@ def test_mul():
   FuInType      = mk_bits(clog2(num_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [f2b(2.2,  1), f2b(7.7,  1), f2b(4.4,   1) ]
-  src_in1       = [              f2b(3.3,  1)                ]
+  src_in1       = [              f2b(3.3,  0)                ]
   src_const     = [f2b(5.5,  1),               f2b(7.7,   1) ]
-  sink_out      = [f2b(12.1, 0), f2b(25.4, 0), f2b(33.88, 1) ] # 25.41 -> 25.4
+  sink_out      = [f2b(12.1, 1), f2b(25.4, 0), f2b(33.88, 1) ] # 25.41 -> 25.4
   src_opt       = [ConfigType(OPT_FMUL_CONST, pick_register),
                    ConfigType(OPT_FMUL,       pick_register),
                    ConfigType(OPT_FMUL_CONST, pick_register)]
