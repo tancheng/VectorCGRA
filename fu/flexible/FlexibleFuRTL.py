@@ -21,9 +21,16 @@ from ...lib.util.common import *
 
 class FlexibleFuRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
-                num_tiles, FuList, exec_lantency = {}):
+  def construct(s,
+                DataType,
+                PredicateType,
+                CtrlType,
+                num_inports,
+                num_outports,
+                data_mem_size,
+                num_tiles,
+                FuList,
+                exec_lantency = {}):
 
     # Constant
     num_entries = 2

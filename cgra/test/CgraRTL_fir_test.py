@@ -506,7 +506,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
           IntraCgraPktType(0, 1,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
                                                         TileInType(2), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),

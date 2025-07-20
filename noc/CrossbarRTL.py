@@ -17,14 +17,21 @@ from ..lib.util.common import *
 
 class CrossbarRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType, num_inports = 5,
-                num_outports = 5, num_tiles = 4,
+  def construct(s,
+                DataType,
+                PredicateType,
+                CtrlType,
+                num_inports = 5,
+                num_outports = 5,
+                num_tiles = 4,
+                ctrl_mem_size = 6,
                 outport_towards_local_base_id = 4):
 
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2
     NumInportType = mk_bits(clog2(num_index))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
     # Interface
     s.recv_opt = RecvIfcRTL(CtrlType)
@@ -52,19 +59,22 @@ class CrossbarRTL(Component):
     s.crossbar_id = InPort(b1)
     s.compute_done = InPort(b1)
 
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
+
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
     s.prologue_allowing_vector = Wire(num_outports)
     s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
-    s.prologue_counter = [Wire(PrologueCountType) for _ in range(num_inports)]
-    s.prologue_counter_next = [Wire(PrologueCountType) for _ in range(num_inports)]
-    s.prologue_count_inport = [InPort(PrologueCountType) for _ in range(num_inports)]
+    s.prologue_counter = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
+    s.prologue_counter_next = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
+    s.prologue_count_inport = [[InPort(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
     # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
-    s.prologue_count_wire = [Wire(PrologueCountType) for _ in range(num_inports)]
+    s.prologue_count_wire = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
 
-    for i in range(num_inports):
-      s.prologue_count_inport[i] //= s.prologue_count_wire[i]
+    for addr in range(ctrl_mem_size):
+      for i in range(num_inports):
+        s.prologue_count_inport[addr][i] //= s.prologue_count_wire[addr][i]
 
     # Routing logic
     @update
@@ -116,24 +126,26 @@ class CrossbarRTL(Component):
     @update_ff
     def update_prologue_counter():
       if s.reset:
-        for i in range(num_inports):
-          s.prologue_counter[i] <<= 0
+        for addr in range(ctrl_mem_size):
+          for i in range(num_inports):
+            s.prologue_counter[addr][i] <<= 0
       else:
-        for i in range(num_inports):
-          s.prologue_counter[i] <<= s.prologue_counter_next[i]
+        for addr in range(ctrl_mem_size):
+          for i in range(num_inports):
+            s.prologue_counter[addr][i] <<= s.prologue_counter_next[addr][i]
 
     @update
     def update_prologue_counter_next():
       # Nested-loop to update the prologue counter, to avoid dynamic indexing to
       # work-around Yosys issue: https://github.com/tancheng/VectorCGRA/issues/148
       for i in range(num_inports):
-        s.prologue_counter_next[i] @= s.prologue_counter[i]
+        s.prologue_counter_next[s.ctrl_addr_inport][i] @= s.prologue_counter[s.ctrl_addr_inport][i]
         for j in range(num_outports):
           if s.recv_opt.rdy & \
              (s.in_dir[j] > 0) & \
              (s.in_dir_local[j] == i) & \
-             (s.prologue_counter[i] < s.prologue_count_wire[i]):
-            s.prologue_counter_next[i] @= s.prologue_counter[i] + 1
+             (s.prologue_counter[s.ctrl_addr_inport][i] < s.prologue_count_wire[s.ctrl_addr_inport][i]):
+            s.prologue_counter_next[s.ctrl_addr_inport][i] @= s.prologue_counter[s.ctrl_addr_inport][i] + 1
 
     @update
     def update_prologue_allowing_vector():
@@ -142,8 +154,8 @@ class CrossbarRTL(Component):
         if s.in_dir[i] > 0:
           # Records whether the prologue steps have already been satisfied.
           s.prologue_allowing_vector[i] @= \
-            (s.prologue_counter[s.in_dir_local[i]] < \
-             s.prologue_count_wire[s.in_dir_local[i]])
+            (s.prologue_counter[s.ctrl_addr_inport][s.in_dir_local[i]] < \
+             s.prologue_count_wire[s.ctrl_addr_inport][s.in_dir_local[i]])
         else:
           s.prologue_allowing_vector[i] @= 1
 

@@ -52,6 +52,7 @@ class CtrlMemDynamicRTL(Component):
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
+    s.ctrl_addr_outport = OutPort(CtrlAddrType)
 
     # Component
     s.reg_file = RegisterFile(CtrlType, ctrl_mem_size, 1, 1)
@@ -67,14 +68,14 @@ class CtrlMemDynamicRTL(Component):
     s.prologue_count_reg_fu = [Wire(PrologueCountType) for _ in range(ctrl_mem_size)]
     s.prologue_count_outport_fu = OutPort(PrologueCountType)
     s.prologue_count_outport_fu_crossbar = \
-        [OutPort(PrologueCountType) for _ in range(num_fu_outports)]
+        [[OutPort(PrologueCountType) for _ in range(num_fu_outports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_outport_routing_crossbar = \
-        [OutPort(PrologueCountType) for _ in range(num_tile_inports)]
+        [[OutPort(PrologueCountType) for _ in range(num_tile_inports)] for _ in range(ctrl_mem_size)]
 
     s.prologue_count_reg_fu_crossbar = \
-        [Wire(PrologueCountType) for _ in range(num_fu_outports)]
+        [[Wire(PrologueCountType) for _ in range(num_fu_outports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_reg_routing_crossbar = \
-        [Wire(PrologueCountType) for _ in range(num_tile_inports)]
+        [[Wire(PrologueCountType) for _ in range(num_tile_inports)] for _ in range(ctrl_mem_size)]
 
     # Connections
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -140,6 +141,9 @@ class CtrlMemDynamicRTL(Component):
       # handle complicated actions.
       # else:
 
+    @update
+    def update_ctrl_addr_outport():
+      s.ctrl_addr_outport @= s.reg_file.raddr[0]
 
     @update
     def update_send_out_signal():
@@ -222,29 +226,31 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_prologue_outport():
       s.prologue_count_outport_fu @= s.prologue_count_reg_fu[s.reg_file.raddr[0]]
-      for i in range(num_tile_inports):
-        s.prologue_count_outport_routing_crossbar[i] @= \
-            s.prologue_count_reg_routing_crossbar[i]
-      for i in range(num_fu_outports):
-        s.prologue_count_outport_fu_crossbar[i] @= \
-            s.prologue_count_reg_fu_crossbar[i]
+      for addr in range(ctrl_mem_size):
+        for i in range(num_tile_inports):
+          s.prologue_count_outport_routing_crossbar[addr][i] @= \
+              s.prologue_count_reg_routing_crossbar[addr][i]
+        for i in range(num_fu_outports):
+          s.prologue_count_outport_fu_crossbar[addr][i] @= \
+              s.prologue_count_reg_fu_crossbar[addr][i]
 
     @update_ff
     def update_prologue_reg():
       if s.reset:
-        for i in range(num_tile_inports):
-          s.prologue_count_reg_routing_crossbar[i] <<= 0
-        for i in range(num_fu_outports):
-          s.prologue_count_reg_fu_crossbar[i] <<= 0
+        for addr in range(ctrl_mem_size):
+          for i in range(num_tile_inports):
+            s.prologue_count_reg_routing_crossbar[addr][i] <<= 0
+          for i in range(num_fu_outports):
+            s.prologue_count_reg_fu_crossbar[addr][i] <<= 0
       else:
         if s.recv_pkt_queue.send.val & \
            (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR):
           temp_routing_crossbar_in = s.recv_pkt_queue.send.msg.payload.ctrl.routing_xbar_outport[0]
-          s.prologue_count_reg_routing_crossbar[trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
+          s.prologue_count_reg_routing_crossbar[s.recv_pkt_queue.send.msg.payload.ctrl_addr][trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
         elif s.recv_pkt_queue.send.val & \
            (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
           temp_fu_crossbar_in = s.recv_pkt_queue.send.msg.payload.ctrl.fu_xbar_outport[0]
-          s.prologue_count_reg_fu_crossbar[trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
+          s.prologue_count_reg_fu_crossbar[s.recv_pkt_queue.send.msg.payload.ctrl_addr][trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, PrologueCountType)
 
     @update_ff
     def update_ctrl_count_per_iter():
