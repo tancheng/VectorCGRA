@@ -114,9 +114,6 @@ class TileRTL(Component):
     s.tile_out_or_link = [LinkOrRTL(DataType)
                           for _ in range(num_tile_outports)]
 
-    # Additional one register for partial predication
-    s.reg_predicate = RegisterRTL(PredicateType)
-
     # Signals indicating whether certain modules already done their jobs.
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
@@ -175,10 +172,6 @@ class TileRTL(Component):
       s.fu_crossbar.crossbar_outport[i] //= \
           s.ctrl_mem.send_ctrl.msg.fu_xbar_outport[i]
 
-    # One partial predication register for flow control.
-    s.routing_crossbar.send_predicate //= s.reg_predicate.recv
-    s.reg_predicate.send //= s.element.recv_predicate
-
     # Connections on the `fu_crossbar`.
     for i in range(num_fu_outports):
       s.element.send_out[i] //= s.fu_crossbar.recv_data[i]
@@ -232,7 +225,6 @@ class TileRTL(Component):
         elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONST):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
-            # s.const_mem.recv_const.msg.predicate @= 1
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
 
     @update
@@ -296,7 +288,7 @@ class TileRTL(Component):
     tile_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_in_channel])
     tile_in_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_in_channel])
     tile_in_channel_str = "|".join([str(x.line_trace()) for x in s.tile_in_channel])
-    out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
+    out_str = "|".join(["(" + str(x.msg.payload) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
     const_mem = s.const_mem.line_trace()
     return f"send_str: {send_str}, tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "

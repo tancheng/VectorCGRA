@@ -37,12 +37,9 @@ class NahRTL(Fu):
         s.send_out[i].val @= 0
         s.send_out[i].msg @= DataType()
 
-      s.recv_predicate.rdy @= b1(0)
-
       if s.recv_opt.msg.operation == OPT_NAH:
         s.recv_opt.rdy @= 1
       else:
         for j in range(num_outports):
           s.send_out[j].val @= b1(0)
         s.recv_opt.rdy @= 0
-

@@ -27,7 +27,6 @@ class ThreeCombo(Component):
 
     # Interface
     s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const     = RecvIfcRTL(DataType)
     s.recv_opt       = RecvIfcRTL(CtrlType)
     s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -82,24 +81,6 @@ class ThreeCombo(Component):
       s.Fu0.send_out[0].rdy @= s.Fu2.recv_in[0].rdy
       s.Fu1.send_out[0].rdy @= s.Fu2.recv_in[1].rdy
       s.Fu2.send_out[0].rdy @= s.send_out[0].rdy
-
-      # Note that the predication for a combined FU should be identical/shareable,
-      # which means the computation in different basic block cannot be combined.
-      s.Fu0.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-      s.Fu1.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-      s.Fu2.recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-
-      s.recv_predicate.rdy @= s.Fu0.recv_predicate.rdy & \
-                              s.Fu1.recv_predicate.rdy & \
-                              s.Fu2.recv_predicate.rdy
-
-      s.Fu0.recv_predicate.val @= s.recv_predicate.val
-      s.Fu1.recv_predicate.val @= s.recv_predicate.val
-      s.Fu2.recv_predicate.val @= s.recv_predicate.val
-
-      s.Fu0.recv_predicate.msg @= s.recv_predicate.msg
-      s.Fu1.recv_predicate.msg @= s.recv_predicate.msg
-      s.Fu2.recv_predicate.msg @= s.recv_predicate.msg
 
     @update
     def update_mem():

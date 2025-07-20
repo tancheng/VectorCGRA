@@ -297,19 +297,20 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   # https://github.com/tancheng/VectorCGRA/issues/149, and
   # fine-grained prologue is needed:
   # https://github.com/tancheng/VectorCGRA/issues/156.
-  '''
-         0(phi_const) <----------┐
-         /     |     \           |
-       2(+)   4(+)   8(+)        |
-      /    \          |  \       |
-    3(ld) 5(ld)       |  9(cmp)  |
-      \    /          |  /       |
-       6(x)          10(grant_predicate)
-         |             
-       7(+) <---┐      
-         |  \   |      
-     11(st)  1(phi_const)
-  '''
+
+  # Demo:
+  #        0(phi_const) <----------┐
+  #        /     |     \           |
+  #      2(+)   4(+)   8(+)        |
+  #     /    \          |  \       |
+  #   3(ld) 5(ld)       |  9(cmp)  |
+  #     \    /          |  /       |
+  #      6(x)          10(grant_predicate)
+  #        |             
+  #      7(+) <---┐      
+  #        |  \   |      
+  #    11(st)  1(phi_const)
+  #
 
   # Corresponding mapping:
   '''
@@ -391,7 +392,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # ADD.
           IntraCgraPktType(0, 0,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                      ctrl = CtrlType(OPT_ADD, 0,
+                                                      ctrl = CtrlType(OPT_ADD,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(1), TileInType(4), TileInType(0), TileInType(0)],
@@ -403,7 +404,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # STORE_CONST, indicating the address is a const.
           IntraCgraPktType(0, 0,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                      ctrl = CtrlType(OPT_STR_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -413,7 +414,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
+                                                     ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -422,7 +423,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
+                                                     ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -470,7 +471,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -480,7 +481,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # PHI_CONST.
           IntraCgraPktType(0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_PHI_CONST, 0,
+                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
@@ -490,7 +491,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -499,7 +500,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -530,7 +531,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 4,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -540,7 +541,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # ADD_CONST.
           IntraCgraPktType(0, 4,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_ADD_CONST, 0,
+                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
@@ -551,7 +552,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # LD.
           IntraCgraPktType(0, 4,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                      ctrl = CtrlType(OPT_LD, 0,
+                                                      ctrl = CtrlType(OPT_LD,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -564,7 +565,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # MUL.
           IntraCgraPktType(0, 4,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                      ctrl = CtrlType(OPT_MUL, 0,
+                                                      ctrl = CtrlType(OPT_MUL,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
@@ -591,7 +592,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -601,7 +602,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -611,7 +612,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # CMP.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                      ctrl = CtrlType(OPT_NE_CONST, 0,
+                                                      ctrl = CtrlType(OPT_NE_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
@@ -622,7 +623,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                      ctrl = CtrlType(OPT_NAH, 0,
+                                                      ctrl = CtrlType(OPT_NAH,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -649,7 +650,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # PHI_CONST.
           IntraCgraPktType(0, 8,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                      ctrl = CtrlType(OPT_PHI_CONST, 0,
+                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
@@ -660,7 +661,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # ADD_CONST.
           IntraCgraPktType(0, 8,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_ADD_CONST, 0,
+                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -673,7 +674,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # LD.
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_LD, 0,
+                                                     ctrl = CtrlType(OPT_LD,
                                                                      # The first 2 indicates the first operand is from the second inport,
                                                                      # which is actually from the second register cluster rather than the
                                                                      # inport channel, indicated by the `read_reg_from_code`.
@@ -687,7 +688,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
+                                                     ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -720,7 +721,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 9,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
+                                                     ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -730,7 +731,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # ADD_CONST.
           IntraCgraPktType(0, 9,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                      ctrl = CtrlType(OPT_ADD_CONST, 0,
+                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
@@ -742,7 +743,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # NAH.
           IntraCgraPktType(0, 9,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
+                                                     ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -751,7 +752,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # GRANT_PREDICATE.
           IntraCgraPktType(0, 9,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                     ctrl = CtrlType(OPT_GRT_PRED, 0,
+                                                     ctrl = CtrlType(OPT_GRT_PRED,
                                                                      # Swaps the first and second operands as the second one is
                                                                      # by default treated as the condition.
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],

@@ -26,7 +26,6 @@ class TwoSeqCombo(Component):
 
     # Interface
     s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const     = RecvIfcRTL(DataType)
     s.recv_opt       = RecvIfcRTL(CtrlType)
     s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -73,15 +72,6 @@ class TwoSeqCombo(Component):
       s.Fu0.send_out[0].rdy @= s.Fu1.recv_in[0].rdy
       s.Fu1.send_out[0].rdy @= s.send_out[0].rdy
 
-      s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy & \
-                                  s.Fu1.recv_predicate.rdy
-
-      s.Fu0.recv_predicate.val @= s.recv_predicate.val
-      s.Fu1.recv_predicate.val @= s.recv_predicate.val
-
-      s.Fu0.recv_predicate.msg @= s.recv_predicate.msg
-      s.Fu1.recv_predicate.msg @= s.recv_predicate.msg
-
     @update
     def update_mem():
       s.to_mem_waddr.val   @= b1(0)
@@ -93,5 +83,5 @@ class TwoSeqCombo(Component):
       s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace(s):
-    return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace() + " ; s.recv_predicate.msg: " + str(s.recv_predicate.msg)
+    return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace()
 

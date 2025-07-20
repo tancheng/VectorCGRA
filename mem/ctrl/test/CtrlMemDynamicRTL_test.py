@@ -26,7 +26,8 @@ class TestHarness(Component):
                 data_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, src0_msgs,
                 src1_msgs, ctrl_pkts, sink_msgs, num_tiles,
-                complete_signal_sink_out, ctrl_count_per_iter, total_ctrl_steps_val):
+                complete_signal_sink_out, ctrl_count_per_iter,
+                total_ctrl_steps_val):
 
     AddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -132,11 +133,11 @@ def test_Ctrl():
   src_data0 = [DataType(1, 1), DataType(5, 1), DataType(7, 1), DataType(6, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1), DataType(2, 1), DataType(3, 1)]
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
-  src_ctrl_pkt = [IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pick_register), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pick_register), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pick_register), ctrl_addr = 2)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pick_register), ctrl_addr = 3)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, 0, pick_register), ctrl_addr = 0))]
+  src_ctrl_pkt = [IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pick_register), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pick_register), ctrl_addr = 2)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 3)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, pick_register), ctrl_addr = 0))]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
   complete_signal_sink_out = [
@@ -226,10 +227,10 @@ def test_Ctrl_Bound():
   src_data0 = [DataType(1, 1), DataType(5, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1)]
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
-  src_ctrl_pkt = [IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pick_register), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pick_register), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pick_register), ctrl_addr = 2)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pick_register), ctrl_addr = 3)),
+  src_ctrl_pkt = [IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pick_register), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pick_register), ctrl_addr = 2)),
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 3)),
                   # Although there are 4 ctrl signals shown above, this testcase only selects 2 of them by specifying CMD_CONFIG_COUNT_PER_ITER = 2.
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
                   # Then specifies the start address of the selected ctrl signals using CMD_CONFIG_CTRL_LOWER_BOUND.
@@ -237,8 +238,8 @@ def test_Ctrl_Bound():
                   # [CMD_CONFIG_CTRL_LOWER_BOUND, CMD_CONFIG_CTRL_LOWER_BOUND + CMD_CONFIG_COUNT_PER_ITER), i.e., [1, 3) in this case
                   # are selected and send to the tile iteratively.
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(1, 1))),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, 0, pick_register), ctrl_addr = 0))]
-  
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, pick_register), ctrl_addr = 0))]
+
   # As ctrl signals with ctrl_addr = 1 and ctrl_addr = 2 are both OPT_SUB,
   # The outputs are    1-6              5-1
   sink_out = [DataType(-5, 1), DataType(4, 1)]

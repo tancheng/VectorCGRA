@@ -28,13 +28,12 @@ class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
                 num_inports, num_outports, data_mem_size,
-                src0_msgs, src1_msgs, src_predicate, src_const,
-                ctrl_msgs, sink_msgs):
+                src0_msgs, src1_msgs, src_const, ctrl_msgs,
+                sink_msgs):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
     s.src_in1 = TestSrcRTL(DataType, src1_msgs)
     s.src_in2 = TestSrcRTL(DataType, src1_msgs)
-    s.src_predicate = TestSrcRTL(PredicateType, src_predicate)
     s.src_opt = TestSrcRTL(ConfigType, ctrl_msgs)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
@@ -45,7 +44,6 @@ class TestHarness(Component):
     connect(s.src_in0.send, s.dut.recv_in[0])
     connect(s.src_in1.send, s.dut.recv_in[1])
     connect(s.src_in2.send, s.dut.recv_in[2])
-    connect(s.src_predicate.send, s.dut.recv_predicate)
     connect(s.dut.recv_const, s.const_queue.send_const)
     connect(s.src_opt.send, s.dut.recv_opt)
     connect(s.dut.send_out[0], s.sink_out.recv)
@@ -91,16 +89,14 @@ def test_mul0(input_a, input_b):
   ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
-  src_in0 = [DataType(input_a, 1)]
-  src_in1 = [DataType(input_b, 1)]
-  src_predicate = [PredicateType(1,1)]
+  src_in0 =   [DataType(input_a, 1)]
+  src_in1 =   [DataType(input_b, 1)]
   src_const = [DataType(0, 1) ]
-  sink_out = [DataType(input_a * input_b, 1)]
-  src_opt = [ConfigType(OPT_MUL, b1(0),
-             [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])]
+  sink_out =  [DataType(input_a * input_b, 1)]
+  src_opt =   [ConfigType(OPT_MUL,
+               [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
-                   src_in0, src_in1, src_predicate, src_const,
-                   src_opt, sink_out)
+                   src_in0, src_in1, src_const, src_opt,
+                   sink_out)
   run_sim(th)
-

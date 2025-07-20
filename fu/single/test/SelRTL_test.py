@@ -23,22 +23,21 @@ from ....lib.opt_type import *
 class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, src_data1,
-                src_data2, src_predicate, src_ref0, src_opt, sink_msgs):
+                num_inports, num_outports, data_mem_size,
+                src_data1, src_data2, src_ref0, src_opt,
+                sink_msgs):
 
     s.src_data1 = TestSrcRTL(DataType, src_data1)
     s.src_data2 = TestSrcRTL(DataType, src_data2)
-    s.src_predicate = TestSrcRTL(PredicateType, src_predicate)
     s.src_ref0 = TestSrcRTL(DataType, src_ref0)
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL( DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports, data_mem_size)
+    s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+                         num_inports, num_outports, data_mem_size)
 
     s.src_data1.send //= s.dut.recv_in[1]
     s.src_data2.send //= s.dut.recv_in[2]
-    s.src_predicate.send //= s.dut.recv_predicate
     s.src_ref0.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
     s.dut.send_out[0] //= s.sink_out.recv
@@ -84,14 +83,13 @@ def test_Select():
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_data1 = [DataType(9, 1), DataType(3, 1), DataType(4, 1)]
   src_data2 = [DataType(2, 1), DataType(7, 1), DataType(5, 1)]
-  src_predicate = [PredicateType(1,1), PredicateType(1,1), PredicateType(1,1)]
-  src_ref0 = [DataType(1, 1), DataType(0, 1), DataType(1, 1)]
-  src_opt = [CtrlType(OPT_SEL, b1(0), pickRegister),
-             CtrlType(OPT_SEL, b1(0), pickRegister),
-             CtrlType(OPT_SEL, b1(0), pickRegister)]
-  sink_out = [DataType(9, 1), DataType(7, 1), DataType(4, 1)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
-                   num_outports, data_mem_size, src_data1, src_data2,
-                   src_predicate, src_ref0, src_opt, sink_out)
+  src_ref0 =  [DataType(1, 1), DataType(0, 1), DataType(1, 1)]
+  src_opt =   [CtrlType(OPT_SEL, pickRegister),
+               CtrlType(OPT_SEL, pickRegister),
+               CtrlType(OPT_SEL, pickRegister)]
+  sink_out =  [DataType(9, 1), DataType(7, 1), DataType(4, 1)]
+  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+                   num_inports, num_outports, data_mem_size,
+                   src_data1, src_data2, src_ref0, src_opt,
+                   sink_out)
   run_sim(th)
-

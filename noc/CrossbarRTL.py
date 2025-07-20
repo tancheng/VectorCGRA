@@ -38,12 +38,9 @@ class CrossbarRTL(Component):
     s.crossbar_outport = [InPort(InType) for _ in range(num_outports)]
     s.send_data = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
-    s.send_predicate = SendIfcRTL(PredicateType)
-
     s.in_dir = [Wire(InType) for _ in range(num_outports)]
     s.in_dir_local = [Wire(NumInportType) for _ in range(num_outports)]
     s.send_rdy_vector = Wire(num_outports)
-    s.recv_predicate_vector = Wire(num_inports)
     s.recv_valid_vector = Wire(num_outports)
     s.recv_required_vector = Wire(num_inports)
     s.send_required_vector = Wire(num_outports)
@@ -69,9 +66,6 @@ class CrossbarRTL(Component):
     # Routing logic
     @update
     def update_signal():
-      s.recv_predicate_vector @= 0
-      s.send_predicate.val @= 0
-      s.send_predicate.msg @= PredicateType()
       for i in range(num_inports):
         s.recv_data[i].rdy @= 0
       for i in range(num_outports):
@@ -79,23 +73,7 @@ class CrossbarRTL(Component):
         s.send_data[i].msg @= DataType()
       s.recv_opt.rdy @= 0
 
-      # For predication register update. 'predicate' and 'predicate_in' no need
-      # to be active at the same time. Specifically, the 'predicate' is for
-      # the operation at the current cycle while the 'predicate_in' accumulates
-      # the predicate and pushes into the predicate register that will be used
-      # in the future.
-      if s.recv_opt.msg.predicate:
-        s.send_predicate.msg @= PredicateType(b1(0), b1(0))
-
       if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
-        for i in range(num_inports):
-          # Set predicate once the recv_data is stable (i.e., en == true).
-          # FIXME: Let's re-think the predicate support in next PR.
-          if s.recv_opt.msg.routing_predicate_in[i]:
-            s.send_predicate.val @= b1(1)
-            s.send_predicate.msg.payload @= b1(1)
-            s.recv_predicate_vector[i] @= s.recv_data[i].msg.predicate
-
         for i in range(num_inports):
           s.recv_data[i].rdy @= reduce_and(s.recv_valid_vector) & \
                                 reduce_and(s.send_rdy_vector) & \
@@ -109,7 +87,6 @@ class CrossbarRTL(Component):
             s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
             s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
-        s.send_predicate.msg.predicate @= reduce_or(s.recv_predicate_vector)
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
 
@@ -214,6 +191,5 @@ class CrossbarRTL(Component):
   def line_trace(s):
     recv_str = "|".join([str(x.msg) for x in s.recv_data])
     out_str  = "|".join([str(x.msg) for x in s.send_data])
-    pred_str = str(s.send_predicate.msg)
-    return f"{recv_str} [{s.recv_opt.msg}] {out_str}-xbar.pred:{pred_str}"
+    return f"{recv_str} [{s.recv_opt.msg}] {out_str}"
 
