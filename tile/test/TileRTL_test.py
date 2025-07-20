@@ -174,7 +174,7 @@ def test_tile_alu(cmdline_opts):
                 # cgraid src dst vc_id opq cmd_type addr operation predicate
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                 ctrl = CtrlType(OPT_ADD,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                   TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
@@ -182,7 +182,7 @@ def test_tile_alu(cmdline_opts):
                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                 ctrl = CtrlType(OPT_SUB, 0,
+                                                 ctrl = CtrlType(OPT_SUB,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                   TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
@@ -294,7 +294,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
                 # cgraid src dst vc_id opq cmd_type addr operation predicate
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                 ctrl = CtrlType(OPT_DIV, 0,
+                                                 ctrl = CtrlType(OPT_DIV,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                   TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
@@ -302,7 +302,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                 ctrl = CtrlType(OPT_ADD,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                   TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
@@ -414,7 +414,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
                 # cgraid src dst vc_id opq cmd_type addr operation predicate
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                 ctrl = CtrlType(OPT_DIV_INCLUSIVE_START, 0,
+                                                 ctrl = CtrlType(OPT_DIV_INCLUSIVE_START,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                   TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
@@ -423,7 +423,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
       
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                   payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                            ctrl = CtrlType(OPT_DIV_INCLUSIVE_END, 0,
+                                            ctrl = CtrlType(OPT_DIV_INCLUSIVE_END,
                                                             [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                             [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                             TileInType(4), TileInType(1), TileInType(0), TileInType(0)],

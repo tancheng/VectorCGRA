@@ -99,9 +99,9 @@ def test_vadder():
   src_in1       = [                InDataType(2)                ]
   src_const     = [InDataType(5),                  InDataType(7)]
   sink_out      = [OutDataType(6), OutDataType(5), OutDataType(11)]
-  src_opt       = [ConfigType( OPT_ADD_CONST, b1( 1 ), pickRegister ),
-                   ConfigType( OPT_SUB,       b1( 1 ), pickRegister ),
-                   ConfigType( OPT_ADD_CONST, b1( 1 ), pickRegister ) ]
+  src_opt       = [ConfigType(OPT_ADD_CONST, pickRegister),
+                   ConfigType(OPT_SUB,       pickRegister),
+                   ConfigType(OPT_ADD_CONST, pickRegister) ]
   th = TestHarness(FU, bandwidth, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,

@@ -35,14 +35,13 @@ import hypothesis
 class TestHarness( Component ):
 
   def construct( s, FunctionUnit, FuList, DataType, PredicateType, CtrlType,
-                 src0_msgs, src1_msgs, src_predicate, ctrl_msgs, sink0_msgs ):
+                 src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs ):
     data_mem_size = 8
     num_inports   = 2
     num_outports  = 2
 
     s.src_in0       = TestSrcRTL (DataType,      src0_msgs    )
     s.src_in1       = TestSrcRTL (DataType,      src1_msgs    )
-    s.src_predicate = TestSrcRTL (PredicateType, src_predicate)
     s.src_const     = TestSrcRTL (DataType,      src1_msgs    )
     s.src_opt       = TestSrcRTL (CtrlType,      ctrl_msgs    )
     s.sink_out0     = TestSinkRTL(DataType,      sink0_msgs   )
@@ -54,7 +53,6 @@ class TestHarness( Component ):
     connect(s.src_const.send,     s.dut.recv_const    )
     connect(s.src_in0.send,       s.dut.recv_in[0]    )
     connect(s.src_in1.send,       s.dut.recv_in[1]    )
-    connect(s.src_predicate.send, s.dut.recv_predicate)
     connect(s.src_opt.send,       s.dut.recv_opt      )
     connect(s.dut.send_out[0],    s.sink_out0.recv    )
 
@@ -131,10 +129,9 @@ def test_hypothesis(functions, inputs):
   for value in input_list:
     src_a.append  (DataType(value[0]))
     src_b.append  (DataType(value[1]))
-    src_opt.append(CtrlType(value[2], b1( 0 ), pickRegister))
-  src_predicate = [PredicateType(1, 0)]
+    src_opt.append(CtrlType(value[2], pickRegister))
   sink_out      = FuFL(DataType, src_a, src_b, src_opt)
   th = TestHarness(FU, functions, DataType, PredicateType, CtrlType,
-                   src_a, src_b, src_predicate, src_opt, sink_out)
+                   src_a, src_b, src_opt, sink_out)
   run_sim(th)
 
