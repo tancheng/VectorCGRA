@@ -16,7 +16,7 @@ Author : Cheng Tan
 
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
-from ..fu.single.BranchRTL import BranchRTL
+from ..fu.single.GrantRTL import GrantRTL
 from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
@@ -42,7 +42,7 @@ class TileRTL(Component):
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
