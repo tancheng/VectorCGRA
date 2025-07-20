@@ -48,7 +48,7 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_count_per_iter, total_ctrl_steps,
+                src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
                 controller2addr_map,
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
@@ -66,7 +66,7 @@ class TestHarness(Component):
                 width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                ctrl_count_per_iter, total_ctrl_steps, FunctionUnit,
+                kCtrlCountPerIter, kTotalCtrlSteps, FunctionUnit,
                 FuList, "Mesh", controller2addr_map, idTo2d_map,
                 is_multi_cgra = False)
 
@@ -239,8 +239,6 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   src_ctrl_pkt = []
   complete_signal_sink_out = []
   src_query_pkt = []
-  ctrl_count_per_iter = 4
-  total_ctrl_steps = 8
   fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   # TODO: make loop bound be parameterizable.
@@ -259,8 +257,39 @@ def test_homogeneous_4x4_fir(cmdline_opts):
     sum += input[i] * coeff[i];
   }
 
-  // expected sum = 171 (0xab)
+  // case 1: when i is in range(2, 4):
+  // input[0 + i] * coeff[2 + i]
+  //     = input[0 + 2] * coeff[2 + 2]
+  //     = 12 * 14
+  //     = 168
+  // expected sum = 168 + 3 = 171 (0xab)
+
+  // case 2: when i is in range(2, 5):
+  // input[0 + i] * coeff[2 + i]
+  //     = input[0 + 2] * coeff[2 + 2] +
+  //       input[0 + 3] * coeff[2 + 3]
+  //     = 12 * 14 + 13 * 15
+  //     = 363
+  // expected sum = 363 + 3 = 366 (0x16e)
   '''
+
+  # kernel specific parameters.
+  kStoreAddress = 16
+  kInputBaseAddress = 0
+  kCoefficientBaseAddress = 2
+  kSumInitValue = 3
+  kLoopLowerBound = 2
+  kLoopIncrement = 1
+  kLoopUpperBound = 4
+  kCtrlCountPerIter = 4
+  # Though kTotalCtrlSteps is way more than required loop iteration count,
+  # the stored result should still be correct thanks to the grant predicate.
+  # TODO: We need use `return` operation to complete the kernel via cmd.
+  # https://github.com/tancheng/VectorCGRA/issues/48.
+  kTotalCtrlSteps = kCtrlCountPerIter * \
+                    (kLoopUpperBound - kLoopLowerBound) + \
+                    10
+  kExpectedOutput = 366
 
   # Corresponding DFG:
   # TODO: Need to support grant predicate operations, and
@@ -269,13 +298,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   # fine-grained prologue is needed:
   # https://github.com/tancheng/VectorCGRA/issues/156.
   '''
-         0(phi_const) <--┐
-         /     |     \   |
-       2(+)   4(+)    8(+)
-      /    \           |
-    3(ld) 5(ld)       9(cmp)
-      \    /           
-       6(x)            
+         0(phi_const) <----------┐
+         /     |     \           |
+       2(+)   4(+)   8(+)        |
+      /    \          |  \       |
+    3(ld) 5(ld)       |  9(cmp)  |
+      \    /          |  /       |
+       6(x)          10(grant_predicate)
          |             
        7(+) <---┐      
          |  \   |      
@@ -292,41 +321,42 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   (0,1)| 🔳
   (0,0)+-------------→ X
        (1,0)(2,0)(3,0)
+
   ===================================================
   cycle 0:
   [    🔳            🔳            🔳            🔳 ]
 
   [ 0(phi_const) →   🔳            🔳            🔳 ]
-      ↓ ↺
+       ↓ ↺
   [    🔳            🔳            🔳            🔳 ]
 
-  [    7(+)   ───→   🔳            🔳            🔳 ]
+  [   7(+)    ───→   🔳            🔳            🔳 ]
         ↺
   ---------------------------------------------------
   cycle 1:
   [    🔳            🔳            🔳            🔳 ]
 
-  [ 2(+ const)  ← 8(+ const)       🔳            🔳 ]
-        ↺            ↓
+  [ 2(+ const)     8(+ const)      🔳            🔳 ]
+        ↺             ↓
   [ 4(+ const)       🔳            🔳            🔳 ]
         ↺
-  [ 11(st_const) ←  1(phi_const)   🔳            🔳 ]
+  [ 11(st_const) ← 1(phi_const)    🔳            🔳 ]
 
   ---------------------------------------------------
   cycle 2:
   [    🔳            🔳            🔳            🔳 ]
 
   [   3(ld)          🔳            🔳            🔳 ]
-        ↓
-  [   5(ld)         9(cmp)         🔳            🔳 ]
-        ↺             ↺
+        ↓             ↑
+  [   5(ld)        9(cmp)          🔳            🔳 ]
+        ↺
   [    🔳            🔳            🔳            🔳 ]
 
   ---------------------------------------------------
   cycle 3:
   [    🔳            🔳            🔳            🔳 ]
 
-  [    🔳            🔳            🔳            🔳 ]
+  [    🔳   ← 10(grant_predicate)  🔳            🔳 ]
 
   [   6(x)           🔳            🔳            🔳 ]
         ↓
@@ -350,13 +380,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 0
       [
           # Store address.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(16, 1))),
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kStoreAddress, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # ADD.
           IntraCgraPktType(0, 0,
@@ -429,13 +459,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 1
       [
           # Const for PHI_CONST.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
+          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # NAH.
           IntraCgraPktType(0, 1,
@@ -489,13 +519,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 4
       [
           # Const for ADD_CONST.
-          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # NAH.
           IntraCgraPktType(0, 4,
@@ -550,13 +580,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 5
       [
           # Const for CMP.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(4, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # NAH.
           IntraCgraPktType(0, 5,
@@ -581,14 +611,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
           # CMP.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                      ctrl = CtrlType(OPT_EQ_CONST, 0,
+                                                      ctrl = CtrlType(OPT_NE_CONST, 0,
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # FIXME: Sends result to self reg for now.
-                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
+                                                                      # Sends result to north tile9.
+                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
           # NAH.
           IntraCgraPktType(0, 5,
@@ -607,15 +636,15 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 8
       [
           # Const for PHI_CONST.
-          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
           # Const for ADD_CONST.
-          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 1))),
+          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # PHI_CONST.
           IntraCgraPktType(0, 8,
@@ -680,13 +709,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
       # tile 9
       [
           # Const for ADD_CONST.
-          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(1, 1))),
+          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
 
           # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
+          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_ctrl_steps, 1))),
+          IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
           # NAH.
           IntraCgraPktType(0, 9,
@@ -705,9 +734,11 @@ def test_homogeneous_4x4_fir(cmdline_opts):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # Sends to west tile: tile8.
-                                                                      [FuOutType(0), FuOutType(1), FuOutType(1), FuOutType(0),
-                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+                                                                      # Sends to south tile5 and self reg (cluster 1).
+                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],))),
           # NAH.
           IntraCgraPktType(0, 9,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -717,15 +748,19 @@ def test_homogeneous_4x4_fir(cmdline_opts):
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
-          # NAH.
+          # GRANT_PREDICATE.
           IntraCgraPktType(0, 9,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                     ctrl = CtrlType(OPT_NAH, 0,
-                                                                     fu_in_code,
+                                                     ctrl = CtrlType(OPT_GRT_PRED, 0,
+                                                                     # Swaps the first and second operands as the second one is
+                                                                     # by default treated as the condition.
+                                                                     [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     # Sends result to west tile8.
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
 
           # Launch the tile.
           IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_LAUNCH))
@@ -734,13 +769,13 @@ def test_homogeneous_4x4_fir(cmdline_opts):
 
   src_query_pkt = \
       [
-          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 16)),
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = kStoreAddress)),
       ]
 
   expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(6)]
   expected_mem_sink_out_pkt = \
       [
-          IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xab, 1), data_addr = 16)),
+          IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
       ]
 
   for activation in preload_data:
@@ -757,7 +792,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
-                   src_ctrl_pkt, ctrl_count_per_iter, total_ctrl_steps,
+                   src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
                    num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
