@@ -71,7 +71,7 @@ def test_mul():
   src_in0       = [DataType(13, 1), DataType(9, 1), DataType(7, 1), DataType(2, 1), DataType(0, 1), DataType(0, 1)]
   src_in1       = [                 DataType(3, 1)                                                                ]
   src_const     = [DataType(1,  1), DataType(1, 1), DataType(1, 1), DataType(2, 1), DataType(0, 1), DataType(0, 1)]
-  sink_out      = [DataType(0,  0), DataType(0, 0), DataType(0, 0), DataType(4, 1), DataType(3, 1), DataType(2, 1)] 
+  sink_out      = [DataType(0,  1), DataType(0, 1), DataType(0, 1), DataType(4, 1), DataType(3, 1), DataType(2, 1)] 
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_opt       = [ConfigType(OPT_DIV_INCLUSIVE_START, pick_register),
                    ConfigType(OPT_DIV_INCLUSIVE_START, pick_register),

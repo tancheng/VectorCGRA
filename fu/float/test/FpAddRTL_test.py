@@ -32,10 +32,9 @@ def test_elaborate(cmdline_opts):
   FuInType      = mk_bits(clog2(num_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [DataType(1, 1), DataType(7, 1), DataType(4,  1)]
-  src_in1       = [                DataType(3, 1),                ]
-  src_predicate = [PredType(1, 0), PredType(1, 0), PredType(1,  1)]
+  src_in1       = [                DataType(3, 0),                ]
   src_const     = [DataType(5, 1),                 DataType(7,  1)]
-  sink_out      = [DataType(6, 0), DataType(4, 0), DataType(11, 1)]
+  sink_out      = [DataType(6, 1), DataType(4, 0), DataType(11, 1)]
   src_opt       = [ConfigType(OPT_ADD_CONST, pick_register),
                    ConfigType(OPT_SUB,       pick_register),
                    ConfigType(OPT_ADD_CONST, pick_register)]
@@ -98,9 +97,9 @@ def test_add_basic():
   FuInType      = mk_bits(clog2(num_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [f2b(1.1,   1),  f2b(7.7, 1), f2b(4.4,  1) ]
-  src_in1       = [                f2b(3.3, 1),              ]
+  src_in1       = [                f2b(3.3, 0),              ]
   src_const     = [f2b(5.5,   1),               f2b(7.7,  1) ]
-  sink_out      = [f2b(6.602, 0),  f2b(4.4, 0), f2b(12.1, 1) ] # 6.6 -> 6.602
+  sink_out      = [f2b(6.602, 1),  f2b(4.4, 0), f2b(12.1, 1) ] # 6.6 -> 6.602
   src_opt       = [ConfigType(OPT_FADD_CONST, pick_register),
                    ConfigType(OPT_FSUB,       pick_register),
                    ConfigType(OPT_FADD_CONST, pick_register)]

@@ -67,9 +67,9 @@ def test_mul():
   data_mem_size = 8
   PredType      = mk_predicate(1, 1)
   src_in0       = [DataType(4, 1), DataType(7, 1), DataType(12, 1)]
-  src_in1       = [                DataType(3, 0)                 ]
-  src_const     = [DataType(1, 1),                 DataType(2,  1)]
-  sink_out      = [DataType(1, 1), DataType(2, 0), DataType(4,  1)] 
+  src_in1       = [DataType(3, 0), DataType(3, 0), DataType( 3, 0)]
+  src_const     = [DataType(1, 1),                 DataType( 2, 1)]
+  sink_out      = [DataType(1, 0), DataType(2, 0), DataType( 4, 0)] 
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_opt       = [ConfigType(OPT_DIV, pick_register),
                    ConfigType(OPT_DIV, pick_register),
