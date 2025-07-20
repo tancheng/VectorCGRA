@@ -18,6 +18,7 @@ from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
 from ..cgra.DeSerializeRTL import DeSerializeRTL
 from ..cgra.SerializeRTL import SerializeRTL
+from ..tile.TileWrapperRTL import TileWrapperRTL
 
 class CgraRTL(Component):
 
@@ -57,30 +58,30 @@ class CgraRTL(Component):
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CpuCtrlPktType)
-    s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
-    s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
+    # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CpuCtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
-    s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
 
-    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
-    s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
-                      data_mem_size_global, num_ctrl,
-                      total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, num_cgras, s.num_tiles,
-                      num_registers_per_reg_bank,
-                      FuList = FuList)
-              for i in range(s.num_tiles)]
+    # s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
+    #                   CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+    #                   data_mem_size_global, num_ctrl,
+    #                   total_steps, 4, 2, s.num_mesh_ports,
+    #                   s.num_mesh_ports, num_cgras, s.num_tiles,
+    #                   num_registers_per_reg_bank,
+    #                   FuList = FuList)
+    #           for i in range(s.num_tiles)]
     
     s.cpu_to_controller_deserializer = DeSerializeRTL(CtrlPktType)
     s.cpu_to_controller_serializer = SerializeRTL(CtrlPktType)
@@ -135,10 +136,10 @@ class CgraRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
-    if is_multi_cgra:
-      s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
-      s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
-    else:
+    # if is_multi_cgra:
+    #   s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+    #   s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    if not is_multi_cgra:
       s.bypass_queue = BypassQueueRTL(NocPktType, 1)
       s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
       s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
@@ -147,107 +148,56 @@ class CgraRTL(Component):
     # s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     # s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
-    # Assigns tile id.
-    for i in range(s.num_tiles):
-      s.tile[i].tile_id //= i
-      s.tile[i].cgra_id //= s.cgra_id
+    s.tiles = TileWrapperRTL(CgraIdType, DataType, PredicateType, CtrlPktType,
+                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+                      data_mem_size_global, num_ctrl,
+                      total_steps, 4, 2, s.num_mesh_ports,
+                      s.num_mesh_ports, num_cgras, s.num_tiles,
+                      num_registers_per_reg_bank, width, height, cgra_topology,
+                      FuList = FuList)
+
+    
+
+    s.tiles.cgra_id //= s.cgra_id
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+      s.ctrl_ring.send[i] //= s.tiles.tile_recv_from_controller_pkt[i]
     s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+      s.ctrl_ring.recv[i] //= s.tiles.tile_send_to_controller_pkt[i]
     s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
-
-      if i // width > 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
-
-      if i // width < height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.tile[i+width].recv_data[PORT_SOUTH]
-
-      if i % width > 0:
-        s.tile[i].send_data[PORT_WEST] //= s.tile[i-1].recv_data[PORT_EAST]
-
-      if i % width < width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
-
-      if cgra_topology == "KingMesh":
-        if i % width > 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
-          s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
-
-        if i % width < width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST] //= s.tile[i+width+1].recv_data[PORT_SOUTHWEST]
-          s.tile[i+width+1].send_data[PORT_SOUTHWEST] //= s.tile[i].recv_data[PORT_NORTHEAST]
-
-        if i // width == 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
-
-        if i // width == height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
-
-        if i % width == 0 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
-
-        if i % width == 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
-
-        if i % width == width - 1 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
-
-        if i % width == width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
-
-
-      if i // width == 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
-        s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
-
-      if i // width == height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
-        s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
-
-      if i % width == 0:
-        s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
-        s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
-
-      if i % width == width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
-        s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
-
       if i % width == 0 or i // width == 0:
-        s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
-        s.tile[i].from_mem_rdata //= s.data_mem.send_rdata[width + i // width - 1 if i >= width else i % width]
-        s.tile[i].to_mem_waddr   //= s.data_mem.recv_waddr[width + i // width - 1 if i >= width else i % width]
-        s.tile[i].to_mem_wdata   //= s.data_mem.recv_wdata[width + i // width - 1 if i >= width else i % width]
-      else:
-        s.tile[i].to_mem_raddr.rdy   //= 0
-        s.tile[i].from_mem_rdata.val //= 0
-        s.tile[i].from_mem_rdata.msg //= DataType(0, 0)
-        s.tile[i].to_mem_waddr.rdy   //= 0
-        s.tile[i].to_mem_wdata.rdy   //= 0
+        s.tiles.tile_to_mem_raddr[i]   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
+        s.tiles.tile_from_mem_rdata[i] //= s.data_mem.send_rdata[width + i // width - 1 if i >= width else i % width]
+        s.tiles.tile_to_mem_waddr[i]   //= s.data_mem.recv_waddr[width + i // width - 1 if i >= width else i % width]
+        s.tiles.tile_to_mem_wdata[i]   //= s.data_mem.recv_wdata[width + i // width - 1 if i >= width else i % width]
+
+    @update
+    def tie_off_boundary_recv_msgs():
+      for tile_col in range(width):
+        s.tiles.recv_data_on_boundary_north[tile_col].msg @= DataType()
+        s.tiles.recv_data_on_boundary_south[tile_col].msg @= DataType()
+      
+      for tile_row in range(height):
+        s.tiles.recv_data_on_boundary_west[tile_row].msg @= DataType()
+        s.tiles.recv_data_on_boundary_east[tile_row].msg @= DataType()
+    
+    for tile_col in range(width):
+      s.tiles.send_data_on_boundary_north[tile_col].rdy //= 0
+      s.tiles.recv_data_on_boundary_north[tile_col].val //= 0
+      s.tiles.send_data_on_boundary_south[tile_col].rdy //= 0
+      s.tiles.recv_data_on_boundary_south[tile_col].val //= 0
+
+    for tile_row in range(height):
+      s.tiles.send_data_on_boundary_west[tile_row].rdy //= 0
+      s.tiles.recv_data_on_boundary_west[tile_row].val //= 0
+      s.tiles.send_data_on_boundary_east[tile_row].rdy //= 0
+      s.tiles.recv_data_on_boundary_east[tile_row].val //= 0
+
 
   # Line trace
   def line_trace(s):

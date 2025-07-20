@@ -23,7 +23,7 @@ from ..tile.TileRTL import TileRTL
 
 class TileWrapperRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType,
+  def construct(s, CgraIdType, DataType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
@@ -31,6 +31,7 @@ class TileWrapperRTL(Component):
                       num_registers_per_reg_bank, width, height, cgra_topology,
                       Fu = FlexibleFuRTL,
                       FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
+    print("Width", width, "Height", height, "Cgra Topology", cgra_topology)
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
@@ -43,10 +44,15 @@ class TileWrapperRTL(Component):
     global_addr_nbits = clog2(data_mem_size_global)
     AddrType = mk_bits(global_addr_nbits)
 
-    s.tile_to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
+    # s.tile_to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
+    # s.tile_from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(height + width - 1)]
+    # s.tile_to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
+    # s.tile_to_mem_wdata = [SendIfcRTL(DataType) for _ in range(height + width - 1)]
+
+    s.tile_to_mem_raddr   = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
     s.tile_from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(height + width - 1)]
-    s.tile_to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
-    s.tile_to_mem_wdata = [SendIfcRTL(DataType) for _ in range(height + width - 1)]
+    s.tile_to_mem_waddr   = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
+    s.tile_to_mem_wdata   = [SendIfcRTL(DataType) for _ in range(height + width - 1)]
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -54,10 +60,12 @@ class TileWrapperRTL(Component):
     s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
     s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
 
-    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
     s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
     s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+
+    s.cgra_id = InPort(CgraIdType)
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
@@ -68,6 +76,18 @@ class TileWrapperRTL(Component):
                       num_registers_per_reg_bank,
                       FuList = FuList)
               for i in range(s.num_tiles)]
+    
+    s.tile_recv_from_controller_pkt = [RecvIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
+    s.tile_send_to_controller_pkt = [SendIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
+
+    for i in range(s.num_tiles):
+      s.tile[i].recv_from_controller_pkt //= s.tile_recv_from_controller_pkt[i]
+      s.tile[i].send_to_controller_pkt //= s.tile_send_to_controller_pkt[i]
+
+    # Assigns tile id.
+    for i in range(s.num_tiles):
+      s.tile[i].tile_id //= i
+      s.tile[i].cgra_id //= s.cgra_id
 
     for i in range(s.num_tiles):
       if i % width == 0 or i // width == 0:
@@ -157,6 +177,23 @@ class TileWrapperRTL(Component):
       if i % width == width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
         s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+
+    # for tile_col in range(width):
+    #   s.send_data_on_boundary_north[tile_col].rdy //= 0
+    #   s.recv_data_on_boundary_north[tile_col].val //= 0
+    #   #s.recv_data_on_boundary_north[tile_col].msg //= DataType(0)
+    #   s.send_data_on_boundary_south[tile_col].rdy //= 0
+    #   s.recv_data_on_boundary_south[tile_col].val //= 0
+    #   #s.recv_data_on_boundary_south[tile_col].msg //= DataType(0)
+
+    # for tile_row in range(height):
+    #   s.send_data_on_boundary_west[tile_row].rdy //= 0
+    #   s.recv_data_on_boundary_west[tile_row].val //= 0
+    #   #s.recv_data_on_boundary_west[tile_row].msg //= DataType()
+    #   s.send_data_on_boundary_east[tile_row].rdy //= 0
+    #   s.recv_data_on_boundary_east[tile_row].val //= 0
+    #   #s.recv_data_on_boundary_east[tile_row].msg //= DataType()
+   
 
 
   # Line trace
