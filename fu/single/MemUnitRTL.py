@@ -29,7 +29,6 @@ class MemUnitRTL(Component):
 
     # Interface
     s.recv_in = [ValRdyRecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = ValRdyRecvIfcRTL(PredicateType)
     s.recv_const = ValRdyRecvIfcRTL(DataType)
     s.recv_opt = ValRdyRecvIfcRTL(CtrlType)
     s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
