@@ -13,7 +13,6 @@ from pymtl3 import *
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-# from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.packets import mk_ring_pkt
 from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ...noc.PyOCN.pymtl3_net.ocnlib.utils import run_sim
 from ...noc.PyOCN.pymtl3_net.ocnlib.test.stream_sinks import NetSinkRTL as TestNetSinkRTL
@@ -99,8 +98,7 @@ class RingNetwork_Tests:
                                          1,
                                          num_tiles,
                                          CgraPayloadType)
-    # Pkt = mk_inter_cgra_pkt(nterminals, 1, 4, addr_nbits = addr_nbits,
-    #                              data_nbits = 32, predicate_nbits = 1)
+
     src_pkts = mk_src_pkts(num_cgras, [
                      # src  dst opq
       InterCgraPktType(0,   1,  0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 1))),

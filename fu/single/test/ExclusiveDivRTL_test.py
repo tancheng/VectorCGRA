@@ -8,7 +8,6 @@ Author : Jiajun Qin
   Date : May 2, 2025
 """
 
-
 import pytest
 import hypothesis
 from hypothesis import strategies as st
@@ -31,13 +30,12 @@ class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
                 num_inports, num_outports, data_mem_size,
-                src0_msgs, src1_msgs, src_predicate, src_const,
-                ctrl_msgs, sink_msgs):
+                src0_msgs, src1_msgs, src_const, ctrl_msgs,
+                sink_msgs):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
     s.src_in1 = TestSrcRTL(DataType, src1_msgs)
     s.src_in2 = TestSrcRTL(DataType, src1_msgs)
-    s.src_predicate = TestSrcRTL(PredicateType, src_predicate)
     s.src_opt = TestSrcRTL(ConfigType, ctrl_msgs)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
@@ -48,7 +46,6 @@ class TestHarness(Component):
     connect(s.src_in0.send, s.dut.recv_in[0])
     connect(s.src_in1.send, s.dut.recv_in[1])
     connect(s.src_in2.send, s.dut.recv_in[2])
-    connect(s.src_predicate.send, s.dut.recv_predicate)
     connect(s.dut.recv_const, s.const_queue.send_const)
     connect(s.src_opt.send, s.dut.recv_opt)
     connect(s.dut.send_out[0], s.sink_out.recv)
@@ -59,9 +56,8 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-
 def test_mul():
-  FU       = ExclusiveDivRTL
+  FU = ExclusiveDivRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports = 4
@@ -70,18 +66,16 @@ def test_mul():
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
   PredType      = mk_predicate(1, 1)
-  src_predicate = [ PredType(1, 0), PredType(1, 0), PredType(1, 1) ]
-  src_in0       = [ DataType(4,  1), DataType(7,  1), DataType(12,   1) ]
-  src_in1       = [               DataType(3,  1)                ]
-  src_const     = [ DataType(1,  1),               DataType(2,   1) ]
-  sink_out      = [ DataType(1, 0), DataType(2, 0), DataType(4, 1) ] 
-  pick_register = [ FuInType(x + 1) for x in range(num_inports) ]
-  src_opt       = [ ConfigType( OPT_DIV, b1(1), pick_register ),
-                    ConfigType( OPT_DIV, b1(1), pick_register ),
-                    ConfigType( OPT_DIV, b1(1), pick_register ) ]
+  src_in0       = [DataType(4, 1), DataType(7, 1), DataType(12, 1)]
+  src_in1       = [DataType(3, 0), DataType(3, 0), DataType( 3, 0)]
+  src_const     = [DataType(1, 1),                 DataType( 2, 1)]
+  sink_out      = [DataType(1, 0), DataType(2, 0), DataType( 4, 0)] 
+  pick_register = [FuInType(x + 1) for x in range(num_inports)]
+  src_opt       = [ConfigType(OPT_DIV, pick_register),
+                   ConfigType(OPT_DIV, pick_register),
+                   ConfigType(OPT_DIV, pick_register)]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
-                   src_in0, src_in1, src_predicate, src_const,
-                   src_opt, sink_out)
+                   src_in0, src_in1, src_const, src_opt,
+                   sink_out)
   run_sim(th)
-

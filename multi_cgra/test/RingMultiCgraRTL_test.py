@@ -131,7 +131,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                 ctrl = CtrlType(OPT_INC, 0,
+                                                 ctrl = CtrlType(OPT_INC,
                                                                  [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -141,7 +141,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                 ctrl = CtrlType(OPT_INC, 0,
+                                                 ctrl = CtrlType(OPT_INC,
                                                                  [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -152,7 +152,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                 ctrl = CtrlType(OPT_ADD,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -162,7 +162,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
-                                                 ctrl = CtrlType(OPT_STR, 0,
+                                                 ctrl = CtrlType(OPT_STR,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -172,7 +172,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 4,
-                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                 ctrl = CtrlType(OPT_ADD,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -182,7 +182,7 @@ def test_homo_1x4(cmdline_opts):
                      # src dst src_cgra dst_cgra
       IntraCgraPktType(0,  0,  0,       0,       0, 0, 0, 0,
                        payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 5,
-                                                 ctrl = CtrlType(OPT_ADD, 0,
+                                                 ctrl = CtrlType(OPT_ADD,
                                                                  [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
                                                                  [TileInType(4), TileInType(3), TileInType(2), TileInType(1),
                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],

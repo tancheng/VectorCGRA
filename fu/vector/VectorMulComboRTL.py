@@ -43,7 +43,6 @@ class VectorMulComboRTL(Component):
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
     s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_predicate = RecvIfcRTL( PredicateType )
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
     TempDataType     = mk_bits( data_bandwidth )
@@ -150,16 +149,12 @@ class VectorMulComboRTL(Component):
 
     @update
     def update_opt():
-      s.recv_predicate.rdy @= b1(0)
       s.send_out[0].msg.predicate @= b1(0)
 
       for i in range(num_lanes):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
         s.Fu[i].recv_opt.msg.operation @= OPT_NAH
-
-      if s.recv_opt.msg.predicate == b1(1):
-        s.recv_predicate.rdy @= b1(1)
 
       if (s.recv_opt.msg.operation == OPT_VEC_MUL) | \
          (s.recv_opt.msg.operation == OPT_MUL):

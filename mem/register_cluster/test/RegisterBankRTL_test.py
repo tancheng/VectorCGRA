@@ -20,7 +20,7 @@ from ....lib.util.common import *
 # Test harness
 #-------------------------------------------------------------------------
 
-class TestHarness( Component ):
+class TestHarness(Component):
 
   def construct(s, DataType, ConfigType, reg_bank_id, num_registers,
                 src_opt, src_msgs, sink_msgs):
@@ -88,7 +88,7 @@ def test_reg_bank():
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
-  src_opt = ConfigType(OPT_ADD_CONST, b1(1), pickRegister)
+  src_opt = ConfigType(OPT_ADD_CONST, pickRegister)
   src_opt.write_reg_from[reg_bank_id] = b2(2)
   # Writes data into reg[15].
   src_opt.write_reg_idx[reg_bank_id] = b4(15)

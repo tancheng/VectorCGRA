@@ -102,7 +102,7 @@ CtrlType = mk_ctrl(num_fu_inports,
 pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
 def test_crossbar():
-  src_opt  = [CtrlType(OPT_ADD, b1(0), pickRegister,
+  src_opt  = [CtrlType(OPT_ADD, pickRegister,
                        # routing_xbar_output
                        [TileInType(2), TileInType(3), TileInType(1)],
                        # fu_xbar_output
@@ -114,12 +114,12 @@ def test_crossbar():
   run_sim(th)
 
 def test_multi_cast():
-  src_opt  = [CtrlType(OPT_ADD, b1(0), pickRegister,
+  src_opt  = [CtrlType(OPT_ADD, pickRegister,
                        # routing_xbar_output
                        [TileInType(2), TileInType(1), TileInType(1)],
                        # fu_xbar_output
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
-              CtrlType(OPT_NAH, b1(0), pickRegister,
+              CtrlType(OPT_NAH, pickRegister,
                        # routing_xbar_output
                        [TileInType(0), TileInType(0), TileInType(3)],
                        # fu_xbar_output

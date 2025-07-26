@@ -15,8 +15,8 @@ from ...lib.opt_type import *
 
 class SelRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size = 4,
+  def construct(s, DataType, PredicateType, CtrlType,
+                num_inports, num_outports, data_mem_size = 4,
                 vector_factor_power = 0):
 
     # Constant
@@ -32,7 +32,6 @@ class SelRTL(Component):
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -86,7 +85,6 @@ class SelRTL(Component):
         s.recv_in[i].rdy @= b1(0)
 
       s.recv_const.rdy @= 0
-      s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= s.send_out[0].rdy
 
       for i in range(num_outports):
@@ -110,13 +108,10 @@ class SelRTL(Component):
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          s.recv_in[s.in2_idx].msg.predicate & \
-                                         (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate) & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             s.recv_in[s.in1_idx].val & \
-                            s.recv_in[s.in2_idx].val & \
-                            ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
+                            s.recv_in[s.in2_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
@@ -129,9 +124,6 @@ class SelRTL(Component):
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
           s.recv_in[s.in2_idx].rdy @= 0
-
-        if s.send_out[0].rdy & (s.recv_opt.msg.predicate == b1(1)):
-          s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy
 
     @update
     def update_reached_vector_factor():
@@ -164,4 +156,4 @@ class SelRTL(Component):
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) '

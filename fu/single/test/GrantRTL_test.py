@@ -30,8 +30,9 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL(DataType, sink_out)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports, data_mem_size)
+    s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+                         num_inports, num_outports,
+                         data_mem_size)
 
     s.src_value.send //= s.dut.recv_in[0]
     s.src_predicate.send //= s.dut.recv_in[1]
@@ -80,11 +81,11 @@ def test_grant():
   src_value     = [DataType(1, 1), DataType(2, 0), DataType(3, 1), DataType(4, 1), DataType(5, 0)]
   src_condition = [DataType(2, 0), DataType(1, 1), DataType(0, 1), DataType(1, 1)                ]
   sink_out      = [DataType(1, 0), DataType(2, 0), DataType(3, 0), DataType(4, 1), DataType(5, 1)]
-  src_opt       = [ConfigType(OPT_GRT_PRED,   b1(1), pickRegister),
-                   ConfigType(OPT_GRT_PRED,   b1(0), pickRegister),
-                   ConfigType(OPT_GRT_PRED,   b1(0), pickRegister),
-                   ConfigType(OPT_GRT_PRED,   b1(0), pickRegister),
-                   ConfigType(OPT_GRT_ALWAYS, b1(0), pickRegister)]
+  src_opt       = [ConfigType(OPT_GRT_PRED,   pickRegister),
+                   ConfigType(OPT_GRT_PRED,   pickRegister),
+                   ConfigType(OPT_GRT_PRED,   pickRegister),
+                   ConfigType(OPT_GRT_PRED,   pickRegister),
+                   ConfigType(OPT_GRT_ALWAYS, pickRegister)]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_value, src_condition, src_opt, sink_out)

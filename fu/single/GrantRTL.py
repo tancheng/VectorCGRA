@@ -53,7 +53,6 @@ class GrantRTL(Fu):
         s.send_out[i].msg @= DataType()
 
       s.recv_const.rdy @= 0
-      s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
       if s.recv_opt.val:

@@ -295,7 +295,6 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                        0, # vc_id
                        CgraPayloadType(CMD_CONFIG,
                                        ctrl = CtrlType(OPT_INC,
-                                                       0,
                                                        fu_in_code,
                                                        tile_in_code,
                                                        fu_out_code,

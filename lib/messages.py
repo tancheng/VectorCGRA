@@ -71,6 +71,7 @@ def mk_ctrl(num_fu_inports = 4,
             num_tile_outports = 5,
             num_registers_per_reg_bank = 16,
             prefix = "CGRAConfig"):
+
   operation_nbits = clog2(NUM_OPTS)
   OperationType = mk_bits(operation_nbits)
   TileInportsType = mk_bits(clog2(num_tile_inports  + 1))
@@ -79,8 +80,6 @@ def mk_ctrl(num_fu_inports = 4,
   RoutingOutportsType = mk_bits(clog2(num_routing_outports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  predicate_nbits = 1
-  PredicateType = mk_bits(predicate_nbits)
   vector_factor_power_nbits = 3
   VectorFactorPowerType = mk_bits(vector_factor_power_nbits)
   # 3 inports of register file bank.
@@ -89,8 +88,7 @@ def mk_ctrl(num_fu_inports = 4,
 
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}_{predicate_nbits}_" \
-             f"{vector_factor_power_nbits}"
+             f"{num_tile_outports}_{vector_factor_power_nbits}"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -98,9 +96,6 @@ def mk_ctrl(num_fu_inports = 4,
       if i != 0:
         out_str += '-'
       out_str += str(int(s.fu_in[i]))
-
-    out_str += '|(predicate)'
-    out_str += str(int(s.predicate))
 
     out_str += '|(routing_xbar_out)'
     for i in range(num_routing_outports):
@@ -113,12 +108,6 @@ def mk_ctrl(num_fu_inports = 4,
       if i != 0:
         out_str += '-'
       out_str += str(int(s.fu_xbar_outport[i]))
-
-    out_str += '|(predicate_in)'
-    for i in range(num_tile_inports):
-      if i != 0:
-        out_str += '-'
-      out_str += str(int(s.routing_predicate_in[i]))
 
     out_str += '|(vector_factor_power)'
     out_str += str(int(s.vector_factor_power))
@@ -154,12 +143,6 @@ def mk_ctrl(num_fu_inports = 4,
 
   field_dict = {}
   field_dict['operation'] = OperationType
-  # TODO: need fix to pair `predicate` with specific operation.
-  # The 'predicate' indicates whether the current operation is based on
-  # the partial predication or not. Note that 'predicate' is different
-  # from the following 'predicate_in', which contributes to the 'predicate'
-  # at the next cycle.
-  field_dict['predicate'] = PredicateType
   # The fu_in indicates the input register ID (i.e., operands) for the
   # operation.
   field_dict['fu_in'] = [FuInType for _ in range(num_fu_inports)]
@@ -168,12 +151,6 @@ def mk_ctrl(num_fu_inports = 4,
       num_routing_outports)]
   field_dict['fu_xbar_outport'] = [FuOutType for _ in range(
       num_routing_outports)]
-  # I assume one tile supports single predicate during the entire execution
-  # time, as it is hard to distinguish predication for different operations
-  # (we automatically update, i.e., 'or', the predicate stored in the
-  # predicate register). This should be guaranteed by the compiler.
-  field_dict['routing_predicate_in'] = [PredicateType for _ in range(
-      num_tile_inports)]
 
   field_dict['vector_factor_power'] = VectorFactorPowerType
 
@@ -187,10 +164,6 @@ def mk_ctrl(num_fu_inports = 4,
   # Indicates whether to read data from the register bank.
   field_dict['read_reg_from'] = [b1 for _ in range(num_fu_inports)]
   field_dict['read_reg_idx'] = [RegIdxType for _ in range(num_fu_inports)]
-
-  # TODO: to support multiple predicate
-  # field_dict[ 'predicate_in0' ] = ...
-  # field_dict[ 'predicate_in1' ] = ...
 
   return mk_bitstruct( new_name, field_dict,
     namespace = { '__str__': str_func }

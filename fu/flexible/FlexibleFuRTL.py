@@ -36,7 +36,6 @@ class FlexibleFuRTL(Component):
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -55,7 +54,6 @@ class FlexibleFuRTL(Component):
                       data_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
-    s.fu_recv_predicate_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_in_rdy_vector = [Wire(s.fu_list_size) for i in range(num_inports)]
 
@@ -85,13 +83,6 @@ class FlexibleFuRTL(Component):
         s.fu[i].recv_opt.val  @= s.recv_opt.val
         s.fu_recv_opt_rdy_vector[i] @= s.fu[i].recv_opt.rdy
 
-        # Note that the predication for a combined FU should be identical/shareable,
-        # which means the computation in different basic block cannot be combined.
-        s.fu[i].recv_opt.msg.predicate @= s.recv_opt.msg.predicate
-        s.fu[i].recv_predicate.val @= s.recv_predicate.val
-        s.fu_recv_predicate_rdy_vector[i] @= s.fu[i].recv_predicate.rdy
-        s.fu[i].recv_predicate.msg @= s.recv_predicate.msg
-
         # send_out connection
         for j in range(num_outports):
           # FIXME: need reduce_or here: https://github.com/tancheng/VectorCGRA/issues/51.
@@ -101,7 +92,6 @@ class FlexibleFuRTL(Component):
           s.fu[i].send_out[j].rdy @= s.send_out[j].rdy
 
       s.recv_const.rdy @= reduce_or(s.fu_recv_const_rdy_vector)
-      s.recv_predicate.rdy @= reduce_or(s.fu_recv_predicate_rdy_vector)
       # Operation (especially mem access) won't perform more than once, because once the
       # operation is performance (i.e., the recv_opt.rdy would be set), the `element_done`
       # register would be set and be respected.
@@ -125,5 +115,5 @@ class FlexibleFuRTL(Component):
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = " | ".join([(str(x.msg) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy)) for x in s.send_out])
     recv_str = " | ".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const: {s.recv_const.msg}, val: {s.recv_const.val}, rdy: {s.recv_const.rdy}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, recv_predicate.msg: {s.recv_predicate.msg}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str} (const: {s.recv_const.msg}, val: {s.recv_const.val}, rdy: {s.recv_const.rdy}) ] = [out: {out_str}] (recv_opt.rdy: {s.recv_opt.rdy}, recv_in[0].rdy: {s.recv_in[0].rdy}, recv_in[1].rdy: {s.recv_in[1].rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val}) '
 

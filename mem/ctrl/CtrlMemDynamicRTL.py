@@ -89,7 +89,6 @@ class CtrlMemDynamicRTL(Component):
       # Initializes the fields of the control signal.
       # s.reg_file.wdata[0] @= CtrlType()
       s.reg_file.wdata[0].operation @= 0
-      s.reg_file.wdata[0].predicate @= 0
       for i in range(num_fu_inports):
         s.reg_file.wdata[0].fu_in[i] @= 0
         s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_from[i]
@@ -99,8 +98,6 @@ class CtrlMemDynamicRTL(Component):
       for i in range(num_routing_outports):
         s.reg_file.wdata[0].routing_xbar_outport[i] @= 0
         s.reg_file.wdata[0].fu_xbar_outport[i] @= 0
-      for i in range(num_tile_inports):
-        s.reg_file.wdata[0].routing_predicate_in[i] @= 0
       s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.payload.ctrl.vector_factor_power
       s.reg_file.wdata[0].is_last_ctrl @= 0
 
@@ -109,7 +106,6 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
         # Fills the fields of the control signal.
         s.reg_file.wdata[0].operation @= s.recv_pkt_queue.send.msg.payload.ctrl.operation
-        s.reg_file.wdata[0].predicate @= s.recv_pkt_queue.send.msg.payload.ctrl.predicate
         for i in range(num_fu_inports):
           s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.fu_in[i]
           s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.write_reg_from[i]
@@ -119,8 +115,6 @@ class CtrlMemDynamicRTL(Component):
         for i in range(num_routing_outports):
           s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.routing_xbar_outport[i]
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
-        for i in range(num_tile_inports):
-          s.reg_file.wdata[0].routing_predicate_in[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.routing_predicate_in[i]
         s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.payload.ctrl.vector_factor_power
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.payload.ctrl.is_last_ctrl
 
