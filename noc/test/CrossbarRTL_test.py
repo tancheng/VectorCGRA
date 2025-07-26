@@ -26,6 +26,8 @@ class TestHarness(Component):
                 num_inports, num_outports, src_data, src_routing,
                 sink_out):
 
+    num_tiles = 1
+    ctrl_mem_size = 6
     s.num_inports  = num_inports
     s.num_outports = num_outports
 
@@ -36,12 +38,13 @@ class TestHarness(Component):
                   for i in range(num_outports)]
 
     s.dut = CrossbarUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports, 1)
+                         num_outports, num_tiles, ctrl_mem_size)
 
     for i in range(num_inports):
       s.src_data[i].send //= s.dut.recv_data[i]
       s.dut.send_data[i] //= s.sink_out[i].recv
-      s.dut.prologue_count_inport[i] //= 0
+      for addr in range(ctrl_mem_size):
+        s.dut.prologue_count_inport[addr][i] //= 0
     s.src_opt.send //= s.dut.recv_opt
 
     for i in range(num_outports):
