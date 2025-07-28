@@ -53,14 +53,12 @@ class CgraRTL(Component):
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
-    
-    CpuCtrlPktType = mk_bits(32)
 
     # Interfaces
-    s.recv_from_cpu_pkt = RecvIfcRTL(CpuCtrlPktType)
+    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
     # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
-    s.send_to_cpu_pkt = SendIfcRTL(CpuCtrlPktType)
+    s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
     # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -83,8 +81,8 @@ class CgraRTL(Component):
     #                   FuList = FuList)
     #           for i in range(s.num_tiles)]
     
-    s.cpu_to_controller_deserializer = DeSerializeRTL(CtrlPktType)
-    s.cpu_to_controller_serializer = SerializeRTL(CtrlPktType)
+    # s.cpu_to_controller_deserializer = DeSerializeRTL(CtrlPktType)
+    # s.cpu_to_controller_serializer = SerializeRTL(CtrlPktType)
     s.data_mem = DataMemWithCrossbarRTL(NocPktType,
                                         CgraPayloadType,
                                         DataType,
@@ -121,12 +119,10 @@ class CgraRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects cpu_to_controller_deserializer Unit with cpu packet
-    s.cpu_to_controller_deserializer.recv //= s.recv_from_cpu_pkt
-    s.cpu_to_controller_deserializer.send //= s.controller.recv_from_cpu_pkt
+    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
 
     # Connects cpu_to_controller_serializer Unit with cpu packet
-    s.cpu_to_controller_serializer.recv //= s.controller.send_to_cpu_pkt
-    s.cpu_to_controller_serializer.send //= s.send_to_cpu_pkt
+    s.controller.send_to_cpu_pkt  //= s.send_to_cpu_pkt
 
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request

@@ -56,9 +56,8 @@ class TestHarness(Component):
 
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
-    CpuCtrlPktType = mk_bits(32)
-    s.src_ctrl_pkt = TestSrcRTL(CpuCtrlPktType, src_ctrl_pkt)
-    s.src_query_pkt = TestSrcRTL(CpuCtrlPktType, src_query_pkt)
+    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+    s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
                 CtrlSignalType, NocPktType, ControllerIdType,
@@ -73,7 +72,7 @@ class TestHarness(Component):
                 is_multi_cgra = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
-    s.complete_signal_sink_out = TestSinkRTL(CpuCtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
+    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
     # Connections
     s.dut.cgra_id //= cgra_id
@@ -326,14 +325,14 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                            CgraPayloadType(CMD_LAUNCH,
                                            ctrl = CtrlType(OPT_NAH)))] for i in range(num_tiles)]
 
-      src_query_pkt = \
-          [
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 4)),
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 5)),
+      # src_query_pkt = \
+      #     [
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 4)),
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 5)),
 
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 6)),
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 7)),
-          ]
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 6)),
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 7)),
+      #     ]
 
       # vc_id needs to be 1 due to the message might traverse across the date line via ring.
       complete_signal_sink_out = \
@@ -348,95 +347,31 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                             0, # opaque
                             0, # vc_id
                             CgraPayloadType(CMD_COMPLETE)) for i in range(num_tiles)]
-      expected_mem_sink_out_pkt = \
-          [
-              # tile 1
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x0e, 1), data_addr = 4)),
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x14, 1), data_addr = 5)),
+      # expected_mem_sink_out_pkt = \
+      #     [
+      #         # tile 1
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x0e, 1), data_addr = 4)),
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x14, 1), data_addr = 5)),
 
-              # tile 2
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x1e, 1), data_addr = 6)),
-              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x2c, 1), data_addr = 7)),
-          ]
+      #         # tile 2
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x1e, 1), data_addr = 6)),
+      #         IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x2c, 1), data_addr = 7)),
+      #     ]
 
       # for opt_per_tile in src_opt_per_tile:
       #   src_ctrl_pkt.extend(opt_per_tile)
       for opt_per_tile in src_opt_per_tile:
-        for opt_pkt in opt_per_tile:
-          res = convertPktToCPUWidth(opt_pkt, cpu_width=32)
-          src_ctrl_pkt.extend(res)
-      complete_signal_sink_out = convertPktToCPUWidth(complete_signal_sink_out[0], cpu_width=32)
-      expected_mem_sink_out_pkt = convertPktToCPUWidth(expected_mem_sink_out_pkt, cpu_width=32)
-      complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
+        src_ctrl_pkt.extend(opt_per_tile)
+      # complete_signal_sink_out = convertPktToCPUWidth(complete_signal_sink_out[0], cpu_width=32)
+      # expected_mem_sink_out_pkt = convertPktToCPUWidth(expected_mem_sink_out_pkt, cpu_width=32)
+      # complete_signal_sink_out.extend(complete_signal_sink_out)
       # print("Full Original Pkt bits", src_opt_per_tile[0][0])
       # for i in range(4):
       #   print(f"src_ctrl_pkt[{i}] bits", src_ctrl_pkt[i])
 
-      def printBinary(bit_obj):
-        int_val = int(bit_obj.hex(), 16)
-        binary_str = bin(int_val)[2:]  # Remove '0b' prefix
-        
-        # Pad with leading zeros to match the bit width
-        num_bits = bit_obj.nbits
-        binary_str = binary_str.zfill(num_bits)
-        
-        return binary_str
-
-      def printHex(binary_str, pad_to_nbits=32):
-        int_val = int(binary_str, 2)
-    
-        # Calculate how many hex digits we need
-        num_bits = len(binary_str)
-        hex_digits_needed = (num_bits + 3) // 4
-        hex_digits_needed = (hex_digits_needed + 7) // 8
-        
-        # Format with proper padding
-        print("hex func", hex(int_val))
-        print(f"{int_val:x}")
-        hex_str = f"{int_val:0{hex_digits_needed}x}"
-        print(hex_str)
-        return hex_str
       
-      binary_str = ""
-      binary_bit_length = 0
-      
-      def bitObjToString(pkt_item):
-        nonlocal binary_str
-        nonlocal binary_bit_length
-        if not hasattr(pkt_item, '__dict__'):
-            if hasattr(pkt_item, 'nbits'):
-                binary_str += printBinary(pkt_item)
-                binary_bit_length += pkt_item.nbits
-            return
-        
-        # Process each attribute in the packet
-        for attr_name in vars(pkt_item):
-            attr_value = getattr(pkt_item, attr_name)
-            
-            # Recursively process nested packet structures
-            if hasattr(attr_value, '__dict__'):
-                bitObjToString(attr_value)
-            
-            # Handle lists of packet items
-            elif isinstance(attr_value, list):
-                for item in attr_value:
-                    bitObjToString(item)
-            
-            # Handle actual data fields
-            else:
-                if hasattr(attr_value, 'nbits'):
-                    binary_str += printBinary(attr_value)
-                    binary_bit_length += attr_value.nbits
 
-      bitObjToString(src_opt_per_tile[0][0])
-      
-      print("Full Original Pkt bits:", binary_str)
-      print("Full Original Pkt bits from str:", binary_bit_length)
-      print("Full Original Pkt bits w/ printHex:", printHex(binary_str))
-      print("src_ctrl_pkt bits:", [printHex(printBinary(src_ctrl_pkt[0]))])
-      print("src_ctrl_pkt bits:", [src_ctrl_pkt[0]])
-
-      src_query_pkt = convertPktToCPUWidth(src_query_pkt, cpu_width=32)
+      # src_query_pkt = convertPktToCPUWidth(src_query_pkt, cpu_width=32)
       ctrl_steps = ctrl_mem_size
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
