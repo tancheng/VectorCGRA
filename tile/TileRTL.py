@@ -76,17 +76,21 @@ class TileRTL(Component):
                               num_fu_inports, num_fu_outports,
                               data_mem_size, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
-    s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
+    s.routing_crossbar = CrossbarRTL(DataType,
+                                     PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
                                      num_tiles,
+                                     ctrl_mem_size,
                                      num_tile_outports)
-    s.fu_crossbar = CrossbarRTL(DataType, PredicateType,
+    s.fu_crossbar = CrossbarRTL(DataType,
+                                PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
                                 num_tiles,
+                                ctrl_mem_size,
                                 num_tile_outports)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
@@ -136,14 +140,19 @@ class TileRTL(Component):
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
 
+    # Ctrl address port.
+    s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
+    s.fu_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
+
     # Prologue port.
     s.element.prologue_count_inport //= s.ctrl_mem.prologue_count_outport_fu
-    for i in range(num_routing_xbar_inports):
-      s.routing_crossbar.prologue_count_inport[i] //= \
-          s.ctrl_mem.prologue_count_outport_routing_crossbar[i]
-    for i in range(num_fu_xbar_inports):
-      s.fu_crossbar.prologue_count_inport[i] //= \
-          s.ctrl_mem.prologue_count_outport_fu_crossbar[i]
+    for addr in range(ctrl_mem_size):
+      for i in range(num_routing_xbar_inports):
+        s.routing_crossbar.prologue_count_inport[addr][i] //= \
+            s.ctrl_mem.prologue_count_outport_routing_crossbar[addr][i]
+      for i in range(num_fu_xbar_inports):
+        s.fu_crossbar.prologue_count_inport[addr][i] //= \
+            s.ctrl_mem.prologue_count_outport_fu_crossbar[addr][i]
 
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
