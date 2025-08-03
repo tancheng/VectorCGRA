@@ -138,14 +138,16 @@ class CrossbarRTL(Component):
     def update_prologue_counter_next():
       # Nested-loop to update the prologue counter, to avoid dynamic indexing to
       # work-around Yosys issue: https://github.com/tancheng/VectorCGRA/issues/148
-      for i in range(num_inports):
-        s.prologue_counter_next[s.ctrl_addr_inport][i] @= s.prologue_counter[s.ctrl_addr_inport][i]
-        for j in range(num_outports):
-          if s.recv_opt.rdy & \
-             (s.in_dir[j] > 0) & \
-             (s.in_dir_local[j] == i) & \
-             (s.prologue_counter[s.ctrl_addr_inport][i] < s.prologue_count_wire[s.ctrl_addr_inport][i]):
-            s.prologue_counter_next[s.ctrl_addr_inport][i] @= s.prologue_counter[s.ctrl_addr_inport][i] + 1
+      for addr in range(ctrl_mem_size):
+        for i in range(num_inports):
+          s.prologue_counter_next[addr][i] @= s.prologue_counter[addr][i]
+          for j in range(num_outports):
+            if s.recv_opt.rdy & \
+              (s.in_dir[j] > 0) & \
+              (s.in_dir_local[j] == i) & \
+              (addr == s.ctrl_addr_inport) & \
+              (s.prologue_counter[addr][i] < s.prologue_count_wire[addr][i]):
+              s.prologue_counter_next[addr][i] @= s.prologue_counter[addr][i] + 1
 
     @update
     def update_prologue_allowing_vector():
