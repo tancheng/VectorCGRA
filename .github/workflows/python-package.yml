@@ -59,15 +59,22 @@ jobs:
     - name: Install dependencies for sv2v
       run: stack upgrade
     - name: Build for sv2v
-      working-directory: ${{github.workspace}}/tools/sv2v
-      run: make
+      run: |
+        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+        git clone https://github.com/zachjs/sv2v.git
+        git checkout 9bab0448e32504cef764692018914f0f2f314911
+        cd sv2v
+        make
     
     - name: Install dependencies for mflowgen
       run: |
         sudo apt-get install -y yosys
     - name: Build for mflowgen
-      working-directory: ${{github.workspace}}/tools/mflowgen
       run: |
+        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+        git clone https://github.com/tancheng/mflowgen.git
+        git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
+        cd mflowgen
         pip install -e .
         
     - name: Test and translate with pytest
