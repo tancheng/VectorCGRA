@@ -74,7 +74,7 @@ jobs:
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
         git clone https://github.com/tancheng/mflowgen.git
         cd mflowgen
-        git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
+        # git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
         pip install -e .
         
     - name: Test and translate with pytest
@@ -84,7 +84,7 @@ jobs:
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
-    - name: Test synthesis
+    - name: Test synthesis for CGRA template
       run: |
         cd build
         cp CgraTemplateRTL__*.v design.v
