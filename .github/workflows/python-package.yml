@@ -55,6 +55,20 @@ jobs:
         pip install pytest
         pip install py-markdown-table
         pip list
+
+    - name: Install dependencies for sv2v
+      run: stack upgrade
+    - name: Build for sv2v
+      working-directory: ${{github.workspace}}/tools/sv2v
+      run: make
+    
+    - name: Install dependencies for mflowgen
+      run: |
+        sudo apt-get install -y yosys
+    - name: Build for mflowgen
+      working-directory: ${{github.workspace}}/tools/mflowgen
+      run: |
+        pip install -e .
         
     - name: Test and translate with pytest
       run: |
@@ -84,3 +98,16 @@ jobs:
         pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
         # Data Mem
         pytest ../mem/data/test/DataMemWithCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+
+    - name: Test synthesis
+      run: |
+        cp CgraTemplateRTL__*.v design.v
+        export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
+        ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
+        cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
+        cd ${{github.workspace}}/tools/mflowgen
+        mkdir -p build && cd build
+        rm -r ./*
+        mflowgen run --design ../designs/cgra
+        make 2
+        make 3
