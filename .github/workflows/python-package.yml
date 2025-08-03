@@ -61,7 +61,6 @@ jobs:
     - name: Build for sv2v
       run: |
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
-        pwd
         git clone https://github.com/zachjs/sv2v.git
         cd sv2v
         git checkout 9bab0448e32504cef764692018914f0f2f314911
@@ -73,7 +72,6 @@ jobs:
     - name: Build for mflowgen
       run: |
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
-        pwd
         git clone https://github.com/tancheng/mflowgen.git
         cd mflowgen
         git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
@@ -82,14 +80,12 @@ jobs:
     - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build
-        pwd
         source ${HOME}/venv/bin/activate
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis
       run: |
-        pwd
         cd build
         cp CgraTemplateRTL__*.v design.v
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
@@ -97,7 +93,6 @@ jobs:
         cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
         cd ${{github.workspace}}/tools/mflowgen
         mkdir -p build && cd build
-        rm -r ./*
         mflowgen run --design ../designs/cgra
         make 2
         make 3
