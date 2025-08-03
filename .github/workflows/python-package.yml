@@ -80,12 +80,15 @@ jobs:
     - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build
+        pwd
         source ${HOME}/venv/bin/activate
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis
       run: |
+        pwd
+        cd build
         cp CgraTemplateRTL__*.v design.v
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
         ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
