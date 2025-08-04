@@ -98,8 +98,11 @@ jobs:
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
         ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
         cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
+        ls -ltrh ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/
         cd ${{github.workspace}}/tools/mflowgen
         mkdir -p build && cd build
+        ls -ltrh
         mflowgen run --design ../designs/cgra
+        ls -ltrh
         make 2
         make 3
