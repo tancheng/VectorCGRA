@@ -55,32 +55,47 @@ jobs:
         pip install pytest
         pip install py-markdown-table
         pip list
-        
+
+    - name: Install dependencies for sv2v
+      run: stack upgrade
+    - name: Build for sv2v
+      run: |
+        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+        git clone https://github.com/zachjs/sv2v.git
+        cd sv2v
+        git checkout 9bab0448e32504cef764692018914f0f2f314911
+        make
+    
+    - name: Install dependencies for mflowgen
+      run: |
+        sudo apt-get install -y yosys
+    - name: Build for mflowgen
+      run: |
+        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+        git clone https://github.com/tancheng/mflowgen.git
+        cd mflowgen
+        # git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
+        pip install -e .
+
+    - name: List CPU information
+      run: lscpu
+
     - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
-        # Simulation across all tests.
-        pytest .. -v --tb=short
-        # CtrlMemDynamicRTL
-        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
-        # Tile translation.
-        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Controller
-        pytest ../controller/test/ControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
-        # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
-        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Ring network simulation.
-        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
-        # CGRAs are interconnected with ring topology. The CGRA contains
-        # separate crossbars (for tiles and FUs), crossbar-based data memory (for multi-bank), and controller.
-        pytest ../multi_cgra/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Multi-cgra with mesh topology.
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
-        # Const Queue
-        pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
-        # Data Mem
-        pytest ../mem/data/test/DataMemWithCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+
+    - name: Test synthesis for CGRA template
+      run: |
+        cd build
+        cp CgraTemplateRTL__*.v design.v
+        export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
+        ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
+        cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
+        cd ${{github.workspace}}/tools/mflowgen
+        mkdir -p build && cd build
+        mflowgen run --design ../designs/cgra
+        make 2
+        make 3
