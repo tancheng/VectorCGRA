@@ -183,8 +183,8 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 6
   width = paramCGRA.rows if paramCGRA != None else 2
   height = paramCGRA.columns if paramCGRA != None else 2
-  data_mem_size_global = 32
-  data_mem_size_per_bank = 8
+  data_mem_size_global = 8
+  data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
   num_cgra_columns = 4
   num_cgra_rows = 1

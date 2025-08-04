@@ -77,8 +77,10 @@ jobs:
         # git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
         pip install -e .
 
-    - name: List CPU information
-      run: lscpu
+    - name: List CPU and Mem information
+      run: |
+        lscpu
+        free -h
 
     - name: Test and translate with pytest
       run: |
