@@ -111,6 +111,7 @@ jobs:
 
     - name: Test synthesis for CGRA template
       run: |
+        start_time=$(date +%s)
         export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         cd build
         cp CgraTemplateRTL__*.v design.v
@@ -122,3 +123,10 @@ jobs:
         mflowgen run --design ../designs/cgra
         make 2
         make 3
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "Synthesis step duration: $duration seconds"
+        if [ $duration -gt 900 ]; then
+          echo "ERROR: Synthesis step took longer than 15 minutes!"
+          exit 1
+        fi
