@@ -73,7 +73,6 @@ jobs:
         tar zxf oss-cad-suite-linux-x64-20240920.tgz -C ${{github.workspace}}/tools/
         echo "${{github.workspace}}/tools/oss-cad-suite/bin" >> $GITHUB_PATH
         yosys -V
-        
     - name: Build for mflowgen
       run: |
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
