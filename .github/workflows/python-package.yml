@@ -68,8 +68,12 @@ jobs:
     
     - name: Install dependencies for mflowgen
       run: |
-        sudo apt-get update
-        sudo apt-get install -y yosys
+        wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-09-20/oss-cad-suite-linux-x64-20240920.tgz
+        tar zxvf oss-cad-suite-linux-x64-20240920.tgz -C ./
+        export PATH="/WORK_REPO/CGRA-Flow/tools/oss-cad-suite/bin:$PATH"
+        export YOSYS_EXE=$(command -v yosys)
+        export OPENROAD_EXE=$(command -v openroad)
+        yosys -V
     - name: Build for mflowgen
       run: |
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
