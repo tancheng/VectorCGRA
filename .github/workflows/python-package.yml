@@ -109,14 +109,14 @@ jobs:
     #     # Data Mem
     #     pytest ../mem/data/test/DataMemWithCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
-  - name: Test and translate with pytest
+    - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
-  - name: Test synthesis for CGRA template
+    - name: Test synthesis for CGRA template
       run: |
         export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         cd build
