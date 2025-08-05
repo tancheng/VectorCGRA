@@ -72,9 +72,10 @@ jobs:
     - name: Build for mflowgen
       run: |
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
-        git clone https://github.com/tancheng/mflowgen.git
+        git clone https://github.com/yuqisun/mflowgen.git
         cd mflowgen
         # git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
+        git switch clk_2000
         pip install -e .
 
     - name: List CPU and Mem information
