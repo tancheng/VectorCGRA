@@ -71,7 +71,7 @@ jobs:
         mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
         wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-09-20/oss-cad-suite-linux-x64-20240920.tgz
         tar -C ${HOME} -xzf oss-cad-suite-linux-x64-20240920.tgz
-        echo "${HOME}/oss-cad-suite/bin" >> $GITHUB_PATH
+        export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         yosys -V
 
     - name: Build for mflowgen
@@ -97,6 +97,7 @@ jobs:
 
     - name: Test synthesis for CGRA template
       run: |
+        export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         # cd build
         # cp CgraTemplateRTL__*.v design.v
         ls -ltrh
