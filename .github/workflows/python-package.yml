@@ -81,7 +81,6 @@ jobs:
         # git checkout b0c1fb2cad4a98cf7343b0a566b54b0ee9cc20b8
         git switch clk_2000
         pip install -e .
-
     - name: List CPU and Mem information
       run: |
         lscpu
