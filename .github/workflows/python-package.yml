@@ -68,6 +68,7 @@ jobs:
     
     - name: Install dependencies for mflowgen
       run: |
+        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
         wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-09-20/oss-cad-suite-linux-x64-20240920.tgz
         tar zxf oss-cad-suite-linux-x64-20240920.tgz -C ${{github.workspace}}/tools/
         echo "${{github.workspace}}/tools/oss-cad-suite/bin" >> $GITHUB_PATH
