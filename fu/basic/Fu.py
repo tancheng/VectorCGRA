@@ -33,7 +33,6 @@ class Fu(Component):
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -51,17 +50,6 @@ class Fu(Component):
     s.latency = Wire(LatencyType)
 
     s.vector_factor_power //= vector_factor_power
-
-
-    # @update
-    # def update_signal():
-    #   for j in range(num_outports):
-    #     s.send_rdy_vector[j] @= s.send_out[j].rdy
-    #   s.recv_const.rdy @= reduce_and(s.send_rdy_vector) & (s.latency == latency - 1)
-    #   # OPT_NAH doesn't require consuming any input.
-    #   s.recv_opt.rdy @= ((s.recv_opt.msg.operation == OPT_NAH) | \
-    #                       reduce_and(s.send_rdy_vector)) & \
-    #                      (s.latency == latency - 1)
 
     @update
     def update_mem():
@@ -112,4 +100,4 @@ class Fu(Component):
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(opt_predicate:{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val})'
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg} ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, recv_opt.val: {s.recv_opt.val}, send[0].val: {s.send_out[0].val})'

@@ -88,25 +88,24 @@ def run_sim( test_harness, max_cycles=100 ):
 def test_vadder():
   FU            = VectorMulRTL
   bandwidth     = 8
-  InDataType    = mk_bits( bandwidth )
-  OutDataType   = mk_bits( bandwidth * 2 )
-  PredicateType = mk_predicate( 1, 1 )
+  InDataType    = mk_bits(bandwidth)
+  OutDataType   = mk_bits(bandwidth * 2)
+  PredicateType = mk_predicate(1, 1)
   data_mem_size = 8
   num_inports   = 2
   num_outports  = 1
-  ConfigType    = mk_ctrl( num_inports, num_outports )
-  FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  pickRegister  = [ FuInType( x+1 ) for x in range( num_inports ) ]
-  src_in0       = [ InDataType(2),  InDataType(129),  InDataType(4) ]
-  src_in1       = [ InDataType(2),  InDataType(2),  InDataType(1) ]
-  src_const     = [ InDataType(5),  InDataType(0),  InDataType(7) ]
-  sink_out      = [ OutDataType(4), OutDataType(258), OutDataType(4) ]
-  src_opt       = [ ConfigType( OPT_MUL, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_MUL, b1( 1 ), pickRegister ),
-                    ConfigType( OPT_MUL, b1( 1 ), pickRegister ) ]
-  th = TestHarness( FU, bandwidth, ConfigType,
-                    num_inports, num_outports, data_mem_size,
-                    src_in0, src_in1, src_const, src_opt,
-                    sink_out )
-  run_sim( th )
-
+  ConfigType    = mk_ctrl(num_inports, num_outports)
+  FuInType      = mk_bits(clog2(num_inports + 1))
+  pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
+  src_in0       = [InDataType (2), InDataType (129), InDataType (4)]
+  src_in1       = [InDataType (2), InDataType (  2), InDataType (1)]
+  src_const     = [InDataType (5), InDataType (  0), InDataType (7)]
+  sink_out      = [OutDataType(4), OutDataType(258), OutDataType(4)]
+  src_opt       = [ConfigType(OPT_MUL, pickRegister),
+                   ConfigType(OPT_MUL, pickRegister),
+                   ConfigType(OPT_MUL, pickRegister) ]
+  th = TestHarness(FU, bandwidth, ConfigType,
+                   num_inports, num_outports, data_mem_size,
+                   src_in0, src_in1, src_const, src_opt,
+                   sink_out)
+  run_sim(th)

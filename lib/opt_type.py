@@ -28,6 +28,8 @@ OPT_LLS                   = Bits6( 5  )
 OPT_LRS                   = Bits6( 6  )
 OPT_MUL                   = Bits6( 7  )
 OPT_DIV                   = Bits6( 26 )
+OPT_DIV_CONST             = Bits6( 26 )
+OPT_REM                   = Bits6( 44 )
 OPT_OR                    = Bits6( 8  )
 OPT_XOR                   = Bits6( 9  )
 OPT_AND                   = Bits6( 10 )
@@ -36,9 +38,11 @@ OPT_LD                    = Bits6( 12 )
 OPT_STR                   = Bits6( 13 )
 OPT_EQ                    = Bits6( 14 )
 OPT_EQ_CONST              = Bits6( 33 )
+OPT_NE                    = Bits6( 45 )
+OPT_NE_CONST              = Bits6( 46 )
 OPT_RET                   = Bits6( 35 )
-OPT_BRH                   = Bits6( 16 )
-OPT_BRH_START             = Bits6( 34 )
+OPT_GRT_PRED              = Bits6( 16 )
+OPT_GRT_ALWAYS            = Bits6( 34 )
 OPT_PHI                   = Bits6( 17 )
 OPT_PHI_CONST             = Bits6( 32 )
 OPT_SEL                   = Bits6( 27 )
@@ -75,6 +79,11 @@ OPT_GTE = Bits6( 61 )
 OPT_GT  = Bits6( 62 )
 OPT_LTE = Bits6( 63 )
 
+OPT_DIV_INCLUSIVE_START = Bits6( 48 )
+OPT_DIV_INCLUSIVE_END   = Bits6( 49 )
+OPT_REM_INCLUSIVE_START = Bits6( 59 )
+OPT_REM_INCLUSIVE_END   = Bits6( 15 )
+
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
   OPT_NAH           : "(NAH)",
@@ -87,17 +96,20 @@ OPT_SYMBOL_DICT = {
   OPT_LRS           : "(>>)",
   OPT_MUL           : "(*)",
   OPT_DIV           : "(/)",
+  OPT_REM           : "(%)",
   OPT_OR            : "(|)",
   OPT_XOR           : "(^)",
   OPT_AND           : "(&)",
   OPT_NOT           : "(~)",
   OPT_LD            : "(ld)",
   OPT_STR           : "(st)",
-  OPT_EQ            : "(?=)",
-  OPT_EQ_CONST      : "(?=')",
-  OPT_BRH           : "(br)",
+  OPT_EQ            : "(==)",
+  OPT_EQ_CONST      : "(==')",
+  OPT_NE            : "(!=)",
+  OPT_NE_CONST      : "(!=')",
+  OPT_GRT_PRED      : "(grant_pred)",
   OPT_RET           : "(ret)",
-  OPT_BRH_START     : "(br*)",
+  OPT_GRT_ALWAYS    : "(grant')",
   OPT_PHI           : "(ph)",
   OPT_PHI_CONST     : "(ph')",
   OPT_SEL           : "(sel)",
@@ -133,5 +145,10 @@ OPT_SYMBOL_DICT = {
   OPT_GTE : "(?>=)",
   OPT_GT  : "(?>)",
   OPT_LTE : "(?<=)",
+
+  OPT_DIV_INCLUSIVE_START   : "(/st)",
+  OPT_REM_INCLUSIVE_START   : "(%st)",
+  OPT_DIV_INCLUSIVE_END     : "(/ed)",
+  OPT_REM_INCLUSIVE_END     : "(%ed)",
 
 }

@@ -26,7 +26,6 @@ class TwoPrlCombo(Component):
 
     # Interface
     s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_predicate = RecvIfcRTL(PredicateType)
     s.recv_const     = RecvIfcRTL(DataType)
     s.recv_opt       = RecvIfcRTL(CtrlType)
     s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
@@ -75,15 +74,6 @@ class TwoPrlCombo(Component):
 
       s.Fu0.send_out[0].rdy @= s.send_out[0].rdy
       s.Fu1.send_out[0].rdy @= s.send_out[1].rdy
-
-      s.recv_predicate.rdy     @= s.Fu0.recv_predicate.rdy & \
-                                  s.Fu1.recv_predicate.rdy
-
-      s.Fu0.recv_predicate.val @= s.recv_predicate.val
-      s.Fu1.recv_predicate.val @= s.recv_predicate.val
-
-      s.Fu0.recv_predicate.msg @= s.recv_predicate.msg
-      s.Fu1.recv_predicate.msg @= s.recv_predicate.msg
 
     @update
     def update_mem():

@@ -19,7 +19,7 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.BranchRTL import BranchRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
@@ -137,7 +137,7 @@ class TestHarness(Component):
 
 def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
-               test_name = 'default'):
+               test_name = 'default', total_execute_ctrl_count = 1):
   tile_ports = 4
   assert(topology == "Mesh" or topology == "KingMesh")
   if topology == "Mesh":
@@ -240,8 +240,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       cluster/file (i.e., `read_reg_from`).
       '''
       src_opt_per_tile = [[
-          # Pre-configure per-tile total config count. As we only have single `INC` operation,
-          # we set it as one, which would trigger `COMPLETE` signal be sent back to CPU.
+          # Pre-configure per-tile total iteration count. As we only have single `INC` operation,
+          # `total_execute_ctrl_count` indicates the `INC` would be run `total_execute_ctrl_count`
+          # times, then `COMPLETE` signal is sent back to CPU.
           IntraCgraPktType(0, # src
                            i, # dst
                            cgra_id, # src_cgra_id
@@ -252,9 +253,24 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                            idTo2d_map[cgra_id][1], # dst_cgra_y
                            0, # opaque
                            0, # vc_id
-                           # Only execute one operation (i.e., store) is enough for this tile.
-                           # If this is set more than 1, no `COMPLETE` signal would be set back to CPU.
-                           CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+                           # Only execute one operation (i.e., `INC`) is enough for this tile.
+                           # If this is set more than 1, `INC` would be run multiple times before
+                           # `COMPLETE` signal is sent back to CPU.
+                           CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(total_execute_ctrl_count))),
+
+          # Pre-configure per-tile config count per iter, i.e., 1, as we only have one `INC` operation.
+          IntraCgraPktType(0, # src
+                           i, # dst
+                           cgra_id, # src_cgra_id
+                           cgra_id, # dst_cgra_id
+                           idTo2d_map[cgra_id][0], # src_cgra_x
+                           idTo2d_map[cgra_id][1], # src_cgra_y
+                           idTo2d_map[cgra_id][0], # dst_cgra_x
+                           idTo2d_map[cgra_id][1], # dst_cgra_y
+                           0, # opaque
+                           0, # vc_id
+                           # Only execute one operation (i.e., `INC`) is enough for this tile.
+                           CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1))),
 
           IntraCgraPktType(0, # src
                            i, # dst
@@ -268,7 +284,6 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                            0, # vc_id
                            CgraPayloadType(CMD_CONFIG,
                                            ctrl = CtrlType(OPT_INC,
-                                                           0,
                                                            fu_in_code,
                                                            routing_xbar_code,
                                                            fu_xbar_code,
@@ -314,11 +329,11 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/weight_stationary_systolic_array.png
       activation_tensor_preload_data = [
           [
-              # tile 6
+              # Will be read by tile 6.
               IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = 0)),
               IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(2, 1), data_addr = 1)),
 
-              # tile 3
+              # Will be read by tile 3.
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(3, 1), data_addr = 2)),
               IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(4, 1), data_addr = 3)),
           ]
@@ -339,7 +354,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
               # LD_CONST indicates the address is a const.
               IntraCgraPktType(0, 6,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_LD_CONST, 0,
+                                                         ctrl = CtrlType(OPT_LD_CONST,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -364,7 +379,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
               # LD_CONST indicates the address is a const.
               IntraCgraPktType(0, 3,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_LD_CONST, 0,
+                                                         ctrl = CtrlType(OPT_LD_CONST,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -387,7 +402,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 7,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_MUL_CONST, 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST,
                                                                          fu_in_code,
                                                                          # Forward data from west(tile 6) to east (tile 8).
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
@@ -412,7 +427,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 4,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
                                                                          fu_in_code,
                                                                          # Forward data from west(tile 3) to east (tile 5).
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
@@ -440,7 +455,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 1,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                         ctrl = CtrlType(OPT_STR_CONST,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Stores data from north(tile 4).
@@ -463,7 +478,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 8,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_MUL_CONST, 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Put data from west(tile 7) to first inport of FU, to do OPT_MUL_CONST.
@@ -487,7 +502,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 5,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD, 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Put data from west(tile 4) to first inport of FU, to do MUL_CONST (const 16).
@@ -514,7 +529,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
 
               IntraCgraPktType(0, 2,
                                payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                         ctrl = CtrlType(OPT_STR_CONST, 0,
+                                                         ctrl = CtrlType(OPT_STR_CONST,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Stores data from north(tile 5).
@@ -575,12 +590,34 @@ def test_homogeneous_2x2(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             RetRTL,
            ]
   th = init_param(topology, FuList)
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                        'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_homogeneous_2x2_ctrl_count_2(cmdline_opts):
+  topology = "Mesh"
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            GrantRTL,
+            MemUnitRTL,
+            SelRTL,
+            RetRTL,
+           ]
+  th = init_param(topology, FuList, total_execute_ctrl_count = 2)
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -608,7 +645,7 @@ def test_vector_king_mesh_2x2(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             VectorMulComboRTL,
@@ -630,7 +667,7 @@ def test_vector_mesh_4x4(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             VectorMulComboRTL,
@@ -653,7 +690,7 @@ def test_systolic_3x3(cmdline_opts):
             ShifterRTL,
             PhiRTL,
             CompRTL,
-            BranchRTL,
+            GrantRTL,
             MemUnitRTL,
             SelRTL,
             FpAddRTL,
@@ -671,4 +708,3 @@ def test_systolic_3x3(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-

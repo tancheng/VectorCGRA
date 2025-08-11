@@ -1,11 +1,11 @@
 """
 ==========================================================================
-MulRTL_test.py
+DivRTL_test.py
 ==========================================================================
-Test cases for Muliplier.
+Test cases for Divider.
 
-Author : Cheng Tan
-  Date : November 27, 2019
+Author : Jiajun Qin
+  Date : May 2, 2025
 """
 
 import pytest
@@ -13,7 +13,7 @@ import hypothesis
 from hypothesis import strategies as st
 from itertools import product
 from pymtl3 import *
-from ..MulRTL import MulRTL
+from ..DivRTL import DivRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.opt_type import *
@@ -78,25 +78,26 @@ def run_sim(test_harness, max_cycles = 20):
 
 @pytest.mark.parametrize(
   'input_a, input_b',
-  product(range(3, 5), range(2, 4))
+  product(range(5, 8), range(2, 4))
 )
-def test_mul0(input_a, input_b):
-  FU = MulRTL
+def test_div0(input_a, input_b):
+  FU = DivRTL
   DataType = mk_data(32, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports = 4
-  num_outports = 1
+  num_outports = 2
   ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
   src_in0 =   [DataType(input_a, 1)]
   src_in1 =   [DataType(input_b, 1)]
   src_const = [DataType(0, 1) ]
-  sink_out =  [DataType(input_a * input_b, 1)]
-  src_opt =   [ConfigType(OPT_MUL,
+  sink_out =  [DataType(input_a // input_b, 1)]
+  src_opt =   [ConfigType(OPT_DIV,
                [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
-                   src_in0, src_in1, src_const, src_opt,
-                   sink_out)
+                   src_in0, src_in1, src_const,
+                   src_opt, sink_out)
   run_sim(th)
+

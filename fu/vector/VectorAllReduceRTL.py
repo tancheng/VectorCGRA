@@ -33,7 +33,6 @@ class VectorAllReduceRTL(Component):
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
     s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_predicate = RecvIfcRTL( PredicateType )
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
     TempDataType     = mk_bits( data_bandwidth )
@@ -59,7 +58,7 @@ class VectorAllReduceRTL(Component):
 
     @update
     def update_result():
-      # Connection: split data into vectorized wires
+      # Connection: splits data into vectorized wires.
       s.send_out[0].msg.payload @= 0
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)
@@ -83,12 +82,7 @@ class VectorAllReduceRTL(Component):
 
     @update
     def update_predicate():
-      s.recv_predicate.rdy @= b1(0)
       s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
-      if s.recv_opt.msg.predicate == b1(1):
-        s.recv_predicate.rdy @= b1(1)
-      # else:
-      #   s.send_out[0].msg.predicate @= b1( 0 )
       if s.recv_opt.msg.operation != OPT_VEC_REDUCE_ADD | s.recv_opt.msg.operation != OPT_VEC_REDUCE_MUL:
         s.send_out[0].msg.predicate @= b1(0) # s.recv_in[0].msg.predicate
 

@@ -48,7 +48,6 @@ class RetRTL(Fu):
         s.send_out[j].msg @= DataType()
 
       s.recv_const.rdy @= 0
-      s.recv_predicate.rdy @= b1(0)
       s.recv_opt.rdy @= 0
 
       if s.recv_opt.val:
@@ -61,11 +60,8 @@ class RetRTL(Fu):
           #                             payload,                          predicate, bypass,  delay
           s.send_out[0].msg @= DataType(s.recv_in[s.in0_idx].msg.payload, b1(0),     b1(0),   b1(0))
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
-                                         (~s.recv_opt.msg.predicate | \
-                                          s.recv_predicate.msg.predicate) & \
                                          s.reached_vector_factor
-          s.recv_all_val @= s.recv_in[s.in0_idx].val & \
-                            ((s.recv_opt.msg.predicate == b1(0)) | s.recv_predicate.val)
+          s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
@@ -75,14 +71,11 @@ class RetRTL(Fu):
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
 
-        if s.send_out[0].rdy & s.recv_opt.msg.predicate == b1(1):
-          s.recv_predicate.rdy @= s.recv_all_val & s.send_out[0].rdy
-
   def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str}(P{s.recv_opt.msg.predicate}) (const_reg: {s.recv_const.msg}, predicate_reg: {s.recv_predicate.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) '
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) '
 

@@ -25,18 +25,17 @@ def test_elaborate( cmdline_opts ):
   num_inports   = 3
   num_outports  = 1
   FuInType      = mk_bits(clog2(num_inports + 1))
-  pick_register = [ FuInType(x + 1) for x in range(num_inports) ]
-  src_in0       = [ DataType(1, 1), DataType(7, 1), DataType( 4, 1) ]
-  src_in1       = [ DataType(2, 1), DataType(3, 1), DataType( 1, 1) ]
-  src_in2       = [ DataType(2, 1), DataType(3, 1), DataType( 1, 1) ]
-  src_predicate = [ PredType(1, 0), PredType(1, 0), PredType( 1, 1) ]
-  src_const     = [ DataType(5, 1), DataType(0, 0), DataType( 7, 1) ]
-  sink_out      = [ DataType(6, 0), DataType(4, 0), DataType(11, 1) ]
-  src_opt       = [ ConfigType( OPT_ADD_CONST, b1( 1 ), pick_register ),
-                    ConfigType( OPT_SUB,       b1( 1 ), pick_register ),
-                    ConfigType( OPT_ADD_CONST, b1( 1 ), pick_register ) ]
-  dut = AluGenMacRTL( DataType, PredType, ConfigType, num_inports,
-                     num_outports, data_mem_size )
+  pick_register = [FuInType(x + 1) for x in range(num_inports) ]
+  src_in0       = [DataType(1, 1), DataType(7, 1), DataType(4,  1)]
+  src_in1       = [DataType(2, 1), DataType(3, 1), DataType(1,  1)]
+  src_in2       = [DataType(2, 1), DataType(3, 1), DataType(1,  1)]
+  src_const     = [DataType(5, 1), DataType(0, 0), DataType(7,  1)]
+  sink_out      = [DataType(6, 0), DataType(4, 0), DataType(11, 1)]
+  src_opt       = [ConfigType(OPT_ADD_CONST, pick_register),
+                   ConfigType(OPT_SUB,       pick_register),
+                   ConfigType(OPT_ADD_CONST, pick_register)]
+  dut = AluGenMacRTL(DataType, PredType, ConfigType, num_inports,
+                     num_outports, data_mem_size)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 #-------------------------------------------------------------------------
@@ -45,29 +44,27 @@ def test_elaborate( cmdline_opts ):
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, DataType, PredType, ConfigType,
-                 num_inports, num_outports, data_mem_size,
-                 src0_msgs, src1_msgs, src2_msgs, src_predicate, src_const,
-                 ctrl_msgs, sink_msgs ):
+  def construct(s, FunctionUnit, DataType, PredType, ConfigType,
+                num_inports, num_outports, data_mem_size,
+                src0_msgs, src1_msgs, src2_msgs, src_const,
+                ctrl_msgs, sink_msgs):
 
-    s.src_in0       = TestSrcRTL( DataType,      src0_msgs     )
-    s.src_in1       = TestSrcRTL( DataType,      src1_msgs     )
-    s.src_in2       = TestSrcRTL( DataType,      src2_msgs     )
-    s.src_predicate = TestSrcRTL( PredType, src_predicate )
-    s.src_opt       = TestSrcRTL( ConfigType,    ctrl_msgs     )
-    s.sink_out      = TestSinkRTL( DataType,     sink_msgs     )
+    s.src_in0  = TestSrcRTL (DataType,   src0_msgs)
+    s.src_in1  = TestSrcRTL (DataType,   src1_msgs)
+    s.src_in2  = TestSrcRTL (DataType,   src2_msgs)
+    s.src_opt  = TestSrcRTL (ConfigType, ctrl_msgs)
+    s.sink_out = TestSinkRTL(DataType,  sink_msgs)
 
-    s.const_queue = ConstQueueRTL( DataType, src_const )
-    s.dut = FunctionUnit( DataType, PredType, ConfigType,
-                          num_inports, num_outports, data_mem_size )
+    s.const_queue = ConstQueueRTL(DataType, src_const)
+    s.dut = FunctionUnit(DataType, PredType, ConfigType,
+                         num_inports, num_outports, data_mem_size)
 
-    connect( s.src_in0.send,       s.dut.recv_in[0]         )
-    connect( s.src_in1.send,       s.dut.recv_in[1]         )
-    connect( s.src_in2.send,       s.dut.recv_in[2]         )
-    connect( s.src_predicate.send, s.dut.recv_predicate     )
-    connect( s.dut.recv_const,     s.const_queue.send_const )
-    connect( s.src_opt.send,       s.dut.recv_opt           )
-    connect( s.dut.send_out[0],    s.sink_out.recv          )
+    connect(s.src_in0.send,    s.dut.recv_in[0]        )
+    connect(s.src_in1.send,    s.dut.recv_in[1]        )
+    connect(s.src_in2.send,    s.dut.recv_in[2]        )
+    connect(s.dut.recv_const,  s.const_queue.send_const)
+    connect(s.src_opt.send,    s.dut.recv_opt          )
+    connect(s.dut.send_out[0], s.sink_out.recv         )
 
   def done(s):
     return s.src_in0.done() and s.src_in1.done() and \
@@ -86,25 +83,23 @@ def test_add_basic(cmdline_opts):
   data_mem_size = 8
   num_inports   = 3
   num_outports  = 1
-  FuInType      = mk_bits( clog2( num_inports + 1 ) )
-  pick_register = [ FuInType(x + 1) for x in range(num_inports) ]
-  src_in0       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 4, 1), DataType( 3, 1) ]
-  src_in1       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 5, 1), DataType( 3, 1) ]
-  src_in2       = [ DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 3, 1), DataType( 3, 1) ]
-  src_predicate = [ PredType(1, 1), PredType(1, 1), PredType(1, 1) ]
-  src_const     = [ DataType(1, 1), DataType(2, 1), DataType(3, 1) ]
-  sink_out      = [ DataType(2, 1), DataType(0, 1), DataType(0, 1), DataType(1, 1), DataType(0, 1),DataType(1, 1), DataType(20, 1), DataType(12, 1) ]
-  src_opt       = [ ConfigType( OPT_ADD,     b1( 1 ), pick_register ),
-                    ConfigType( OPT_SUB,     b1( 1 ), pick_register ),
-                    ConfigType( OPT_LT,      b1( 1 ), pick_register ),
-                    ConfigType( OPT_LTE,     b1( 0 ), pick_register ),
-                    ConfigType( OPT_GT,      b1( 0 ), pick_register ),
-                    ConfigType( OPT_GTE,     b1( 0 ), pick_register ),
-                    ConfigType( OPT_MUL,     b1( 0 ), pick_register ),
-                    ConfigType( OPT_MUL_ADD, b1( 0 ), pick_register ) ]
-  th = TestHarness( FU, DataType, PredType, ConfigType,
-                    num_inports, num_outports, data_mem_size,
-                    src_in0, src_in1, src_in2, src_predicate, src_const, src_opt,
-                    sink_out )
+  FuInType      = mk_bits(clog2(num_inports + 1))
+  pick_register = [FuInType(x + 1) for x in range(num_inports) ]
+  src_in0       = [DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 4, 1), DataType( 3, 1)]
+  src_in1       = [DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 5, 1), DataType( 3, 1)]
+  src_in2       = [DataType(1, 1), DataType(2, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1),DataType(3, 1), DataType( 3, 1), DataType( 3, 1)]
+  src_const     = [DataType(1, 1), DataType(2, 1), DataType(3, 1)]
+  sink_out      = [DataType(2, 1), DataType(0, 1), DataType(0, 1), DataType(1, 1), DataType(0, 1),DataType(1, 1), DataType(20, 1), DataType(12, 1)]
+  src_opt       = [ConfigType(OPT_ADD,     pick_register),
+                   ConfigType(OPT_SUB,     pick_register),
+                   ConfigType(OPT_LT,      pick_register),
+                   ConfigType(OPT_LTE,     pick_register),
+                   ConfigType(OPT_GT,      pick_register),
+                   ConfigType(OPT_GTE,     pick_register),
+                   ConfigType(OPT_MUL,     pick_register),
+                   ConfigType(OPT_MUL_ADD, pick_register)]
+  th = TestHarness(FU, DataType, PredType, ConfigType,
+                  num_inports, num_outports, data_mem_size,
+                  src_in0, src_in1, src_in2, src_const, src_opt,
+                  sink_out)
   run_sim(th)
-

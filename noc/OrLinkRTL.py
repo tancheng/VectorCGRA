@@ -27,8 +27,6 @@ class OrLinkRTL(Component):
     s.send = SendIfcRTL(DataType)
 
     # Components.
-    # s.recv_predicates = [Wire(1) for _ in range(num_in_ports)]
-    # s.recv_payloads = [Wire(nbits_payload) for _ in range(num_in_ports)]
     s.recv_valids = Wire(num_in_ports)
 
     @update

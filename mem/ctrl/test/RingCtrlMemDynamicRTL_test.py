@@ -134,31 +134,31 @@ def test_Ctrl():
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_ctrl_pkt = [               # src dst                  opq vc
-                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 1)),
-                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0)),
-                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, 0, pickRegister), ctrl_addr = 0))]
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  0, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  1, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_SUB, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 1)),
+                  IntraCgraPktType(0,  2, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 0)),
+                  IntraCgraPktType(0,  3, 0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_ADD, pickRegister), ctrl_addr = 0))]
 
   sink_out = [
-              [CtrlType(OPT_ADD, 0, pickRegister),
-               CtrlType(OPT_SUB, 0, pickRegister)],
+              [CtrlType(OPT_ADD, pickRegister),
+               CtrlType(OPT_SUB, pickRegister)],
               # Ctrl memory 1 first write into address 1, then address 0.
-              [CtrlType(OPT_ADD, 0, pickRegister),
-               CtrlType(OPT_SUB, 0, pickRegister)],
+              [CtrlType(OPT_ADD, pickRegister),
+               CtrlType(OPT_SUB, pickRegister)],
 
-              [CtrlType(OPT_SUB, 0, pickRegister),
-               CtrlType(OPT_ADD, 0, pickRegister)],
+              [CtrlType(OPT_SUB, pickRegister),
+               CtrlType(OPT_ADD, pickRegister)],
 
-              [CtrlType(OPT_SUB, 0, pickRegister),
-               CtrlType(OPT_ADD, 0, pickRegister)]]
+              [CtrlType(OPT_SUB, pickRegister),
+               CtrlType(OPT_ADD, pickRegister)]]
 
   th = TestHarness(MemUnit,
                    DataType,

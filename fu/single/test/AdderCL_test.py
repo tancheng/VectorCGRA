@@ -8,7 +8,6 @@ Author : Cheng Tan
   Date : November 27, 2019
 """
 
-
 from pymtl3 import *
 from ..AdderCL import AdderCL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
@@ -16,7 +15,6 @@ from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
 from ....mem.const.ConstQueueRTL import ConstQueueRTL
-
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -26,12 +24,11 @@ class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
                 num_inports, num_outports, data_mem_size,
-                src0_msgs, src1_msgs, src2_msgs, src_const,
+                src0_msgs, src1_msgs, src_const,
                 ctrl_msgs, sink_msgs, latency):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
     s.src_in1 = TestSrcRTL(DataType, src1_msgs)
-    s.src_predicate = TestSrcRTL(PredicateType, src2_msgs)
     s.src_opt = TestSrcRTL(ConfigType, ctrl_msgs)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
@@ -42,7 +39,6 @@ class TestHarness(Component):
 
     connect(s.src_in0.send, s.dut.recv_in[0])
     connect(s.src_in1.send, s.dut.recv_in[1])
-    connect(s.src_predicate.send, s.dut.recv_predicate)
     connect(s.dut.recv_const, s.const_queue.send_const)
     connect(s.src_opt.send, s.dut.recv_opt)
     connect(s.dut.send_out[0], s.sink_out.recv)
@@ -88,17 +84,16 @@ def test_alu():
   FuInType = mk_bits(clog2(num_inports + 1))
 
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
-  src_predicate = [PredType(1, 0), PredType(1, 0), PredType(1, 1)]
-  src_in0       = [DataType(1, 1), DataType(7, 1), DataType(4, 1)]
-  src_in1       = [                DataType(3, 1),                 DataType(1, 1)]
+  src_in0       = [DataType(1, 0), DataType(7, 1), DataType(4, 1)]
+  src_in1       = [                DataType(3, 0),                 DataType(1, 1)]
   src_const     = [DataType(5, 1),                 DataType(2, 1), DataType(7, 1)]
   sink_out      = [DataType(6, 0), DataType(4, 0), DataType(6, 1)]
-  src_opt       = [ConfigType(OPT_ADD_CONST, b1(1), pickRegister),
-                   ConfigType(OPT_SUB,       b1(1), pickRegister),
-                   ConfigType(OPT_ADD_CONST, b1(1), pickRegister)]
+  src_opt       = [ConfigType(OPT_ADD_CONST, pickRegister),
+                   ConfigType(OPT_SUB,       pickRegister),
+                   ConfigType(OPT_ADD_CONST, pickRegister)]
 
   th = TestHarness(FU, DataType, PredType, ConfigType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
-                   src_predicate, src_const, src_opt, sink_out, latency)
+                   src_const, src_opt, sink_out, latency)
   run_sim(th)
 

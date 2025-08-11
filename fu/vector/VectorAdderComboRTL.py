@@ -34,7 +34,6 @@ class VectorAdderComboRTL(Component):
     # Interface
     s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
     s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_predicate = RecvIfcRTL( PredicateType )
     s.recv_opt       = RecvIfcRTL( CtrlType )
     s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
 
@@ -94,15 +93,10 @@ class VectorAdderComboRTL(Component):
       s.send_out[0].val @= s.Fu[0].send_out[0].val & \
                            s.recv_opt.val
 
-      s.recv_predicate.rdy @= b1(0)
-
       for i in range(num_lanes):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
         s.Fu[i].recv_opt.msg.operation @= OPT_NAH
-
-      if s.recv_opt.msg.predicate == b1( 1 ):
-        s.recv_predicate.rdy @= b1( 1 )
 
       if ( s.recv_opt.msg.operation == OPT_VEC_ADD ) | \
          ( s.recv_opt.msg.operation == OPT_ADD ):
