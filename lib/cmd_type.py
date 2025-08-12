@@ -31,6 +31,7 @@ CMD_LOAD_RESPONSE                    = 11
 CMD_STORE_REQUEST                    = 12
 CMD_CONST                            = 13
 CMD_COMPLETE                         = 14
+CMD_RESUME                           = 15
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -47,6 +48,7 @@ CMD_SYMBOL_DICT = {
   CMD_LOAD_RESPONSE:                    "(LOAD_RESPONSE)",
   CMD_STORE_REQUEST:                    "(STORE_REQUEST)",
   CMD_CONST:                            "(CONST_DATA)",
-  CMD_COMPLETE:                         "(COMPLETE_EXECUTION)"
+  CMD_COMPLETE:                         "(COMPLETE_EXECUTION)",
+  CMD_RESUME:                           "(RESUME_EXECUTION)"
 }
 
