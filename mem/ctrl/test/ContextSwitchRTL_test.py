@@ -13,6 +13,7 @@ from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.cmd_type import *
 from ....lib.messages import *
 from ....lib.opt_type import *
+from ....lib.status_type import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -20,19 +21,23 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, DataType, CtrlType, CgraPayloadType, src_cmds, src_opts, src_progress_in, sink_progress_out, num_status = 3):
+  def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_progress_out_vld):
 
-    s.src_cmds = TestSrcRTL(CgraPayloadType, src_cmds)
-    s.src_opts = TestSrcRTL(CtrlType, src_opts)
-    s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
-    s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
+    s.src_cmds = src_cmds
+    s.src_opts = src_opts
+    s.src_progress_in = src_progress_in
+    s.sink_progress_out = sink_progress_out
+    s.sink_progress_out_vld = sink_progress_out_vld
 
-    s.context_switch = Module(CgraPayloadType, DataType, CtrlType, num_status)
+    s.context_switch = Module(data_nbits)
 
-    s.src_cmds.send //= s.context_switch.recv_cmd
-    s.src_opts.send //= s.context_switch.recv_opt
-    s.src_progress_in.send //= s.context_switch.progress_in
-    s.sink_progress_out.recv //= s.context_switch.progress_out
+    s.src_cmds //= s.context_switch.recv_cmd
+    s.context_switch.recv_cmd_vld = 1
+    s.src_opts //= s.context_switch.recv_opt
+    s.src_progress_in //= s.context_switch.progress_in
+    s.context_switch.progress_in_vld = 1
+    s.sink_progress_out //= s.context_switch.progress_out
+    s.sink_progress_out_vld //= s.context_switch.progress_out_vld
 
   def done(s):
     return s.src_cmds.done() and s.src_opts.done() and \
@@ -66,97 +71,90 @@ def run_sim(test_harness, max_cycles = 20):
 
 def test():
   Module = ContextSwitchRTL
-  DataType = mk_data(16, 1)
-  ctrl_mem_size = 16
-  num_fu_inports = 2
-  num_fu_outports = 2
-  num_tile_inports = 4
-  num_tile_outports = 4
+  data_nbits = 16
+  CmdType = mk_bits(clog2(NUM_CMDS))
+  DataType = mk_bits(data_nbits)
+  OptType = mk_bits(clog2(NUM_OPTS))
 
-  data_mem_size_global = 16
-  addr_nbits = clog2(data_mem_size_global)
-  DataAddrType = mk_bits(addr_nbits)
-  num_registers_per_reg_bank = 16
-
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  CtrlType = mk_ctrl(num_fu_inports,
-                     num_fu_outports,
-                     num_tile_inports,
-                     num_tile_outports,
-                     num_registers_per_reg_bank)
-
-  CgraPayloadType = mk_cgra_payload(DataType,
-                                    DataAddrType,
-                                    CtrlType,
-                                    CtrlAddrType)
-
-  src_cmds = [# Simulates the PAUSE command to record the progress.
-              CgraPayloadType(CMD_PAUSE),
-              # Simulates some random commands.
-              CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT),
-              CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER),
-              CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND),
-              # Simulates the RESUME command to recover the progress.
-              CgraPayloadType(CMD_RESUME),
-              # Simulates some random commands.
-              CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT),
-              CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER),
-              CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND)
+  src_cmds = [# Assumes that tile receives the PAUSE command at clock cycle 1.
+              CmdType(CMD_PAUSE), # cycle 1
+              # Some random commands that might be issued during pausing.
+              CmdType(CMD_CONFIG_TOTAL_CTRL_COUNT), # cycle 2
+              CmdType(CMD_CONFIG_COUNT_PER_ITER), # cycle 3
+              CmdType(CMD_CONFIG_CTRL_LOWER_BOUND), # cycle 4
+              # Assumes that tile receives the RESUME command at clock cycle 5.
+              CmdType(CMD_RESUME), # cycle 5
+              # Some random commands that might be issued during resuming.
+              CmdType(CMD_CONFIG_TOTAL_CTRL_COUNT), # cycle 6
+              CmdType(CMD_CONFIG_COUNT_PER_ITER), # cycle 7
+              CmdType(CMD_CONFIG_CTRL_LOWER_BOUND) # cycle 8
               ]
   src_opts = [
-              # Simulates some random operations.
-              CtrlType(OPT_NAH),
-              CtrlType(OPT_NAH),
-              # Simulates the clock cycle when FU executes PHI_CONST
+              # Some random operations executed in FU,
+              OptType(OPT_NAH),
+              OptType(OPT_NAH),
+              # Assumes that FU executes PHI_CONST at clock cycle 3
               # for the first time after receiving PAUSE command.
-              CtrlType(OPT_PHI_CONST),
-              # Simulates some random operations.
-              CtrlType(OPT_NAH),
-              CtrlType(OPT_NAH),
-              CtrlType(OPT_NAH),
-              # Simulates the clock cycle when FU executes PHI_CONST
+              OptType(OPT_PHI_CONST),
+              # Some random operations executed in FU.
+              OptType(OPT_NAH),
+              OptType(OPT_NAH),
+              OptType(OPT_NAH),
+              # Assumes that FU executes PHI_CONST at clock cycle 7
               # for the first time after receiving RESUME command.
-              CtrlType(OPT_PHI_CONST),
+              OptType(OPT_PHI_CONST),
               # Simulates some random operations.
-              CtrlType(OPT_NAH)
+              OptType(OPT_NAH)
               ]
   src_progress_in = [
-                     # Simulates some random FU's outputs.
-                     DataType(0,1),
-                     DataType(0,1),
-                     # Simulates the output iteration (progress) of FU
-                     # when executing OPT_PHI_CONST for the first time
-                     # after receiving PAUSE command.
-                     DataType(1234,1),
-                     # Simulates some random FU's outputs.
-                     DataType(0,1),
-                     DataType(0,1),
-                     DataType(0,1),
-                     DataType(0,1),
-                     DataType(0,1)
+                     # A fake progress "4321", should not be recorded.
+                     DataType(4321),
+                     # Some random FU's outputs.
+                     DataType(0),
+                     # The target progress (loop iteration) 
+                     # output by FU when executing PHI_CONST for 
+                     # the first time after receiving PAUSE command.
+                     # Should be recorded to progress register at the rising
+                     # edge of clock cycle 4
+                     DataType(1234),
+                     # Some random FU's outputs.
+                     DataType(0),
+                     DataType(0),
+                     DataType(0),
+                     DataType(0),
+                     DataType(0)
                      ]
   sink_progress_out = [
-                       DataType(0,0),
-                       DataType(0,0),
-                       DataType(0,0),
-                       DataType(0,0),
-                       DataType(0,0),
-                       DataType(0,0),
-                       # ContextSiwtch module should output the progress
-                       # when executing OPT_PHI_CONST for the first time
-                       # after receiving RESUME command.
-                       DataType(1234,1),
-                       DataType(0,0)
+                       DataType(0),
+                       DataType(0),
+                       DataType(0),
+                       DataType(0),
+                       DataType(0),
+                       DataType(0),
+                       # ContextSiwtch module should output the target progress
+                       # when executing PHI_CONST for the first time after
+                       # receiving RESUME command.
+                       DataType(1234),
+                       DataType(0)
                       ]
+  sink_progress_out_vld = [
+                          0,
+                          0,
+                          0,
+                          0,
+                          0,
+                          0,
+                          # The output progress is valid duing clock cycle 7
+                          1,
+                          0
+                          ]
 
   th = TestHarness(Module, 
-                   DataType, 
-                   CtrlType, 
-                   CgraPayloadType, 
+                   data_nbits,
                    src_cmds, 
                    src_opts, 
                    src_progress_in, 
                    sink_progress_out, 
-                   num_status = 3)
+                   sink_progress_out_vld)
 
   run_sim(th)

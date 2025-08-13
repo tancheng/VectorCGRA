@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 14
+NUM_CMDS = 16
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
