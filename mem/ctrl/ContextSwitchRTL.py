@@ -28,6 +28,8 @@ class ContextSwitchRTL(Component):
     # Interface
     s.recv_cmd = InPort(CmdType)
     s.recv_cmd_vld = InPort(b1)
+    # We don't need recv_opt_vld as progress_in_vld is enough 
+    # to tell whether the opt is valid.
     s.recv_opt = InPort(OptType)
     s.progress_in = InPort(DataType)
     s.progress_in_vld = InPort(b1)
