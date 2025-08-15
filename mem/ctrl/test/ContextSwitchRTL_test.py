@@ -22,26 +22,38 @@ from ....lib.status_type import *
 class TestHarness(Component):
 
   def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_progress_out_vld):
+    
+    CmdType = mk_bits(clog2(NUM_CMDS))
+    StatusType = mk_bits(clog2(NUM_STATUS))
+    DataType = mk_bits(data_nbits)
+    ValidType = mk_bits(1)
+    OptType = mk_bits(clog2(NUM_OPTS))
 
-    s.src_cmds = src_cmds
-    s.src_opts = src_opts
-    s.src_progress_in = src_progress_in
-    s.sink_progress_out = sink_progress_out
-    s.sink_progress_out_vld = sink_progress_out_vld
+    s.src_cmds = TestSrcRTL(CmdType, src_cmds)
+    s.src_opts = TestSrcRTL(OptType, src_opts)
+    s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
+    s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
+    s.sink_progress_out_vld = TestSinkRTL(ValidType, sink_progress_out_vld)
 
     s.context_switch = Module(data_nbits)
 
-    s.src_cmds //= s.context_switch.recv_cmd
-    s.context_switch.recv_cmd_vld = 1
-    s.src_opts //= s.context_switch.recv_opt
-    s.src_progress_in //= s.context_switch.progress_in
-    s.context_switch.progress_in_vld = 1
-    s.sink_progress_out //= s.context_switch.progress_out
-    s.sink_progress_out_vld //= s.context_switch.progress_out_vld
+    @update
+    def issue_inputs():
+      s.context_switch.recv_cmd @= s.src_cmds.send.msg
+      s.src_cmds.send.rdy @= 1
+      s.context_switch.recv_cmd_vld @= 1
+      s.context_switch.recv_opt @= s.src_opts.send.msg
+      s.src_opts.send.rdy @= 1
+      s.context_switch.progress_in @= s.src_progress_in.send.msg
+      s.src_progress_in.send.rdy @= 1
+      s.context_switch.progress_in_vld @= 1
+      s.sink_progress_out.recv.val @= 1
+      s.sink_progress_out.recv.msg @= s.context_switch.progress_out
+      s.sink_progress_out_vld.recv.val @= 1
+      s.sink_progress_out_vld.recv.msg @= s.context_switch.progress_out_vld
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and \
-        s.src_progress_in.done() and s.sink_progress_out.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_progress_out_vld.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()

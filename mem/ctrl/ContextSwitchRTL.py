@@ -22,7 +22,7 @@ class ContextSwitchRTL(Component):
     # Constant
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
-    DataType = mk_bits(clog2(data_nbits))
+    DataType = mk_bits(data_nbits)
     OptType = mk_bits(clog2(NUM_OPTS))
 
     # Interface
@@ -51,11 +51,12 @@ class ContextSwitchRTL(Component):
       s.is_executing_phi @= (s.recv_opt == OPT_PHI_CONST)
 
       # Updates progress_out with the recorded progress.
-      s.progress_out @= s.progress_reg
       if (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
         s.progress_out_vld @= 1
+        s.progress_out @= s.progress_reg
       else:
         s.progress_out_vld @= 0
+        s.progress_out @= DataType(0)
 
     @update_ff
     def update_regs():
