@@ -13,6 +13,9 @@ obj_dir*/
 
 cgra_sim
 cgra/test/csrc/
+*.vcd
+parse_cases.py
+out.log
 
 *.daidir/
 ucli.key
