@@ -59,6 +59,33 @@ class CgraRTL(Component):
     # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
+    SingleBitType = mk_bits(1)
+    s.send_to_cpu_pkt__last = OutPort(SingleBitType)
+
+    s.cmd_e_count = Wire( mk_bits(clog2(width * height)) )
+    s.cmd_e_valid = Wire( 1 )
+
+    tile_count_sub = width * height - 1
+    
+    @update
+    def comb_logic():
+      # Extract cmd from your message structure
+      cmd = s.send_to_cpu_pkt.msg.payload.cmd
+      # Combined condition
+      s.cmd_e_valid @= (cmd == 0xe) & s.send_to_cpu_pkt.val
+
+      # Output assignment
+      s.send_to_cpu_pkt__last @= s.cmd_e_valid & (s.cmd_e_count == tile_count_sub)
+
+    @update_ff  
+    def counter_logic():
+      if s.reset:
+        s.cmd_e_count <<= 0
+      elif s.cmd_e_valid:
+        if s.cmd_e_count == tile_count_sub:
+          s.cmd_e_count <<= 0
+        else:
+          s.cmd_e_count <<= s.cmd_e_count + 1
 
     # Interfaces on the boundary of the CGRA.
     # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
