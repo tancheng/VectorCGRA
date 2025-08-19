@@ -49,10 +49,10 @@ class TileWrapperRTL(Component):
     # s.tile_to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
     # s.tile_to_mem_wdata = [SendIfcRTL(DataType) for _ in range(height + width - 1)]
 
-    s.tile_to_mem_raddr   = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
-    s.tile_from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(height + width - 1)]
-    s.tile_to_mem_waddr   = [SendIfcRTL(AddrType) for _ in range(height + width - 1)]
-    s.tile_to_mem_wdata   = [SendIfcRTL(DataType) for _ in range(height + width - 1)]
+    s.tile_to_mem_raddr   = [SendIfcRTL(AddrType) for _ in range(height * width - 1)]
+    s.tile_from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(height * width - 1)]
+    s.tile_to_mem_waddr   = [SendIfcRTL(AddrType) for _ in range(height * width - 1)]
+    s.tile_to_mem_wdata   = [SendIfcRTL(DataType) for _ in range(height * width - 1)]
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]

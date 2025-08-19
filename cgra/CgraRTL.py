@@ -130,11 +130,11 @@ class CgraRTL(Component):
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
-    s.cgra_id = InPort(CgraIdType)
+    s.cgra_id = 0
 
     # Address lower and upper bound.
-    s.address_lower = InPort(DataAddrType)
-    s.address_upper = InPort(DataAddrType)
+    s.address_lower = 0
+    s.address_upper = controller2addr_map[s.cgra_id][1]
 
     # Connections
     # Connects the controller id.
