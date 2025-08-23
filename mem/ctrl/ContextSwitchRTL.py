@@ -35,6 +35,9 @@ class ContextSwitchRTL(Component):
     s.progress_in_vld = InPort(b1)
     s.progress_out = OutPort(DataType)
     s.progress_out_vld = OutPort(b1)
+    # The output predicate should be performed AND operation
+    # with the predicate of FU's output, so as to get the real predicate.
+    s.predicate = OutPort(b1)
    
     # Component
     s.progress_reg = Wire(DataType)
@@ -59,6 +62,16 @@ class ContextSwitchRTL(Component):
       else:
         s.progress_out_vld @= 0
         s.progress_out @= DataType(0)
+
+      # Sets predicate=0 only when in the PAUSING status and
+      # everytime executing the PHI_CONST (first node in DFG). 
+      # Then predicate=0 will be broadcasted to all other operations
+      # in this iteration via the dataflow. Consequently, all 
+      # iterations after progress is recorded all have predicate=0.
+      if (s.is_pausing & s.is_executing_phi):
+        s.predicate @= 0
+      else:
+        s.predicate @= 1
 
     @update_ff
     def update_regs():

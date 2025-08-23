@@ -21,19 +21,21 @@ from ....lib.status_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_progress_out_vld):
+  def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_progress_out_vld, sink_predicate):
     
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
     DataType = mk_bits(data_nbits)
     ValidType = mk_bits(1)
     OptType = mk_bits(clog2(NUM_OPTS))
+    PredicateType = mk_bits(1)
 
     s.src_cmds = TestSrcRTL(CmdType, src_cmds)
     s.src_opts = TestSrcRTL(OptType, src_opts)
     s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
     s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
     s.sink_progress_out_vld = TestSinkRTL(ValidType, sink_progress_out_vld)
+    s.sink_predicate = TestSinkRTL(PredicateType, sink_predicate)
 
     s.context_switch = Module(data_nbits)
 
@@ -51,9 +53,11 @@ class TestHarness(Component):
       s.sink_progress_out.recv.msg @= s.context_switch.progress_out
       s.sink_progress_out_vld.recv.val @= 1
       s.sink_progress_out_vld.recv.msg @= s.context_switch.progress_out_vld
+      s.sink_predicate.recv.val @= 1
+      s.sink_predicate.recv.msg @= s.context_switch.predicate
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_progress_out_vld.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_progress_out_vld.done() and s.sink_predicate.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()
@@ -160,6 +164,17 @@ def test():
                           1,
                           0
                           ]
+  sink_predicate = [
+                    1,
+                    1,
+                    # clock cycle 3 has predicate=0, as in the PAUSING status and executing the PHI_CONST.
+                    0,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                    ]
 
   th = TestHarness(Module, 
                    data_nbits,
@@ -167,6 +182,7 @@ def test():
                    src_opts, 
                    src_progress_in, 
                    sink_progress_out, 
-                   sink_progress_out_vld)
+                   sink_progress_out_vld,
+                   sink_predicate)
 
   run_sim(th)
