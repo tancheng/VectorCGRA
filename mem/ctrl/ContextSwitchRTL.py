@@ -11,6 +11,7 @@ from pymtl3.stdlib.primitive import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.cmd_type import *
+from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.status_type import *
 from ...lib.util.common import *
@@ -22,22 +23,21 @@ class ContextSwitchRTL(Component):
     # Constant
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
-    DataType = mk_bits(data_nbits)
+    DataType = mk_data(data_nbits)
     OptType = mk_bits(clog2(NUM_OPTS))
 
     # Interface
     s.recv_cmd = InPort(CmdType)
     s.recv_cmd_vld = InPort(b1)
-    # We don't need recv_opt_vld as progress_in_vld is enough 
+    # We don't need recv_opt.predicate as progress_in.predicate is enough 
     # to tell whether the opt is valid.
     s.recv_opt = InPort(OptType)
     s.progress_in = InPort(DataType)
-    s.progress_in_vld = InPort(b1)
     s.progress_out = OutPort(DataType)
-    s.progress_out_vld = OutPort(b1)
-    # The output predicate should be performed AND operation
-    # with the predicate of FU's output, so as to get the real predicate.
-    s.predicate = OutPort(b1)
+    # s.reset_fu_output_predicate is used for resetting FU's output predicate to 0.
+    # During the PAUSING status, FU's output when executing PHI_CONST operation
+    # should always have predicate=0, so as to avoid initiating new iteration.
+    s.reset_fu_output_predicate = OutPort(b1)
    
     # Component
     s.progress_reg = Wire(DataType)
@@ -50,28 +50,24 @@ class ContextSwitchRTL(Component):
     @update
     def update_msg():
       # Update condition.
-      s.progress_is_null @= (s.progress_reg == DataType(0))
+      s.progress_is_null @= (s.progress_reg == DataType(0, 0))
       s.is_pausing @= (s.status_reg == STATUS_PAUSING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
       s.is_executing_phi @= (s.recv_opt == OPT_PHI_CONST)
 
       # Updates progress_out with the recorded progress.
       if (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
-        s.progress_out_vld @= 1
         s.progress_out @= s.progress_reg
       else:
-        s.progress_out_vld @= 0
-        s.progress_out @= DataType(0)
+        s.progress_out @= DataType(0, 0)
 
-      # Sets predicate=0 only when in the PAUSING status and
-      # everytime executing the PHI_CONST (first node in DFG). 
-      # Then predicate=0 will be broadcasted to all other operations
-      # in this iteration via the dataflow. Consequently, all 
-      # iterations after progress is recorded all have predicate=0.
+      # The output of PHI_CONST (first node in DFG) during the PAUSING
+      # status should always have predicate=0, as it will be broadcasted 
+      # to all other operations in this iteration via the dataflow. 
       if (s.is_pausing & s.is_executing_phi):
-        s.predicate @= 0
+        s.reset_fu_output_predicate @= 1
       else:
-        s.predicate @= 1
+        s.reset_fu_output_predicate @= 0
 
     @update_ff
     def update_regs():
@@ -86,12 +82,12 @@ class ContextSwitchRTL(Component):
         s.status_reg <<= s.status_reg
 
       # Updates the progress register.
-      if (s.progress_is_null & s.is_pausing & s.is_executing_phi & s.progress_in_vld):
+      if (s.progress_is_null & s.is_pausing & s.is_executing_phi & s.progress_in.predicate):
         # Records the progress.
         s.progress_reg <<= s.progress_in
       elif (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
         # Clears the progress at next clock cycle.
-        s.progress_reg <<= DataType(0)
+        s.progress_reg <<= DataType(0, 0)
       else:
         # Keeps the progress.
         s.progress_reg <<= s.progress_reg
@@ -99,8 +95,9 @@ class ContextSwitchRTL(Component):
   def line_trace(s):
     recv_cmd_str = f'|| recv_cmd_vld: {s.recv_cmd_vld} | recv_cmd: {s.recv_cmd} '
     recv_opt_str = f'|| recv_opt: {s.recv_opt} '
-    progress_in_str = f'|| progress_in_vld: {s.progress_in_vld} | progress_in: {s.progress_in} '
-    progress_out_str = f'|| progress_out_vld: {s.progress_out_vld} | progress_out: {s.progress_out} '
+    progress_in_str = f'|| progress_in: {s.progress_in} '
+    progress_out_str = f'|| progress_out: {s.progress_out} '
+    reset_fu_output_predicate_str = f'|| reset_fu_output_predicate: {s.reset_fu_output_predicate} '
     register_content_str = f'|| progress_reg: {s.progress_reg} | status_reg: {s.status_reg} '
     condition_str = f'|| condition: {s.progress_is_null}{s.is_pausing}{s.is_executing_phi} '
-    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + register_content_str + condition_str
+    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + reset_fu_output_predicate_str + register_content_str + condition_str
