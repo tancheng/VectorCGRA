@@ -377,7 +377,7 @@ def test_homogeneous_2x2(cmdline_opts):
             SelRTL,
             RetRTL,
            ]
-  th = init_param(topology, FuList, x_tiles=4, y_tiles=4)
+  th = init_param(topology, FuList, x_tiles=2, y_tiles=2)
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
