@@ -342,6 +342,102 @@ def mk_intra_cgra_pkt(num_cgra_columns,
   )
 
 #=========================================================================
+# STEP Specific
+#=========================================================================
+
+def mk_cpu_pkt(num_tiles,
+                num_consts,
+                num_rd_regs,
+                num_wr_regs,
+                ConstDataType,
+                RegAddrType,
+                CfgIdType,
+                CfgPayloadType,
+                prefix="CpuPkt"):
+
+    CmdType = mkbits(max(1, NUM_CMDS))
+
+    new_name = f"{prefix}_n_tiles[{num_tiles}]"
+
+    def str_func(s):
+        return f"CpuPkt: bitstream:{s.cfgs}\n"
+
+    field_dict = {}
+    field_dict['cmd'] = CmdType
+    field_dict['cfg'] = CfgPayloadType
+    
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_cfg_pkt(BitstreamType,
+                     CfgMetadataPkt,
+                     prefix="CfgPkt"):
+
+    new_name = f"{prefix}"
+
+    def str_func(s):
+        return f"CfgPkt: string output\n"
+
+    field_dict = {}
+    field_dict['bitstream'] = BitstreamType
+    field_dict['metadata'] = CfgMetadataPkt
+    
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+
+def mk_cfg_metadata_pkt(num_tiles,
+                        num_consts,
+                        num_rd_regs,
+                        num_wr_regs,
+                        ConstDataType,
+                        RegAddrType,
+                        BitstreamType,
+                        prefix="CfgMetadataPkt"):
+    
+    ThreadCountType = mkbits(clog2(MAX_THREAD_COUNT))
+    CfgIdType = mkbits(clog2(MAX_BITSTREAM_SIZE))
+
+    new_name = f"{prefix}_{num_rd_regs}_{num_wr_regs}"
+
+    def str_func(s):
+        return f"CfgMetadataPkt: cfg_id [{s.cfg_id}, br_id: {s.br_id}, thread_count: {s.thread_count}, start_cfg: {s.start_cfg}, end_cfg: {s.end_cfg}]\n"
+
+    field_dict = {}
+    field_dict['const'] = [ConstDataType for _ in range(num_consts)]
+    field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_regs)]
+    field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_regs)]
+    field_dict['cfg_id'] = CfgIdType
+    field_dict['br_id'] = CfgIdType
+    field_dict['thread_count'] = ThreadCountType
+    field_dict['start_cfg'] = b(1)
+    field_dict['end_cfg'] = b(1)
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_bitstream_pkt(num_tiles,
+                    TileBitstreamType,
+                    prefix="BitstreamPkt"):
+
+    new_name = f"{prefix}_n_tiles[{num_tiles}]_BitstreamPayload"
+
+    def str_func(s):
+        return f"BitstreamPkt: bitstream:{s.bitstream}\n"
+
+    field_dict = {}
+    field_dict['bitstream'] = [TileBitstreamType for _ in range(num_tiles)]
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+#=========================================================================
 # Crossbar (tiles <-> SRAM) packet
 #=========================================================================
 

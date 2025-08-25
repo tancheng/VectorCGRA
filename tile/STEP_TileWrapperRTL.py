@@ -18,12 +18,12 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
-from ..tile.TileRTL import TileRTL
+from ..tile.STEP_TileRTL import STEP_TileRTL
 
 
 class TileWrapperRTL(Component):
 
-  def construct(s, CgraIdType, DataType, PredicateType, CtrlPktType,
+  def construct(s, CgraIdType, DataType, RegAddrType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
@@ -59,11 +59,12 @@ class TileWrapperRTL(Component):
     s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
     s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
     s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+    s.send_addr_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
 
     s.cgra_id = InPort(CgraIdType)
 
     # Components
-    s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
+    s.tile = [STEP_TileRTL(DataType, RegAddrType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, num_fu_inports, num_fu_outports, s.num_tile_inports,
@@ -72,12 +73,10 @@ class TileWrapperRTL(Component):
                       FuList = FuList)
               for i in range(s.num_tiles)]
     
-    s.tile_recv_from_controller_pkt = [RecvIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
-    s.tile_send_to_controller_pkt = [SendIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
+    s.recv_cfg_from_cfg_ctrl = [RecvIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
 
     for i in range(s.num_tiles):
-      s.tile[i].recv_from_controller_pkt //= s.tile_recv_from_controller_pkt[i]
-      s.tile[i].send_to_controller_pkt //= s.tile_send_to_controller_pkt[i]
+      s.tile[i].recv_cfg_from_cfg_ctrl //= s.recv_cfg_from_cfg_ctrl[i]
 
     # Assigns tile id.
     for i in range(s.num_tiles):
@@ -98,7 +97,7 @@ class TileWrapperRTL(Component):
         s.tile[i].to_mem_wdata.rdy   //= 0
 
     for i in range(s.num_tiles):
-
+      # Inner Tiles
       if i // width > 0:
         s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
 
@@ -111,52 +110,7 @@ class TileWrapperRTL(Component):
       if i % width < width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
-      if cgra_topology == "KingMesh":
-        if i % width > 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
-          s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
-
-        if i % width < width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST] //= s.tile[i+width+1].recv_data[PORT_SOUTHWEST]
-          s.tile[i+width+1].send_data[PORT_SOUTHWEST] //= s.tile[i].recv_data[PORT_NORTHEAST]
-
-        if i // width == 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
-
-        if i // width == height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
-
-        if i % width == 0 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
-
-        if i % width == 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
-
-        if i % width == width - 1 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
-
-        if i % width == width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
-
-
+      # Boundary Tiles
       if i // width == 0:
         s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
         s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
@@ -171,7 +125,9 @@ class TileWrapperRTL(Component):
 
       if i % width == width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
+        s.tile[i].send_addr //= s.send_addr_on_boundary_east[i // width]
         s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+        
 
   # Line trace
   def line_trace(s):

@@ -31,6 +31,12 @@ LINK_TO_MEM   = 2
 # Constant for maximum control-message count.
 MAX_CTRL_COUNT = 1024
 
+# Constant for maximum thread-count
+MAX_THREAD_COUNT = 512
+
+# Constant for maximum bitstream count
+MAX_BITSTREAM_SIZE = 30
+
 # Constant for prologue max count.
 PROLOGUE_MAX_COUNT = 7
 

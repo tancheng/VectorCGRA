@@ -6,7 +6,7 @@ CgraRTL.py
 Author : Cheng Tan
   Date : Dec 22, 2024
 """
-from ..controller.ControllerRTL import ControllerRTL
+from ..controller.STEP_ControllerRTL import STEP_ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
@@ -18,9 +18,10 @@ from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
 from ..cgra.DeSerializeRTL import DeSerializeRTL
 from ..cgra.SerializeRTL import SerializeRTL
-from ..tile.TileWrapperRTL import TileWrapperRTL
+from ..tile.STEP_TileWrapperRTL import STEP_TileWrapperRTL
+from ..rf.STEP_RegisterFileRTL import STEP_RegisterFileRTL
 
-class CgraRTL(Component):
+class STEP_CgraRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
                 CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
@@ -51,6 +52,8 @@ class CgraRTL(Component):
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
+    num_registers = 16
+    RegAddrType = mk_bits(clog2(num_registers))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -98,13 +101,17 @@ class CgraRTL(Component):
                                         s.num_tiles,
                                         idTo2d_map,
                                         preload_data)
-    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
-                                 NocPktType, DataType, DataAddrType,
+    s.controller = STEP_ControllerRTL(CpuPktType,
+                                 BitstreamType, CfgType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
+    s.register_file = STEP_RegisterFileRTL(DataType, RegAddrType,
+                                            num_reg_banks = 2,
+                                            num_rd_ports = height,
+                                            num_wr_ports = height,
+                                            num_registers_per_reg_bank = num_registers)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
     s.cgra_id = 0
 
     # Address lower and upper bound.
@@ -113,7 +120,6 @@ class CgraRTL(Component):
 
     # Connections
     # Connects the controller id.
-    s.controller.cgra_id //= s.cgra_id
     s.data_mem.cgra_id //= s.cgra_id
 
     # Connects the address lower and upper bound.
@@ -132,7 +138,7 @@ class CgraRTL(Component):
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
-    s.tiles = TileWrapperRTL(CgraIdType, DataType, PredicateType, CtrlPktType,
+    s.tiles = STEP_TileWrapperRTL(CgraIdType, DataType, RegAddrType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
@@ -140,18 +146,11 @@ class CgraRTL(Component):
                       num_registers_per_reg_bank, width, height, cgra_topology,
                       FuList = FuList)
 
-    
-
     s.tiles.cgra_id //= s.cgra_id
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tiles.tile_recv_from_controller_pkt[i]
-    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
-
-    for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tiles.tile_send_to_controller_pkt[i]
-    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+      s.controller.send_cfg_to_tiles[i] //= s.tiles.recv_cfg_from_cfg_ctrl[i]
 
     for i in range(s.num_tiles):
       if i % width == 0 or i // width == 0:
@@ -168,7 +167,7 @@ class CgraRTL(Component):
       
       for tile_row in range(height):
         s.tiles.recv_data_on_boundary_west[tile_row].msg @= DataType()
-        s.tiles.recv_data_on_boundary_east[tile_row].msg @= DataType()
+        # s.tiles.recv_data_on_boundary_east[tile_row].msg @= DataType()
     
     for tile_col in range(width):
       s.tiles.send_data_on_boundary_north[tile_col].rdy //= 0
@@ -179,15 +178,18 @@ class CgraRTL(Component):
     for tile_row in range(height):
       s.tiles.send_data_on_boundary_west[tile_row].rdy //= 0
       s.tiles.recv_data_on_boundary_west[tile_row].val //= 0
-      s.tiles.send_data_on_boundary_east[tile_row].rdy //= 0
-      s.tiles.recv_data_on_boundary_east[tile_row].val //= 0
+      s.tiles.send_data_on_boundary_east[tile_row].rdy //= s.register_file.wr_data[tile_row]
+      s.tiles.send_addr_on_boundary_east[tile_row].rdy //= s.register_file.rd_addr[tile_row]
+      s.tiles.send_addr_on_boundary_east[tile_row].rdy //= s.register_file.wr_addr[tile_row]
+      s.tiles.recv_data_on_boundary_east[tile_row].val //= s.register_file.send_data[tile_row]
+      # s.tiles.send_data_on_boundary_east[tile_row].rdy //= 0
+      # s.tiles.recv_data_on_boundary_east[tile_row].val //= 0
 
 
   # Line trace
   def line_trace(s):
     res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
-    res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
 
