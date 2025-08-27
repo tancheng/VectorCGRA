@@ -21,7 +21,7 @@ from ....lib.status_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_reset_fu_output_predicate):
+  def construct(s, Module, data_nbits, src_cmds, src_opts, src_progress_in, sink_progress_out, sink_overwrite_fu_output_predicate):
     
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
@@ -33,7 +33,7 @@ class TestHarness(Component):
     s.src_opts = TestSrcRTL(OptType, src_opts)
     s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
     s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
-    s.sink_reset_fu_output_predicate = TestSinkRTL(ValidType, sink_reset_fu_output_predicate)
+    s.sink_overwrite_fu_output_predicate = TestSinkRTL(ValidType, sink_overwrite_fu_output_predicate)
 
     s.context_switch = Module(data_nbits)
 
@@ -48,11 +48,11 @@ class TestHarness(Component):
       s.src_progress_in.send.rdy @= 1
       s.sink_progress_out.recv.val @= 1
       s.sink_progress_out.recv.msg @= s.context_switch.progress_out
-      s.sink_reset_fu_output_predicate.recv.val @= 1
-      s.sink_reset_fu_output_predicate.recv.msg @= s.context_switch.reset_fu_output_predicate
+      s.sink_overwrite_fu_output_predicate.recv.val @= 1
+      s.sink_overwrite_fu_output_predicate.recv.msg @= s.context_switch.overwrite_fu_output_predicate
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_reset_fu_output_predicate.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_overwrite_fu_output_predicate.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()
@@ -148,10 +148,10 @@ def test():
                        DataType(1234, 1),
                        DataType(0, 0)
                       ]
-  sink_reset_fu_output_predicate = [
+  sink_overwrite_fu_output_predicate = [
                                     0,
                                     0,
-                                    # clock cycle 3 has reset_fu_output_predicate = 1, as in the PAUSING status and executing the PHI_CONST.
+                                    # clock cycle 3 has overwrite_fu_output_predicate = 1, as in the PAUSING status and executing the PHI_CONST.
                                     1,
                                     0,
                                     0,
@@ -166,6 +166,6 @@ def test():
                    src_opts, 
                    src_progress_in, 
                    sink_progress_out, 
-                   sink_reset_fu_output_predicate)
+                   sink_overwrite_fu_output_predicate)
 
   run_sim(th)

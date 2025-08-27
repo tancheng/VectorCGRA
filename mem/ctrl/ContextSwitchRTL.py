@@ -34,10 +34,10 @@ class ContextSwitchRTL(Component):
     s.recv_opt = InPort(OptType)
     s.progress_in = InPort(DataType)
     s.progress_out = OutPort(DataType)
-    # s.reset_fu_output_predicate is used for resetting FU's output predicate to 0.
+    # s.overwrite_fu_output_predicate is used for resetting FU's output predicate to 0.
     # During the PAUSING status, FU's output when executing PHI_CONST operation
     # should always have predicate=0, so as to avoid initiating new iteration.
-    s.reset_fu_output_predicate = OutPort(b1)
+    s.overwrite_fu_output_predicate = OutPort(b1)
    
     # Component
     s.progress_reg = Wire(DataType)
@@ -65,9 +65,9 @@ class ContextSwitchRTL(Component):
       # status should always have predicate=0, as it will be broadcasted 
       # to all other operations in this iteration via the dataflow. 
       if (s.is_pausing & s.is_executing_phi):
-        s.reset_fu_output_predicate @= 1
+        s.overwrite_fu_output_predicate @= 1
       else:
-        s.reset_fu_output_predicate @= 0
+        s.overwrite_fu_output_predicate @= 0
 
     @update_ff
     def update_regs():
@@ -97,7 +97,7 @@ class ContextSwitchRTL(Component):
     recv_opt_str = f'|| recv_opt: {s.recv_opt} '
     progress_in_str = f'|| progress_in: {s.progress_in} '
     progress_out_str = f'|| progress_out: {s.progress_out} '
-    reset_fu_output_predicate_str = f'|| reset_fu_output_predicate: {s.reset_fu_output_predicate} '
+    overwrite_fu_output_predicate_str = f'|| overwrite_fu_output_predicate: {s.overwrite_fu_output_predicate} '
     register_content_str = f'|| progress_reg: {s.progress_reg} | status_reg: {s.status_reg} '
     condition_str = f'|| condition: {s.progress_is_null}{s.is_pausing}{s.is_executing_phi} '
-    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + reset_fu_output_predicate_str + register_content_str + condition_str
+    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + overwrite_fu_output_predicate_str + register_content_str + condition_str
