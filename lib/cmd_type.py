@@ -32,7 +32,7 @@ CMD_STORE_REQUEST                    = 12
 CMD_CONST                            = 13
 CMD_COMPLETE                         = 14
 CMD_RESUME                           = 15
-CMD_PHI_ADDR                         = 16
+CMD_RECORD_INIT_PHI_ADDR             = 16
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -51,6 +51,6 @@ CMD_SYMBOL_DICT = {
   CMD_CONST:                            "(CONST_DATA)",
   CMD_COMPLETE:                         "(COMPLETE_EXECUTION)",
   CMD_RESUME:                           "(RESUME_EXECUTION)",
-  CMD_PHI_ADDR:                         "(PRELOADING_PHI_UNIQUE_ADDR)"
+  CMD_RECORD_INIT_PHI_ADDR:             "(RECORD_INIT_PHI_ADDR)"
 }
 
