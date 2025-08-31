@@ -324,9 +324,9 @@ class DataMemControllerRTL(Component):
       # Number of load responses is expected to be the same as the number of load requests.
       for i in range(num_xbar_in_rd_ports):
         if i < num_rd_tiles:
-          s.send_rdata[trunc(i, RdTileIdType)].msg @= s.response_crossbar.send[i].msg.data
-          s.send_rdata[trunc(i, RdTileIdType)].val @= s.response_crossbar.send[i].val
-          s.response_crossbar.send[i].rdy @= s.send_rdata[trunc(i, RdTileIdType)].rdy
+          s.send_rdata[RdTileIdType(i)].msg @= s.response_crossbar.send[i].msg.data
+          s.send_rdata[RdTileIdType(i)].val @= s.response_crossbar.send[i].val
+          s.response_crossbar.send[i].rdy @= s.send_rdata[RdTileIdType(i)].rdy
         else:
           from_cgra_id = s.response_crossbar.send[i].msg.src_cgra
           from_tile_id = s.response_crossbar.send[i].msg.src_tile
