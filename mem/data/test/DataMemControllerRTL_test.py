@@ -159,20 +159,11 @@ def test_mem_controller(cmdline_opts):
                                        rd_tiles,
                                        CgraPayloadType)
 
-  # IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
-  #                                      num_cgra_rows,
-  #                                      num_tiles,
-  #                                      CgraPayloadType)
-
   # test_meta_data = [
   #     # addr:  0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15
-  #          [0xa6, 0xa7, 0xa8, 0xa9, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xc0, 0xc1],
+  #          [0x00, 0x00, 0xa8, 0xa9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
   #     # addr: 16    17    18    19    20    21    22    23    24    25    26    27    28    29    30    31
-  #          [0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8, 0xc9, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7]]
-
-  # preload_data_per_bank = [[DataType(test_meta_data[j][i], 1)
-  #                           for i in range(data_mem_size_per_bank)]
-  #                          for j in range(num_banks)]
+  #          [0x00, 0x00, 0x00, 0x00, 0xc6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd7]]
 
   # Input write requests.
   write_addr = [
