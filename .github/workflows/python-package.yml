@@ -107,7 +107,7 @@ jobs:
         # Const Queue
         pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
         # Data Mem
-        pytest ../mem/data/test/DataMemWithCrossbarRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |

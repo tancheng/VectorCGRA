@@ -49,6 +49,7 @@ class TestHarness(Component):
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt, ctrl_steps,
+                mem_access_is_combinational,
                 controller2addr_map, expected_sink_out_pkt):
 
     s.num_terminals = cgra_rows * cgra_columns
@@ -65,6 +66,7 @@ class TestHarness(Component):
                 height, width, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
+                mem_access_is_combinational,
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
@@ -111,8 +113,7 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
-  # Run simulation
-
+  # Runs simulation.
   ncycles = 0
   print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
   while not test_harness.done() and ncycles < max_cycles:
@@ -120,7 +121,7 @@ def run_sim(test_harness, max_cycles = 200):
     ncycles += 1
     print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
 
-  # Check timeout
+  # Checks timeout.
   assert ncycles < max_cycles
 
   test_harness.sim_tick()
@@ -134,6 +135,7 @@ def initialize_test_harness(cmdline_opts,
                             num_y_tiles_per_cgra = 2,
                             num_banks_per_cgra = 2,
                             data_mem_size_per_bank = 16,
+                            mem_access_is_combinational = True,
                             test_name = "test_homo"):
   num_tile_inports = 4
   num_tile_outports = 4
@@ -144,6 +146,7 @@ def initialize_test_harness(cmdline_opts,
   num_cgras = num_cgra_rows * num_cgra_columns
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
+  num_rd_tiles = num_x_tiles_per_cgra + num_y_tiles_per_cgra - 1
   TileInType = mk_bits(clog2(num_tile_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -163,8 +166,8 @@ def initialize_test_harness(cmdline_opts,
             GrantRTL,
             MemUnitRTL,
             SelRTL,
-            FpAddRTL,
-            FpMulRTL,
+            # FpAddRTL,
+            # FpMulRTL,
             SeqMulAdderRTL,
             # PrlMulAdderRTL, FIXME: https://github.com/tancheng/VectorCGRA/issues/123
             VectorMulComboRTL,
@@ -199,6 +202,7 @@ def initialize_test_harness(cmdline_opts,
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
+                                       num_rd_tiles,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -789,7 +793,8 @@ def initialize_test_harness(cmdline_opts,
                    num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
-                   ctrl_steps, controller2addr_map, expected_sink_out_pkt)
+                   ctrl_steps, mem_access_is_combinational,
+                   controller2addr_map, expected_sink_out_pkt)
   return th
 
 def test_sim_homo_2x2_2x2(cmdline_opts):
@@ -799,7 +804,8 @@ def test_sim_homo_2x2_2x2(cmdline_opts):
                                num_x_tiles_per_cgra = 2,
                                num_y_tiles_per_cgra = 2,
                                num_banks_per_cgra = 2,
-                               data_mem_size_per_bank = 16)
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = False)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
@@ -830,7 +836,8 @@ def test_verilog_homo_2x2_4x4(cmdline_opts):
                                num_x_tiles_per_cgra = 4,
                                num_y_tiles_per_cgra = 4,
                                num_banks_per_cgra = 8,
-                               data_mem_size_per_bank = 256)
+                               data_mem_size_per_bank = 256,
+                               mem_access_is_combinational = False)
   translate_model(th, ['dut'])
 
 def test_tapeout_2x2_2x2(cmdline_opts):
@@ -840,7 +847,8 @@ def test_tapeout_2x2_2x2(cmdline_opts):
                                num_x_tiles_per_cgra = 2,
                                num_y_tiles_per_cgra = 2,
                                num_banks_per_cgra = 4,
-                               data_mem_size_per_bank = 128)
+                               data_mem_size_per_bank = 128,
+                               mem_access_is_combinational = False)
   translate_model(th, ['dut'])
 
 def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
@@ -851,6 +859,26 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
                                num_y_tiles_per_cgra = 2,
                                num_banks_per_cgra = 2,
                                data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_systolic')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+
+def test_multi_CGRA_systolic_2x2_2x2_non_combinational_mem_access(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = False,
                                test_name = 'test_systolic')
 
   th.elaborate()

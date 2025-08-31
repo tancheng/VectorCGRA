@@ -33,7 +33,8 @@ class TestHarness(Component):
                 cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, controller2addr_map,
+                src_ctrl_pkt, ctrl_steps, mem_access_is_combinational,
+                controller2addr_map,
                 complete_signal_sink_out):
 
     s.num_cgras = cgra_rows * cgra_columns
@@ -47,6 +48,7 @@ class TestHarness(Component):
                 height, width, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
+                mem_access_is_combinational,
                 FunctionUnit, FuList, controller2addr_map)
 
     # Connections
@@ -82,6 +84,7 @@ def test_homo_1x4(cmdline_opts):
   ctrl_addr_nbits = clog2(ctrl_mem_size)
   data_addr_nbits = clog2(data_mem_size_global)
   num_tiles = width * height
+  num_rd_tiles = width + height - 1
   DUT = RingMultiCgraRTL
   FunctionUnit = FlexibleFuRTL
   FuList = [MemUnitRTL, AdderRTL]
@@ -118,6 +121,7 @@ def test_homo_1x4(cmdline_opts):
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
+                                       num_rd_tiles,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -202,12 +206,14 @@ def test_homo_1x4(cmdline_opts):
   for opt_per_tile in src_opt_per_tile:
     src_ctrl_pkt.extend(opt_per_tile)
 
+  mem_access_is_combinational = True
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
                    CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
                    width, height, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
-                   ctrl_mem_size, controller2addr_map, expected_sink_out_pkt)
+                   ctrl_mem_size, mem_access_is_combinational,
+                   controller2addr_map, expected_sink_out_pkt)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

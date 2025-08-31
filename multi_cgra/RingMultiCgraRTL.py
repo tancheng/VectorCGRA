@@ -22,8 +22,10 @@ class RingMultiCgraRTL(Component):
                 cgra_rows, cgra_columns, tile_rows, tile_columns,
                 ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                num_ctrl, total_steps, FunctionUnit, FuList,
-                controller2addr_map, preload_data = None):
+                num_ctrl, total_steps,
+                mem_access_is_combinational,
+                FunctionUnit, FuList,
+                controller2addr_map):
 
     # Constant
     idTo2d_map = {}
@@ -53,9 +55,10 @@ class RingMultiCgraRTL(Component):
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
                       num_registers_per_reg_bank,
-                      num_ctrl, total_steps, FunctionUnit, FuList,
-                      "Mesh", controller2addr_map, idTo2d_map,
-                      preload_data = None)
+                      num_ctrl, total_steps,
+                      mem_access_is_combinational,
+                      FunctionUnit, FuList,
+                      "Mesh", controller2addr_map, idTo2d_map)
               for cgra_id in range(s.num_cgras)]
 
     # Latency is 1.

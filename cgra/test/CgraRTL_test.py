@@ -48,7 +48,9 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
+                src_ctrl_pkt, ctrl_steps,
+                mem_access_is_combinational,
+                topology, controller2addr_map,
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
@@ -65,8 +67,10 @@ class TestHarness(Component):
                 width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                ctrl_steps, ctrl_steps, FunctionUnit,
-                FuList, topology, controller2addr_map, idTo2d_map,
+                ctrl_steps, ctrl_steps,
+                mem_access_is_combinational,
+                FunctionUnit, FuList, topology,
+                controller2addr_map, idTo2d_map,
                 is_multi_cgra = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
@@ -166,6 +170,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
   num_tiles = x_tiles * y_tiles
+  num_rd_tiles = x_tiles + y_tiles - 1
   per_cgra_data_size = int(data_mem_size_global / num_cgras)
 
   DUT = CgraRTL
@@ -212,6 +217,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
+                                       num_rd_tiles,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -570,13 +576,15 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       complete_signal_sink_out.extend(expected_complete_sink_out_pkg)
       complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
 
+  mem_access_is_combinational = True
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                    ControllerIdType, cgra_id, x_tiles, y_tiles,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
-                   src_ctrl_pkt, ctrl_steps, topology,
+                   src_ctrl_pkt, ctrl_steps,
+                   mem_access_is_combinational, topology,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
                    num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
