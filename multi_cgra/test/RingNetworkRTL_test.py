@@ -97,14 +97,15 @@ class RingNetwork_Tests:
     InterCgraPktType = mk_inter_cgra_pkt(num_cgras,
                                          1,
                                          num_tiles,
+                                         2,
                                          CgraPayloadType)
 
     src_pkts = mk_src_pkts(num_cgras, [
-                     # src  dst opq
-      InterCgraPktType(0,   1,  0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 1))),
-      InterCgraPktType(1,   2,  1,  payload = CgraPayloadType(data = DataType(0xdeadbeef, 0))),
-      InterCgraPktType(2,   3,  2,  payload = CgraPayloadType(data = DataType(0xbaadface, 1))),
-      InterCgraPktType(3,   0,  0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 0))),
+                     # src  dst
+      InterCgraPktType(0,   1,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 1))),
+      InterCgraPktType(1,   2,  payload = CgraPayloadType(data = DataType(0xdeadbeef, 0))),
+      InterCgraPktType(2,   3,  payload = CgraPayloadType(data = DataType(0xbaadface, 1))),
+      InterCgraPktType(3,   0,  payload = CgraPayloadType(data = DataType(0xfaceb00c, 0))),
     ])
     dst_pkts = ringnet_fl(src_pkts)
     th = TestHarness(InterCgraPktType, num_cgras, src_pkts, dst_pkts)

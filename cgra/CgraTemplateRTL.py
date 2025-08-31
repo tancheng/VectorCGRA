@@ -11,7 +11,7 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
-from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
+from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
@@ -24,9 +24,9 @@ class CgraTemplateRTL(Component):
                 multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
-                total_steps, FunctionUnit, FuList, TileList, LinkList,
+                total_steps, mem_access_is_combinational,
+                FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                preload_data = None,
                 is_multi_cgra = True):
 
     s.num_mesh_ports = 8
@@ -68,19 +68,19 @@ class CgraTemplateRTL(Component):
                       FuList = FuList)
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
-    s.data_mem = DataMemWithCrossbarRTL(NocPktType,
-                                        CgraPayloadType,
-                                        DataType,
-                                        data_mem_size_global,
-                                        data_mem_size_per_bank,
-                                        num_banks_per_cgra,
-                                        dataSPM.getNumOfValidReadPorts(),
-                                        dataSPM.getNumOfValidWritePorts(),
-                                        multi_cgra_rows,
-                                        multi_cgra_columns,
-                                        s.num_tiles,
-                                        idTo2d_map,
-                                        preload_data)
+    s.data_mem = DataMemControllerRTL(NocPktType,
+                                      CgraPayloadType,
+                                      DataType,
+                                      data_mem_size_global,
+                                      data_mem_size_per_bank,
+                                      num_banks_per_cgra,
+                                      dataSPM.getNumOfValidReadPorts(),
+                                      dataSPM.getNumOfValidWritePorts(),
+                                      multi_cgra_rows,
+                                      multi_cgra_columns,
+                                      s.num_tiles,
+                                      mem_access_is_combinational,
+                                      idTo2d_map)
     s.controller = ControllerRTL(CgraIdType, CtrlPktType,
                                  NocPktType, DataType, DataAddrType,
                                  multi_cgra_rows, multi_cgra_columns,

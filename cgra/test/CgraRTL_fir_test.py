@@ -1,12 +1,12 @@
 """
 ==========================================================================
-CgraRTL_test.py
+CgraRTL_fir_test.py
 ==========================================================================
 Test cases for CGRA with crossbar-based data memory and ring-based control
 memory of each tile.
 
 Author : Cheng Tan
-  Date : Dec 22, 2024
+  Date : Aug 30, 2025
 """
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
@@ -49,7 +49,7 @@ class TestHarness(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
-                controller2addr_map,
+                mem_access_is_combinational, controller2addr_map,
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
@@ -66,8 +66,10 @@ class TestHarness(Component):
                 width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                kCtrlCountPerIter, kTotalCtrlSteps, FunctionUnit,
-                FuList, "Mesh", controller2addr_map, idTo2d_map,
+                kCtrlCountPerIter, kTotalCtrlSteps,
+                mem_access_is_combinational,
+                FunctionUnit, FuList, "Mesh",
+                controller2addr_map, idTo2d_map,
                 is_multi_cgra = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
@@ -136,7 +138,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_homogeneous_4x4_fir(cmdline_opts):
+def step_up_and_run_simulation(cmdline_opts, mem_access_is_combinational):
   FuList = [AdderRTL,
             MulRTL,
             LogicRTL,
@@ -174,6 +176,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
   num_tiles = x_tiles * y_tiles
+  num_rd_tiles = x_tiles + y_tiles - 1
   per_cgra_data_size = int(data_mem_size_global / num_cgras)
 
   DUT = CgraRTL
@@ -220,6 +223,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
+                                       num_rd_tiles,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -794,6 +798,7 @@ def test_homogeneous_4x4_fir(cmdline_opts):
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
+                   mem_access_is_combinational,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
                    num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
@@ -805,3 +810,8 @@ def test_homogeneous_4x4_fir(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+def test_homogeneous_4x4_fir_combinational_mem_access(cmdline_opts):
+  step_up_and_run_simulation(cmdline_opts, mem_access_is_combinational = True)
+
+def test_homogeneous_4x4_fir_multi_cycle_mem_access(cmdline_opts):
+  step_up_and_run_simulation(cmdline_opts, mem_access_is_combinational = False)

@@ -53,6 +53,10 @@ class MemUnitRTL(Component):
     # Components
     s.recv_in_val_vector = Wire(num_inports)
     s.recv_all_val = Wire(1)
+    # Indicates whether the raddr has been sent to memory as request,
+    # to avoid repeatly sending the same request when the response has not
+    # yet returned.
+    s.already_sent_raddr = Wire(1)
     s.vector_factor_power = Wire(VectorFactorPowerType)
     s.vector_factor_counter = Wire(VectorFactorType)
     s.reached_vector_factor = Wire(1)
@@ -95,7 +99,7 @@ class MemUnitRTL(Component):
           # FIXME: to_mem_raddr shouldn't be ready if the existing request not yet returned.
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
           s.to_mem_raddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
-          s.to_mem_raddr.val @= s.recv_all_val
+          s.to_mem_raddr.val @= s.recv_all_val & ~s.already_sent_raddr
           s.from_mem_rdata.rdy @= s.send_out[0].rdy
           # FIXME: As the memory access might take more than one cycle,
           # the send_out valid no need to depend on recv_all_val.
@@ -111,7 +115,7 @@ class MemUnitRTL(Component):
           s.recv_all_val @= s.recv_const.val
           s.recv_const.rdy @= s.recv_all_val & s.to_mem_raddr.rdy
           s.to_mem_raddr.msg @= AddrType(s.recv_const.msg.payload[0:AddrType.nbits])
-          s.to_mem_raddr.val @= s.recv_all_val
+          s.to_mem_raddr.val @= s.recv_all_val & ~s.already_sent_raddr
           s.from_mem_rdata.rdy @= s.send_out[0].rdy
           s.send_out[0].val @= s.from_mem_rdata.val
           s.send_out[0].msg @= s.from_mem_rdata.msg
@@ -192,7 +196,25 @@ class MemUnitRTL(Component):
           elif s.recv_opt.msg.is_last_ctrl & s.reached_vector_factor:
             s.vector_factor_counter <<= 0
 
-  def line_trace( s ):
+    @update_ff
+    def update_already_sent_raddr():
+      if s.reset:
+        s.already_sent_raddr <<= 0
+      else:
+        if ~s.recv_opt.val:
+          s.already_sent_raddr <<= 0
+        elif s.from_mem_rdata.val & s.from_mem_rdata.rdy:
+          # Clears the flag when the data has returned (s.from_mem_rdata.val)
+          # and successfully delivered to the destination (s.from_mem_rdata.rdy).
+          s.already_sent_raddr <<= 0
+        elif s.to_mem_raddr.val & \
+             s.to_mem_raddr.rdy & \
+             ~s.already_sent_raddr:
+          s.already_sent_raddr <<= 1
+        else:
+          s.already_sent_raddr <<= s.already_sent_raddr
+
+  def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
