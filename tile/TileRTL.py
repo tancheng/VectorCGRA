@@ -81,6 +81,7 @@ class TileRTL(Component):
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
+                                     num_cgras,
                                      num_tiles,
                                      ctrl_mem_size,
                                      num_tile_outports)
@@ -89,6 +90,7 @@ class TileRTL(Component):
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
+                                num_cgras,
                                 num_tiles,
                                 ctrl_mem_size,
                                 num_tile_outports)
@@ -130,7 +132,9 @@ class TileRTL(Component):
     s.element.tile_id //= s.tile_id
     s.ctrl_mem.cgra_id //= s.cgra_id
     s.ctrl_mem.tile_id //= s.tile_id
+    s.fu_crossbar.cgra_id //= s.cgra_id
     s.fu_crossbar.tile_id //= s.tile_id
+    s.routing_crossbar.cgra_id //= s.cgra_id
     s.routing_crossbar.tile_id //= s.tile_id
 
     # Assigns crossbar id.

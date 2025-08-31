@@ -223,6 +223,7 @@ def mk_cgra_payload(DataType,
 def mk_inter_cgra_pkt(num_cgra_columns,
                       num_cgra_rows,
                       num_tiles,
+                      num_rd_tiles,
                       CgraPayloadType,
                       prefix="InterCgraPacket"):
 
@@ -231,6 +232,7 @@ def mk_inter_cgra_pkt(num_cgra_columns,
   CgraYType = mk_bits(max(clog2(num_cgra_rows), 1))
   # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
   TileIdType = mk_bits(clog2(num_tiles + 1))
+  RemoteSrcPortType = mk_bits(clog2(num_rd_tiles + 1))
   opaque_nbits = 8
   OpqType = mk_bits(opaque_nbits)
   num_vcs = 4
@@ -249,6 +251,7 @@ def mk_inter_cgra_pkt(num_cgra_columns,
   field_dict['dst_y'] = CgraYType
   field_dict['src_tile_id'] = TileIdType
   field_dict['dst_tile_id'] = TileIdType
+  field_dict['remote_src_port'] = RemoteSrcPortType
   field_dict['opaque'] = OpqType
   field_dict['vc_id'] = VcIdType
   field_dict['payload'] = CgraPayloadType
@@ -257,6 +260,7 @@ def mk_inter_cgra_pkt(num_cgra_columns,
     return f"InterCgraPkt: {s.src}->{s.dst} || " \
            f"({s.src_x},{s.src_y})->({s.dst_x},{s.dst_y}) || " \
            f"tileid:{s.src_tile_id}->{s.dst_tile_id} || " \
+           f"remote_src_port:{s.remote_src_port} || " \
            f"{s.opaque}:{s.vc_id} || " \
            f"payload:{s.payload}\n"
 
@@ -361,6 +365,39 @@ def mk_tile_sram_xbar_pkt(number_src = 5,
       'addr': AddrType,
       'src_cgra': CgraIdType,
       'src_tile': TileIdType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+def mk_mem_access_pkt(DataType,
+                      number_src = 5,
+                      number_dst = 5,
+                      mem_size_global = 64,
+                      num_cgras = 4,
+                      num_tiles = 17,
+                      num_rd_tiles = 4,
+                      prefix="MemAccessPacket"):
+
+  SrcType = mk_bits(clog2(number_src))
+  DstType = mk_bits(clog2(number_dst))
+  AddrType = mk_bits(clog2(mem_size_global))
+  CgraIdType = mk_bits(max(1, clog2(num_cgras)))
+  TileIdType = mk_bits(clog2(num_tiles + 1))
+  RemoteSrcPortType = mk_bits(clog2(num_rd_tiles + 1))
+
+  new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
+
+  def str_func(s):
+    return f"{s.src}>{s.dst}:(addr){s.addr}.(data){s.data}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}.(remote_src_port){s.remote_src_port}"
+
+  return mk_bitstruct(new_name, {
+      'src': SrcType,
+      'dst': DstType,
+      'addr': AddrType,
+      'data': DataType,
+      'src_cgra': CgraIdType,
+      'src_tile': TileIdType,
+      'remote_src_port': RemoteSrcPortType,
     },
     namespace = {'__str__': str_func}
   )

@@ -117,11 +117,6 @@ def test_Ctrl():
                                     CtrlType,
                                     CtrlAddrType)
 
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
-
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
@@ -210,11 +205,6 @@ def test_Ctrl_Bound():
                                     DataAddrType,
                                     CtrlType,
                                     CtrlAddrType)
-
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,

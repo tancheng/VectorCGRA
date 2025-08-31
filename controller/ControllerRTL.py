@@ -144,6 +144,7 @@ class ControllerRTL(Component):
                                                  s.recv_from_ctrl_ring_pkt.msg.dst_cgra_y, # dst_y
                                                  s.recv_from_ctrl_ring_pkt.msg.src, # src_tile_id
                                                  s.recv_from_ctrl_ring_pkt.msg.dst, # dst_tile_id
+                                                 0, # remote_src_port, only used for inter-cgra remote load request/response.
                                                  0, # opaque
                                                  0, # vc_id. No need to specify vc_id for self produce-consume pkt thanks to the additional VC buffer.
                                                  s.recv_from_ctrl_ring_pkt.msg.payload))
@@ -184,6 +185,7 @@ class ControllerRTL(Component):
                                                  s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
                                                  num_tiles, # src_tile_id, num_tiles is used to indicate the request is from CPU, so the LOAD response can come back.
                                                  s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id
+                                                 0, # remote_src_port, only used for inter-cgra remote load request/response.
                                                  0, # opaque
                                                  0, # vc_id
                                                  s.recv_from_cpu_pkt_queue.send.msg.payload))
@@ -199,9 +201,9 @@ class ControllerRTL(Component):
       s.send_to_mem_store_request_queue.recv.val @= 0
       s.send_to_tile_load_response_queue.recv.val @= 0
 
-      s.send_to_mem_load_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      s.send_to_mem_store_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      s.send_to_tile_load_response_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_mem_load_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_mem_store_request_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.send_to_tile_load_response_queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
