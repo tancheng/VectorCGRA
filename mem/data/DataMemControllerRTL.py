@@ -97,19 +97,6 @@ class DataMemControllerRTL(Component):
                           num_tiles,
                           num_rd_tiles)
 
-    empty_noc_pkt = NocPktType(0, # src
-                               0, # dst
-                               0, # src_x
-                               0, # src_y
-                               0, # dst_x
-                               0, # dst_y
-                               0, # src_tile_id
-                               0, # dst_tile_id
-                               0, # remote_src_port
-                               0, # opaque
-                               0, # vc_id
-                               CgraPayloadType(0, 0, 0, 0, 0))
-
     # Interfaces.
     # [num_rd_tiles] indicates the request from the NoC. ---> Add separate recv port for NoC.
     s.recv_from_noc_load_request = RecvIfcRTL(NocPktType)
@@ -216,7 +203,7 @@ class DataMemControllerRTL(Component):
         s.wr_pkt[i] @= MemWritePktType(i,                       # src
                                        bank_index_store_local,  # dst
                                        recv_waddr,              # addr
-                                       s.recv_wdata[i].msg,          # data
+                                       s.recv_wdata[i].msg,     # data
                                        0,                       # src_cgra
                                        0,                       # src_tile
                                        i)                       # remote_src_port
@@ -254,13 +241,37 @@ class DataMemControllerRTL(Component):
         s.send_rdata[i].msg @= DataType()
       s.send_to_noc_load_response_pkt.val @= 0
 
-      s.send_to_noc_load_response_pkt.msg @= empty_noc_pkt
+      s.send_to_noc_load_response_pkt.msg @= \
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # remote_src_port
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
 
 
       for i in range(num_wr_tiles):
         s.recv_wdata[i].rdy @= 0
 
-      s.send_to_noc_store_pkt.msg @= empty_noc_pkt
+      s.send_to_noc_store_pkt.msg @= \
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # remote_src_port
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_store_pkt.val @= 0
 
@@ -274,7 +285,19 @@ class DataMemControllerRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
-      s.send_to_noc_load_request_pkt.msg @= empty_noc_pkt
+      s.send_to_noc_load_request_pkt.msg @= \
+          NocPktType(0, # src
+                     0, # dst
+                     0, # src_x
+                     0, # src_y
+                     0, # dst_x
+                     0, # dst_y
+                     0, # src_tile_id
+                     0, # dst_tile_id
+                     0, # remote_src_port
+                     0, # opaque
+                     0, # vc_id
+                     CgraPayloadType(0, 0, 0, 0, 0))
 
       s.send_to_noc_load_request_pkt.val @= 0
 

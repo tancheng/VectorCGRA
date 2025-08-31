@@ -50,38 +50,23 @@ class DataMemWrapperRTL(Component):
     latency = 0 if is_combinational else 1
     s.channel_rd = ChannelRTL(MemReadType, latency = latency)
     s.channel_wr = ChannelRTL(MemWriteType, latency = latency)
-    # s.recv_raddr = Wire(AddrType)
-    # s.recv_waddr = Wire(AddrType)
-    # s.recv_wdata = Wire(DataType)
-    # s.recv_wen   = Wire(1)
 
     # Connection.
     s.recv_rd //= s.channel_rd.recv
     s.recv_wr //= s.channel_wr.recv
 
-    # @update
-    # def decompose_recv_msg():
-    #   s.recv_raddr @= AddrType(0)
-    #   s.recv_waddr @= AddrType(0)
-    #   s.recv_wdata @= DataType(0, 0)
-    #   s.recv_wen   @= b1(0)
-    #   if s.channel_rd.send.val:
-    #     s.recv_raddr @= s.channel_rd.send.msg.addr
-    #   if s.channel_wr.send.val:
-    #     s.recv_waddr @= s.channel_wr.send.msg.addr
-    #     s.recv_wdata @= s.channel_wr.send.msg.data
-    #     s.recv_wen   @= 1
-
     @update
     def compose_send_msg():
-      s.send.msg @= MemResponseType(0, 0, 0, DataType(0, 0), 0, 0, 0)
+      s.send.msg @= MemResponseType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
       # TODO: change to pipe's out's wen.
       if s.channel_rd.send.val:
-        s.send.msg      @= s.channel_rd.send.msg
-        s.send.msg.src  @= s.channel_rd.send.msg.dst
-        s.send.msg.dst  @= s.channel_rd.send.msg.src
-        s.send.msg.data @= s.memory.rdata[0]
-        print("[cheng] assembling response msg: ", s.send.msg)
+        s.send.msg.src             @= s.channel_rd.send.msg.dst
+        s.send.msg.dst             @= s.channel_rd.send.msg.src
+        s.send.msg.addr            @= s.channel_rd.send.msg.addr
+        s.send.msg.data            @= s.memory.rdata[0]
+        s.send.msg.src_cgra        @= s.channel_rd.send.msg.src_cgra
+        s.send.msg.src_tile        @= s.channel_rd.send.msg.src_tile
+        s.send.msg.remote_src_port @= s.channel_rd.send.msg.remote_src_port
 
     @update
     def request_memory():
@@ -89,7 +74,7 @@ class DataMemWrapperRTL(Component):
       s.memory.wen[0]   @= 0
       s.memory.raddr[0] @= PerBankAddrType(0)
       s.memory.waddr[0] @= PerBankAddrType(0)
-      s.memory.wdata[0] @= DataType(0, 0)
+      s.memory.wdata[0] @= DataType(0, 0, 0, 0)
 
       if s.channel_rd.send.val:
         s.memory.raddr[0] @= \
