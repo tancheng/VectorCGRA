@@ -200,9 +200,6 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
   num_tiles = width * height
-  num_rd_tiles = width + height - 1
-  if paramCGRA != None:
-    num_rd_tiles = dataSPM.getNumOfValidReadPorts(),
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
   # FuList = [MemUnitRTL, AdderRTL]
@@ -249,7 +246,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
-                                       num_rd_tiles,
+                                       width,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -348,11 +345,12 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
     links = paramCGRA.getValidLinks()
     dataSPM = paramCGRA.dataSPM
   else:
-    dataSPM = DataSPM(2, 2)
-    for r in range(2):
+    for r in range(height):
       tiles.append([])
-      for c in range(2):
+      for c in range(width):
         tiles[r].append(Tile(c, r))
+    # Assumes first column tiles are connected to memory.
+    dataSPM = DataSPM(width, width)
 
     links = [Link(None, None, 0, 0) for _ in range(16)]
 

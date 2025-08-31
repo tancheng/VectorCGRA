@@ -27,7 +27,6 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                preload_data = None,
                 is_multi_cgra = True):
 
     s.num_mesh_ports = 8
