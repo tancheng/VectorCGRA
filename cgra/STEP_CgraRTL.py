@@ -102,9 +102,7 @@ class STEP_CgraRTL(Component):
                                         idTo2d_map,
                                         preload_data)
     s.controller = STEP_ControllerRTL(CpuPktType,
-                                 BitstreamType, CfgType, DataType, DataAddrType,
-                                 multi_cgra_rows, multi_cgra_columns,
-                                 s.num_tiles, controller2addr_map, idTo2d_map)
+                                 CfgBitstreamType, CfgType, CfgMetadataType)
     s.register_file = STEP_RegisterFileRTL(DataType, RegAddrType,
                                             num_reg_banks = 2,
                                             num_rd_ports = height,
@@ -137,6 +135,10 @@ class STEP_CgraRTL(Component):
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+
+    # Connects ctrl interface to rf ctrl
+    s.controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl
+    s.controller.rf_cfg_done //= s.rf_controller.cfg_done
 
     s.tiles = STEP_TileWrapperRTL(CgraIdType, DataType, RegAddrType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
@@ -176,14 +178,12 @@ class STEP_CgraRTL(Component):
       s.tiles.recv_data_on_boundary_south[tile_col].val //= 0
 
     for tile_row in range(height):
-      s.tiles.send_data_on_boundary_west[tile_row].rdy //= 0
-      s.tiles.recv_data_on_boundary_west[tile_row].val //= 0
-      s.tiles.send_data_on_boundary_east[tile_row].rdy //= s.register_file.wr_data[tile_row]
-      s.tiles.send_addr_on_boundary_east[tile_row].rdy //= s.register_file.rd_addr[tile_row]
-      s.tiles.send_addr_on_boundary_east[tile_row].rdy //= s.register_file.wr_addr[tile_row]
-      s.tiles.recv_data_on_boundary_east[tile_row].val //= s.register_file.send_data[tile_row]
-      # s.tiles.send_data_on_boundary_east[tile_row].rdy //= 0
-      # s.tiles.recv_data_on_boundary_east[tile_row].val //= 0
+        # West not connected
+        s.tiles.send_data_on_boundary_west[tile_row].rdy //= 0
+        s.tiles.recv_data_on_boundary_west[tile_row].val //= 0
+        # East connected to Rf
+        s.tiles.send_data_on_boundary_east[tile_row] //= s.register_file.wr_data[tile_row]
+        s.tiles.recv_data_on_boundary_east[tile_row] //= s.register_file.rd_data[tile_row]
 
 
   # Line trace

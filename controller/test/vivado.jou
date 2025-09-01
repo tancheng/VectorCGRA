@@ -1,0 +1,25 @@
+#-----------------------------------------------------------
+# Vivado v2025.1 (64-bit)
+# SW Build 6140274 on Wed May 21 22:58:25 MDT 2025
+# IP Build 6138677 on Thu May 22 03:10:11 MDT 2025
+# SharedData Build 6139179 on Tue May 20 17:58:58 MDT 2025
+# Start of session at: Sun Aug 31 20:42:08 2025
+# Process ID         : 412302
+# Current directory  : /data/angl7/STEP_VectorCGRA/controller/test
+# Command line       : vivado
+# Log file           : /data/angl7/STEP_VectorCGRA/controller/test/vivado.log
+# Journal file       : /data/angl7/STEP_VectorCGRA/controller/test/vivado.jou
+# Running On         : squire.ece.uw.edu
+# Platform           : AlmaLinux
+# Operating System   : AlmaLinux release 8.10 (Cerulean Leopard)
+# Processor Detail   : AMD EPYC 9374F 32-Core Processor
+# CPU Frequency      : 3849.916 MHz
+# CPU Physical cores : 64
+# CPU Logical cores  : 128
+# Host memory        : 810606 MB
+# Swap memory        : 206997 MB
+# Total Virtual      : 1017603 MB
+# Available Virtual  : 982392 MB
+#-----------------------------------------------------------
+start_gui
+create_project project_1 /data/angl7/STEP_VectorCGRA/controller/test/project_1 -part xc7vx485tffg1157-1
