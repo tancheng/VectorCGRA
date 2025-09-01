@@ -34,10 +34,10 @@ class TestHarness(Component):
 
     s.src_in.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
-    s.dut.send_out[0] //= s.sink.recv
+    s.dut.send_to_controller //= s.sink.recv
 
   def done(s):
-    return s.src_opt.done() and s.sink.done()
+    return s.src_opt.done() and s.src_in.done() and s.sink.done()
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -72,11 +72,11 @@ def test_Ret():
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
-  src_in =  [DataType(1, 1), DataType(2, 1), DataType(3, 0)]
+  src_in =  [DataType(1, 0), DataType(2, 1), DataType(3, 1)]
   src_opt = [CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
-  sink =    [DataType(1, 1), DataType(2, 1), DataType(3, 0)]
+  sink =    [DataType(2, 1)] # , DataType(2, 1), DataType(3, 0)]
   th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in, src_opt,
                    sink)

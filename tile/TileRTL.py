@@ -99,6 +99,7 @@ class TileRTL(Component):
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    CgraPayloadType,
+                                   DataType,
                                    CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports,
@@ -143,6 +144,9 @@ class TileRTL(Component):
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
+
+    # Fu data delivery to ctrl memory (eventually towards CPU via controller).
+    s.element.send_to_controller //= s.ctrl_mem.recv_from_tile
 
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
