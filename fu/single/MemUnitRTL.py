@@ -27,14 +27,15 @@ class MemUnitRTL(Component):
     VectorFactorPowerType = mk_bits(3)
     VectorFactorType = mk_bits(8)
 
-    # Interface
+    # Interfaces.
     s.recv_in = [ValRdyRecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = ValRdyRecvIfcRTL(DataType)
     s.recv_opt = ValRdyRecvIfcRTL(CtrlType)
     s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = ValRdySendIfcRTL(DataType)
 
-    # Interface to the data sram, need to interface them with
-    # the data memory module in top level
+    # Interfaces to the data sram, need to interface them with
+    # the data memory module in top level.
     s.to_mem_raddr = ValRdySendIfcRTL(AddrType)
     s.from_mem_rdata = ValRdyRecvIfcRTL(DataType)
     s.to_mem_waddr = ValRdySendIfcRTL(AddrType)
@@ -50,7 +51,7 @@ class MemUnitRTL(Component):
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
 
-    # Components
+    # Components.
     s.recv_in_val_vector = Wire(num_inports)
     s.recv_all_val = Wire(1)
     # Indicates whether the raddr has been sent to memory as request,
@@ -61,6 +62,7 @@ class MemUnitRTL(Component):
     s.vector_factor_counter = Wire(VectorFactorType)
     s.reached_vector_factor = Wire(1)
 
+    # Connections.
     s.vector_factor_power //= vector_factor_power
 
     @update
@@ -78,6 +80,9 @@ class MemUnitRTL(Component):
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:

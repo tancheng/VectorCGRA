@@ -20,7 +20,7 @@ class Fu(Component):
                 num_inports, num_outports, data_mem_size = 4,
                 latency = 1, vector_factor_power = 0):
 
-    # Constant
+    # Constants.
     num_entries = 2
     DataAddrType = mk_bits(clog2(data_mem_size))
     CountType = mk_bits(clog2(num_entries + 1))
@@ -31,24 +31,26 @@ class Fu(Component):
     VectorFactorPowerType = mk_bits(3)
     VectorFactorType = mk_bits(8)
 
-    # Interface
+    # Interfaces.
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = SendIfcRTL(DataType)
 
+    # Components.
     # Redundant interfaces for MemUnit
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr = SendIfcRTL(DataAddrType)
     s.to_mem_wdata = SendIfcRTL(DataType)
 
-    # Components
     s.vector_factor_power = Wire(VectorFactorPowerType)
     s.vector_factor_counter = Wire(VectorFactorType)
     s.reached_vector_factor = Wire(1)
     s.latency = Wire(LatencyType)
 
+    # Connections.
     s.vector_factor_power //= vector_factor_power
 
     @update

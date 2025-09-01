@@ -36,8 +36,9 @@ class TestHarness(Component):
                   for i in range(width * height)]
 
     s.dut = \
-        DUT(CtrlPktType, CgraPayloadType, CtrlSignalType, width, height,
-            ctrl_mem_size, num_fu_inports, num_fu_outports,
+        DUT(CtrlPktType, CgraPayloadType, DataType, CtrlSignalType,
+            width, height, ctrl_mem_size,
+            num_fu_inports, num_fu_outports,
             num_tile_inports, num_tile_outports,
             len(ctrl_pkts), len(ctrl_pkts))
 

@@ -22,53 +22,53 @@ class VectorAdderRTL(Component):
   def construct(s, bw, CtrlType, num_inports, num_outports,
                 data_mem_size):
 
-    # DataType should be 1-bit more due to the carry-out
+    # DataType should be 1-bit more due to the carry-out.
     num_entries = 2
-    DataType    = mk_bits( bw+1 )
-    FuInType    = mk_bits( clog2( num_inports + 1 ) )
-    CountType   = mk_bits( clog2( num_entries + 1 ) )
-    FuInType    = mk_bits( clog2( num_inports + 1 ) )
+    DataType = mk_bits(bw + 1)
+    FuInType = mk_bits(clog2(num_inports + 1))
+    CountType = mk_bits(clog2(num_entries + 1))
+    FuInType = mk_bits(clog2(num_inports + 1))
 
-    # Constant
-    s.const_zero  = DataType(0)
-    s.const_one   = DataType(1)
+    # Constants.
+    s.const_zero = DataType(0)
+    s.const_one = DataType(1)
 
-    # Interface
-    s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
-    s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_opt       = RecvIfcRTL( CtrlType )
-    s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
-    s.carry_in       = InPort( b1 )
-    s.carry_out      = OutPort( b1 )
-    s.carry_in_temp  = Wire( DataType )
+    # Interfaces.
+    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(DataType)
+    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = SendIfcRTL(DataType)
 
-    s.in0 = Wire( FuInType )
-    s.in1 = Wire( FuInType )
+    # Components.
+    s.carry_in = InPort(b1)
+    s.carry_out = OutPort(b1)
+    s.carry_in_temp = Wire(DataType)
+    s.in0 = Wire(FuInType)
+    s.in1 = Wire(FuInType)
+    idx_nbits = clog2(num_inports)
+    s.in0_idx = Wire(idx_nbits)
+    s.in1_idx = Wire(idx_nbits)
+    s.recv_all_val = Wire(1)
 
-    idx_nbits = clog2( num_inports )
-    s.in0_idx = Wire( idx_nbits )
-    s.in1_idx = Wire( idx_nbits )
-
+    # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
 
-    s.recv_all_val = Wire(1)
-
     @update
     def comb_logic():
-
       s.recv_all_val @= 0
       # For pick input register
       s.in0 @= 0
       s.in1 @= 0
-      for i in range( num_inports ):
-        s.recv_in[i].rdy @= b1( 0 )
-
       for i in range(num_inports):
         s.recv_in[i].rdy @= b1(0)
-      for i in range( num_outports ):
+      for i in range(num_outports):
         s.send_out[i].val @= b1(0)
         s.send_out[i].msg @= DataType()
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -130,8 +130,8 @@ class VectorAdderRTL(Component):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:
-          for j in range( num_outports ):
-            s.send_out[j].val @= b1( 0 )
+          for j in range(num_outports):
+            s.send_out[j].val @= b1(0)
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0

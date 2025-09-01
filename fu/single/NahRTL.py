@@ -37,6 +37,9 @@ class NahRTL(Fu):
         s.send_out[i].val @= 0
         s.send_out[i].msg @= DataType()
 
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
+
       if s.recv_opt.msg.operation == OPT_NAH:
         s.recv_opt.rdy @= 1
       else:

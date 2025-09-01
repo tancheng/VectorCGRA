@@ -21,7 +21,7 @@ from ...lib.util.common import *
 
 class CtrlMemDynamicRTL(Component):
 
-  def construct(s, IntraCgraPktType, CgraPayloadType, CtrlType,
+  def construct(s, IntraCgraPktType, CgraPayloadType, DataType, CtrlType,
                 ctrl_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, num_cgras,
                 num_tiles, ctrl_count_per_iter = 4,
@@ -33,7 +33,7 @@ class CtrlMemDynamicRTL(Component):
     # number of steps should be 4 * 5 = 20.
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
-    # Constant
+    # Constants.
     CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
     PCType = mk_bits(clog2(ctrl_mem_size + 1))
     TimeType = mk_bits(clog2(MAX_CTRL_COUNT + 1))
@@ -42,19 +42,21 @@ class CtrlMemDynamicRTL(Component):
     FuOutPortType = mk_bits(clog2(num_fu_outports))
     num_routing_outports = num_tile_outports + num_fu_inports
 
-    # Interface
+    # Interfaces.
     # Stores ctrl signals into the control memory/registers.
     s.send_ctrl = SendIfcRTL(CtrlType)
     # Receives the ctrl packets from the controller.
     s.recv_pkt_from_controller = RecvIfcRTL(IntraCgraPktType)
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(IntraCgraPktType)
+    # Receives data from the tile, used for returning data to CPU.
+    s.recv_from_tile = RecvIfcRTL(DataType)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.ctrl_addr_outport = OutPort(CtrlAddrType)
 
-    # Component
+    # Components.
     s.reg_file = RegisterFile(CtrlType, ctrl_mem_size, 1, 1)
     s.recv_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.times = Wire(TimeType)
@@ -77,18 +79,16 @@ class CtrlMemDynamicRTL(Component):
     s.prologue_count_reg_routing_crossbar = \
         [[Wire(PrologueCountType) for _ in range(num_tile_inports)] for _ in range(ctrl_mem_size)]
 
-    # Connections
+    # Connections.
     s.send_ctrl.msg //= s.reg_file.rdata[0]
     s.recv_pkt_from_controller //= s.recv_pkt_queue.recv
 
     @update
     def update_msg():
-
       s.recv_pkt_queue.send.rdy @= 0
       s.reg_file.wen[0] @= 0
       s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
       # Initializes the fields of the control signal.
-      # s.reg_file.wdata[0] @= CtrlType()
       s.reg_file.wdata[0].operation @= 0
       for i in range(num_fu_inports):
         s.reg_file.wdata[0].fu_in[i] @= 0
@@ -140,19 +140,34 @@ class CtrlMemDynamicRTL(Component):
       s.ctrl_addr_outport @= s.reg_file.raddr[0]
 
     @update
-    def update_send_out_signal():
-      s.send_ctrl.val @= 0
+    def update_send_pkt_to_controller():
       s.send_pkt_to_controller.val @= 0
       s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+      s.recv_from_tile.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
-        if ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
+        if s.recv_from_tile.val & (~s.sent_complete):
+          s.send_pkt_to_controller.msg @= \
+              IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+                                CgraPayloadType(CMD_COMPLETE, s.recv_from_tile.msg, 0, 0, 0))
+          s.send_pkt_to_controller.val @= 1
+          s.recv_from_tile.rdy @= s.send_pkt_to_controller.rdy
+        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
-          s.send_ctrl.val @= b1(0)
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
                 IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
+
+    @update
+    def update_send_ctrl():
+      s.send_ctrl.val @= 0
+      if s.start_iterate_ctrl == b1(1):
+        if s.sent_complete:
+          s.send_ctrl.val @= 0
+        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
+           (s.reg_file.rdata[0].operation == OPT_START):
+          s.send_ctrl.val @= b1(0)
         else:
           s.send_ctrl.val @= 1
       if s.recv_pkt_queue.send.val & \
@@ -178,13 +193,9 @@ class CtrlMemDynamicRTL(Component):
       if s.reset:
         s.sent_complete <<= 0
       else:
-        # Once COMPLETE signal is sent, we shouldn't send another
-        # COMPLETE signal until the next ctrl signal is launched.
-        # TODO: Need to extend the logic here if other signals can be
-        # sent to the controller.
         if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
           s.sent_complete <<= 1
-        if s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH):
+        elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH):
           s.sent_complete <<= 0
 
     @update_ff

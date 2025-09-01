@@ -75,6 +75,9 @@ class FpMulRTL(Fu):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
+
       s.fmul.a @= 0
       s.fmul.b @= 0
 

@@ -79,6 +79,9 @@ class FpAddRTL(Fu):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
+
       s.fadd.a @= 0
       s.fadd.b @= 0
   

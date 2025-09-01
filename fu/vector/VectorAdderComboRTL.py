@@ -26,27 +26,28 @@ class VectorAdderComboRTL(Component):
 
     # Constants
     assert(data_bandwidth % num_lanes == 0)
-    num_entries  = 2
-    s.const_zero = DataType(0, 0)
-    sub_bw       = data_bandwidth // num_lanes
-    CountType    = mk_bits( clog2( num_entries + 1 ) )
+    num_entries = 2
+    s.const_zero = DataType()
+    sub_bw = data_bandwidth // num_lanes
+    CountType = mk_bits(clog2(num_entries + 1))
 
     # Interface
-    s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
-    s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_opt       = RecvIfcRTL( CtrlType )
-    s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
+    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(DataType)
+    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = SendIfcRTL(DataType)
 
     # Components
-    s.Fu = [ VectorAdderRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
-             for _ in range( num_lanes ) ]
+    s.Fu = [VectorAdderRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
+            for _ in range(num_lanes)]
 
     # Connection: for carry-in/out
     s.Fu[0].carry_in //= 0
-    for i in range( 1, num_lanes ):
+    for i in range(1, num_lanes):
       s.Fu[i].carry_in //= s.Fu[i-1].carry_out
 
-    for i in range( num_lanes ):
+    for i in range(num_lanes):
       # Connection: split into vectorized FUs
       s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[0].msg[0:sub_bw]
       s.recv_in[1].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[1].msg[0:sub_bw]
@@ -56,11 +57,11 @@ class VectorAdderComboRTL(Component):
       s.Fu[i].send_out[0].msg[0:sub_bw] //= s.send_out[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
     # Redundant interfaces for MemUnit
-    AddrType         = mk_bits( clog2( data_mem_size ) )
-    s.to_mem_raddr   = SendIfcRTL( AddrType )
-    s.from_mem_rdata = RecvIfcRTL( DataType )
-    s.to_mem_waddr   = SendIfcRTL( AddrType )
-    s.to_mem_wdata   = SendIfcRTL( DataType )
+    AddrType = mk_bits(clog2(data_mem_size))
+    s.to_mem_raddr = SendIfcRTL(AddrType)
+    s.from_mem_rdata = RecvIfcRTL(DataType)
+    s.to_mem_waddr = SendIfcRTL(AddrType)
+    s.to_mem_wdata = SendIfcRTL(DataType)
 
     @update
     def update_signal():
@@ -123,18 +124,18 @@ class VectorAdderComboRTL(Component):
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
 
       else:
-        for j in range( num_outports ):
-          s.send_out[j].val @= b1( 0 )
+        for j in range(num_outports):
+          s.send_out[j].val @= b1(0)
 
     @update
     def update_mem():
-      s.to_mem_waddr.val   @= b1( 0 )
-      s.to_mem_wdata.val   @= b1( 0 )
-      s.to_mem_wdata.msg   @= s.const_zero
-      s.to_mem_waddr.msg   @= AddrType( 0 )
-      s.to_mem_raddr.msg   @= AddrType( 0 )
-      s.to_mem_raddr.val   @= b1( 0 )
-      s.from_mem_rdata.rdy @= b1( 0 )
+      s.to_mem_waddr.val @= b1(0)
+      s.to_mem_wdata.val @= b1(0)
+      s.to_mem_wdata.msg @= s.const_zero
+      s.to_mem_waddr.msg @= AddrType(0)
+      s.to_mem_raddr.msg @= AddrType(0)
+      s.to_mem_raddr.val @= b1(0)
+      s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace(s):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
