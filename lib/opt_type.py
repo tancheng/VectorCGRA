@@ -33,6 +33,7 @@ OPT_REM                   = Bits6( 44 )
 OPT_OR                    = Bits6( 8  )
 OPT_XOR                   = Bits6( 9  )
 OPT_AND                   = Bits6( 10 )
+OPT_BIT_NOT               = Bits6( 43 )
 OPT_NOT                   = Bits6( 11 )
 OPT_LD                    = Bits6( 12 )
 OPT_STR                   = Bits6( 13 )
@@ -101,7 +102,8 @@ OPT_SYMBOL_DICT = {
   OPT_OR            : "(|)",
   OPT_XOR           : "(^)",
   OPT_AND           : "(&)",
-  OPT_NOT           : "(~)",
+  OPT_NOT           : "(!)",
+  OPT_BIT_NOT       : "(~)",
   OPT_LD            : "(ld)",
   OPT_STR           : "(st)",
   OPT_EQ            : "(==)",
