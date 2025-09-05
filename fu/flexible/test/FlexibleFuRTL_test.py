@@ -30,7 +30,8 @@ from ....lib.messages import *
 class TestHarness( Component ):
 
   def construct(s, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlType, data_mem_size, num_inports, num_outports,
+                CtrlType, data_bitwidth,
+                data_mem_size, num_inports, num_outports,
                 src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
@@ -39,7 +40,8 @@ class TestHarness( Component ):
     s.src_opt = TestSrcRTL(CtrlType, ctrl_msgs)
     s.sink_out0 = TestSinkRTL(DataType, sink0_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, data_bitwidth,
+                         num_inports,
                          num_outports, data_mem_size, 1, FuList)
 
     connect(s.src_const.send, s.dut.recv_const)
@@ -91,7 +93,8 @@ def run_sim(test_harness, max_cycles = 100):
 def test_flexible_alu():
   FU = FlexibleFuRTL
   FuList = [AdderRTL]
-  DataType = mk_data(16, 1)
+  data_bitwidth = 16
+  DataType = mk_data(data_bitwidth, 1)
   PredicateType = mk_predicate(1, 1)
   data_mem_size = 8
   num_inports = 2
@@ -106,6 +109,7 @@ def test_flexible_alu():
                CtrlType(OPT_ADD, pickRegister),
                CtrlType(OPT_SUB, pickRegister)]
   th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
+                   data_bitwidth,
                    data_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
@@ -135,7 +139,8 @@ def test_flexible_mul():
 def test_flexible_universal():
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, GrantRTL, MemUnitRTL]
-  DataType      = mk_data(16, 1)
+  data_bitwidth = 16
+  DataType      = mk_data(data_bitwidth, 1)
   PredicateType = mk_predicate(1, 1)
   data_mem_size = 8
   num_inports   = 2
@@ -150,6 +155,7 @@ def test_flexible_universal():
                    CtrlType(OPT_GRT_PRED, pickRegister),
                    CtrlType(OPT_PHI,      pickRegister)]
   th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
-                  data_mem_size, num_inports, num_outports,
-                  src_in0, src_in1, src_opt, sink_out0)
+                   data_bitwidth,
+                   data_mem_size, num_inports, num_outports,
+                   src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)

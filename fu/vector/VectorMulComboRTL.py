@@ -22,10 +22,10 @@ class VectorMulComboRTL(Component):
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 vector_factor_power = 0,
-                num_lanes = 4, data_bandwidth = 64):
+                num_lanes = 4, data_bitwidth = 64):
 
     # Constants
-    assert(data_bandwidth % num_lanes == 0)
+    assert(data_bitwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic
     assert(num_lanes % 4 == 0)
     num_entries = 2
@@ -36,10 +36,10 @@ class VectorMulComboRTL(Component):
     # input is no longer than 8-bit. Here, the sub_bw is by default
     # 4, which will be times by 2 to make it 8-bit to compensate
     # the longer output in the subFU.
-    sub_bw = data_bandwidth // num_lanes
-    sub_bw_2 = 2 * data_bandwidth // num_lanes
-    sub_bw_3 = 3 * data_bandwidth // num_lanes
-    sub_bw_4 = 4 * data_bandwidth // num_lanes
+    sub_bw = data_bitwidth // num_lanes
+    sub_bw_2 = 2 * data_bitwidth // num_lanes
+    sub_bw_3 = 3 * data_bitwidth // num_lanes
+    sub_bw_4 = 4 * data_bitwidth // num_lanes
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -47,7 +47,7 @@ class VectorMulComboRTL(Component):
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     s.send_to_controller = SendIfcRTL(DataType)
-    TempDataType = mk_bits(data_bandwidth)
+    TempDataType = mk_bits(data_bitwidth)
     FuDataType = mk_bits(sub_bw)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
@@ -96,7 +96,7 @@ class VectorMulComboRTL(Component):
           s.temp_result[i] @= TempDataType(0)
           s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
 
-        s.send_out[0].msg.payload[0:data_bandwidth] @= \
+        s.send_out[0].msg.payload[0:data_bitwidth] @= \
           (s.temp_result[3] << (sub_bw * 3)) + \
           (s.temp_result[2] << (sub_bw * 2)) + \
           (s.temp_result[1] << sub_bw) + \
@@ -116,7 +116,7 @@ class VectorMulComboRTL(Component):
           s.temp_result[i] @= TempDataType(0)
           s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
 
-        s.send_out[0].msg.payload[0:data_bandwidth] @= \
+        s.send_out[0].msg.payload[0:data_bitwidth] @= \
             s.temp_result[0] + \
             (s.temp_result[1] << sub_bw) + \
             (s.temp_result[2] << sub_bw) + \

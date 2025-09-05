@@ -55,7 +55,7 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, cgra_id, ctrl_mem_size,
+                ControllerIdType, data_nbits, cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
@@ -71,6 +71,7 @@ class TestHarness(Component):
 
     s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
                 CtrlSignalType, NocPktType, ControllerIdType,
+                data_nbits,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
@@ -471,7 +472,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   mem_access_is_combinational = False
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                   ControllerIdType, cgra_id,
+                   ControllerIdType, data_nbits, cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,

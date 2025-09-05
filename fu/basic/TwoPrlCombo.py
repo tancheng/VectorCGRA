@@ -16,7 +16,8 @@ from ...lib.opt_type import *
 class TwoPrlCombo(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, Fu0, Fu1,
-                num_inports, num_outports, data_mem_size):
+                num_inports, num_outports, data_mem_size,
+                data_bitwidth = 32):
 
     # Constants
     num_entries   = 2

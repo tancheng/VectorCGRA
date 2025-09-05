@@ -37,7 +37,9 @@ from ..rf.RegisterRTL import RegisterRTL
 class TileRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, ctrl_mem_size, data_mem_size, num_ctrl,
+                CtrlSignalType,
+                data_bitwidth,
+                ctrl_mem_size, data_mem_size, num_ctrl,
                 total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
@@ -73,6 +75,7 @@ class TileRTL(Component):
 
     # Components.
     s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
+                              data_bitwidth,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)

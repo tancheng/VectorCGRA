@@ -20,8 +20,10 @@ from ..tile.TileRTL import TileRTL
 class CgraTemplateRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
-                multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
+                CtrlSignalType, NocPktType, CgraIdType, data_bitwidth,
+                multi_cgra_rows,
+                multi_cgra_columns,
+                ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, mem_access_is_combinational,
@@ -60,7 +62,9 @@ class CgraTemplateRTL(Component):
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+                      CgraPayloadType, CtrlSignalType,
+                      data_bitwidth,
+                      ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,

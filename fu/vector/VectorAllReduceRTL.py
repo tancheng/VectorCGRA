@@ -21,15 +21,15 @@ class VectorAllReduceRTL(Component):
                 num_inports, num_outports, data_mem_size,
                 vector_factor_power = 0,
                 num_lanes = 4,
-                data_bandwidth = 64):
+                data_bitwidth = 64):
 
     # Constants.
-    assert(data_bandwidth % num_lanes == 0)
+    assert(data_bitwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic.
     assert(num_lanes % 4 == 0)
     num_entries = 4
     CountType = mk_bits(clog2(num_entries + 1))
-    sub_bw = data_bandwidth // num_lanes
+    sub_bw = data_bitwidth // num_lanes
     s.const_zero = DataType(0, 0, 0, 0)
 
     # Interfaces.
@@ -38,7 +38,7 @@ class VectorAllReduceRTL(Component):
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     s.send_to_controller = SendIfcRTL(DataType)
-    TempDataType = mk_bits(data_bandwidth)
+    TempDataType = mk_bits(data_bitwidth)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
     # Redundant interfaces for MemUnit.
@@ -70,13 +70,13 @@ class VectorAllReduceRTL(Component):
         s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
       if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out + s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out + s.recv_in[1].msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_mul.out
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE:
-        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_mul.out * s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out * s.recv_in[1].msg.payload
 
     @update
     def update_signal():

@@ -15,12 +15,14 @@ from ...lib.opt_type import *
 class ShifterRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size, vector_factor_power = 0):
+                num_outports, data_mem_size, vector_factor_power = 0,
+                data_bitwidth = 32):
 
     super(ShifterRTL, s).construct(DataType, PredicateType, CtrlType,
                                    num_inports, num_outports,
                                    data_mem_size, 1,
-                                   vector_factor_power)
+                                   vector_factor_power,
+                                   data_bitwidth = data_bitwidth)
 
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))

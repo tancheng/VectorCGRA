@@ -16,7 +16,8 @@ from ...lib.opt_type import *
 class MemUnitRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size, vector_factor_power = 0):
+                num_outports, data_mem_size, vector_factor_power = 0,
+                data_bitwidth = 32):
 
     # Constant
     num_entries = 2

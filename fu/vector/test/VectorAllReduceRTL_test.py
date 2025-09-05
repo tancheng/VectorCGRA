@@ -32,7 +32,7 @@ class TestHarness(Component):
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
                          num_inports, num_outports, data_mem_size,
-                         data_bandwidth = data_width)
+                         data_bitwidth = data_width)
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
     connect(s.src_in1.send,    s.dut.recv_in[1])

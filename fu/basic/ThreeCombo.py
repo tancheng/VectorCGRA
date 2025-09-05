@@ -17,7 +17,8 @@ from ...lib.opt_type import *
 class ThreeCombo(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, Fu0, Fu1, Fu2,
-                num_inports, num_outports, data_mem_size):
+                num_inports, num_outports, data_mem_size,
+                data_bitwidth = 32):
 
     # Constant
     num_entries   = 2

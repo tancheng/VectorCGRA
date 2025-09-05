@@ -23,13 +23,13 @@ class VectorAdderComboRTL(Component):
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 vector_factor_power = 0,
-                num_lanes = 4, data_bandwidth = 64):
+                num_lanes = 4, data_bitwidth = 64):
 
     # Constants
-    assert(data_bandwidth % num_lanes == 0)
+    assert(data_bitwidth % num_lanes == 0)
     num_entries = 2
     s.const_zero = DataType()
-    sub_bw = data_bandwidth // num_lanes
+    sub_bw = data_bitwidth // num_lanes
     CountType = mk_bits(clog2(num_entries + 1))
 
     # Interface

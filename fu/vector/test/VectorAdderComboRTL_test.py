@@ -34,7 +34,7 @@ class TestHarness( Component ):
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
                          num_outports, data_mem_size,
-                         num_lanes = 4, data_bandwidth = data_bw)
+                         num_lanes = 4, data_bitwidth = data_bw)
 
     # s.dut.initial_carry_in //= 0
 

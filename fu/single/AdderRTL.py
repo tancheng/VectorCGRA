@@ -16,11 +16,12 @@ class AdderRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                vector_factor_power = 0):
+                vector_factor_power = 0, data_bitwidth = 32):
 
     super(AdderRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
-                                 data_mem_size, 1, vector_factor_power)
+                                 data_mem_size, 1, vector_factor_power,
+                                 data_bitwidth = data_bitwidth)
 
     s.const_one = DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))
