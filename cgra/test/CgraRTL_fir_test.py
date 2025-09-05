@@ -1438,6 +1438,8 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
 
   preload_data = [
       [
+          # TODO: address granularity is currently in data type size. Instead, we should make it always byte-addressing. This requires
+          # the data memory access unit be designed carefully. https://github.com/tancheng/VectorCGRA/issues/179.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0001000100010001, 1), data_addr = 0)),
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0001000100010001, 1), data_addr = 1)),
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x000f000e000d000c, 1), data_addr = 2)),
@@ -1445,14 +1447,6 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x00110010000f000e, 1), data_addr = 4)),
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0015001400130012, 1), data_addr = 5)),
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0001000100010001, 1), data_addr = 6)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(18, 1), data_addr = 8)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(19, 1), data_addr = 9)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(20, 1), data_addr = 10)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(21, 1), data_addr = 11)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(22, 1), data_addr = 12)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(23, 1), data_addr = 13)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(24, 1), data_addr = 14)),
-          # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(25, 1), data_addr = 15)),
       ]
   ]
 

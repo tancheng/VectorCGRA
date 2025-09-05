@@ -49,7 +49,8 @@ class VectorAdderComboRTL(Component):
       s.Fu[i].carry_in //= s.Fu[i-1].carry_out
 
     for i in range(num_lanes):
-      # Connection: split into vectorized FUs
+      # Connection: split into vectorized FUs.
+      # TODO: Make the operand idx be dynamically picked: https://github.com/tancheng/VectorCGRA/issues/180.
       s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[0].msg[0:sub_bw]
       s.recv_in[1].msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_in[1].msg[0:sub_bw]
       s.recv_const.msg.payload[i*sub_bw:(i+1)*sub_bw] //= s.Fu[i].recv_const.msg[0:sub_bw]
