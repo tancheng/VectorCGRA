@@ -23,6 +23,9 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 round_near_even = 0b000
 
 def test_elaborate(cmdline_opts):
+  exp_nbits = 4
+  sig_nbits = 11
+  data_bitwidth = 1 + exp_nbits + sig_nbits
   DataType       = mk_data(16, 1)
   PredType       = mk_predicate(1, 1)
   data_mem_size  = 8
@@ -39,8 +42,10 @@ def test_elaborate(cmdline_opts):
                     ConfigType(OPT_MUL,       pick_register),
                     ConfigType(OPT_MUL_CONST, pick_register)]
   dut = FpMulRTL(DataType, PredType, ConfigType, num_inports,
-                 num_outports, data_mem_size, exp_nbits = 4,
-                 sig_nbits = 11)
+                 num_outports, data_mem_size,
+                 data_bitwidth = data_bitwidth,
+                 exp_nbits = exp_nbits,
+                 sig_nbits = sig_nbits)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 #-------------------------------------------------------------------------
@@ -63,10 +68,11 @@ class TestHarness(Component):
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
     s.dut = FunctionUnit(DataType, PredType, ConfigType,
-                         data_bitwidth,
                          num_inports, num_outports,
                          data_mem_size,
-                         exp_nbits, sig_nbits)
+                         data_bitwidth,
+                         exp_nbits,
+                         sig_nbits)
 
     connect(s.src_in0.send,    s.dut.recv_in[0]        )
     connect(s.src_in1.send,    s.dut.recv_in[1]        )

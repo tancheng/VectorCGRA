@@ -117,7 +117,8 @@ def test_flexible_alu():
 def test_flexible_mul():
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL]
-  DataType      = mk_data( 16, 1 )
+  data_bitwidth = 16
+  DataType      = mk_data( data_bitwidth, 1 )
   PredicateType = mk_predicate( 1, 1 )
   data_mem_size = 8
   num_inports   = 2
@@ -132,6 +133,7 @@ def test_flexible_mul():
                    CtrlType(OPT_MUL, pickRegister),
                    CtrlType(OPT_MUL, pickRegister)]
   th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
+                   data_bitwidth,
                    data_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim( th )
