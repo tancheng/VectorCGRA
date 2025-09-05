@@ -21,7 +21,8 @@ class VectorMulComboRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                num_lanes = 4, data_bandwidth = 32):
+                vector_factor_power = 0,
+                num_lanes = 4, data_bandwidth = 64):
 
     # Constants
     assert(data_bandwidth % num_lanes == 0)
@@ -55,19 +56,11 @@ class VectorMulComboRTL(Component):
             for _ in range(num_lanes)]
 
     # Redundant interfaces for MemUnit
-    # s.initial_carry_in  = InPort( b1 )
-    # s.initial_carry_out = OutPort( b1 )
     AddrType = mk_bits(clog2(data_mem_size))
     s.to_mem_raddr = SendIfcRTL(AddrType)
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr = SendIfcRTL(AddrType)
     s.to_mem_wdata = SendIfcRTL(DataType)
-
-    # Reduction units
-    s.reduce_add = SumUnit(TempDataType, num_lanes)
-    for i in range(num_lanes):
-      s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
-          if s.recv_opt.msg.operation == OPT_VEC_MUL else 0)
 
     @update
     def update_input_output():
@@ -101,11 +94,15 @@ class VectorMulComboRTL(Component):
 
         for i in range(num_lanes):
           s.temp_result[i] @= TempDataType(0)
-          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2] << (sub_bw * i)
+          s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
 
-        s.send_out[0].msg.payload[0:data_bandwidth] @= s.reduce_add.out
+        s.send_out[0].msg.payload[0:data_bandwidth] @= \
+          (s.temp_result[3] << (sub_bw * 3)) + \
+          (s.temp_result[2] << (sub_bw * 2)) + \
+          (s.temp_result[1] << sub_bw) + \
+          s.temp_result[0]
 
-      elif s.recv_opt.msg.operation == OPT_MUL: # with highest precision
+      elif s.recv_opt.msg.operation == OPT_VEC_MUL_COMBINED: # with highest precision
         s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
         s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
         s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
@@ -116,14 +113,14 @@ class VectorMulComboRTL(Component):
         s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
 
         for i in range(num_lanes):
-          s.temp_result[i] @= TempDataType( 0 )
+          s.temp_result[i] @= TempDataType(0)
           s.temp_result[i][0:sub_bw_2] @= s.Fu[i].send_out[0].msg[0:sub_bw_2]
 
         s.send_out[0].msg.payload[0:data_bandwidth] @= \
             s.temp_result[0] + \
             (s.temp_result[1] << sub_bw) + \
             (s.temp_result[2] << sub_bw) + \
-            (s.temp_result[3] << (sub_bw*2))
+            (s.temp_result[3] << (sub_bw * 2))
 
       else:
         for j in range(num_outports):
@@ -161,7 +158,7 @@ class VectorMulComboRTL(Component):
         s.Fu[i].recv_opt.msg.operation @= OPT_NAH
 
       if (s.recv_opt.msg.operation == OPT_VEC_MUL) | \
-         (s.recv_opt.msg.operation == OPT_MUL):
+         (s.recv_opt.msg.operation == OPT_VEC_MUL_COMBINED):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_MUL
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate

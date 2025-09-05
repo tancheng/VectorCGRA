@@ -22,7 +22,8 @@ class VectorAdderComboRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                num_lanes = 4, data_bandwidth = 32):
+                vector_factor_power = 0,
+                num_lanes = 4, data_bandwidth = 64):
 
     # Constants
     assert(data_bandwidth % num_lanes == 0)
@@ -98,29 +99,36 @@ class VectorAdderComboRTL(Component):
         s.Fu[i].recv_opt.msg.fu_in[0] @= 1
         s.Fu[i].recv_opt.msg.fu_in[1] @= 2
         s.Fu[i].recv_opt.msg.operation @= OPT_NAH
+        s.Fu[i].combine_adder @= 0
 
       if ( s.recv_opt.msg.operation == OPT_VEC_ADD ) | \
-         ( s.recv_opt.msg.operation == OPT_ADD ):
+         ( s.recv_opt.msg.operation == OPT_VEC_ADD_COMBINED ):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_ADD
+          s.Fu[i].combine_adder @= (s.recv_opt.msg.operation == OPT_VEC_ADD_COMBINED)
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
       elif ( s.recv_opt.msg.operation == OPT_VEC_SUB ) | \
-           ( s.recv_opt.msg.operation == OPT_SUB ):
+           ( s.recv_opt.msg.operation == OPT_VEC_SUB_COMBINED ):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_SUB
+          s.Fu[i].combine_adder @= (s.recv_opt.msg.operation == OPT_VEC_SUB_COMBINED)
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
 
-      elif ( s.recv_opt.msg.operation == OPT_VEC_ADD_CONST ) | \
-           ( s.recv_opt.msg.operation == OPT_ADD_CONST ):
+      # elif ( s.recv_opt.msg.operation == OPT_VEC_ADD_CONST ) | \
+      #      ( s.recv_opt.msg.operation == OPT_ADD_CONST ):
+      elif (s.recv_opt.msg.operation == OPT_VEC_ADD_CONST) | \
+           (s.recv_opt.msg.operation == OPT_VEC_ADD_CONST_COMBINED):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_ADD_CONST
+          s.Fu[i].combine_adder @= (s.recv_opt.msg.operation == OPT_VEC_ADD_COMBINED)
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
 
       elif (s.recv_opt.msg.operation == OPT_VEC_SUB_CONST ) | \
-           (s.recv_opt.msg.operation == OPT_SUB_CONST ):
+           (s.recv_opt.msg.operation == OPT_VEC_SUB_CONST_COMBINED ):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_SUB_CONST
+          s.Fu[i].combine_adder @= (s.recv_opt.msg.operation == OPT_VEC_SUB_CONST_COMBINED)
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
 
       else:
