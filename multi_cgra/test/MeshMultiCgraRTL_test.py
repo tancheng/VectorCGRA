@@ -45,7 +45,7 @@ from ...lib.opt_type import *
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 IntraCgraPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
+                data_nbits, cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt, ctrl_steps,
@@ -62,7 +62,7 @@ class TestHarness(Component):
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_fn)
 
     s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, cgra_rows, cgra_columns,
+                CtrlSignalType, NocPktType, data_nbits, cgra_rows, cgra_columns,
                 height, width, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
@@ -789,7 +789,8 @@ def initialize_test_harness(cmdline_opts,
       ctrl_steps = 3
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
-                   CgraPayloadType, CtrlType, InterCgraPktType, num_cgra_rows, num_cgra_columns,
+                   CgraPayloadType, CtrlType, InterCgraPktType, data_nbits,
+                   num_cgra_rows, num_cgra_columns,
                    num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,

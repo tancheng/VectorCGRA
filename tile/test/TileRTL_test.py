@@ -44,6 +44,7 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
                 IntraCgraPktType, CgraPayloadType, CtrlType,
+                data_nbits,
                 ctrl_mem_size, data_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
@@ -60,7 +61,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
     s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
-                CtrlType, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
+                CtrlType, data_nbits, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,
@@ -138,10 +139,10 @@ def test_tile_alu(cmdline_opts):
             VectorMulComboRTL,
             VectorAdderComboRTL]
   # 64-bit to satisfy the default bitwidth of vector FUs.
-  DataType = mk_data(64, 1)
+  data_nbits = 64
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_nbits = 64
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
@@ -207,7 +208,8 @@ def test_tile_alu(cmdline_opts):
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
+                   IntraCgraPktType, CgraPayloadType, CtrlType,
+                   data_nbits, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -252,11 +254,10 @@ def test_tile_multicycle_exclusive(cmdline_opts):
             MemUnitRTL,
             SelRTL,
             ExclusiveDivRTL]
-  # 64-bit to satisfy the default bitwidth of vector FUs.
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
@@ -322,7 +323,8 @@ def test_tile_multicycle_exclusive(cmdline_opts):
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
+                   IntraCgraPktType, CgraPayloadType, CtrlType,
+                   data_nbits, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -367,11 +369,10 @@ def test_tile_multicycle_inclusive(cmdline_opts):
             MemUnitRTL,
             SelRTL,
             InclusiveDivRTL]
-  # 64-bit to satisfy the default bitwidth of vector FUs.
-  DataType = mk_data(32, 1)
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
@@ -436,7 +437,8 @@ def test_tile_multicycle_inclusive(cmdline_opts):
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, ctrl_mem_size,
+                   IntraCgraPktType, CgraPayloadType, CtrlType,
+                   data_nbits, ctrl_mem_size,
                    data_mem_size, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,

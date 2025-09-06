@@ -14,77 +14,87 @@ from pymtl3 import *
 
 # Total number of operations that are supported by FUs.
 # Needs to be updated once more operations are added/supported.
-NUM_OPTS = 64
+NUM_OPTS =128
 
-OPT_START                 = Bits6( 0  )
-OPT_NAH                   = Bits6( 1  )
-OPT_PAS                   = Bits6( 31 )
-OPT_ADD                   = Bits6( 2  )
-OPT_ADD_CONST             = Bits6( 25 )
-OPT_INC                   = Bits6( 3  )
-OPT_SUB                   = Bits6( 4  )
-OPT_SUB_CONST             = Bits6( 36 )
-OPT_LLS                   = Bits6( 5  )
-OPT_LRS                   = Bits6( 6  )
-OPT_MUL                   = Bits6( 7  )
-OPT_DIV                   = Bits6( 26 )
-OPT_DIV_CONST             = Bits6( 26 )
-OPT_REM                   = Bits6( 44 )
-OPT_OR                    = Bits6( 8  )
-OPT_XOR                   = Bits6( 9  )
-OPT_AND                   = Bits6( 10 )
-OPT_BIT_NOT               = Bits6( 43 )
-OPT_NOT                   = Bits6( 11 )
-OPT_LD                    = Bits6( 12 )
-OPT_STR                   = Bits6( 13 )
-OPT_EQ                    = Bits6( 14 )
-OPT_EQ_CONST              = Bits6( 33 )
-OPT_NE                    = Bits6( 45 )
-OPT_NE_CONST              = Bits6( 46 )
-OPT_RET                   = Bits6( 35 )
-OPT_GRT_PRED              = Bits6( 16 )
-OPT_GRT_ALWAYS            = Bits6( 34 )
-OPT_GRT_ONCE              = Bits6( 47 )
-OPT_PHI                   = Bits6( 17 )
-OPT_PHI_CONST             = Bits6( 32 )
-OPT_SEL                   = Bits6( 27 )
-OPT_LD_CONST              = Bits6( 28 )
-OPT_STR_CONST             = Bits6( 58 )
-OPT_MUL_ADD               = Bits6( 18 )
-OPT_MUL_CONST             = Bits6( 29 )
-OPT_MUL_CONST_ADD         = Bits6( 30 )
-OPT_MUL_SUB               = Bits6( 19 )
-OPT_MUL_LLS               = Bits6( 20 )
-OPT_MUL_LRS               = Bits6( 21 )
-OPT_MUL_ADD_LLS           = Bits6( 22 )
-OPT_MUL_SUB_LLS           = Bits6( 23 )
-OPT_MUL_SUB_LRS           = Bits6( 24 )
+OpCodeType = mk_bits(clog2(NUM_OPTS))
 
-OPT_FADD                  = Bits6( 37 )
-OPT_FSUB                  = Bits6( 38 )
-OPT_FADD_CONST            = Bits6( 39 )
-OPT_FINC                  = Bits6( 40 )
-OPT_FMUL                  = Bits6( 41 )
-OPT_FMUL_CONST            = Bits6( 42 )
+OPT_START                 = OpCodeType( 0  )
+OPT_NAH                   = OpCodeType( 1  )
+OPT_PAS                   = OpCodeType( 31 )
+OPT_ADD                   = OpCodeType( 2  )
+OPT_ADD_CONST             = OpCodeType( 25 )
+OPT_INC                   = OpCodeType( 3  )
+OPT_SUB                   = OpCodeType( 4  )
+OPT_SUB_CONST             = OpCodeType( 36 )
+OPT_LLS                   = OpCodeType( 5  )
+OPT_LRS                   = OpCodeType( 6  )
+OPT_MUL                   = OpCodeType( 7  )
+OPT_DIV                   = OpCodeType( 26 )
+OPT_DIV_CONST             = OpCodeType( 65 )
+OPT_REM                   = OpCodeType( 44 )
+OPT_OR                    = OpCodeType( 8  )
+OPT_XOR                   = OpCodeType( 9  )
+OPT_AND                   = OpCodeType( 10 )
+OPT_BIT_NOT               = OpCodeType( 43 )
+OPT_NOT                   = OpCodeType( 11 )
+OPT_LD                    = OpCodeType( 12 )
+OPT_STR                   = OpCodeType( 13 )
+OPT_EQ                    = OpCodeType( 14 )
+OPT_EQ_CONST              = OpCodeType( 33 )
+OPT_NE                    = OpCodeType( 45 )
+OPT_NE_CONST              = OpCodeType( 46 )
+OPT_RET                   = OpCodeType( 35 )
+OPT_GRT_PRED              = OpCodeType( 16 )
+OPT_GRT_ALWAYS            = OpCodeType( 34 )
+OPT_GRT_ONCE              = OpCodeType( 47 )
+OPT_PHI                   = OpCodeType( 17 )
+OPT_PHI_CONST             = OpCodeType( 32 )
+OPT_SEL                   = OpCodeType( 27 )
+OPT_LD_CONST              = OpCodeType( 28 )
+OPT_STR_CONST             = OpCodeType( 58 )
+OPT_MUL_ADD               = OpCodeType( 18 )
+OPT_MUL_CONST             = OpCodeType( 29 )
+OPT_MUL_CONST_ADD         = OpCodeType( 30 )
+OPT_MUL_SUB               = OpCodeType( 19 )
+OPT_MUL_LLS               = OpCodeType( 20 )
+OPT_MUL_LRS               = OpCodeType( 21 )
+OPT_MUL_ADD_LLS           = OpCodeType( 22 )
+OPT_MUL_SUB_LLS           = OpCodeType( 23 )
+OPT_MUL_SUB_LRS           = OpCodeType( 24 )
 
-OPT_VEC_ADD          = Bits6( 50 )
-OPT_VEC_INC          = Bits6( 51 )
-OPT_VEC_ADD_CONST    = Bits6( 52 )
-OPT_VEC_SUB          = Bits6( 53 )
-OPT_VEC_SUB_CONST    = Bits6( 54 )
-OPT_VEC_MUL          = Bits6( 55 )
-OPT_VEC_REDUCE_ADD   = Bits6( 56 )
-OPT_VEC_REDUCE_MUL   = Bits6( 57 )
+OPT_FADD                  = OpCodeType( 37 )
+OPT_FSUB                  = OpCodeType( 38 )
+OPT_FADD_CONST            = OpCodeType( 39 )
+OPT_FINC                  = OpCodeType( 40 )
+OPT_FMUL                  = OpCodeType( 41 )
+OPT_FMUL_CONST            = OpCodeType( 42 )
 
-OPT_LT  = Bits6( 60 )
-OPT_GTE = Bits6( 61 )
-OPT_GT  = Bits6( 62 )
-OPT_LTE = Bits6( 63 )
+OPT_VEC_INC                 = OpCodeType( 50 )
+OPT_VEC_ADD                 = OpCodeType( 51 )
+OPT_VEC_ADD_CONST           = OpCodeType( 52 )
+OPT_VEC_SUB                 = OpCodeType( 53 )
+OPT_VEC_SUB_CONST           = OpCodeType( 54 )
+OPT_VEC_MUL                 = OpCodeType( 55 )
+OPT_VEC_INC_COMBINED        = OpCodeType( 70 )
+OPT_VEC_ADD_COMBINED        = OpCodeType( 71 )
+OPT_VEC_ADD_CONST_COMBINED  = OpCodeType( 72 )
+OPT_VEC_SUB_COMBINED        = OpCodeType( 73 )
+OPT_VEC_SUB_CONST_COMBINED  = OpCodeType( 74 )
+OPT_VEC_MUL_COMBINED        = OpCodeType( 75 )
+OPT_VEC_REDUCE_ADD          = OpCodeType( 56 )
+OPT_VEC_REDUCE_MUL          = OpCodeType( 57 )
+OPT_VEC_REDUCE_ADD_BASE     = OpCodeType( 68 )
+OPT_VEC_REDUCE_MUL_BASE     = OpCodeType( 69 )
 
-OPT_DIV_INCLUSIVE_START = Bits6( 48 )
-OPT_DIV_INCLUSIVE_END   = Bits6( 49 )
-OPT_REM_INCLUSIVE_START = Bits6( 59 )
-OPT_REM_INCLUSIVE_END   = Bits6( 15 )
+OPT_LT  = OpCodeType( 60 )
+OPT_GTE = OpCodeType( 61 )
+OPT_GT  = OpCodeType( 62 )
+OPT_LTE = OpCodeType( 63 )
+
+OPT_DIV_INCLUSIVE_START = OpCodeType( 48 )
+OPT_DIV_INCLUSIVE_END   = OpCodeType( 49 )
+OPT_REM_INCLUSIVE_START = OpCodeType( 59 )
+OPT_REM_INCLUSIVE_END   = OpCodeType( 15 )
 
 OPT_SYMBOL_DICT = {
   OPT_START         : "(start)",
@@ -136,14 +146,22 @@ OPT_SYMBOL_DICT = {
   OPT_FMUL           : "(f*)",
   OPT_FMUL_CONST     : "(f*')",
 
-  OPT_VEC_ADD         : "(v1+)",
   OPT_VEC_INC         : "(v1++)",
+  OPT_VEC_ADD         : "(v1+)",
   OPT_VEC_ADD_CONST   : "(v1+')",
   OPT_VEC_SUB         : "(v1-)",
   OPT_VEC_SUB_CONST   : "(v1-')",
   OPT_VEC_MUL         : "(v1*)",
+  OPT_VEC_INC_COMBINED         : "(v1++comb)",
+  OPT_VEC_ADD_COMBINED         : "(v1+comb)",
+  OPT_VEC_ADD_CONST_COMBINED   : "(v1+'comb)",
+  OPT_VEC_SUB_COMBINED         : "(v1-comb)",
+  OPT_VEC_SUB_CONST_COMBINED   : "(v1-'comb)",
+  OPT_VEC_MUL_COMBINED         : "(v1*comb)",
   OPT_VEC_REDUCE_ADD  : "(vall+)",
   OPT_VEC_REDUCE_MUL  : "(vall*)",
+  OPT_VEC_REDUCE_ADD_BASE : "(vall+base)",
+  OPT_VEC_REDUCE_MUL_BASE : "(vall*base)",
 
   OPT_LT  : "(?<)",
   OPT_GTE : "(?>=)",

@@ -16,11 +16,12 @@ class AdderRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                vector_factor_power = 0):
+                vector_factor_power = 0, data_bitwidth = 32):
 
     super(AdderRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
-                                 data_mem_size, 1, vector_factor_power)
+                                 data_mem_size, 1, vector_factor_power,
+                                 data_bitwidth = data_bitwidth)
 
     s.const_one = DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -106,6 +107,17 @@ class AdderRTL(Fu):
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+        elif s.recv_opt.msg.operation == OPT_SUB_CONST:
+          s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload - s.recv_const.msg.payload
+          s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_const.msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy

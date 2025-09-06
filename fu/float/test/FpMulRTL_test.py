@@ -23,6 +23,9 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 round_near_even = 0b000
 
 def test_elaborate(cmdline_opts):
+  exp_nbits = 4
+  sig_nbits = 11
+  data_bitwidth = 1 + exp_nbits + sig_nbits
   DataType       = mk_data(16, 1)
   PredType       = mk_predicate(1, 1)
   data_mem_size  = 8
@@ -39,8 +42,10 @@ def test_elaborate(cmdline_opts):
                     ConfigType(OPT_MUL,       pick_register),
                     ConfigType(OPT_MUL_CONST, pick_register)]
   dut = FpMulRTL(DataType, PredType, ConfigType, num_inports,
-                 num_outports, data_mem_size, exp_nbits = 4,
-                 sig_nbits = 11)
+                 num_outports, data_mem_size,
+                 data_bitwidth = data_bitwidth,
+                 exp_nbits = exp_nbits,
+                 sig_nbits = sig_nbits)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 #-------------------------------------------------------------------------
@@ -50,6 +55,7 @@ def test_elaborate(cmdline_opts):
 class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredType, ConfigType,
+                data_bitwidth,
                 num_inports, num_outports, data_mem_size,
                 exp_nbits, sig_nbits,
                 src0_msgs, src1_msgs, src_const,
@@ -62,8 +68,11 @@ class TestHarness(Component):
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
     s.dut = FunctionUnit(DataType, PredType, ConfigType,
-                         num_inports, num_outports, data_mem_size,
-                         exp_nbits, sig_nbits)
+                         num_inports, num_outports,
+                         data_mem_size,
+                         data_bitwidth,
+                         exp_nbits,
+                         sig_nbits)
 
     connect(s.src_in0.send,    s.dut.recv_in[0]        )
     connect(s.src_in1.send,    s.dut.recv_in[1]        )
@@ -88,7 +97,8 @@ def test_mul():
   FU            = FpMulRTL
   exp_nbits     = 4
   sig_nbits     = 11
-  DataType      = mk_data(1 + exp_nbits + sig_nbits, 1)
+  data_bitwidth = 1 + exp_nbits + sig_nbits
+  DataType      = mk_data(data_bitwidth, 1)
   f2b           = mk_float_to_bits_fn(DataType, exp_nbits, sig_nbits)
   PredType      = mk_predicate(1, 1)
   data_mem_size = 8
@@ -105,8 +115,8 @@ def test_mul():
                    ConfigType(OPT_FMUL,       pick_register),
                    ConfigType(OPT_FMUL_CONST, pick_register)]
   th = TestHarness(FU, DataType, PredType, ConfigType,
-                   num_inports, num_outports, data_mem_size,
-                   exp_nbits, sig_nbits,
+                   data_bitwidth, num_inports, num_outports,
+                   data_mem_size, exp_nbits, sig_nbits,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
   run_sim(th)

@@ -84,7 +84,7 @@ class ControllerRTL(Component):
     s.addr2controller_lut = [Wire(CgraIdType) for _ in range(len(controller2addr_map))]
     # Assumes the address range is contiguous within one CGRA's SPMs.
     addr2controller_vector = [-1 for _ in range(len(controller2addr_map))]
-    s.addr_base_items = len(controller2addr_map)
+    # s.addr_base_items = len(controller2addr_map)
     for src_cgra_id, address_range in controller2addr_map.items():
       begin_addr, end_addr = address_range[0], address_range[1]
       address_length = end_addr - begin_addr + 1
@@ -104,7 +104,9 @@ class ControllerRTL(Component):
       s.idTo2d_x_lut[cgra_id] //= XType(xy[0])
       s.idTo2d_y_lut[cgra_id] //= YType(xy[1])
 
-    # Connections
+    s.addr_dst_id = Wire(CgraIdType)
+
+    # Connections.
     # Requests towards others, 1 cycle delay to improve timing.
     s.recv_from_tile_load_request_pkt_queue.recv //= s.recv_from_tile_load_request_pkt
     s.recv_from_tile_load_response_pkt_queue.recv //= s.recv_from_tile_load_response_pkt
@@ -130,6 +132,10 @@ class ControllerRTL(Component):
       s.send_to_cpu_pkt_queue.recv.val @= 0
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
+
+      for i in range(CONTROLLER_CROSSBAR_INPORTS):
+        s.crossbar.recv[i].val @= 0
+        s.crossbar.recv[i].msg @= ControllerXbarPktType(0, 0)
 
       # For the command signal from inter-tile/intra-cgra control ring.
       s.crossbar.recv[kFromInterTileRingIdx].val @= s.recv_from_ctrl_ring_pkt.val
@@ -300,12 +306,17 @@ class ControllerRTL(Component):
       s.send_to_inter_cgra_noc.val @= s.crossbar.send[0].val
       s.crossbar.send[0].rdy @= s.send_to_inter_cgra_noc.rdy
       s.send_to_inter_cgra_noc.msg @= s.crossbar.send[0].msg.inter_cgra_pkt
+      # addr_dst_id = 0
       if (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_LOAD_REQUEST) | \
          (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_STORE_REQUEST):
-        addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
-        s.send_to_inter_cgra_noc.msg.dst @= addr_dst_id
-        s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[addr_dst_id]
-        s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[addr_dst_id]
+        # addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
+        s.send_to_inter_cgra_noc.msg.dst @= s.addr_dst_id
+        s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[s.addr_dst_id]
+        s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[s.addr_dst_id]
+
+    @update
+    def capture_addr_dst_id():
+      s.addr_dst_id @= s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
 
   def line_trace(s):
     recv_from_cpu_pkt_str = "recv_from_cpu_pkt: " + str(s.recv_from_cpu_pkt.msg)

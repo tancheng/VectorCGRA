@@ -31,7 +31,7 @@ class TestHarness(Component):
     s.sink_out0 = TestSinkRTL(DataType, sink_msgs0)
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
-                         num_inports, num_outports, data_mem_size, 4, bw)
+                         num_inports, num_outports, data_mem_size, 0, 4, bw)
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
     connect(s.src_in1.send,    s.dut.recv_in[1])
@@ -82,9 +82,9 @@ def test_vector_mul_combo():
   src_in0  = [DataType(0x3402,    1), DataType(0x77,   1), DataType(0x0002, 1)]
   src_in1  = [DataType(0x32f3,    1), DataType(0x89,   1), DataType(0x0003, 1)]
   sink_out = [DataType(0xa59c1e6, 1), DataType(0x3faf, 1), DataType(0x6,    1)]
-  src_opt  = [CtrlType(OPT_VEC_MUL, pickRegister),
-              CtrlType(OPT_MUL,     pickRegister),
-              CtrlType(OPT_VEC_MUL, pickRegister)]
+  src_opt  = [CtrlType(OPT_VEC_MUL,          pickRegister),
+              CtrlType(OPT_VEC_MUL_COMBINED, pickRegister),
+              CtrlType(OPT_VEC_MUL,          pickRegister)]
 
   th = TestHarness(FU, DataType, bw, PredType, CtrlType,
                    num_inports, num_outports, data_mem_size,

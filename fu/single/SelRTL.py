@@ -17,7 +17,7 @@ class SelRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size = 4,
-                vector_factor_power = 0):
+                vector_factor_power = 0, data_bitwidth = 32):
 
     # Constant
     num_entries = 2

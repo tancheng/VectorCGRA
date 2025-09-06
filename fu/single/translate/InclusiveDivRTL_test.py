@@ -19,8 +19,8 @@ from ..InclusiveDivRTL import InclusiveDivRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
 
-
-DataType      = mk_data( 32, 1 )
+data_bitwidth = 32
+DataType      = mk_data( data_bitwidth, 1 )
 PredicateType = mk_predicate( 1, 1 )
 num_inports   = 4
 num_outports  = 2
@@ -30,13 +30,15 @@ latency       = 4
 
 def test_elaborate(cmdline_opts):
   dut = InclusiveDivRTL(DataType, PredicateType, ConfigType, num_inports,
-                 num_outports, data_mem_size, latency = 4)
+                 num_outports, data_mem_size,
+                 latency = 4, data_bitwidth = data_bitwidth)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
   dut = InclusiveDivRTL( DataType, PredicateType, ConfigType,
-                 num_inports, num_outports, data_mem_size, latency )
+                         num_inports, num_outports, data_mem_size,
+                         latency, data_bitwidth = data_bitwidth )
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'InclusiveDivRTL_test' )
   config_model_with_cmdline_opts( dut, cmdline_opts, duts=[] )

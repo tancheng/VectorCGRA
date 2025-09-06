@@ -42,6 +42,7 @@ class VectorAdderRTL(Component):
 
     # Components.
     s.carry_in = InPort(b1)
+    s.combine_adder = InPort(b1)
     s.carry_out = OutPort(b1)
     s.carry_in_temp = Wire(DataType)
     s.in0 = Wire(FuInType)
@@ -73,7 +74,7 @@ class VectorAdderRTL(Component):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
-      s.carry_in_temp[0] @= s.carry_in
+      s.carry_in_temp[0] @= s.carry_in & s.combine_adder
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
