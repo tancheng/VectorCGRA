@@ -97,7 +97,7 @@ def test():
   OptType = mk_bits(clog2(NUM_OPTS))
 
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
-              CmdType(CMD_TERMINATE), # cycle 1
+              CmdType(CMD_RECORD_INIT_PHI_ADDR), # cycle 1
               # Tile receives the PAUSE command at clock cycle 2.
               CmdType(CMD_PAUSE), # cycle 2
               # Some random commands that might be issued during pausing.

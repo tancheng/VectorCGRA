@@ -100,8 +100,8 @@ class ContextSwitchRTL(Component):
         # Keeps the progress.
         s.progress_reg <<= s.progress_reg
 
-      # Loads the PHI_CONST's unqiue ctrl mem address to the register.
-      if (s.recv_cmd_vld & (s.recv_cmd == CMD_TERMINATE)):
+      # Records the PHI_CONST's unqiue ctrl mem address to the register.
+      if (s.recv_cmd_vld & (s.recv_cmd == CMD_RECORD_INIT_PHI_ADDR)):
         s.init_phi_addr_reg <<= s.init_phi_addr
       else:
         s.init_phi_addr_reg <<= s.init_phi_addr_reg
