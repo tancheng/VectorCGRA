@@ -23,21 +23,23 @@ class GrantRTL(Fu):
                                   data_mem_size, 1,
                                   vector_factor_power)
 
+    # Constants.
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
+    idx_nbits = clog2(num_inports)
 
+    # Components.
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
-
-    idx_nbits = clog2(num_inports)
     s.in0_idx = Wire(idx_nbits)
     s.in1_idx = Wire(idx_nbits)
+    s.recv_all_val = Wire(1)
+    s.already_grt_once = Wire(1)
 
+    # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
-
-    s.recv_all_val = Wire(1)
 
     @update
     def comb_logic():
@@ -54,6 +56,9 @@ class GrantRTL(Fu):
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
@@ -79,14 +84,26 @@ class GrantRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
         elif s.recv_opt.msg.operation == OPT_GRT_ALWAYS:
-          # GRANT_ALWAYS is used to apply `true`` predicate onto a value regardless
+          # GRANT_ALWAYS is used to apply `true` predicate onto a value regardless
           # its original predicate value. This is usually used for the constant declared
-          # in the entry block of a function. Note that if we fuse the constant and
-          # the grant_always, we may not need this operation, as the constant is usually
-          # preloaded into the ConstQueue with `true` predicate.
+          # in the entry block of a function, and then being used as a bound variable
+          # in some streaming loop. Note that if we fuse the constant and the grant_always,
+          # we may not need this operation, as the constant is usually preloaded into the
+          # ConstQueue with `true` predicate.
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
           # Always updates predicate as true.
           s.send_out[0].msg.predicate @= s.reached_vector_factor
+
+          s.recv_all_val @= s.recv_in[s.in0_idx].val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+        elif s.recv_opt.msg.operation == OPT_GRT_ONCE:
+          # GRANT_ONCE is used to apply `true` predicate onto a value only once. This
+          # is usually used for the constant declared in the entry block of a function.
+          s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
+          # Only updates predicate as true for the first time.
+          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.already_grt_once
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
@@ -99,3 +116,13 @@ class GrantRTL(Fu):
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
+
+    @update_ff
+    def record_grt_once():
+      if s.reset:
+        s.already_grt_once <<= 0
+      else:
+        if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & (s.recv_opt.msg.operation == OPT_GRT_ONCE):
+          s.already_grt_once <<= 1
+        else:
+          s.already_grt_once <<= s.already_grt_once

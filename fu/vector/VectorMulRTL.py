@@ -23,41 +23,40 @@ class VectorMulRTL(Component):
   def construct(s, bw, CtrlType, num_inports, num_outports,
                 data_mem_size):
 
-    # DataType should be 2 times due to the longer output
+    # DataType should be 2 times due to the longer output.
     num_entries = 2
-    DataType    = mk_bits( bw * 2 )
-    FuInType    = mk_bits( clog2( num_inports + 1 ) )
-    CountType   = mk_bits( clog2( num_entries + 1 ) )
-    FuInType    = mk_bits( clog2( num_inports + 1 ) )
+    DataType = mk_bits(bw * 2)
+    FuInType = mk_bits(clog2(num_inports + 1))
+    CountType = mk_bits(clog2(num_entries + 1))
+    FuInType = mk_bits(clog2(num_inports + 1))
 
-    # Constant
-    s.const_zero  = DataType(0)
-    s.const_one   = DataType(1)
+    # Constants.
+    s.const_zero = DataType(0)
+    s.const_one = DataType(1)
+    idx_nbits = clog2(num_inports)
 
-    # Interface
-    s.recv_in       = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_const    = RecvIfcRTL(DataType)
-    s.recv_opt      = RecvIfcRTL(CtrlType)
-    s.send_out      = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    # Interfaces.
+    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(DataType)
+    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = SendIfcRTL(DataType)
 
+    # Components.
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
-
-    idx_nbits = clog2(num_inports)
     s.in0_idx = Wire(idx_nbits)
     s.in1_idx = Wire(idx_nbits)
+    s.recv_all_val = Wire(1)
 
+    # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
     s.in1_idx //= s.in1[0:idx_nbits]
 
-    # Components
-    s.recv_all_val = Wire(1)
-
     @update
     def comb_logic():
-
       s.recv_all_val @= 0
-      # Pick input register
+      # Picks input register.
       s.in0 @= FuInType(0)
       s.in1 @= FuInType(0)
 
@@ -69,6 +68,9 @@ class VectorMulRTL(Component):
       for i in range( num_outports ):
         s.send_out[i].val @= b1(0)
         s.send_out[i].msg @= DataType()
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -89,17 +91,13 @@ class VectorMulRTL(Component):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:
-          for j in range( num_outports ):
-            s.send_out[j].val @= b1( 0 )
+          for j in range(num_outports):
+            s.send_out[j].val @= b1(0)
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
 
-      # if s.recv_opt.msg.predicate == b1( 1 ):
-      #   s.send_out[0].msg.predicate = s.send_out[0].msg.predicate
-
-
-  def line_trace( s ):
+  def line_trace(s):
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]

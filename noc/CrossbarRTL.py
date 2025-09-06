@@ -23,6 +23,7 @@ class CrossbarRTL(Component):
                 CtrlType,
                 num_inports = 5,
                 num_outports = 5,
+                num_cgras = 4,
                 num_tiles = 4,
                 ctrl_mem_size = 6,
                 outport_towards_local_base_id = 4):
@@ -52,6 +53,7 @@ class CrossbarRTL(Component):
     s.recv_required_vector = Wire(num_inports)
     s.send_required_vector = Wire(num_outports)
 
+    s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.crossbar_id = InPort(b1)
     s.compute_done = InPort(b1)

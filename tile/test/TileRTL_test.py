@@ -160,11 +160,6 @@ def test_tile_alu(cmdline_opts):
                                     CtrlType,
                                     CtrlAddrType)
 
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
-
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
@@ -280,11 +275,6 @@ def test_tile_multicycle_exclusive(cmdline_opts):
                                     CtrlType,
                                     CtrlAddrType)
 
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
-
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
@@ -399,11 +389,6 @@ def test_tile_multicycle_inclusive(cmdline_opts):
                                     DataAddrType,
                                     CtrlType,
                                     CtrlAddrType)
-
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,

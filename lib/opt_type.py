@@ -33,6 +33,7 @@ OPT_REM                   = Bits6( 44 )
 OPT_OR                    = Bits6( 8  )
 OPT_XOR                   = Bits6( 9  )
 OPT_AND                   = Bits6( 10 )
+OPT_BIT_NOT               = Bits6( 43 )
 OPT_NOT                   = Bits6( 11 )
 OPT_LD                    = Bits6( 12 )
 OPT_STR                   = Bits6( 13 )
@@ -43,6 +44,7 @@ OPT_NE_CONST              = Bits6( 46 )
 OPT_RET                   = Bits6( 35 )
 OPT_GRT_PRED              = Bits6( 16 )
 OPT_GRT_ALWAYS            = Bits6( 34 )
+OPT_GRT_ONCE              = Bits6( 47 )
 OPT_PHI                   = Bits6( 17 )
 OPT_PHI_CONST             = Bits6( 32 )
 OPT_SEL                   = Bits6( 27 )
@@ -100,7 +102,8 @@ OPT_SYMBOL_DICT = {
   OPT_OR            : "(|)",
   OPT_XOR           : "(^)",
   OPT_AND           : "(&)",
-  OPT_NOT           : "(~)",
+  OPT_NOT           : "(!)",
+  OPT_BIT_NOT       : "(~)",
   OPT_LD            : "(ld)",
   OPT_STR           : "(st)",
   OPT_EQ            : "(==)",
@@ -108,8 +111,9 @@ OPT_SYMBOL_DICT = {
   OPT_NE            : "(!=)",
   OPT_NE_CONST      : "(!=')",
   OPT_GRT_PRED      : "(grant_pred)",
+  OPT_GRT_ALWAYS    : "(grant_always)",
+  OPT_GRT_ONCE      : "(grant_once)",
   OPT_RET           : "(ret)",
-  OPT_GRT_ALWAYS    : "(grant')",
   OPT_PHI           : "(ph)",
   OPT_PHI_CONST     : "(ph')",
   OPT_SEL           : "(sel)",

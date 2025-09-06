@@ -55,6 +55,9 @@ class AdderRTL(Fu):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
+
       # Though different operations might not need to consume
       # all the operands, as long as the opcode indicating it
       # is an operand, the data would disappear from the register.

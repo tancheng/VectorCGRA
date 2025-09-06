@@ -36,6 +36,7 @@ class ThreeCombo(Component):
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr   = SendIfcRTL(AddrType)
     s.to_mem_wdata   = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(DataType)
 
     # Components
     s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 4, 2, data_mem_size)
@@ -91,6 +92,11 @@ class ThreeCombo(Component):
       s.to_mem_raddr.msg   @= AddrType(0)
       s.to_mem_raddr.val   @= b1(0)
       s.from_mem_rdata.rdy @= b1(0)
+
+    @update
+    def update_send_to_controller():
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
   def line_trace(s):
     return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace() + " ; " + s.Fu2.line_trace()

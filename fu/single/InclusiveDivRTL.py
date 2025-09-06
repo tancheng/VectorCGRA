@@ -59,6 +59,9 @@ class InclusiveDivRTL(Fu):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
+
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)

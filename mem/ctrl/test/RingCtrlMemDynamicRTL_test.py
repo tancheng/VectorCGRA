@@ -36,8 +36,9 @@ class TestHarness(Component):
                   for i in range(width * height)]
 
     s.dut = \
-        DUT(CtrlPktType, CgraPayloadType, CtrlSignalType, width, height,
-            ctrl_mem_size, num_fu_inports, num_fu_outports,
+        DUT(CtrlPktType, CgraPayloadType, DataType, CtrlSignalType,
+            width, height, ctrl_mem_size,
+            num_fu_inports, num_fu_outports,
             num_tile_inports, num_tile_outports,
             len(ctrl_pkts), len(ctrl_pkts))
 
@@ -119,11 +120,6 @@ def test_Ctrl():
                                     DataAddrType,
                                     CtrlType,
                                     CtrlAddrType)
-
-  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,

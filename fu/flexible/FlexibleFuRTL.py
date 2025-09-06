@@ -12,15 +12,14 @@ Author : Cheng Tan
 from pymtl3 import *
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.AdderRTL  import AdderRTL
+from ...fu.single.RetRTL  import RetRTL
 from ...fu.single.NahRTL  import NahRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
-
 class FlexibleFuRTL(Component):
-
   def construct(s,
                 DataType,
                 PredicateType,
@@ -32,7 +31,7 @@ class FlexibleFuRTL(Component):
                 FuList,
                 exec_lantency = {}):
 
-    # Constant
+    # Constants.
     num_entries = 2
     if NahRTL not in FuList:
       FuList.append(NahRTL)
@@ -41,11 +40,13 @@ class FlexibleFuRTL(Component):
     AddrType = mk_bits(clog2(data_mem_size))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
 
-    # Interface
+    # Interfaces.
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    # Serves as the bridge between the RetRTL and the ctrl memory controller.
+    s.send_to_controller = SendIfcRTL(DataType)
 
     s.to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
@@ -55,7 +56,7 @@ class FlexibleFuRTL(Component):
     s.prologue_count_inport = InPort(PrologueCountType)
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
-    # Components
+    # Components.
     s.fu = [FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
                       data_mem_size) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
                       data_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
@@ -64,33 +65,43 @@ class FlexibleFuRTL(Component):
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_in_rdy_vector = [Wire(s.fu_list_size) for i in range(num_inports)]
 
-    # Connection
+    # Connection.
     for i in range(len(FuList)):
       s.to_mem_raddr[i] //= s.fu[i].to_mem_raddr
       s.from_mem_rdata[i] //= s.fu[i].from_mem_rdata
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
 
+    # Connects send_to_controller interface.
+    has_ret = False
+    for fu in s.fu:
+      if isinstance(fu, RetRTL):
+        s.send_to_controller //= fu.send_to_controller
+        has_ret = True
+      else:
+        fu.send_to_controller.rdy //= 0
+    if not has_ret:
+      s.send_to_controller.val //= 0
+      s.send_to_controller.msg //= DataType()
+
     @update
     def comb_logic():
-
       for j in range(num_outports):
         s.send_out[j].val @= b1(0)
         s.send_out[j].msg @= DataType()
 
       for i in range(s.fu_list_size):
-
-        # const connection
+        # const connection.
         s.fu[i].recv_const.msg @= s.recv_const.msg
         s.fu[i].recv_const.val @= s.recv_const.val
         s.fu_recv_const_rdy_vector[i] @= s.fu[i].recv_const.rdy
 
-        # opt connection
+        # opt connection.
         s.fu[i].recv_opt.msg @= s.recv_opt.msg
-        s.fu[i].recv_opt.val  @= s.recv_opt.val
+        s.fu[i].recv_opt.val @= s.recv_opt.val
         s.fu_recv_opt_rdy_vector[i] @= s.fu[i].recv_opt.rdy
 
-        # send_out connection
+        # send_out connection.
         for j in range(num_outports):
           # FIXME: need reduce_or here: https://github.com/tancheng/VectorCGRA/issues/51.
           if s.fu[i].send_out[j].val:
@@ -107,7 +118,7 @@ class FlexibleFuRTL(Component):
       for j in range(num_inports):
         s.recv_in[j].rdy @= b1(0)
 
-      # recv_in connection
+      # recv_in connection.
       for port in range(num_inports):
         for i in range(s.fu_list_size):
           s.fu[i].recv_in[port].msg @= s.recv_in[port].msg

@@ -58,8 +58,10 @@ class TestHarness(Component):
                 ControllerIdType, cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, TileList,
-                LinkList, dataSPM, controller2addr_map, idTo2d_map,
+                src_ctrl_pkt, ctrl_steps,
+                mem_access_is_combinational,
+                TileList, LinkList, dataSPM,
+                controller2addr_map, idTo2d_map,
                 complete_signal_sink_out):
 
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -75,7 +77,9 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
-                ctrl_steps, ctrl_steps, FunctionUnit, FuList,
+                ctrl_steps, ctrl_steps,
+                mem_access_is_combinational,
+                FunctionUnit, FuList,
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map, is_multi_cgra = False)
 
@@ -242,6 +246,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns,
                                        num_cgra_rows,
                                        num_tiles,
+                                       width,
                                        CgraPayloadType)
 
   IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
@@ -340,11 +345,12 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
     links = paramCGRA.getValidLinks()
     dataSPM = paramCGRA.dataSPM
   else:
-    dataSPM = DataSPM(2, 2)
-    for r in range(2):
+    for r in range(height):
       tiles.append([])
-      for c in range(2):
+      for c in range(width):
         tiles[r].append(Tile(c, r))
+    # Assumes first column tiles are connected to memory.
+    dataSPM = DataSPM(width, width)
 
     links = [Link(None, None, 0, 0) for _ in range(16)]
 
@@ -461,13 +467,16 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
     tiles = handleReshape(tiles)
 
+  # Non-combinational memory access to improve the timing and P&R.
+  mem_access_is_combinational = False
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
                    ControllerIdType, cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
-                   src_ctrl_pkt, ctrl_mem_size, tiles, links, dataSPM,
+                   src_ctrl_pkt, ctrl_mem_size,
+                   mem_access_is_combinational, tiles, links, dataSPM,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
   th.elaborate()

@@ -27,43 +27,44 @@ class VectorMulComboRTL(Component):
     assert(data_bandwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic
     assert(num_lanes % 4 == 0)
-    num_entries  = 2
+    num_entries = 2
     s.const_zero = DataType(0, 0)
-    CountType    = mk_bits(clog2(num_entries + 1))
+    CountType = mk_bits(clog2(num_entries + 1))
     # By default 16-bit indicates both input and output. For a Mul,
     # if output is no longer than 16-bit, it means the
     # input is no longer than 8-bit. Here, the sub_bw is by default
     # 4, which will be times by 2 to make it 8-bit to compensate
     # the longer output in the subFU.
-    sub_bw       = data_bandwidth // num_lanes
-    sub_bw_2     = 2 * data_bandwidth // num_lanes
-    sub_bw_3     = 3 * data_bandwidth // num_lanes
-    sub_bw_4     = 4 * data_bandwidth // num_lanes
+    sub_bw = data_bandwidth // num_lanes
+    sub_bw_2 = 2 * data_bandwidth // num_lanes
+    sub_bw_3 = 3 * data_bandwidth // num_lanes
+    sub_bw_4 = 4 * data_bandwidth // num_lanes
 
     # Interface
-    s.recv_in        = [ RecvIfcRTL( DataType ) for _ in range( num_inports ) ]
-    s.recv_const     = RecvIfcRTL( DataType )
-    s.recv_opt       = RecvIfcRTL( CtrlType )
-    s.send_out       = [ SendIfcRTL( DataType ) for _ in range( num_outports ) ]
-    TempDataType     = mk_bits( data_bandwidth )
-    FuDataType       = mk_bits( sub_bw )
-    s.temp_result    = [ Wire( TempDataType ) for _ in range( num_lanes ) ]
+    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(DataType)
+    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.send_to_controller = SendIfcRTL(DataType)
+    TempDataType = mk_bits(data_bandwidth)
+    FuDataType = mk_bits(sub_bw)
+    s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
     # Components
-    s.Fu = [ VectorMulRTL( sub_bw, CtrlType, 4, 2, data_mem_size )
-             for _ in range( num_lanes ) ]
+    s.Fu = [VectorMulRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
+            for _ in range(num_lanes)]
 
     # Redundant interfaces for MemUnit
     # s.initial_carry_in  = InPort( b1 )
     # s.initial_carry_out = OutPort( b1 )
-    AddrType         = mk_bits( clog2( data_mem_size ) )
-    s.to_mem_raddr   = SendIfcRTL( AddrType )
-    s.from_mem_rdata = RecvIfcRTL( DataType )
-    s.to_mem_waddr   = SendIfcRTL( AddrType )
-    s.to_mem_wdata   = SendIfcRTL( DataType )
+    AddrType = mk_bits(clog2(data_mem_size))
+    s.to_mem_raddr = SendIfcRTL(AddrType)
+    s.from_mem_rdata = RecvIfcRTL(DataType)
+    s.to_mem_waddr = SendIfcRTL(AddrType)
+    s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Reduction units
-    s.reduce_add = SumUnit( TempDataType, num_lanes )
+    s.reduce_add = SumUnit(TempDataType, num_lanes)
     for i in range(num_lanes):
       s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
           if s.recv_opt.msg.operation == OPT_VEC_MUL else 0)
@@ -78,6 +79,9 @@ class VectorMulComboRTL(Component):
       s.send_out[0].val @= s.Fu[0].send_out[0].val & \
                            s.recv_opt.val
       s.send_out[0].msg.payload @= 0
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= DataType()
 
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)
@@ -164,13 +168,13 @@ class VectorMulComboRTL(Component):
 
     @update
     def update_mem():
-      s.to_mem_waddr.val   @= b1( 0 )
-      s.to_mem_wdata.val   @= b1( 0 )
-      s.to_mem_wdata.msg   @= s.const_zero
-      s.to_mem_waddr.msg   @= AddrType( 0 )
-      s.to_mem_raddr.msg   @= AddrType( 0 )
-      s.to_mem_raddr.val   @= b1( 0 )
-      s.from_mem_rdata.rdy @= b1( 0 )
+      s.to_mem_waddr.val @= b1(0)
+      s.to_mem_wdata.val @= b1(0)
+      s.to_mem_wdata.msg @= s.const_zero
+      s.to_mem_waddr.msg @= AddrType(0)
+      s.to_mem_raddr.msg @= AddrType(0)
+      s.to_mem_raddr.val @= b1(0)
+      s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace(s):
     return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)

@@ -111,7 +111,7 @@ def test_logic():
   sink_out      = [DataType(3, 1), DataType(2, 1), DataType(0xfffb, 1), DataType(2, 1)]
   src_opt       = [ConfigType(OPT_OR , pickRegister),
                    ConfigType(OPT_AND, pickRegister),
-                   ConfigType(OPT_NOT, pickRegister),
+                   ConfigType(OPT_BIT_NOT, pickRegister),
                    ConfigType(OPT_XOR, pickRegister)]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,

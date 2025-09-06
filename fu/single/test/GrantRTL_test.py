@@ -78,14 +78,16 @@ def test_grant():
   data_mem_size = 8
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
-  src_value     = [DataType(1, 1), DataType(2, 0), DataType(3, 1), DataType(4, 1), DataType(5, 0)]
-  src_condition = [DataType(2, 0), DataType(1, 1), DataType(0, 1), DataType(1, 1)                ]
-  sink_out      = [DataType(1, 0), DataType(2, 0), DataType(3, 0), DataType(4, 1), DataType(5, 1)]
+  src_value     = [DataType(1, 1), DataType(2, 0), DataType(3, 1), DataType(4, 1), DataType(5, 0), DataType(6, 0), DataType(6, 1)]
+  src_condition = [DataType(2, 0), DataType(1, 1), DataType(0, 1), DataType(1, 1)                                                ]
+  sink_out      = [DataType(1, 0), DataType(2, 0), DataType(3, 0), DataType(4, 1), DataType(5, 1), DataType(6, 1), DataType(6, 0)]
   src_opt       = [ConfigType(OPT_GRT_PRED,   pickRegister),
                    ConfigType(OPT_GRT_PRED,   pickRegister),
                    ConfigType(OPT_GRT_PRED,   pickRegister),
                    ConfigType(OPT_GRT_PRED,   pickRegister),
-                   ConfigType(OPT_GRT_ALWAYS, pickRegister)]
+                   ConfigType(OPT_GRT_ALWAYS, pickRegister),
+                   ConfigType(OPT_GRT_ONCE,   pickRegister),
+                   ConfigType(OPT_GRT_ONCE,   pickRegister)]
   th = TestHarness(FU, DataType, PredicateType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_value, src_condition, src_opt, sink_out)

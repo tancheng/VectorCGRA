@@ -81,6 +81,7 @@ class TileRTL(Component):
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
+                                     num_cgras,
                                      num_tiles,
                                      ctrl_mem_size,
                                      num_tile_outports)
@@ -89,6 +90,7 @@ class TileRTL(Component):
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
+                                num_cgras,
                                 num_tiles,
                                 ctrl_mem_size,
                                 num_tile_outports)
@@ -97,6 +99,7 @@ class TileRTL(Component):
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    CgraPayloadType,
+                                   DataType,
                                    CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports,
@@ -130,7 +133,9 @@ class TileRTL(Component):
     s.element.tile_id //= s.tile_id
     s.ctrl_mem.cgra_id //= s.cgra_id
     s.ctrl_mem.tile_id //= s.tile_id
+    s.fu_crossbar.cgra_id //= s.cgra_id
     s.fu_crossbar.tile_id //= s.tile_id
+    s.routing_crossbar.cgra_id //= s.cgra_id
     s.routing_crossbar.tile_id //= s.tile_id
 
     # Assigns crossbar id.
@@ -139,6 +144,9 @@ class TileRTL(Component):
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
+
+    # Fu data delivery to ctrl memory (eventually towards CPU via controller).
+    s.element.send_to_controller //= s.ctrl_mem.recv_from_tile
 
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
