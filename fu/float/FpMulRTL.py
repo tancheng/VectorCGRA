@@ -24,12 +24,15 @@ from ...lib.opt_type import *
 class FpMulRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, exp_nbits = 8,
+                num_inports, num_outports, data_mem_size,
+                data_bitwidth = 32,
+                exp_nbits = 8,
                 sig_nbits = 23):
 
     super(FpMulRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
-                                 data_mem_size)
+                                 data_mem_size,
+                                 data_bitwidth = data_bitwidth)
 
     # Local parameters
     assert DataType.get_field_type('payload').nbits == exp_nbits + sig_nbits + 1

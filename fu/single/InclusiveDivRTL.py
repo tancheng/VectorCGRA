@@ -17,11 +17,13 @@ class InclusiveDivRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
-                latency = 2, vector_factor_power = 0):
+                latency = 2, vector_factor_power = 0,
+                data_bitwidth = 32):
 
     super(InclusiveDivRTL, s).construct(DataType, PredicateType, CtrlType,
                                num_inports, num_outports, data_mem_size,
-                               latency, vector_factor_power)
+                               latency, vector_factor_power,
+                               data_bitwidth = data_bitwidth)
 
     num_entries = 2
     num_cycles = latency

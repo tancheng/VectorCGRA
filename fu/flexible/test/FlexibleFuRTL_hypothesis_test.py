@@ -35,6 +35,7 @@ import hypothesis
 class TestHarness( Component ):
 
   def construct( s, FunctionUnit, FuList, DataType, PredicateType, CtrlType,
+                 data_bitwidth,
                  src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs ):
     data_mem_size = 8
     num_inports   = 2
@@ -47,6 +48,7 @@ class TestHarness( Component ):
     s.sink_out0     = TestSinkRTL(DataType,      sink0_msgs   )
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+                         data_bitwidth,
                          num_inports, num_outports, data_mem_size,
                          1, FuList )
 
@@ -120,7 +122,8 @@ def test_hypothesis(functions, inputs):
     label = "functions"
   )
   src_a, src_b, src_opt = [], [], []
-  DataType      = mk_data(16, 1)
+  data_bitwidth = 16
+  DataType      = mk_data(data_bitwidth, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports   = 2
   CtrlType      = mk_ctrl(num_inports)
@@ -132,6 +135,7 @@ def test_hypothesis(functions, inputs):
     src_opt.append(CtrlType(value[2], pickRegister))
   sink_out      = FuFL(DataType, src_a, src_b, src_opt)
   th = TestHarness(FU, functions, DataType, PredicateType, CtrlType,
+                   data_bitwidth,
                    src_a, src_b, src_opt, sink_out)
   run_sim(th)
 

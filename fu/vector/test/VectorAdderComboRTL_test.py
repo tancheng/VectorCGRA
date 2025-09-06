@@ -33,7 +33,8 @@ class TestHarness( Component ):
     s.sink_out0 = TestSinkRTL(DataType, sink_msgs0    )
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports, data_mem_size, 4, data_bw)
+                         num_outports, data_mem_size,
+                         num_lanes = 4, data_bitwidth = data_bw)
 
     # s.dut.initial_carry_in //= 0
 
@@ -74,7 +75,7 @@ def run_sim(test_harness, max_cycles = 10):
 
 def test_vector_adder_combo():
   FU            = VectorAdderComboRTL
-  data_bw       = 64
+  data_bw       = 16
   DataType      = mk_data(data_bw, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports   = 4
@@ -85,13 +86,15 @@ def test_vector_adder_combo():
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
 
-  src_in0       = [DataType(0x1111, 1), DataType(0x7777, 1), DataType(0x4332, 1)]
-  src_in1       = [DataType(0x2222, 1), DataType(0x7889, 1), DataType(0x3333, 1)]
-  src_const     = [DataType(0x3543, 1), DataType(0x1234, 1), DataType(0x3543, 1)]
-  sink_out0     = [DataType(0x3333, 1), DataType(0xf000, 1), DataType(0xdef,  1)]
-  src_opt       = [CtrlType(OPT_VEC_ADD,       pickRegister),
-                   CtrlType(OPT_VEC_ADD,       pickRegister),
-                   CtrlType(OPT_VEC_SUB_CONST, pickRegister)]
+  src_in0       = [DataType(0x1111, 1), DataType(0x7777, 1), DataType(0x7777, 1), DataType(0x4332, 1), DataType(0x4332, 1)]
+  src_in1       = [DataType(0x2222, 1), DataType(0x7889, 1), DataType(0x7889, 1),                                         ]
+  src_const     = [                                                               DataType(0x3543, 1), DataType(0x3543, 1)]
+  sink_out0     = [DataType(0x3333, 1), DataType(0xf000, 1), DataType(0xeff0, 1), DataType(0x1eff, 1), DataType(0x0def, 1)]
+  src_opt       = [CtrlType(OPT_VEC_ADD,                pickRegister),
+                   CtrlType(OPT_VEC_ADD_COMBINED,       pickRegister),
+                   CtrlType(OPT_VEC_ADD,                pickRegister),
+                   CtrlType(OPT_VEC_SUB_CONST,          pickRegister),
+                   CtrlType(OPT_VEC_SUB_CONST_COMBINED, pickRegister)]
 
   th = TestHarness(FU, DataType, data_bw, PredicateType, CtrlType,
                    num_inports, num_outports, data_mem_size,

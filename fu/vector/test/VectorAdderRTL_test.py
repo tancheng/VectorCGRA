@@ -85,7 +85,7 @@ def run_sim(test_harness, max_cycles = 100):
 
 def test_vadder():
   FU            = VectorAdderRTL
-  bandwidth     = 8
+  bandwidth     = 32
   InDataType    = mk_bits(bandwidth)
   OutDataType   = mk_bits(bandwidth + 1)
   PredicateType = mk_predicate(1, 1)
