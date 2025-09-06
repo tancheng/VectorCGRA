@@ -18,12 +18,13 @@ from ...lib.util.common import *
 
 class ContextSwitchRTL(Component):
 
-  def construct(s, data_nbits):
+  def construct(s, data_nbits, ctrl_addr_nbits):
 
     # Constant
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
     DataType = mk_data(data_nbits)
+    CtrlAddrType = mk_bits(ctrl_addr_nbits)
     OptType = mk_bits(clog2(NUM_OPTS))
 
     # Interface
@@ -38,10 +39,17 @@ class ContextSwitchRTL(Component):
     # During the PAUSING status, FU's output when executing PHI_CONST operation
     # should always have predicate=0, so as to avoid initiating new iteration.
     s.overwrite_fu_output_predicate = OutPort(b1)
+    # CPU should preload the unique ctrl mem address of the DFG's first PHI_CONST
+    # through the port 'init_phi_addr' to the register 'init_phi_addr_reg'.
+    # Then compare with the read address of ctrl mem at each cycle to make sure
+    # progress is only recorded when executing the first PHI_CONST during PAUSING status.
+    s.init_phi_addr = InPort(CtrlAddrType)
+    s.ctrl_mem_rd_addr = InPort(CtrlAddrType)
    
     # Component
     s.progress_reg = Wire(DataType)
     s.status_reg = Wire(StatusType)
+    s.init_phi_addr_reg = Wire(CtrlAddrType)
     s.progress_is_null = Wire(b1)
     s.is_pausing = Wire(b1)
     s.is_resuming = Wire(b1)
@@ -53,7 +61,7 @@ class ContextSwitchRTL(Component):
       s.progress_is_null @= (s.progress_reg == DataType(0, 0))
       s.is_pausing @= (s.status_reg == STATUS_PAUSING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
-      s.is_executing_phi @= (s.recv_opt == OPT_PHI_CONST)
+      s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) and (s.init_phi_addr_reg == s.ctrl_mem_rd_addr))
 
       # Updates progress_out with the recorded progress.
       if (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
@@ -92,12 +100,20 @@ class ContextSwitchRTL(Component):
         # Keeps the progress.
         s.progress_reg <<= s.progress_reg
 
+      # Records the PHI_CONST's unqiue ctrl mem address to the register.
+      if (s.recv_cmd_vld & (s.recv_cmd == CMD_RECORD_INIT_PHI_ADDR)):
+        s.init_phi_addr_reg <<= s.init_phi_addr
+      else:
+        s.init_phi_addr_reg <<= s.init_phi_addr_reg
+
   def line_trace(s):
     recv_cmd_str = f'|| recv_cmd_vld: {s.recv_cmd_vld} | recv_cmd: {s.recv_cmd} '
     recv_opt_str = f'|| recv_opt: {s.recv_opt} '
     progress_in_str = f'|| progress_in: {s.progress_in} '
     progress_out_str = f'|| progress_out: {s.progress_out} '
+    init_phi_addr_str = f'|| init_phi_addr: {s.init_phi_addr} '
+    ctrl_mem_rd_addr_str = f'|| ctrl_mem_rd_addr: {s.ctrl_mem_rd_addr} '
     overwrite_fu_output_predicate_str = f'|| overwrite_fu_output_predicate: {s.overwrite_fu_output_predicate} '
-    register_content_str = f'|| progress_reg: {s.progress_reg} | status_reg: {s.status_reg} '
+    register_content_str = f'|| progress_reg: {s.progress_reg} | status_reg: {s.status_reg}i | init_phi_addr_reg: {s.init_phi_addr_reg} '
     condition_str = f'|| condition: {s.progress_is_null}{s.is_pausing}{s.is_executing_phi} '
-    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + overwrite_fu_output_predicate_str + register_content_str + condition_str
+    return recv_cmd_str + recv_opt_str + progress_in_str + progress_out_str + init_phi_addr_str + ctrl_mem_rd_addr_str + overwrite_fu_output_predicate_str + register_content_str + condition_str
