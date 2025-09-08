@@ -25,6 +25,7 @@ class NormalQueue1EntryRTL( Component ):
 
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
+    s.count_reset = InPort()
     s.count = OutPort()
 
     # Components
@@ -42,7 +43,7 @@ class NormalQueue1EntryRTL( Component ):
 
     @update_ff
     def ff_normal1():
-      if s.reset:
+      if s.reset | s.count_reset:
         s.full <<= 0
       else:
         s.full <<= (s.recv.val & ~s.full) | (s.full & ~s.send.rdy)
@@ -96,7 +97,8 @@ class NormalQueueCtrlRTL( Component ):
     s.recv_rdy = OutPort()
     s.send_val = OutPort()
     s.send_rdy = InPort()
-
+    
+    s.count_reset = InPort( 1 )
     s.count = OutPort( count_nbits )
     s.wen   = OutPort()
     s.waddr = OutPort( addr_nbits )
@@ -143,6 +145,8 @@ class NormalQueueCtrlRTL( Component ):
           s.count <<= s.count + 1
         elif ~s.recv_xfer & s.send_xfer:
           s.count <<= s.count - 1
+        elif s.count_reset:
+          s.count <<= 0
 
 #-------------------------------------------------------------------------
 # NormalQueueRTL
@@ -156,6 +160,7 @@ class NormalQueueRTL( Component ):
 
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
+    s.count_reset = InPort(1)
     s.count = OutPort( clog2( num_entries+1 ) )
 
     # Components
@@ -167,6 +172,7 @@ class NormalQueueRTL( Component ):
       s.recv  //= s.q.recv
       s.send  //= s.q.send
       s.count //= s.q.count
+      s.count_reset //= s.q.count_reset
 
     else:
       s.ctrl  = NormalQueueCtrlRTL ( num_entries )
@@ -188,6 +194,7 @@ class NormalQueueRTL( Component ):
       s.send.rdy //= s.ctrl.send_rdy
       s.send.msg //= s.dpath.send_msg
       s.count   //= s.ctrl.count
+      s.count_reset //= s.ctrl.count_reset
 
   # Line trace
 
