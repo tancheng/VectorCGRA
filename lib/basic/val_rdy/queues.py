@@ -20,12 +20,13 @@ from .ifcs import RecvIfcRTL, SendIfcRTL
 class NormalQueue1EntryRTL( Component ):
 
   def construct( s, EntryType, reset_for_count=False ):
-
+    
     # Interface
-
+  
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
     s.count = OutPort()
+    s.count_reset = None
     if reset_for_count:
       s.count_reset = InPort()
 
@@ -102,8 +103,9 @@ class NormalQueueCtrlRTL( Component ):
     s.send_val = OutPort()
     s.send_rdy = InPort()
     
+    s.count_reset = None
     if reset_for_count:
-      s.count_reset = InPort( 1 )
+      s.count_reset = InPort()
     s.count = OutPort( count_nbits )
     s.wen   = OutPort()
     s.waddr = OutPort( addr_nbits )
@@ -161,14 +163,15 @@ class NormalQueueCtrlRTL( Component ):
 class NormalQueueRTL( Component ):
 
   def construct( s, EntryType, num_entries=2, reset_for_count=False):
-
+    
     # Interface
 
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
     s.count = OutPort( clog2( num_entries+1 ) )
+    s.count_reset = None
     if reset_for_count:
-      s.count_reset = InPort(1)
+      s.count_reset = InPort()
 
     # Components
 

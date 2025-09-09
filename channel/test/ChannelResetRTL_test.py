@@ -24,7 +24,7 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, MsgType, src_msgs, count_reset_src_msgs, sink_msgs):
+  def construct(s, MsgType, src_msgs, sink_msgs, count_reset_src_msgs):
 
     s.src = TestSrcRTL(MsgType, src_msgs)
     s.sink = TestSinkRTL(MsgType, sink_msgs)
@@ -57,13 +57,12 @@ test_msgs = [b16(4), b16(1), b16(2), b16(3)]
 count_reset_msgs = [b1(0), b1(0), b1(1), b1(0)]
 test_reset_msgs = [b16(4), b16(1)]
 
-
 def test_passthrough():
-  th = TestHarness(Bits16, test_msgs, count_reset_msgs, test_msgs)
+  th = TestHarness(Bits16, test_msgs, test_msgs, count_reset_msgs)
   run_sim(th)
 
 def test_normal2_simple():
-  th = TestHarness(Bits16, test_msgs, count_reset_msgs, test_reset_msgs)
+  th = TestHarness(Bits16, test_msgs, test_reset_msgs, count_reset_msgs)
   th.set_param("top.dut.construct", latency= 2)
   run_sim(th)
 
