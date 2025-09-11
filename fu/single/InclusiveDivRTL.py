@@ -16,12 +16,14 @@ from pymtl3.passes.backends.verilog import *
 class InclusiveDivRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size,
                 latency = 2, vector_factor_power = 0,
                 data_bitwidth = 32):
 
     super(InclusiveDivRTL, s).construct(DataType, PredicateType, CtrlType,
-                               num_inports, num_outports, data_mem_size,
+                               num_inports, num_outports,
+                               data_mem_size, ctrl_mem_size,
                                latency, vector_factor_power,
                                data_bitwidth = data_bitwidth)
 
@@ -62,7 +64,8 @@ class InclusiveDivRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:

@@ -15,12 +15,14 @@ from ...lib.opt_type import *
 class AdderRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
     super(AdderRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
-                                 data_mem_size, 1, vector_factor_power,
+                                 data_mem_size, ctrl_mem_size,
+                                 1, vector_factor_power,
                                  data_bitwidth = data_bitwidth)
 
     s.const_one = DataType(1, 1)
@@ -57,7 +59,8 @@ class AdderRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.recv_from_controller.rdy @= 0
 
       # Though different operations might not need to consume
       # all the operands, as long as the opcode indicating it

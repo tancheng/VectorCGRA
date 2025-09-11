@@ -15,11 +15,13 @@ from ...lib.opt_type import *
 class MulRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
     super(MulRTL, s).construct(DataType, PredicateType, CtrlType,
-                               num_inports, num_outports, data_mem_size,
+                               num_inports, num_outports,
+                               data_mem_size, ctrl_mem_size,
                                1, vector_factor_power,
                                data_bitwidth = data_bitwidth)
 
@@ -56,7 +58,8 @@ class MulRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:

@@ -110,7 +110,7 @@ def test_tile_alu(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
-  data_mem_size = 8
+  data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
   num_cgras = num_cgra_rows * num_cgra_columns
@@ -143,7 +143,6 @@ def test_tile_alu(cmdline_opts):
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
@@ -210,7 +209,7 @@ def test_tile_alu(cmdline_opts):
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType,
                    data_nbits, ctrl_mem_size,
-                   data_mem_size, num_fu_inports, num_fu_outports,
+                   data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
                    src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
@@ -228,7 +227,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
-  data_mem_size = 8
+  data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
   num_cgras = num_cgra_rows * num_cgra_columns
@@ -258,7 +257,6 @@ def test_tile_multicycle_exclusive(cmdline_opts):
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
@@ -325,7 +323,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType,
                    data_nbits, ctrl_mem_size,
-                   data_mem_size, num_fu_inports, num_fu_outports,
+                   data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
                    src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
@@ -343,7 +341,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
-  data_mem_size = 8
+  data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
   num_cgras = num_cgra_rows * num_cgra_columns
@@ -373,7 +371,6 @@ def test_tile_multicycle_inclusive(cmdline_opts):
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   cgra_id_nbits = 1
-  data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   predicate_nbits = 1
 
@@ -439,7 +436,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
                    IntraCgraPktType, CgraPayloadType, CtrlType,
                    data_nbits, ctrl_mem_size,
-                   data_mem_size, num_fu_inports, num_fu_outports,
+                   data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
                    src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)

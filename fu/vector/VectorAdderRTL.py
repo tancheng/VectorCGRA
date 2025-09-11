@@ -38,7 +38,6 @@ class VectorAdderRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(DataType)
 
     # Components.
     s.carry_in = InPort(b1)
@@ -67,9 +66,6 @@ class VectorAdderRTL(Component):
       for i in range(num_outports):
         s.send_out[i].val @= b1(0)
         s.send_out[i].msg @= DataType()
-
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0

@@ -12,18 +12,21 @@ Author : Cheng Tan
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class Fu(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size = 4,
+                num_inports, num_outports,
+                data_mem_size = 4, ctrl_mem_size = 4,
                 latency = 1, vector_factor_power = 0,
                 data_bitwidth = 32):
 
     # Constants.
     num_entries = 2
     DataAddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CountType = mk_bits(clog2(num_entries + 1))
     FuInType = mk_bits(clog2(num_inports + 1))
     LatencyType = mk_bits(clog2(latency + 1))
@@ -31,13 +34,18 @@ class Fu(Component):
     # 3 indicates at most 7, i.e., 2^7 vectorization factor -> 128
     VectorFactorPowerType = mk_bits(3)
     VectorFactorType = mk_bits(8)
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        DataAddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
 
     # Interfaces.
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
 
     # Components.
     # Redundant interfaces for MemUnit
@@ -90,7 +98,7 @@ class Fu(Component):
           if s.recv_opt.msg.is_last_ctrl & \
              (s.vector_factor_counter + \
               (VectorFactorType(1) << zext(s.vector_factor_power, VectorFactorType)) < \
-             (VectorFactorType(1) << zext(s.recv_opt.msg.vector_factor_power, VectorFactorType))):
+              (VectorFactorType(1) << zext(s.recv_opt.msg.vector_factor_power, VectorFactorType))):
             s.vector_factor_counter <<= s.vector_factor_counter + \
                                         (VectorFactorType(1) << zext(s.vector_factor_power, \
                                                                      VectorFactorType))

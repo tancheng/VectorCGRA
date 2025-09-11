@@ -15,12 +15,15 @@ from .VectorMulRTL import VectorMulRTL
 from ..basic.SumUnit import SumUnit
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class VectorMulComboRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size,
+                ctrl_mem_size = 4,
                 vector_factor_power = 0,
                 num_lanes = 4, data_bitwidth = 64):
 
@@ -30,7 +33,13 @@ class VectorMulComboRTL(Component):
     assert(num_lanes % 4 == 0)
     num_entries = 2
     s.const_zero = DataType(0, 0)
+    DataAddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CountType = mk_bits(clog2(num_entries + 1))
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        DataAddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
     # By default 16-bit indicates both input and output. For a Mul,
     # if output is no longer than 16-bit, it means the
     # input is no longer than 8-bit. Here, the sub_bw is by default
@@ -46,7 +55,8 @@ class VectorMulComboRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
     TempDataType = mk_bits(data_bitwidth)
     FuDataType = mk_bits(sub_bw)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
@@ -74,7 +84,9 @@ class VectorMulComboRTL(Component):
       s.send_out[0].msg.payload @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType()
+
+      s.recv_from_controller.rdy @= 0
 
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)

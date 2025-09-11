@@ -15,13 +15,14 @@ from ...lib.opt_type import *
 class NahRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
     super(NahRTL, s).construct(DataType, PredicateType, CtrlType,
                                num_inports, num_outports,
-                               data_mem_size, 1,
-                               vector_factor_power,
+                               data_mem_size, ctrl_mem_size,
+                               1, vector_factor_power,
                                data_bitwidth = data_bitwidth)
 
     @update
@@ -39,7 +40,8 @@ class NahRTL(Fu):
         s.send_out[i].msg @= DataType()
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.msg.operation == OPT_NAH:
         s.recv_opt.rdy @= 1

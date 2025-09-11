@@ -16,11 +16,12 @@ from ...lib.opt_type import *
 class AluGenMacRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size):
+                num_inports, num_outports, data_mem_size,
+                ctrl_mem_size = 4):
 
     super(AluGenMacRTL, s).construct(DataType, PredicateType, CtrlType,
                                      num_inports, num_outports,
-                                     data_mem_size)
+                                     data_mem_size, ctrl_mem_size)
 
     # Local parameters
     assert DataType.get_field_type('payload').nbits == 16

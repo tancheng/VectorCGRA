@@ -16,12 +16,14 @@ from pymtl3 import *
 from .VectorAdderRTL import VectorAdderRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class VectorAdderComboRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0,
                 num_lanes = 4, data_bitwidth = 64):
 
@@ -31,13 +33,20 @@ class VectorAdderComboRTL(Component):
     s.const_zero = DataType()
     sub_bw = data_bitwidth // num_lanes
     CountType = mk_bits(clog2(num_entries + 1))
+    DataAddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        DataAddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
 
     # Components
     s.Fu = [VectorAdderRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
@@ -69,6 +78,11 @@ class VectorAdderComboRTL(Component):
     def update_signal():
       s.recv_in[0].rdy @= s.Fu[0].recv_in[0].rdy
       s.recv_in[1].rdy @= s.Fu[0].recv_in[1].rdy
+
+      s.send_to_controller.val @= 0
+      s.send_to_controller.msg @= s.CgraPayloadType()
+
+      s.recv_from_controller.rdy @= 0
 
       for i in range(num_lanes):
         s.Fu[i].recv_opt.val @= s.recv_opt.val
