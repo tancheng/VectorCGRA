@@ -28,8 +28,6 @@ class TestHarness(Component):
                 complete_signal_sink_out, ctrl_count_per_iter,
                 total_ctrl_steps_val, FuType):
 
-    AddrType = mk_bits(clog2(ctrl_mem_size))
-
     s.src_data0 = TestSrcRTL(DataType, src0_msgs)
     s.src_data1 = TestSrcRTL(DataType, src1_msgs)
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
@@ -83,11 +81,10 @@ def run_sim(test_harness, max_cycles = 20):
 
 def test_ctrl():
   MemUnit = CtrlMemDynamicRTL
-  DataType = mk_data(16, 1)
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
-  ctrl_addr_nbits = clog2(ctrl_mem_size)
-  data_mem_size = 8
   num_fu_inports = 2
   num_fu_outports = 2
   num_tile_inports = 4
@@ -95,7 +92,6 @@ def test_ctrl():
   num_tiles = 4
 
   cgra_id_nbits = 4
-  data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(addr_nbits)
@@ -124,7 +120,6 @@ def test_ctrl():
 
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  AddrType = mk_bits(clog2(ctrl_mem_size))
   src_data0 = [DataType(1, 1), DataType(5, 1), DataType(7, 1), DataType(6, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1), DataType(2, 1), DataType(3, 1)]
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
@@ -148,7 +143,7 @@ def test_ctrl():
                    CgraPayloadType,
                    CtrlType,
                    ctrl_mem_size,
-                   data_mem_size,
+                   data_mem_size_global,
                    num_fu_inports,
                    num_fu_outports,
                    num_tile_inports,
@@ -166,11 +161,10 @@ def test_ctrl():
 
 def test_ctrl_bound():
   MemUnit = CtrlMemDynamicRTL
-  DataType = mk_data(16, 1)
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
-  ctrl_addr_nbits = clog2(ctrl_mem_size)
-  data_mem_size = 8
   num_fu_inports = 2
   num_fu_outports = 2
   num_tile_inports = 4
@@ -178,7 +172,6 @@ def test_ctrl_bound():
   num_tiles = 4
 
   cgra_id_nbits = 4
-  data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(addr_nbits)
@@ -213,7 +206,6 @@ def test_ctrl_bound():
 
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  AddrType = mk_bits(clog2(ctrl_mem_size))
   src_data0 = [DataType(1, 1), DataType(5, 1)]
   src_data1 = [DataType(6, 1), DataType(1, 1)]
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
@@ -243,7 +235,7 @@ def test_ctrl_bound():
                    CgraPayloadType,
                    CtrlType,
                    ctrl_mem_size,
-                   data_mem_size,
+                   data_mem_size_global,
                    num_fu_inports,
                    num_fu_outports,
                    num_tile_inports,
@@ -261,11 +253,10 @@ def test_ctrl_bound():
 
 def test_return():
   MemUnit = CtrlMemDynamicRTL
-  DataType = mk_data(16, 1)
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
-  ctrl_addr_nbits = clog2(ctrl_mem_size)
-  data_mem_size = 8
   num_fu_inports = 2
   num_fu_outports = 2
   num_tile_inports = 4
@@ -273,7 +264,6 @@ def test_return():
   num_tiles = 4
 
   cgra_id_nbits = 4
-  data_nbits = 32
   data_mem_size_global = 16
   addr_nbits = clog2(data_mem_size_global)
   DataAddrType = mk_bits(addr_nbits)
@@ -308,7 +298,6 @@ def test_return():
 
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  AddrType = mk_bits(clog2(ctrl_mem_size))
   src_data0 = [DataType(5, 0), DataType(6, 1)]
   src_data1 = []
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
@@ -332,7 +321,7 @@ def test_return():
   # only the second one has the predicate as true, leadint to single
   # expected output.
   complete_signal_sink_out = [
-      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0)))]
+      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0), ctrl = CtrlType(OPT_RET, pick_register)))]
 
   th = TestHarness(MemUnit,
                    DataType,
@@ -341,7 +330,7 @@ def test_return():
                    CgraPayloadType,
                    CtrlType,
                    ctrl_mem_size,
-                   data_mem_size,
+                   data_mem_size_global,
                    num_fu_inports,
                    num_fu_outports,
                    num_tile_inports,
