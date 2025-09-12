@@ -76,7 +76,9 @@ class AluGenMacRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val & s.send_out[0].rdy:
         if s.recv_opt.msg.fu_in[0] != 0:

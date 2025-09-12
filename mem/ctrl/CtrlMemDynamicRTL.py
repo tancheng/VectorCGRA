@@ -88,7 +88,7 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_msg():
       s.recv_pkt_queue.send.rdy @= 0
-      s.send_to_tile.msg @= CgraPayloadType()
+      s.send_to_tile.msg @= CgraPayloadType(0, 0, 0, 0, 0)
       s.send_to_tile.val @= 0
       s.reg_file.wen[0] @= 0
       s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr

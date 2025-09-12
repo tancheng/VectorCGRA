@@ -80,7 +80,7 @@ class VectorAdderComboRTL(Component):
       s.recv_in[1].rdy @= s.Fu[0].recv_in[1].rdy
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
       s.recv_from_controller.rdy @= 0
 

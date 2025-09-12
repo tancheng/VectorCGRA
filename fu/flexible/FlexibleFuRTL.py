@@ -94,7 +94,7 @@ class FlexibleFuRTL(Component):
         s.recv_from_controller_rdy_vector[i] @= s.fu[i].recv_from_controller.rdy
       s.recv_from_controller.rdy @= reduce_or(s.recv_from_controller_rdy_vector)
 
-      s.send_to_controller.msg @= CgraPayloadType()
+      s.send_to_controller.msg @= CgraPayloadType(0, 0, 0, 0, 0)
       s.send_to_controller.val @= 0
       for i in range(s.fu_list_size):
         if s.fu[i].send_to_controller.val:

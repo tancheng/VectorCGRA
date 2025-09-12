@@ -109,7 +109,7 @@ class VectorAllReduceRTL(Component):
         s.recv_in[i].rdy @= b1(0)
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
       s.recv_from_controller.rdy @= 0
 

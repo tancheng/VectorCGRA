@@ -17,7 +17,7 @@ class InclusiveDivRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports,
-                data_mem_size, ctrl_mem_size,
+                data_mem_size, ctrl_mem_size = 4,
                 latency = 2, vector_factor_power = 0,
                 data_bitwidth = 32):
 
@@ -64,7 +64,7 @@ class InclusiveDivRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:

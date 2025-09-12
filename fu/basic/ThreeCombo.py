@@ -106,7 +106,7 @@ class ThreeCombo(Component):
     @update
     def update_send_to_controller():
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_controller.rdy @= 0
 
   def line_trace(s):

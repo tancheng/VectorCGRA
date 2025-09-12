@@ -41,7 +41,7 @@ class GlobalReduceUnitRTL(Component):
     def set_recv_rdy():
       s.recv_data.rdy @= 0
       s.queue.recv.val @= 0
-      s.queue.recv.msg @= InterCgraPktType()
+      s.queue.recv.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       if s.target_count.payload > s.receiving_count.payload:
         s.recv_data.rdy @= s.queue.recv.rdy
         s.queue.recv.msg @= s.recv_data.msg
@@ -68,7 +68,7 @@ class GlobalReduceUnitRTL(Component):
 
     @update
     def update_send():
-      s.send.msg @= ControllerXbarPktType()
+      s.send.msg @= ControllerXbarPktType(0, 0)
       s.send.val @= 0
       s.queue.send.rdy @= 0
       if (s.target_count.payload > 0) & (s.receiving_count.payload == s.target_count.payload):

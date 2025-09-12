@@ -3135,21 +3135,21 @@ def initialize_test_harness(cmdline_opts,
                    controller2addr_map, expected_sink_out_pkt, cmp_func)
   return th
 
-# def test_sim_homo_2x2_2x2(cmdline_opts):
-#   th = initialize_test_harness(cmdline_opts,
-#                                num_cgra_rows = 2,
-#                                num_cgra_columns = 2,
-#                                num_x_tiles_per_cgra = 2,
-#                                num_y_tiles_per_cgra = 2,
-#                                num_banks_per_cgra = 2,
-#                                data_mem_size_per_bank = 16,
-#                                mem_access_is_combinational = False)
-#   th.elaborate()
-#   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-#                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-#                        'ALWCOMBORDER'])
-#   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-#   run_sim(th)
+def test_sim_homo_2x2_2x2(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = False)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
 
 def _enable_translate_recursively(m):
   m.set_metadata(VerilogTranslationPass.enable, True)
