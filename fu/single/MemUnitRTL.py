@@ -11,29 +11,37 @@ Author : Cheng Tan
 from pymtl3 import *
 from ..basic.Fu import Fu
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL, ValRdyRecvIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class MemUnitRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size, vector_factor_power = 0,
+                num_outports, data_mem_size, ctrl_mem_size = 4,
+                vector_factor_power = 0,
                 data_bitwidth = 32):
 
     # Constant
     num_entries = 2
     AddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CountType = mk_bits(clog2(num_entries + 1))
     FuInType = mk_bits(clog2(num_inports + 1))
     # 3 indicates at most 7, i.e., 2^7 vectorization factor -> 128
     VectorFactorPowerType = mk_bits(3)
     VectorFactorType = mk_bits(8)
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        AddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
 
     # Interfaces.
     s.recv_in = [ValRdyRecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = ValRdyRecvIfcRTL(DataType)
     s.recv_opt = ValRdyRecvIfcRTL(CtrlType)
     s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = ValRdySendIfcRTL(DataType)
+    s.send_to_controller = ValRdySendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = ValRdyRecvIfcRTL(s.CgraPayloadType)
 
     # Interfaces to the data sram, need to interface them with
     # the data memory module in top level.
@@ -83,7 +91,8 @@ class MemUnitRTL(Component):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:

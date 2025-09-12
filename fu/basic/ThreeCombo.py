@@ -12,19 +12,27 @@ Author : Cheng Tan
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class ThreeCombo(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType, Fu0, Fu1, Fu2,
-                num_inports, num_outports, data_mem_size,
+  def construct(s, DataType, PredicateType, CtrlType,
+                Fu0, Fu1, Fu2,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size,
                 data_bitwidth = 32):
 
     # Constant
     num_entries   = 2
     AddrType      = mk_bits(clog2(data_mem_size))
+    CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
     s.const_zero  = DataType(0, 0)
     CountType     = mk_bits(clog2(num_entries + 1))
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        AddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
 
     # Interface
     s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -37,12 +45,13 @@ class ThreeCombo(Component):
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr   = SendIfcRTL(AddrType)
     s.to_mem_wdata   = SendIfcRTL(DataType)
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
 
     # Components
-    s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 4, 2, data_mem_size)
-    s.Fu1 = Fu1(DataType, PredicateType, CtrlType, 4, 2, data_mem_size)
-    s.Fu2 = Fu2(DataType, PredicateType, CtrlType, 4, 2, data_mem_size)
+    s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
+    s.Fu1 = Fu1(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
+    s.Fu2 = Fu2(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
 
     # Connections
     s.recv_in[0].msg //= s.Fu0.recv_in[0].msg
@@ -97,7 +106,8 @@ class ThreeCombo(Component):
     @update
     def update_send_to_controller():
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_controller.rdy @= 0
 
   def line_trace(s):
     return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace() + " ; " + s.Fu2.line_trace()

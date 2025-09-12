@@ -15,13 +15,14 @@ from ...lib.opt_type import *
 class GrantRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
     super(GrantRTL, s).construct(DataType, PredicateType, CtrlType,
                                   num_inports, num_outports,
-                                  data_mem_size, 1,
-                                  vector_factor_power,
+                                  data_mem_size, ctrl_mem_size,
+                                  1, vector_factor_power,
                                   data_bitwidth = data_bitwidth)
 
     # Constants.
@@ -59,7 +60,8 @@ class GrantRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):

@@ -16,11 +16,12 @@ from ...lib.opt_type import *
 class AluGenMacRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size):
+                num_inports, num_outports, data_mem_size,
+                ctrl_mem_size = 4):
 
     super(AluGenMacRTL, s).construct(DataType, PredicateType, CtrlType,
                                      num_inports, num_outports,
-                                     data_mem_size)
+                                     data_mem_size, ctrl_mem_size)
 
     # Local parameters
     assert DataType.get_field_type('payload').nbits == 16
@@ -75,7 +76,9 @@ class AluGenMacRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val & s.send_out[0].rdy:
         if s.recv_opt.msg.fu_in[0] != 0:

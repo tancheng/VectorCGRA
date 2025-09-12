@@ -55,7 +55,8 @@ def test_elaborate(cmdline_opts):
 class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredType, ConfigType,
-                data_bitwidth, num_inports, num_outports, data_mem_size,
+                data_bitwidth, num_inports, num_outports,
+                data_mem_size, ctrl_mem_size,
                 exp_nbits, sig_nbits,
                 src0_msgs, src1_msgs, src_const,
                 ctrl_msgs, sink_msgs):
@@ -67,7 +68,8 @@ class TestHarness(Component):
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
     s.dut = FunctionUnit(DataType, PredType, ConfigType,
-                         num_inports, num_outports, data_mem_size,
+                         num_inports, num_outports,
+                         data_mem_size, ctrl_mem_size,
                          data_bitwidth, exp_nbits, sig_nbits)
 
     connect( s.src_in0.send,    s.dut.recv_in[0]         )
@@ -98,6 +100,7 @@ def test_add_basic():
   f2b           = mk_float_to_bits_fn(DataType, exp_nbits, sig_nbits)
   PredType      = mk_predicate(1, 1)
   data_mem_size = 8
+  ctrl_mem_size = 4
   num_inports   = 2
   num_outports  = 1
   ConfigType    = mk_ctrl(num_inports, num_outports)
@@ -112,7 +115,8 @@ def test_add_basic():
                    ConfigType(OPT_FADD_CONST, pick_register)]
   th = TestHarness(FU, DataType, PredType, ConfigType,
                    data_bitwidth, num_inports, num_outports,
-                   data_mem_size, exp_nbits, sig_nbits,
+                   data_mem_size, ctrl_mem_size,
+                   exp_nbits, sig_nbits,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
   run_sim(th)

@@ -11,17 +11,20 @@ Author : Cheng Tan
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class SelRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size = 4,
+                num_inports, num_outports,
+                data_mem_size = 4, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
     # Constant
     num_entries = 2
     AddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     s.const_zero = DataType(0, 0)
     s.true = DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -29,13 +32,18 @@ class SelRTL(Component):
     # 3 indicates at most 7, i.e., 2^7 vectorization factor -> 128
     VectorFactorPowerType = mk_bits(3)
     VectorFactorType = mk_bits(8)
+    s.CgraPayloadType = mk_cgra_payload(DataType,
+                                        AddrType,
+                                        CtrlType,
+                                        CtrlAddrType)
 
     # Interface
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
 
     # Redundant interfaces for MemUnit
     s.to_mem_raddr = SendIfcRTL(AddrType)
@@ -93,7 +101,8 @@ class SelRTL(Component):
         s.send_out[i].msg @= DataType()
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_controller.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
