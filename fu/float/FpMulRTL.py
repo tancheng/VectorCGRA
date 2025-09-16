@@ -25,13 +25,14 @@ class FpMulRTL(Fu):
 
   def construct(s, DataType, PredicateType, CtrlType,
                 num_inports, num_outports, data_mem_size,
+                ctrl_mem_size = 4,
                 data_bitwidth = 32,
                 exp_nbits = 8,
                 sig_nbits = 23):
 
     super(FpMulRTL, s).construct(DataType, PredicateType, CtrlType,
                                  num_inports, num_outports,
-                                 data_mem_size,
+                                 data_mem_size, ctrl_mem_size,
                                  data_bitwidth = data_bitwidth)
 
     # Local parameters
@@ -79,7 +80,9 @@ class FpMulRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+
+      s.recv_from_controller.rdy @= 0
 
       s.fmul.a @= 0
       s.fmul.b @= 0

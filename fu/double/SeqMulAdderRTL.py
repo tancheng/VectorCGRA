@@ -17,11 +17,14 @@ from ...lib.opt_type import *
 class SeqMulAdderRTL(TwoSeqCombo):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, data_bitwidth = 32):
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
+                data_bitwidth = 32):
 
     super(SeqMulAdderRTL, s).construct(DataType, PredicateType, CtrlType,
-                                       MulRTL, AdderRTL, num_inports,
-                                       num_outports, data_mem_size,
+                                       MulRTL, AdderRTL,
+                                       num_inports, num_outports,
+                                       data_mem_size, ctrl_mem_size,
                                        data_bitwidth = data_bitwidth)
 
     FuInType = mk_bits(clog2(num_inports + 1))

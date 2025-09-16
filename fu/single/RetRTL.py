@@ -15,15 +15,18 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from ..basic.Fu import Fu
+from ...lib.cmd_type import *
+from ...lib.messages import *
 from ...lib.opt_type import *
 
 class RetRTL(Fu):
   def construct(s, DataType, PredicateType, CtrlType, num_inports,
-                num_outports, data_mem_size, vector_factor_power = 0,
-                data_bitwidth = 32):
+                num_outports, data_mem_size, ctrl_mem_size = 4,
+                vector_factor_power = 0, data_bitwidth = 32):
 
     super(RetRTL, s).construct(DataType, PredicateType, CtrlType,
-                               num_inports, num_outports, data_mem_size,
+                               num_inports, num_outports,
+                               data_mem_size, ctrl_mem_size,
                                1, vector_factor_power,
                                data_bitwidth = data_bitwidth)
 
@@ -56,7 +59,8 @@ class RetRTL(Fu):
         s.send_out[j].msg @= DataType()
 
       s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= DataType()
+      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_controller.rdy @= 0
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -76,7 +80,8 @@ class RetRTL(Fu):
           elif s.recv_in[s.in0_idx].msg.predicate:
             # Only when the predicate is true, the value will be sent back to CPU.
             s.send_to_controller.val @= s.recv_all_val & s.reached_vector_factor
-            s.send_to_controller.msg @= s.recv_in[s.in0_idx].msg
+            # s.send_to_controller.msg @= s.recv_in[s.in0_idx].msg
+            s.send_to_controller.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_controller.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_controller.rdy
           else:

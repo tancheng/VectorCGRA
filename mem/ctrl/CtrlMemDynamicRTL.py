@@ -50,7 +50,9 @@ class CtrlMemDynamicRTL(Component):
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(IntraCgraPktType)
     # Receives data from the tile, used for returning data to CPU.
-    s.recv_from_tile = RecvIfcRTL(DataType)
+    s.recv_from_tile = RecvIfcRTL(CgraPayloadType)
+    # Receives data from the tile, used for returning data to CPU.
+    s.send_to_tile = SendIfcRTL(CgraPayloadType)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -86,6 +88,8 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_msg():
       s.recv_pkt_queue.send.rdy @= 0
+      s.send_to_tile.msg @= CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_tile.val @= 0
       s.reg_file.wen[0] @= 0
       s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
       # Initializes the fields of the control signal.
@@ -118,6 +122,11 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
         s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_queue.send.msg.payload.ctrl.vector_factor_power
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_queue.send.msg.payload.ctrl.is_last_ctrl
+      elif s.recv_pkt_queue.send.val & \
+           ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
+            (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE)):
+        s.send_to_tile.msg @= s.recv_pkt_queue.send.msg.payload
+        s.send_to_tile.val @= 1
 
       if (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
@@ -129,7 +138,9 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
-         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE):
         s.recv_pkt_queue.send.rdy @= 1
       # TODO: Extend for the other commands. Maybe another queue to
       # handle complicated actions.
@@ -148,7 +159,7 @@ class CtrlMemDynamicRTL(Component):
         if s.recv_from_tile.val & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
               IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
-                                CgraPayloadType(CMD_COMPLETE, s.recv_from_tile.msg, 0, 0, 0))
+                               s.recv_from_tile.msg)
           s.send_pkt_to_controller.val @= 1
           s.recv_from_tile.rdy @= s.send_pkt_to_controller.rdy
         elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
@@ -193,7 +204,9 @@ class CtrlMemDynamicRTL(Component):
       if s.reset:
         s.sent_complete <<= 0
       else:
-        if s.send_pkt_to_controller.val & s.send_pkt_to_controller.rdy:
+        if s.send_pkt_to_controller.val & \
+           s.send_pkt_to_controller.rdy & \
+           (s.send_pkt_to_controller.msg.payload.cmd == CMD_COMPLETE):
           s.sent_complete <<= 1
         elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH):
           s.sent_complete <<= 0

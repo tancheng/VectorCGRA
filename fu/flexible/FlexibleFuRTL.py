@@ -16,6 +16,7 @@ from ...fu.single.RetRTL  import RetRTL
 from ...fu.single.NahRTL  import NahRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
@@ -28,6 +29,7 @@ class FlexibleFuRTL(Component):
                 num_inports,
                 num_outports,
                 data_mem_size,
+                ctrl_mem_size,
                 num_tiles,
                 FuList,
                 exec_lantency = {}):
@@ -39,7 +41,13 @@ class FlexibleFuRTL(Component):
     s.fu_list_size = len(FuList)
     CountType = mk_bits(clog2(num_entries + 1))
     AddrType = mk_bits(clog2(data_mem_size))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
+
+    CgraPayloadType = mk_cgra_payload(DataType,
+                                      AddrType,
+                                      CtrlType,
+                                      CtrlAddrType)
 
     # Interfaces.
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
@@ -47,7 +55,8 @@ class FlexibleFuRTL(Component):
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
-    s.send_to_controller = SendIfcRTL(DataType)
+    s.send_to_controller = SendIfcRTL(CgraPayloadType)
+    s.recv_from_controller = RecvIfcRTL(CgraPayloadType)
 
     s.to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
@@ -58,12 +67,15 @@ class FlexibleFuRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    s.fu = [FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
-                      data_mem_size, data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
-                      data_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
+    s.fu = [FuList[i](DataType, PredicateType, CtrlType,
+                      num_inports, num_outports,
+                      data_mem_size, ctrl_mem_size,
+                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
+                      data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)
+    s.recv_from_controller_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_in_rdy_vector = [Wire(s.fu_list_size) for i in range(num_inports)]
 
     # Connection.
@@ -73,17 +85,22 @@ class FlexibleFuRTL(Component):
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
 
-    # Connects send_to_controller interface.
-    has_ret = False
-    for fu in s.fu:
-      if isinstance(fu, RetRTL):
-        s.send_to_controller //= fu.send_to_controller
-        has_ret = True
-      else:
-        fu.send_to_controller.rdy //= 0
-    if not has_ret:
-      s.send_to_controller.val //= 0
-      s.send_to_controller.msg //= DataType()
+    @update
+    def connect_to_controller():
+      for i in range(s.fu_list_size):
+        # const connection.
+        s.fu[i].recv_from_controller.msg @= s.recv_from_controller.msg
+        s.fu[i].recv_from_controller.val @= s.recv_from_controller.val
+        s.recv_from_controller_rdy_vector[i] @= s.fu[i].recv_from_controller.rdy
+      s.recv_from_controller.rdy @= reduce_or(s.recv_from_controller_rdy_vector)
+
+      s.send_to_controller.msg @= CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_controller.val @= 0
+      for i in range(s.fu_list_size):
+        if s.fu[i].send_to_controller.val:
+          s.send_to_controller.msg @= s.fu[i].send_to_controller.msg
+          s.send_to_controller.val @= s.fu[i].send_to_controller.val
+        s.fu[i].send_to_controller.rdy @= s.send_to_controller.rdy
 
     @update
     def comb_logic():

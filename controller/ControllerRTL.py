@@ -18,6 +18,8 @@ from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 
+from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
+
 class ControllerRTL(Component):
 
   def construct(s,
@@ -79,6 +81,11 @@ class ControllerRTL(Component):
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
+    # Global reduce unit.
+    # TODO: We need multiple GlobalReduceUnitRTL to enable more than 1 reduction
+    # across the fabric: https://github.com/tancheng/VectorCGRA/issues/184.
+    s.global_reduce_unit = GlobalReduceUnitRTL(DataType, InterCgraPktType, ControllerXbarPktType)
+
     # LUT for global data address mapping.
     addr_offset_nbits = 0
     s.addr2controller_lut = [Wire(CgraIdType) for _ in range(len(controller2addr_map))]
@@ -128,6 +135,7 @@ class ControllerRTL(Component):
       kStoreRequestInportIdx = 2
       kFromCpuCtrlAndDataIdx = 3
       kFromInterTileRingIdx = 4
+      kFromReduceUnitIdx = 5
 
       s.send_to_cpu_pkt_queue.recv.val @= 0
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -177,6 +185,12 @@ class ControllerRTL(Component):
           ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
                                 s.recv_from_tile_load_response_pkt_queue.send.msg)
 
+      # For the load response (i.e., the data towards other) from local memory.
+      s.crossbar.recv[kFromReduceUnitIdx].val @= \
+          s.global_reduce_unit.send.val
+      s.global_reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
+      s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_unit.send.msg
+
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
           s.recv_from_cpu_pkt_queue.send.val
@@ -214,6 +228,10 @@ class ControllerRTL(Component):
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.global_reduce_unit.recv_count.val @= 0
+      s.global_reduce_unit.recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      s.global_reduce_unit.recv_data.val @= 0
+      s.global_reduce_unit.recv_data.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
@@ -274,6 +292,16 @@ class ControllerRTL(Component):
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
 
+        elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD:
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_data.rdy
+          s.global_reduce_unit.recv_data.val @= 1
+          s.global_reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
+
+        elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_COUNT:
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_count.rdy
+          s.global_reduce_unit.recv_count.val @= 1
+          s.global_reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
+
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
@@ -281,6 +309,8 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONST) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val

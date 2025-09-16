@@ -18,13 +18,14 @@ from ...lib.opt_type import *
 class SeqMulShifterRTL(TwoSeqCombo):
 
   def construct(s, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size,
+                num_inports, num_outports,
+                data_mem_size, ctrl_mem_size = 4,
                 data_bitwidth = 32):
 
     super(SeqMulShifterRTL, s).construct(DataType, PredicateType,
                                          CtrlType, MulRTL, ShifterRTL,
                                          num_inports, num_outports,
-                                         data_mem_size,
+                                         data_mem_size, ctrl_mem_size,
                                          data_bitwidth = data_bitwidth)
 
     @update

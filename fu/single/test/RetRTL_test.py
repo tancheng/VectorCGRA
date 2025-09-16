@@ -22,15 +22,22 @@ from ....lib.messages import *
 class TestHarness(Component):
 
   def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, src_in,
-                src_opt, sink):
+                CgraPayloadType,
+                num_inports, num_outports,
+                data_mem_size,
+                ctrl_mem_size,
+                data_nbits,
+                src_in,
+                src_opt,
+                sink):
 
     s.src_in = TestSrcRTL(DataType, src_in)
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
-    s.sink = TestSinkRTL(DataType, sink)
+    s.sink = TestSinkRTL(CgraPayloadType, sink)
 
     s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
-                         num_outports, data_mem_size )
+                         num_outports, data_mem_size, ctrl_mem_size,
+                         data_bitwidth = data_nbits)
 
     s.src_in.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
@@ -65,20 +72,31 @@ def run_sim(test_harness, max_cycles = 20):
 
 def test_Ret():
   FU = RetRTL
-  DataType = mk_data(16, 1)
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
   num_inports = 2
   num_outports = 2
   CtrlType = mk_ctrl(num_inports, num_outports)
-  data_mem_size = 8
+  ctrl_mem_size = 4
+  data_mem_size = 16
+
+  DataAddrType = mk_bits(clog2(data_mem_size))
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
   FuInType = mk_bits(clog2(num_inports + 1))
   src_in =  [DataType(1, 0), DataType(2, 1), DataType(3, 1)]
   src_opt = [CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
-  sink =    [DataType(2, 1)] # , DataType(2, 1), DataType(3, 0)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
-                   num_outports, data_mem_size, src_in, src_opt,
-                   sink)
+  sink =    [CgraPayloadType(CMD_COMPLETE, data = DataType(2, 1), ctrl = CtrlType(OPT_RET, [FuInType(1), FuInType(0)]))] # , DataType(2, 1), DataType(3, 0)]
+  th = TestHarness(FU, DataType, PredicateType, CtrlType, CgraPayloadType,
+                   num_inports, num_outports, data_mem_size, ctrl_mem_size,
+                   data_nbits, src_in, src_opt, sink)
   run_sim(th)
 
