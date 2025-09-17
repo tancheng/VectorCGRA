@@ -19,16 +19,13 @@ from .ifcs import RecvIfcRTL, SendIfcRTL
 
 class NormalQueue1EntryRTL( Component ):
 
-  def construct( s, EntryType, reset_for_count=False ):
-    
+  def construct( s, EntryType ):
+
     # Interface
-  
+
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
     s.count = OutPort()
-    s.count_reset = None
-    if reset_for_count:
-      s.count_reset = InPort()
 
     # Components
 
@@ -47,9 +44,6 @@ class NormalQueue1EntryRTL( Component ):
     def ff_normal1():
       if s.reset:
         s.full <<= 0
-      elif reset_for_count:
-        if s.count_reset:
-          s.full <<= 0
       else:
         s.full <<= (s.recv.val & ~s.full) | (s.full & ~s.send.rdy)
 
@@ -88,7 +82,7 @@ class NormalQueueDpathRTL( Component ):
 
 class NormalQueueCtrlRTL( Component ):
 
-  def construct( s, num_entries=2, reset_for_count=False ):
+  def construct( s, num_entries=2 ):
     assert num_entries >= 2
 
     # Constants
@@ -102,10 +96,7 @@ class NormalQueueCtrlRTL( Component ):
     s.recv_rdy = OutPort()
     s.send_val = OutPort()
     s.send_rdy = InPort()
-    
-    s.count_reset = None
-    if reset_for_count:
-      s.count_reset = InPort()
+
     s.count = OutPort( count_nbits )
     s.wen   = OutPort()
     s.waddr = OutPort( addr_nbits )
@@ -152,9 +143,6 @@ class NormalQueueCtrlRTL( Component ):
           s.count <<= s.count + 1
         elif ~s.recv_xfer & s.send_xfer:
           s.count <<= s.count - 1
-        elif reset_for_count:
-          if s.count_reset:
-            s.count <<= 0
 
 #-------------------------------------------------------------------------
 # NormalQueueRTL
@@ -162,31 +150,26 @@ class NormalQueueCtrlRTL( Component ):
 
 class NormalQueueRTL( Component ):
 
-  def construct( s, EntryType, num_entries=2, reset_for_count=False):
-    
+  def construct( s, EntryType, num_entries=2 ):
+
     # Interface
 
     s.recv  = RecvIfcRTL( EntryType )
     s.send  = SendIfcRTL( EntryType )
     s.count = OutPort( clog2( num_entries+1 ) )
-    s.count_reset = None
-    if reset_for_count:
-      s.count_reset = InPort()
 
     # Components
 
     assert num_entries > 0
 
     if num_entries == 1:
-      s.q = NormalQueue1EntryRTL( EntryType, reset_for_count )
+      s.q = NormalQueue1EntryRTL( EntryType )
       s.recv  //= s.q.recv
       s.send  //= s.q.send
       s.count //= s.q.count
-      if reset_for_count:
-        s.count_reset //= s.q.count_reset
 
     else:
-      s.ctrl  = NormalQueueCtrlRTL ( num_entries, reset_for_count )
+      s.ctrl  = NormalQueueCtrlRTL ( num_entries )
       s.dpath = NormalQueueDpathRTL( EntryType, num_entries )
 
       # Connect ctrl to data path
@@ -205,8 +188,167 @@ class NormalQueueRTL( Component ):
       s.send.rdy //= s.ctrl.send_rdy
       s.send.msg //= s.dpath.send_msg
       s.count   //= s.ctrl.count
-      if reset_for_count:
-        s.count_reset //= s.ctrl.count_reset
+
+  # Line trace
+
+  def line_trace( s ):
+    return f"{s.recv}({s.count}){s.send}"
+
+#-------------------------------------------------------------------------
+# NormalQueue1EntryWithClearRTL
+#-------------------------------------------------------------------------
+
+class NormalQueue1EntryWithClearRTL( Component ):
+
+  def construct( s, EntryType ):
+    
+    # Interface
+  
+    s.recv  = RecvIfcRTL( EntryType )
+    s.send  = SendIfcRTL( EntryType )
+    s.count = OutPort()
+    s.clear = InPort()
+
+    # Components
+
+    s.full  = Wire()
+    s.entry = Wire( EntryType )
+
+    # Logic
+
+    s.count //= s.full
+
+    s.send.msg //= s.entry
+    s.send.val //= s.full
+    s.recv.rdy //= lambda: ~s.full
+
+    @update_ff
+    def ff_normal1():
+      if s.reset | s.clear:
+        s.full <<= 0
+      else:
+        s.full <<= (s.recv.val & ~s.full) | (s.full & ~s.send.rdy)
+
+      if s.recv.val & ~s.full:
+        s.entry <<= s.recv.msg
+
+  def line_trace( s ):
+    return f"{s.recv}({s.full}){s.send}"
+
+#-------------------------------------------------------------------------
+# Ctrl for NormalQueueWithClearRTL
+#-------------------------------------------------------------------------
+
+class NormalQueueCtrlWithClearRTL( Component ):
+
+  def construct( s, num_entries=2 ):
+    assert num_entries >= 2
+
+    # Constants
+
+    addr_nbits  = clog2( num_entries   )
+    count_nbits = clog2( num_entries+1 )
+
+    # Interface
+
+    s.recv_val = InPort()
+    s.recv_rdy = OutPort()
+    s.send_val = OutPort()
+    s.send_rdy = InPort()
+    
+    s.clear = InPort()
+    s.count = OutPort( count_nbits )
+    s.wen   = OutPort()
+    s.waddr = OutPort( addr_nbits )
+    s.raddr = OutPort( addr_nbits )
+
+    # Registers
+
+    s.head = Wire( addr_nbits )
+    s.tail = Wire( addr_nbits )
+
+    # Wires
+
+    s.recv_xfer  = Wire()
+    s.send_xfer  = Wire()
+
+    # Connections
+
+    s.wen   //= s.recv_xfer
+    s.waddr //= s.tail
+    s.raddr //= s.head
+
+    s.recv_rdy  //= lambda: s.count < num_entries
+    s.send_val  //= lambda: s.count > 0
+
+    s.recv_xfer //= lambda: s.recv_val & s.recv_rdy
+    s.send_xfer //= lambda: s.send_val & s.send_rdy
+
+    @update_ff
+    def up_reg():
+      if s.reset | s.clear:
+        s.head  <<= 0
+        s.tail  <<= 0
+        s.count <<= 0
+      else:
+        if s.recv_xfer:
+          s.tail <<= s.tail + 1 if ( s.tail < num_entries - 1 ) else 0
+
+        if s.send_xfer:
+          s.head <<= s.head + 1 if ( s.head < num_entries -1 ) else 0
+
+        if s.recv_xfer & ~s.send_xfer:
+          s.count <<= s.count + 1
+        elif ~s.recv_xfer & s.send_xfer:
+          s.count <<= s.count - 1
+
+#-------------------------------------------------------------------------
+# NormalQueueWithClearRTL
+#-------------------------------------------------------------------------
+
+class NormalQueueWithClearRTL( Component ):
+
+  def construct( s, EntryType, num_entries=2 ):
+    
+    # Interface
+
+    s.recv  = RecvIfcRTL( EntryType )
+    s.send  = SendIfcRTL( EntryType )
+    s.count = OutPort( clog2( num_entries+1 ) )
+    s.clear = InPort()
+
+    # Components
+
+    assert num_entries > 0
+
+    if num_entries == 1:
+      s.q = NormalQueue1EntryWithClearRTL( EntryType )
+      s.recv  //= s.q.recv
+      s.send  //= s.q.send
+      s.count //= s.q.count
+      s.clear //= s.q.clear
+
+    else:
+      s.ctrl  = NormalQueueCtrlWithClearRTL ( num_entries )
+      s.dpath = NormalQueueDpathRTL( EntryType, num_entries )
+
+      # Connect ctrl to data path
+
+      s.ctrl.wen   //= s.dpath.wen
+      s.ctrl.waddr //= s.dpath.waddr
+      s.ctrl.raddr //= s.dpath.raddr
+
+      # Connect to interface
+
+      s.recv.val //= s.ctrl.recv_val
+      s.recv.rdy //= s.ctrl.recv_rdy
+      s.recv.msg //= s.dpath.recv_msg
+
+      s.send.val //= s.ctrl.send_val
+      s.send.rdy //= s.ctrl.send_rdy
+      s.send.msg //= s.dpath.send_msg
+      s.count   //= s.ctrl.count
+      s.clear //= s.ctrl.clear
 
   # Line trace
 
