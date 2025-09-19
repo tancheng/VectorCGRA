@@ -1,8 +1,8 @@
 '''
 =========================================================================
-ChannelClearRTL_test.py
+ChannelWithClearRTL_test.py
 =========================================================================
-Test for ChannelClearRTL using Source and Sink
+Test for ChannelWithClearRTL using Source and Sink
 
 Author : Yufei Yang
   Date : Sep 9, 2025
@@ -10,7 +10,7 @@ Author : Yufei Yang
 
 
 from pymtl3 import *
-from ..ChannelClearRTL import ChannelClearRTL
+from ..ChannelWithClearRTL import ChannelWithClearRTL
 from ...noc.PyOCN.pymtl3_net.ocnlib.utils import run_sim
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
@@ -24,12 +24,12 @@ import pytest
 
 class TestHarness(Component):
 
-  def construct(s, MsgType, src_msgs, sink_msgs, clear_src_msgs):
+  def construct(s, MsgType, src_msgs, clear_src_msgs, sink_msgs):
 
     s.src = TestSrcRTL(MsgType, src_msgs)
     s.sink = TestSinkRTL(MsgType, sink_msgs)
     s.src_clear = TestSrcRTL(Bits1, clear_src_msgs)
-    s.dut = ChannelClearRTL(MsgType)
+    s.dut = ChannelWithClearRTL(MsgType)
 
     # Connections
     s.src.send //= s.dut.recv
@@ -52,21 +52,20 @@ class TestHarness(Component):
 # Test cases
 #-------------------------------------------------------------------------
 
-test_msgs = [b16(4), b16(1), b16(2), b16(3)]
+input_msgs = [b16(4), b16(1), b16(2), b16(3)]
 # Clear signal valids at clock cycle 3 and 4, then channel will no long have value after the rising edge of clock 4.
-clear_msgs = [b1(0), b1(0), b1(1), b1(1)]
+clear_signals = [b1(0), b1(0), b1(1), b1(1)]
 # As we have latency=2, b16(4) can be normally printed at cycle 3,
 # but b16(1) cannot be printed as usual at cycle 4 because it has be cleared,
 # b16(2) and b16(3) are also not wrote to channel because we keep clear signal to be valid.
-clear_msgs = [b1(0), b1(0), b1(1), b1(1)]
-test_clear_msgs = [b16(4)]
+expected_output_msgs = [b16(4)]
 
 def test_passthrough():
-  th = TestHarness(Bits16, test_msgs, test_msgs, clear_msgs)
+  th = TestHarness(Bits16, input_msgs, clear_signals, input_msgs)
   run_sim(th)
 
 def test_normal2_simple():
-  th = TestHarness(Bits16, test_msgs, test_clear_msgs, clear_msgs)
+  th = TestHarness(Bits16, input_msgs, clear_signals, expected_output_msgs)
   th.set_param("top.dut.construct", latency= 2)
   run_sim(th)
 

@@ -1,6 +1,6 @@
 '''
 =========================================================================
-ChannelClearRTL.py
+ChannelWithClearRTL.py
 =========================================================================
 RTL channel module for connecting routers to form network. This simple
 channel has latency insensitive send/recv interfaces. It also has
@@ -17,7 +17,7 @@ from ..lib.basic.val_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueWithClearRTL
 
 
-class ChannelClearRTL( Component ):
+class ChannelWithClearRTL( Component ):
 
   def construct(s, PacketType, QueueType=NormalQueueWithClearRTL, latency=0 ):
 
@@ -70,7 +70,3 @@ class ChannelClearRTL( Component ):
       return f"{s.recv}({trace}){s.send}"
     else:
       return f"{s.recv}(0){s.send}"
-
-  def elaborate_physical( s ):
-    s.dim.w = 250
-
