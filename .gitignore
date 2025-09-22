@@ -9,6 +9,7 @@ __pycache__
 *.v
 *.v.cases
 *config_CgraRTL__*.json
+*config_STEP__*.json
 obj_dir*/
 
 cgra_sim
