@@ -34,8 +34,14 @@ MAX_CTRL_COUNT = 1024
 # Constant for maximum thread-count
 MAX_THREAD_COUNT = 512
 
+# Constant for maximum predicate math ops per cfg
+MAX_PRED_MATH = 4
+
 # Constant for maximum bitstream count
 MAX_BITSTREAM_SIZE = 30
+
+# Axi Address Bitwidth
+AXI_ADDR_BITWIDTH = 44
 
 # Constant for prologue max count.
 PROLOGUE_MAX_COUNT = 7

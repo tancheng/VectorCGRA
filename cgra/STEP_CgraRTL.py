@@ -1,195 +1,281 @@
-"""
-=========================================================================
-CgraRTL.py
-=========================================================================
-
-Author : Cheng Tan
-  Date : Dec 22, 2024
-"""
+# STEP Imports
 from ..controller.STEP_ControllerRTL import STEP_ControllerRTL
+from ..controller.STEP_RegisterFileControllerRTL import STEP_RegisterFileControllerRTL
+from ..mem.STEP_LD_ST.STEP_LoadStoreRTL import STEP_LoadStoreRTL
+from ..tile.STEP_TileWrapperRTL import STEP_TileWrapperRTL
+from ..lib.basic.AxiInterface import SendAxiReadLoadAddrIfcRTL, SendAxiReadStoreAddrIfcRTL, \
+                            RecvAxiLoadIfcRTL, RecvAxiStoreIfcRTL
+
+# PyMtl3 Imports
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..lib.basic.val_rdy.queues import BypassQueueRTL
+from ..lib.cmd_type import *
 from ..lib.opt_type import *
 from ..lib.util.common import *
-from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
-from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
-from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
-from ..tile.TileRTL import TileRTL
-from ..cgra.DeSerializeRTL import DeSerializeRTL
-from ..cgra.SerializeRTL import SerializeRTL
-from ..tile.STEP_TileWrapperRTL import STEP_TileWrapperRTL
-from ..rf.STEP_RegisterFileRTL import STEP_RegisterFileRTL
 
 class STEP_CgraRTL(Component):
+    def construct(s,
+            # CPU Type
+            CpuPktType,
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
-                multi_cgra_columns, width, height,
-                ctrl_mem_size, data_mem_size_global,
-                data_mem_size_per_bank, num_banks_per_cgra,
-                num_registers_per_reg_bank, num_ctrl,
-                total_steps, FunctionUnit, FuList, cgra_topology,
-                controller2addr_map, idTo2d_map, preload_data = None,
-                is_multi_cgra = True):
+            # Configuration Types
+            CfgType,
+            CfgBitstreamType,
+            CfgMetadataType,
+            TileBitstreamType,
+            OperationType,
 
-    # Other topology can simply modify the tiles connections, or
-    # leverage the template for modeling.
-    assert(cgra_topology == "Mesh" or cgra_topology == "KingMesh")
-    s.num_mesh_ports = 4
-    if cgra_topology == "Mesh":
-      s.num_mesh_ports = 4
-    elif cgra_topology == "KingMesh":
-      s.num_mesh_ports = 8
+            # Data Type
+            DataType,
+            
+            # Address Types
+            RegAddrType,
+            PredRegAddrType,
 
-    s.num_tiles = width * height
-    # The left and bottom tiles are connected to the data memory.
-    data_mem_num_rd_tiles = height + width - 1
-    data_mem_num_wr_tiles = height + width - 1
+            # CGRA Parameters
+            num_tile_cols,
+            num_tile_rows,
+            num_register_banks = 2,
+            num_registers = 16,
+            num_pred_registers = 16,
+        ):
+        
+        # Default CGRA Parameters
+        num_tiles = num_tile_cols * num_tile_rows
+        num_tile_inports = 4
+        num_tile_outports = 4
+        num_fu_inports = 3
+        num_fu_outports = 1
+        num_rd_ports = num_tile_rows
+        num_wr_ports = num_tile_rows
+        num_ld_ports = num_tile_cols // 2
+        num_st_ports = num_tile_cols // 2
+        ld_st_queue_depth = 8
 
-    num_cgras = multi_cgra_rows * multi_cgra_columns
-    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-    DataAddrType = mk_bits(clog2(data_mem_size_global))
-    num_registers = 16
-    RegAddrType = mk_bits(clog2(num_registers))
-    assert(data_mem_size_per_bank * num_banks_per_cgra <= \
-           data_mem_size_global)
+        # Additional Type
+        AxiAddrType = mk_bits( AXI_ADDR_BITWIDTH )
 
-    # Interfaces
-    s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
-    s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
-    SingleBitType = mk_bits(1)
-    s.send_to_cpu_pkt__last = OutPort(SingleBitType)
+        # CGRA Top-Level IOs
+        s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
+        s.send_to_cpu_pkt = SendIfcRTL(CpuPktType)
+        s.send_to_cpu_pkt_last = OutPort(Bits1)
 
-    s.cmd_e_count = Wire( mk_bits(clog2(width * height)) )
-    s.cmd_e_valid = Wire( 1 )
+        @update
+        def update_last_pkt():
+            s.send_to_cpu_pkt_last @= 0
+            if s.send_to_cpu_pkt.val & (s.send_to_cpu_pkt.msg.cmd == CMD_COMPLETE):
+                s.send_to_cpu_pkt_last @= 1
 
-    tile_count_sub = width * height - 1
-    
-    @update
-    def comb_logic():
-      # Extract cmd from your message structure
-      cmd = s.send_to_cpu_pkt.msg.payload.cmd
-      # Combined condition
-      s.cmd_e_valid @= (cmd == 0xe) & s.send_to_cpu_pkt.val
+        # Instantiate Components
+        s.core_controller = STEP_ControllerRTL(
+            CpuPktType,
+            CfgBitstreamType,
+            CfgType,
+            CfgMetadataType
+        )
 
-      # Output assignment
-      s.send_to_cpu_pkt__last @= s.cmd_e_valid & (s.cmd_e_count == tile_count_sub)
+        s.rf_controller = STEP_RegisterFileControllerRTL(
+            num_tiles,
+            DataType,
+            RegAddrType,
+            PredRegAddrType,
+            CfgMetadataType,
+            num_register_banks,
+            num_ld_ports,
+            num_st_ports,
+            num_rd_ports,
+            num_wr_ports,
+            num_registers,
+            num_pred_registers,
+        )
+        
+        s.ld_st_unit = STEP_LoadStoreRTL(
+            DataType,
+            num_ports=num_tile_cols // 2,
+            queue_depth=ld_st_queue_depth
+        )
 
-    @update_ff  
-    def counter_logic():
-      if s.reset:
-        s.cmd_e_count <<= 0
-      elif s.cmd_e_valid:
-        if s.cmd_e_count == tile_count_sub:
-          s.cmd_e_count <<= 0
-        else:
-          s.cmd_e_count <<= s.cmd_e_count + 1
+        s.tile_fabric = STEP_TileWrapperRTL(
+            num_tile_cols,
+            num_tile_rows,
+            num_tile_inports,
+            num_tile_outports,
+            num_fu_inports,
+            num_fu_outports,
+            DataType,
+            TileBitstreamType,
+            CfgBitstreamType,
+            OperationType,
+            RegAddrType,
+            PredRegAddrType,
+        )
 
-    s.data_mem = DataMemWithCrossbarRTL(NocPktType,
-                                        CgraPayloadType,
-                                        DataType,
-                                        data_mem_size_global,
-                                        data_mem_size_per_bank,
-                                        num_banks_per_cgra,
-                                        data_mem_num_rd_tiles,
-                                        data_mem_num_wr_tiles,
-                                        multi_cgra_rows,
-                                        multi_cgra_columns,
-                                        s.num_tiles,
-                                        idTo2d_map,
-                                        preload_data)
-    s.controller = STEP_ControllerRTL(CpuPktType,
-                                 CfgBitstreamType, CfgType, CfgMetadataType)
-    s.register_file = STEP_RegisterFileRTL(DataType, RegAddrType,
-                                            num_reg_banks = 2,
-                                            num_rd_ports = height,
-                                            num_wr_ports = height,
-                                            num_registers_per_reg_bank = num_registers)
-    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-    # The last argument of 1 is for the latency per hop.
-    s.cgra_id = 0
+        ### Wire Connections ###
+        ##### Core Controller Connections
+        s.core_controller.recv_from_cpu_pkt //= s.recv_from_cpu_pkt # cpu -> core
+        s.core_controller.send_to_cpu_pkt //= s.send_to_cpu_pkt # core -> cpu
+        
+        ##### Core Controller & Fabric Connections
+        s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_fabric_bitstream # core -> fabric
 
-    # Address lower and upper bound.
-    s.address_lower = 0
-    s.address_upper = controller2addr_map[s.cgra_id][1]
+        ##### Core Controller & RF Controller Connections
+        s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
+        s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
 
-    # Connections
-    # Connects the controller id.
-    s.data_mem.cgra_id //= s.cgra_id
+        ##### RF Controller & Fabric Connections
+        for i in range(num_tiles):
+            s.rf_controller.send_tile_preds[i] //= s.tile_fabric.recv_from_rf_pred[i] # rf -> fabric
+        for i in range(num_tile_rows):
+            s.rf_controller.rd_data[i] //= s.tile_fabric.recv_east_data_port[i] # rf -> fabric
+            s.rf_controller.wr_data[i] //= s.tile_fabric.send_east_data_port[i] # fabric -> rf
+            s.rf_controller.recv_pred_port[i] //= s.tile_fabric.send_east_pred_port[i] # fabric -> rf
+        
+        ##### RF Controller & Load/Store Connections
+        for i in range(num_tile_cols // 2):
+            s.rf_controller.ld_enable[i]        //= s.ld_st_unit.ld_enable[i] # rf -> ld/st
+            s.rf_controller.st_enable[i]        //= s.ld_st_unit.st_enable[i] # rf -> ld/st
+            s.rf_controller.ld_data[i]          //= s.ld_st_unit.ld_ifc[i].o_data # ld/st -> rf
+            s.rf_controller.ld_data_valid[i]    //= s.ld_st_unit.ld_ifc[i].o_done # ld/st -> rf
+            s.rf_controller.ld_data_id[i]       //= s.ld_st_unit.ld_ifc[i].o_data_id # ld/st -> rf
+        s.rf_controller.send_thread_count //= s.ld_st_unit.thread_count # rf -> ld/st
+        s.rf_controller.ld_st_complete //= s.ld_st_unit.ld_st_complete # ld/st -> rf
 
-    # Connects the address lower and upper bound.
-    s.data_mem.address_lower //= s.address_lower
-    s.data_mem.address_upper //= s.address_upper
+        ##### Load/Store & Fabric Connections
+        for i in range(num_tile_cols // 2):
+            # TODO @darrenl make sure works for differently timed data and addr
+            # Predicates
+            s.ld_st_unit.ld_tile_pred[i] //= s.tile_fabric.send_north_pred_port[i*2] # fabric -> ld/st
+            s.ld_st_unit.st_tile_pred[i] //= s.tile_fabric.send_south_pred_port[i*2] # fabric -> ld/st
 
-    # Connects data memory with controller.
-    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
-    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
-    s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
-    s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
-    s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
-    s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
+            # Data and Control Load - North ONLY
+            s.ld_st_unit.ld_ifc[i].i_req //= s.tile_fabric.send_north_data_port[i*2].val # ld/st -> fabric
+            s.ld_st_unit.ld_ifc[i].o_rdy //= s.tile_fabric.send_north_data_port[i*2].rdy # fabric -> ld/st
+            # Tie off North Unused Ports
+            s.tile_fabric.send_north_data_port[i*2+1].rdy //= 0 # fabric -> 0
 
-    # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
-    s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+            # Data and Control Store - SOUTH ONLY
+            s.ld_st_unit.st_ifc[i].i_req //= s.tile_fabric.send_south_data_port[i*2].val # fabric -> ld/st
+            s.ld_st_unit.st_ifc[i].i_data //= s.tile_fabric.send_south_data_port[i*2+1].msg # fabric -> ld/st
+            s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2].rdy # ld/st -> fabric
+            s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2+1].rdy # ld/st -> fabric
 
-    # Connects ctrl interface to rf ctrl
-    s.controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl
-    s.controller.rf_cfg_done //= s.rf_controller.cfg_done
+        # Internal Ld/St Fabric Wire extension connections
+        s.north_addr_wire = [Wire(AxiAddrType) for _ in range(num_ld_ports)]
+        for i in range(num_ld_ports):
+            # NORTH Load ONLY - Addr at Even tile columns
+            s.north_addr_wire[i] //= s.ld_st_unit.ld_ifc[i].i_addr
 
-    s.tiles = STEP_TileWrapperRTL(CgraIdType, DataType, RegAddrType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
-                      data_mem_size_global, num_ctrl,
-                      total_steps, 4, 2, s.num_mesh_ports,
-                      s.num_mesh_ports, num_cgras, s.num_tiles,
-                      num_registers_per_reg_bank, width, height, cgra_topology,
-                      FuList = FuList)
+        s.south_addr_wire = [Wire(AxiAddrType) for _ in range(num_st_ports)]
+        for i in range(num_st_ports):
+            # NORTH Load ONLY - Addr at Even tile columns
+            s.south_addr_wire[i] //= s.ld_st_unit.st_ifc[i].i_addr
+        
+        # Load/Store & Fabric Update Connections
+        @update
+        def update_ld_st_fabric():
+            for i in range(num_ld_ports):
+                # NORTH Load ONLY - Addr at Even tile columns
+                s.north_addr_wire[i] @= AxiAddrType(s.tile_fabric.send_north_data_port[i*2].msg) # ld/st -> fabric
 
-    s.tiles.cgra_id //= s.cgra_id
+                # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
+                s.south_addr_wire[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2].msg) # ld/st -> fabric
+        
+        ##### Load/Store External Connections
+        # Load Axis
+        s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
+        for i in range(num_ld_ports):
+            s.ld_axi[i] //= s.ld_st_unit.ld_axi[i]
+        # Store Axis
+        s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
+        for i in range(num_st_ports):
+            s.st_axi[i] //= s.ld_st_unit.st_axi[i]
 
-    # Connects ring with each control memory.
-    for i in range(s.num_tiles):
-      s.controller.send_cfg_to_tiles[i] //= s.tiles.recv_cfg_from_cfg_ctrl[i]
+        #### Test Connections ###
+        # TODO @darrenl to remove
+        # Cfg Tests
+        s.cc_cfg_to_tiles = OutPort(CfgBitstreamType)
+        s.cc_cfg_to_tiles_val = OutPort(Bits1)
+        s.cc_cfg_to_rf = OutPort(CfgMetadataType)
+        s.cc_cfg_to_rf_val = OutPort(Bits1)
+        s.cc_cfg_to_rf_rdy = OutPort(Bits1)
 
-    for i in range(s.num_tiles):
-      if i % width == 0 or i // width == 0:
-        s.tiles.tile_to_mem_raddr[i]   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
-        s.tiles.tile_from_mem_rdata[i] //= s.data_mem.send_rdata[width + i // width - 1 if i >= width else i % width]
-        s.tiles.tile_to_mem_waddr[i]   //= s.data_mem.recv_waddr[width + i // width - 1 if i >= width else i % width]
-        s.tiles.tile_to_mem_wdata[i]   //= s.data_mem.recv_wdata[width + i // width - 1 if i >= width else i % width]
+        s.cc_cfg_to_tiles //= s.core_controller.send_cfg_to_tiles.msg
+        s.cc_cfg_to_tiles_val //= s.core_controller.send_cfg_to_tiles.val
+        s.cc_cfg_to_rf //= s.core_controller.send_cfg_to_rf.msg
+        s.cc_cfg_to_rf_val //= s.core_controller.send_cfg_to_rf.val
+        s.cc_cfg_to_rf_rdy //= s.rf_controller.recv_cfg_from_ctrl.rdy
 
-    @update
-    def tie_off_boundary_recv_msgs():
-      for tile_col in range(width):
-        s.tiles.recv_data_on_boundary_north[tile_col].msg @= DataType()
-        s.tiles.recv_data_on_boundary_south[tile_col].msg @= DataType()
-      
-      for tile_row in range(height):
-        s.tiles.recv_data_on_boundary_west[tile_row].msg @= DataType()
-        # s.tiles.recv_data_on_boundary_east[tile_row].msg @= DataType()
-    
-    for tile_col in range(width):
-      s.tiles.send_data_on_boundary_north[tile_col].rdy //= 0
-      s.tiles.recv_data_on_boundary_north[tile_col].val //= 0
-      s.tiles.send_data_on_boundary_south[tile_col].rdy //= 0
-      s.tiles.recv_data_on_boundary_south[tile_col].val //= 0
+        
+        # Ld St Test
+        s.ld_st_complete = OutPort(Bits1)
+        s.ld_st_complete //= s.ld_st_unit.ld_st_complete
+        s.ld_complete = [OutPort(1) for _ in range(num_ld_ports)]
+        s.st_complete = [OutPort(1) for _ in range(num_st_ports)]
+        s.ld_pred_in = [OutPort(1) for _ in range(num_ld_ports)]
+        for i in range(num_ld_ports):
+            s.ld_complete[i] //= s.ld_st_unit.ld_complete[i]
+            s.ld_pred_in[i] //= s.tile_fabric.send_north_pred_port[i*2]
+        for i in range(num_st_ports):
+            s.st_complete[i] //= s.ld_st_unit.st_complete[i]
+        s.outstanding_reqs = OutPort( clog2(ld_st_queue_depth + 1) )
+        s.outstanding_reqs //= s.ld_st_unit.outstanding_reqs
+        s.loads_in_tile = OutPort( clog2(ld_st_queue_depth + 1) )
+        s.loads_in_tile //= s.ld_st_unit.loads_in_tile
+        s.store_queue_rdy = OutPort(1)
+        s.store_queue_rdy //= s.ld_st_unit.store_queue_rdy
+        s.outstanding_stores = OutPort( clog2(ld_st_queue_depth + 1) )
+        s.outstanding_stores //= s.ld_st_unit.outstanding_stores
+        s.stores_in_tile = OutPort( clog2(ld_st_queue_depth + 1) )
+        s.stores_in_tile //= s.ld_st_unit.stores_in_tile
+        s.recv_ld_st_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.recv_ld_st_thread_count //= s.rf_controller.send_thread_count
+        s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ld_ports)]
+        for i in range(num_ld_ports):
+            s.ld_tile_last_seen[i] //= s.ld_st_unit.ld_tile_last_seen[i]
+        s.st_i_req = [OutPort(1) for _ in range(num_st_ports)]
+        s.st_i_data = [OutPort(DataType) for _ in range(num_st_ports)]
+        s.st_i_addr = [OutPort(AxiAddrType) for _ in range(num_st_ports)]
+        for i in range(num_st_ports):
+            s.st_i_req[i] //= s.tile_fabric.send_south_data_port[i*2].val # fabric -> ld/st
+            s.st_i_data[i] //= s.tile_fabric.send_south_data_port[i*2+1].msg # fabric -> ld/st
+        @update
+        def test_st_addr():
+            for i in range(num_st_ports):
+                s.st_i_addr[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2].msg) 
 
-    for tile_row in range(height):
-        # West not connected
-        s.tiles.send_data_on_boundary_west[tile_row].rdy //= 0
-        s.tiles.recv_data_on_boundary_west[tile_row].val //= 0
-        # East connected to Rf
-        s.tiles.send_data_on_boundary_east[tile_row] //= s.register_file.wr_data[tile_row]
-        s.tiles.recv_data_on_boundary_east[tile_row] //= s.register_file.rd_data[tile_row]
 
+        # RF Controller Test
+        s.rf_cfg_done = OutPort(Bits1)
+        s.rf_cfg_done //= s.rf_controller.cfg_done
+        s.rf_fabric_done = OutPort(Bits1)
+        s.rf_fabric_done //= s.rf_controller.fabric_done
+        s.rf_fabric_complete = OutPort(Bits1)
+        s.rf_fabric_complete //= s.rf_controller.fabric_complete
 
-  # Line trace
-  def line_trace(s):
-    res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
-                       for (i,x) in enumerate(s.tile)])
-    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
-    return res
+        # RF & Fabric Test
+        s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
+        s.rf_to_fabric_val = [ OutPort(1) for _ in range(num_rd_ports)]
+        for i in range(num_rd_ports):
+            s.rf_to_fabric_msg[i] //= s.rf_controller.rd_data[i].msg
+            s.rf_to_fabric_val[i] //= s.rf_controller.rd_data[i].val
+        s.rf_from_fabric_msg = [ OutPort(DataType) for _ in range(num_wr_ports)]
+        s.rf_from_fabric_val = [ OutPort(1) for _ in range(num_wr_ports)]
+        for i in range(num_wr_ports):
+            s.rf_from_fabric_msg[i] //= s.tile_fabric.send_east_data_port[i].msg
+            s.rf_from_fabric_val[i] //= s.tile_fabric.send_east_data_port[i].val
 
+        # Fabric Tests
+        s.tiles_in_pred_from_rf = [ OutPort(1) for _ in range(num_tiles) ]
+        for i in range(num_tiles):
+            s.tiles_in_pred_from_rf[i] //= s.tile_fabric.tiles_in_pred_from_rf[i]
+        s.tiles_in_pred_val = [ OutPort(1) for _ in range(num_tiles) ]
+        for i in range(num_tiles):
+            s.tiles_in_pred_val[i] //= s.tile_fabric.tiles_in_pred_val[i]
+        s.tiles_north_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
+        for i in range(num_tile_cols):
+            s.tiles_north_pred_out[i] //= s.tile_fabric.send_north_pred_port[i]
+        s.tiles_south_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
+        for i in range(num_tile_cols):
+            s.tiles_south_pred_out[i] //= s.tile_fabric.send_south_pred_port[i]
+        s.tile_pred_out_test = OutPort(1)
+        s.tile_pred_out_test //= s.tile_fabric.tile_pred_out_test

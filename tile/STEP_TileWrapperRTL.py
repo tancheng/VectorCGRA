@@ -21,119 +21,155 @@ from ..lib.util.common import *
 from ..tile.STEP_TileRTL import STEP_TileRTL
 
 
-class TileWrapperRTL(Component):
+class STEP_TileWrapperRTL(Component):
 
-  def construct(s, CgraIdType, DataType, RegAddrType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
-                      data_mem_size_global, num_ctrl,
-                      total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
-                      num_tile_outports, num_cgras, num_tiles,
-                      num_registers_per_reg_bank, width, height, cgra_topology,
-                      Fu = FlexibleFuRTL,
-                      FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
-    print("Width", width, "Height", height, "Cgra Topology", cgra_topology)
+    def construct(s,
+                    num_tile_cols,
+                    num_tile_rows,
+                    num_tile_inports,
+                    num_tile_outports,
+                    num_fu_inports,
+                    num_fu_outports,
+                    DataType,
+                    TileBitstreamType,
+                    BitStreamType,
+                    OperationType,
+                    RegAddrType,
+                    PredRegAddrType,
+                    ):
 
-    # Other topology can simply modify the tiles connections, or
-    # leverage the template for modeling.
-    s.num_tiles = num_tiles
-    s.num_tile_inports = num_tile_inports
-    s.num_tile_outports = num_tile_outports
-
-    s.num_cgras = num_cgras
-    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-    global_addr_nbits = clog2(data_mem_size_global)
-    AddrType = mk_bits(global_addr_nbits)
-
-    s.tile_to_mem_raddr   = [SendIfcRTL(AddrType) for _ in range(height * width - 1)]
-    s.tile_from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(height * width - 1)]
-    s.tile_to_mem_waddr   = [SendIfcRTL(AddrType) for _ in range(height * width - 1)]
-    s.tile_to_mem_wdata   = [SendIfcRTL(DataType) for _ in range(height * width - 1)]
-
-    # Interfaces on the boundary of the CGRA.
-    s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
-
-    s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
-    s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    s.send_addr_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-
-    s.cgra_id = InPort(CgraIdType)
-
-    # Components
-    s.tile = [STEP_TileRTL(DataType, RegAddrType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, ctrl_mem_size,
-                      data_mem_size_global, num_ctrl,
-                      total_steps, num_fu_inports, num_fu_outports, s.num_tile_inports,
-                      s.num_tile_outports, s.num_cgras, s.num_tiles,
-                      num_registers_per_reg_bank,
-                      FuList = FuList)
-              for i in range(s.num_tiles)]
-    
-    s.recv_cfg_from_cfg_ctrl = [RecvIfcRTL(CtrlPktType) for _ in range(s.num_tiles)]
-
-    for i in range(s.num_tiles):
-      s.tile[i].recv_cfg_from_cfg_ctrl //= s.recv_cfg_from_cfg_ctrl[i]
-
-    # Assigns tile id.
-    for i in range(s.num_tiles):
-      s.tile[i].tile_id //= i
-      s.tile[i].cgra_id //= s.cgra_id
-
-    for i in range(s.num_tiles):
-      if i % width == 0 or i // width == 0:
-        s.tile[i].to_mem_raddr   //= s.tile_to_mem_raddr[i]
-        s.tile[i].from_mem_rdata //= s.tile_from_mem_rdata[i]
-        s.tile[i].to_mem_waddr   //= s.tile_to_mem_waddr[i]
-        s.tile[i].to_mem_wdata   //= s.tile_to_mem_wdata[i]
-      else:
-        s.tile[i].to_mem_raddr.rdy   //= 0
-        s.tile[i].from_mem_rdata.val //= 0
-        s.tile[i].from_mem_rdata.msg //= DataType(0, 0)
-        s.tile[i].to_mem_waddr.rdy   //= 0
-        s.tile[i].to_mem_wdata.rdy   //= 0
-
-    for i in range(s.num_tiles):
-      # Inner Tiles
-      if i // width > 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
-
-      if i // width < height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.tile[i+width].recv_data[PORT_SOUTH]
-
-      if i % width > 0:
-        s.tile[i].send_data[PORT_WEST] //= s.tile[i-1].recv_data[PORT_EAST]
-
-      if i % width < width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
-
-      # Boundary Tiles
-      if i // width == 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
-        s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
-
-      if i // width == height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
-        s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
-
-      if i % width == 0:
-        s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
-        s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
-
-      if i % width == width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
-        s.tile[i].send_addr //= s.send_addr_on_boundary_east[i // width]
-        s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+        # Tile ID
+        # 0 1
+        # 2 3
+        # 
+        # Current Architecture only has IO ports to Tiles on the East Side Only
+        # in order to communicate with register file
+        s.recv_east_data_port = [ RecvIfcRTL(DataType) for _ in range(num_tile_rows) ]
+        s.send_east_data_port = [ SendIfcRTL(DataType) for _ in range(num_tile_rows) ]
+        s.send_east_pred_port = [ OutPort(Bits1) for _ in range(num_tile_rows) ]
         
+        # South ST Connections
+        s.send_south_data_port = [ SendIfcRTL(DataType) for _ in range(num_tile_cols) ]
+        s.send_south_pred_port = [ OutPort(Bits1) for _ in range(num_tile_cols) ]
 
-  # Line trace
-  def line_trace(s):
-    res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
-                       for (i,x) in enumerate(s.tile)])
-    res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
-    res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
-    return res
+        # North LD Connections
+        s.send_north_data_port = [ SendIfcRTL(DataType) for _ in range(num_tile_cols) ]
+        s.send_north_pred_port = [ OutPort(Bits1) for _ in range(num_tile_cols) ]
 
+        # Bistream IO
+        s.recv_fabric_bitstream = RecvIfcRTL(BitStreamType)
+        s.bitstream_rdy = Wire(Bits1)
+
+        # Predicate
+        num_tiles = num_tile_cols * num_tile_rows
+        s.recv_from_rf_pred = [ InPort(Bits1) for _ in range(num_tiles) ]
+
+        # Fabric Declaration
+        s.tiles = [[STEP_TileRTL(num_tile_inports,
+                                num_tile_outports,
+                                num_fu_inports,
+                                num_fu_outports,
+                                DataType,
+                                TileBitstreamType,
+                                OperationType,
+                                RegAddrType,
+                                PredRegAddrType,
+                                ) for _ in range(num_tile_cols)] for _ in range(num_tile_rows)]
+        
+        #### TEST CONNECTIONS delete me TODO: @darrenl
+        s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
+        s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
+        s.ready_to_fire = OutPort(Bits1)
+        s.in_buffer = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+        s.in_buffer_val = [ OutPort(Bits1) for _ in range(num_tile_inports) ]
+        DirectionType = mk_bits( clog2(num_tile_inports + 1))
+        s.should_forward = OutPort(DirectionType)
+        
+        s.tile_bitstream_cmd = OutPort(OperationType)
+        s.tile_bitstream_cmd //= s.tiles[0][1].tile_bitstream.opt_type
+        s.tile_bitstream_loc = OutPort(Bits3)
+        s.tile_bitstream_loc //= (s.tiles[0][1].tile_bitstream.tile_in_route[0])
+        s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+
+        s.tiles_in_pred_from_rf = [OutPort(1) for _ in range(num_tiles)]
+        s.tiles_in_pred_val = [OutPort(1) for _ in range(num_tiles)]
+        for i in range(num_tile_rows):
+            for j in range(num_tile_cols):
+                s.tiles[i][j].tile_in_pred_port_rf_buffer //= s.tiles_in_pred_from_rf[i * num_tile_cols + j]
+                s.tiles[i][j].pred_in_val //= s.tiles_in_pred_val[i * num_tile_cols + j]
+
+        s.ready_to_fire //= s.tiles[0][1].ready_to_fire
+        s.should_forward //= s.tiles[0][1].should_forward
+        for i in range(num_fu_inports):
+            s.fu_in[i] //= s.tiles[0][1].fu_in[i]
+        for i in range(num_fu_outports):
+            s.fu_out[i] //= s.tiles[0][1].fu_out[i]
+        for i in range(num_tile_inports):
+            s.in_buffer[i] //= s.tiles[0][1].in_buffer[i]
+            s.in_buffer_val[i] //= s.tiles[0][1].in_buffer_val[i]
+            s.tile_in_test[i] //= s.tiles[0][1].tile_in_test[i]
+        
+        s.tile_pred_out_test = OutPort(1)
+        s.tile_pred_out_test //= s.tiles[0][3].tile_out_pred_port[PORT_WEST]
+        
+        #####
+
+
+        for i in range(num_tile_rows):
+            for j in range(num_tile_cols):
+                # North Connections
+                if i > 0:
+                    s.tiles[i][j].tile_in_data_port[PORT_NORTH] //= s.tiles[i-1][j].tile_out_data_port[PORT_SOUTH]
+                    s.tiles[i][j].tile_out_data_port[PORT_NORTH] //= s.tiles[i-1][j].tile_in_data_port[PORT_SOUTH]
+                    s.tiles[i][j].tile_in_pred_port[PORT_NORTH] //= s.tiles[i-1][j].tile_out_pred_port[PORT_SOUTH]
+                    s.tiles[i][j].tile_out_pred_port[PORT_NORTH] //= s.tiles[i-1][j].tile_in_pred_port[PORT_SOUTH]
+                else:
+                    # Connect North Ports to LD
+                    s.tiles[i][j].tile_in_data_port[PORT_NORTH].msg //= DataType()
+                    s.tiles[i][j].tile_in_data_port[PORT_NORTH].val //= 0
+                    s.tiles[i][j].tile_out_data_port[PORT_NORTH] //= s.send_north_data_port[j]
+                    s.tiles[i][j].tile_in_pred_port[PORT_NORTH] //= 0
+                    s.tiles[i][j].tile_out_pred_port[PORT_NORTH] //= s.send_north_pred_port[j]
+
+                if j > 0:
+                    s.tiles[i][j].tile_in_data_port[PORT_WEST] //= s.tiles[i][j-1].tile_out_data_port[PORT_EAST]
+                    s.tiles[i][j].tile_out_data_port[PORT_WEST] //= s.tiles[i][j-1].tile_in_data_port[PORT_EAST]
+                    s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= s.tiles[i][j-1].tile_out_pred_port[PORT_EAST]
+                    s.tiles[i][j].tile_out_pred_port[PORT_WEST] //= s.tiles[i][j-1].tile_in_pred_port[PORT_EAST]
+                else:
+                    s.tiles[i][j].tile_in_data_port[PORT_WEST].msg //= DataType()
+                    s.tiles[i][j].tile_in_data_port[PORT_WEST].val //= 0
+                    s.tiles[i][j].tile_out_data_port[PORT_WEST].rdy //= 0
+                    s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= 0
+
+                # Connect East Ports to fabric I/O
+                if j == num_tile_cols - 1:
+                    s.tiles[i][j].tile_in_data_port[PORT_EAST] //= s.recv_east_data_port[i]
+                    s.tiles[i][j].tile_out_data_port[PORT_EAST] //= s.send_east_data_port[i]
+                    # Pred in will always be 1 as to fire. If predicated, will take its own rf predication
+                    s.tiles[i][j].tile_in_pred_port[PORT_EAST] //= s.recv_east_data_port[i].val
+                    s.tiles[i][j].tile_out_pred_port[PORT_EAST] //= s.send_east_pred_port[i]
+                
+                # Connect South Ports to Ld/St Unit
+                if i == num_tile_rows - 1:
+                    s.tiles[i][j].tile_in_data_port[PORT_SOUTH].msg //= DataType()
+                    s.tiles[i][j].tile_in_data_port[PORT_SOUTH].val //= 0
+                    s.tiles[i][j].tile_out_data_port[PORT_SOUTH] //= s.send_south_data_port[j]
+                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTH] //= 0
+                    s.tiles[i][j].tile_out_pred_port[PORT_SOUTH] //= s.send_south_pred_port[j]
+
+        # Connect Tile Bitstreams    
+        for i in range(num_tile_rows):
+            for j in range(num_tile_cols):
+                s.tiles[i][j].recv_tile_bitstream.msg //= s.recv_fabric_bitstream.msg.bitstream[i * num_tile_cols + j]
+                s.tiles[i][j].recv_tile_bitstream.val //= s.recv_fabric_bitstream.val
+                s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]
+        
+        # Connect Fabric Bitstream Readiness
+        @update
+        def update_bitstream_readiness():
+            bitstream_rdy @= 1
+            for i in range(num_tile_rows):
+                for j in range(num_tile_cols):
+                    bitstream_rdy = bitstream_rdy & s.tiles[i][j].recv_tile_bitstream.rdy
+            s.recv_fabric_bitstream.rdy @= bitstream_rdy

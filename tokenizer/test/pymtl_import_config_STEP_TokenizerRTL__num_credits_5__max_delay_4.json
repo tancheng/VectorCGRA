@@ -1,11 +1,11 @@
 {
     "ImportPassName": "VerilogVerilatorImportPass",
-    "verilog_hash": "42ec61fd36446b1cf68834495263d5d73cf2c03b5e32601cb579002704a147911aeb4b57a8949af5041b9764210b2e5b8ed4f71a4cb297007e075ad0707d26b0",
+    "verilog_hash": "218fc89b28e5e03883335613b7e89cea7d2b8c9845614faec3cd1c5efe76e707c4623abd77ef6bf32b3d84bba0c2c227fa03df2cd75fdb860de0544b5f68a26c",
     "vl_line_trace": false,
     "vl_coverage": false,
     "vl_line_coverage": false,
     "vl_toggle_coverage": false,
-    "vl_mk_dir": "obj_dir_STEP_ControllerRTL__d5e2a5e0cd63d02e",
+    "vl_mk_dir": "obj_dir_STEP_TokenizerRTL__num_credits_5__max_delay_4",
     "vl_enable_assert": true,
     "vl_W_lint": true,
     "vl_W_style": true,

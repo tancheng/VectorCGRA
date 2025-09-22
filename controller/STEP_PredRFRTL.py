@@ -4,22 +4,17 @@ from pymtl3.stdlib.primitive import Reg
 from ..mem.register_cluster.STEP_RegisterFileRTL import STEP_RegisterFileRTL
 from ..lib.messages import *
 from ..lib.opt_type import *
-from ..lib.util.common import *
 
-class STEP_RegisterFileControllerRTL( Component ):
+class STEP_PredRFRTL( Component ):
     def construct(s,
-                    num_tiles,
+                    num_tiles
                     RegDataType,
                     RegAddrType,
-                    PredAddrType,
                     CfgMetadataType,
-                    num_ld_ports,
-                    num_st_ports,
                     num_banks=2,
                     num_rd_ports=2,
                     num_wr_ports=2,
                     num_registers=16,
-                    num_pred_registers = 16
                     ):
 
         # -------------------------------------------------------------------------
@@ -30,42 +25,35 @@ class STEP_RegisterFileControllerRTL( Component ):
             RegDataType, RegAddrType,
             num_reg_banks=num_banks,
             num_rd_ports=num_rd_ports,
-            num_wr_ports=num_wr_ports + num_ld_ports,
+            num_wr_ports=num_wr_ports,
             num_registers_per_reg_bank=num_registers // num_banks
         )
+
+
+
+        @update
+        def perform_pred_math():
+            if s.recv_cfg_from_ctrl.val:
+                for i in range(MAX_PRED_MATH):
+                    if s.recv_cfg_from_ctrl.msg.pred_math[i] > 0 & s.recv_cfg_from_ctrl.msg.pred_math[i].opt_type != OPT_NAH:
+                        s.wr_addr 
+
+
 
         # External ifcs
         s.recv_cfg_from_ctrl = RecvIfcRTL( CfgMetadataType )   # from main ctrl
         s.rd_data            = [ SendIfcRTL(RegDataType) for _ in range(num_rd_ports) ]
         s.wr_data            = [ RecvIfcRTL(RegDataType) for _ in range(num_wr_ports) ]
-        s.cfg_done           = OutPort( 1 )                # level-true when RUN complete this cycle
-        s.cfg_state          = OutPort( 2 )                # 0:IDLE, 1:CONFIGURE, 2:RUN
-        s.recv_pred_port = [ InPort(1) for _ in range(num_wr_ports)]
+        s.cfg_done           = OutPort( Bits1 )                # level-true when RUN complete this cycle
+        s.cfg_state          = OutPort( Bits2 )                # 0:IDLE, 1:CONFIGURE, 2:RUN
+        s.recv_pred_port = [ OutPort(Bits1) for _ in range(num_wr_ports)]
         s.send_tile_preds = [ OutPort(Bits1) for _ in range(num_tiles)]
-        s.send_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
-        s.ld_enable = [OutPort(1) for _ in range(num_ld_ports)]
-        s.st_enable = [OutPort(1) for _ in range(num_st_ports)]
-        s.ld_st_complete = InPort(1)
-        s.ld_data = [InPort(RegDataType) for _ in range(num_ld_ports)]
-        s.ld_data_valid = [InPort(1) for _ in range(num_ld_ports)]
-        s.ld_data_id = [InPort(clog2(MAX_THREAD_COUNT)) for _ in range(num_ld_ports)]
-
-        # TODO: @darrenl actually implement the logic
-        for i in range(num_tiles):
-            s.send_tile_preds[i] //= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
 
         # Helpful observability (optional)
         MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
         s.expected_count_o   = OutPort( MaxThreadType )
         s.rd_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
         s.wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
-
-        # Ld/St Unit Configuration
-        s.send_thread_count //= s.recv_cfg_from_ctrl.msg.thread_count
-        for i in range(num_ld_ports):
-            s.ld_enable[i] //= s.recv_cfg_from_ctrl.msg.ld_enable[i]
-        for i in range(num_st_ports):
-            s.st_enable[i] //= s.recv_cfg_from_ctrl.msg.st_enable[i]
 
         # -------------------------------------------------------------------------
         # FSM + config registers
@@ -109,42 +97,28 @@ class STEP_RegisterFileControllerRTL( Component ):
         # (addresses/val asserted only when in RUN)
         # -------------------------------------------------------------------------
 
-        # Thread Idx wires for r/w
-        for i in range(num_rd_ports):
-            s.register_file.rd_thread_idx[i] //= s.rd_count[i]
-        for i in range(num_wr_ports):
-            s.register_file.wr_thread_idx[i] //= s.wr_count[i]
-
         # Enable wires for read and write ports
         s.rd_enable = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.wr_enable = [ Wire(Bits1) for _ in range(num_wr_ports) ]
 
         @update
         def comb_port_enables():
-            for i in range(num_rd_ports):
-                s.rd_enable[i] @= s.rd_addr_valcfg[i] & (s.state == ST_RUN) & (s.rd_count[i] <= s.expected_count_n - 1)
-            for i in range(num_wr_ports):
-                s.wr_enable[i] @= s.wr_addr_valcfg[i] & (s.state == ST_RUN) & (s.wr_count[i] <= s.expected_count_n - 1)
+        for i in range(num_rd_ports):
+            s.rd_enable[i] @= s.rd_addr_valcfg[i] & (s.state == ST_RUN) & (s.rd_count[i] <= s.expected_count_n - 1)
+        for i in range(num_wr_ports):
+            s.wr_enable[i] @= s.wr_addr_valcfg[i] & (s.state == ST_RUN) & (s.wr_count[i] <= s.expected_count_n - 1)
 
         for i in range(num_rd_ports):
-            s.register_file.rd_addr[i].msg //= s.rd_addr_cfg[i]
-            s.register_file.rd_addr[i].val //= s.rd_enable[i]
-            s.rd_data[i].msg               //= s.register_file.rd_data[i].msg
-            s.rd_data[i].val               //= s.register_file.rd_data[i].val
+        s.register_file.rd_addr[i].msg //= s.rd_addr_cfg[i]
+        s.register_file.rd_addr[i].val //= s.rd_enable[i]
+        s.rd_data[i].msg               //= s.register_file.rd_data[i].msg
+        s.rd_data[i].val               //= s.register_file.rd_data[i].val
 
         for i in range(num_wr_ports):
-            s.register_file.wr_addr[i].msg //= s.wr_addr_cfg[i]
-            s.register_file.wr_addr[i].val //= s.wr_enable[i]
-            s.register_file.wr_data[i].msg //= s.wr_data[i].msg
-            s.register_file.wr_data[i].val //= s.wr_data[i].val
-        
-        # Configure ld writing into RF
-        for i in range(num_ld_ports):
-            s.register_file.wr_addr[i + num_wr_ports].msg //= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
-            s.register_file.wr_addr[i + num_wr_ports].val //= 1
-            s.register_file.wr_data[i + num_wr_ports].msg //= s.ld_data[i]
-            s.register_file.wr_data[i + num_wr_ports].val //= s.ld_data_valid[i]
-            s.register_file.wr_thread_idx[i + num_wr_ports] //= s.ld_data_id[i]
+        s.register_file.wr_addr[i].msg //= s.wr_addr_cfg[i]
+        s.register_file.wr_addr[i].val //= s.wr_enable[i]
+        s.register_file.wr_data[i].msg //= s.wr_data[i].msg
+        s.register_file.wr_data[i].val //= s.wr_data[i].val
 
         # -------------------------------------------------------------------------
         # Ready/valid for external ifcs (single-writer comb)
@@ -162,15 +136,14 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Completion check (comb)
         # -------------------------------------------------------------------------
 
-        s.fabric_complete = OutPort( 1 )
-        s.fabric_done = OutPort( 1)
+        s.cfg_complete = OutPort( Bits1 )
         s.rd_regs_complete = OutPort( num_rd_ports )
         s.wr_regs_complete = OutPort( num_wr_ports )
 
         @update
         def comb_completion():
             # Default cfg
-            s.fabric_complete @= Bits1(0)
+            s.cfg_complete @= Bits1(0)
             # Only check completion when in RUN state
             if s.state == ST_RUN:
                 all_ports_done = Bits1(1)
@@ -189,16 +162,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     else:
                         s.wr_regs_complete[i] @= Bits1(1)
 
-                s.fabric_complete @= (reduce_and(s.rd_regs_complete) & reduce_and(s.wr_regs_complete)) \
+                s.cfg_complete @= (reduce_and(s.rd_regs_complete) & reduce_and(s.wr_regs_complete)) \
                         & (s.expected_count > MaxThreadType(0))
-        
-        @update
-        def update_fabric_done():
-            if s.reset | (s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy):
-                s.fabric_done @= 0
-            else:
-                if s.fabric_complete:
-                    s.fabric_done @= 1
 
         # -------------------------------------------------------------------------
         # Next-state & counters (single comb writer)
@@ -250,7 +215,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.wr_count_n[i] @= s.wr_count[i] + MaxThreadType(handshake)
 
                 # Transition back to IDLE when complete
-                if s.fabric_done & s.ld_st_complete:
+                if s.cfg_complete:
                     s.state_n @= ST_IDLE
 
         # -------------------------------------------------------------------------
@@ -294,13 +259,13 @@ class STEP_RegisterFileControllerRTL( Component ):
 
         @update
         def comb_outputs():
-            # State code for visibility
-            s.cfg_state   @= s.state
-            # cfg_done is level-true only in RUN when complete
-            s.cfg_done    @= s.fabric_done & s.ld_st_complete
-            # mirrors
-            s.expected_count_o @= s.expected_count
-            for i in range(num_rd_ports):
-                s.rd_counts_o[i] @= s.rd_count[i]
-            for i in range(num_wr_ports):
-                s.wr_counts_o[i] @= s.wr_count[i]
+        # State code for visibility
+        s.cfg_state   @= s.state
+        # cfg_done is level-true only in RUN when complete
+        s.cfg_done    @= Bits1( (s.state == ST_RUN) & s.cfg_complete )
+        # mirrors
+        s.expected_count_o @= s.expected_count
+        for i in range(num_rd_ports):
+            s.rd_counts_o[i] @= s.rd_count[i]
+        for i in range(num_wr_ports):
+            s.wr_counts_o[i] @= s.wr_count[i]

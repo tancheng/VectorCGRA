@@ -383,32 +383,62 @@ def mk_cfg_pkt(BitstreamType,
 )
 
 
-def mk_cfg_metadata_pkt(num_consts,
-                        num_rd_regs,
-                        num_wr_regs,
-                        ConstDataType,
+def mk_cfg_metadata_pkt(
+                        num_tiles,
+                        num_consts,
+                        num_rd_ports,
+                        num_wr_ports,
+                        num_ld_ports,
+                        num_st_ports,
+                        DataType,
                         RegAddrType,
+                        PredAddrType,
+                        PredMathType,
                         prefix="CfgMetadataPkt"):
     
     ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_SIZE))
 
-    new_name = f"{prefix}_{num_rd_regs}_{num_wr_regs}"
+    new_name = f"{prefix}_{num_rd_ports}_{num_wr_ports}"
 
     def str_func(s):
         return f"CfgMetadataPkt: cfg_id [{s.cfg_id}, br_id: {s.br_id}, thread_count: {s.thread_count}, start_cfg: {s.start_cfg}, end_cfg: {s.end_cfg}]\n"
 
     field_dict = {}
-    field_dict['const_vals'] = [ConstDataType for _ in range(num_consts)]
-    field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_regs)]
-    field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_regs)]
-    field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_regs)]
-    field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_regs)]
+    # TODO @darrenl pred_tile_valid is whether the immediate rf predicate is 0 or 1. should be address instead
+    field_dict['pred_tile_valid'] = [Bits1 for _ in range(num_tiles)]
+    field_dict['ld_enable'] = [Bits1 for _ in range(num_ld_ports)]
+    field_dict['st_enable'] = [Bits1 for _ in range(num_st_ports)]
+    field_dict['ld_reg_addr'] = [RegAddrType for _ in range(num_ld_ports)]
+    field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_ports)]
+    field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
+    field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['cfg_id'] = CfgIdType
     field_dict['br_id'] = CfgIdType
     field_dict['thread_count'] = ThreadCountType
     field_dict['start_cfg'] = Bits1
     field_dict['end_cfg'] = Bits1
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_pred_math_pkt(PredAddrType,
+                        DataType,
+                        OperationType,
+                        prefix="PredMathPkt"
+                        ):
+    new_name = f"{prefix}"
+
+    def str_func(s):
+        return f"PredMathPkt: wr_addr: {s.wr_addr} | lhs: {s.lhs} | rhs: {s.rhs} | opt_type: {s.opt_type}\n"
+
+    field_dict = {}
+    field_dict['wr_addr'] = PredAddrType
+    field_dict['lhs'] = DataType
+    field_dict['rhs'] = DataType
+    field_dict['opt_type'] = OperationType
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}
@@ -425,7 +455,7 @@ def mk_bitstream_pkt(num_tiles,
         for i in range(num_tiles):
             if i != 0:
                 out_str += '-'
-            out_str += str(int(s.bitstream[i]))
+            out_str += str(s.bitstream[i])
             
         return f"BitstreamPkt: bitstream:{out_str}\n"
 
@@ -436,6 +466,100 @@ def mk_bitstream_pkt(num_tiles,
         namespace = {'__str__': str_func}
 )
 
+def mk_ld_req_pkt(prefix="LdReqPkt"):
+
+    new_name = f"{prefix}_n_tiles"
+
+    def str_func(s):
+        return f"LdReqPkt: bitstream:\n"
+
+    AddrType = mk_bits( AXI_ADDR_BITWIDTH )
+    IdType = mk_bits( clog2(MAX_THREAD_COUNT) )
+
+    field_dict = {}
+    field_dict['addr'] = AddrType
+    field_dict['id'] = IdType
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_ld_resp_pkt(DataType, prefix="LdRespPkt"):
+
+    new_name = f"{prefix}_n_tiles"
+
+    def str_func(s):
+        return f"LdRespPkt: bitstream:\n"
+
+    IdType = mk_bits( clog2(MAX_THREAD_COUNT) )
+
+    field_dict = {}
+    field_dict['data'] = DataType
+    field_dict['id'] = IdType
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_st_req_pkt(DataType,
+                    prefix="StReqPkt"):
+
+    new_name = f"{prefix}_n_tiles"
+
+    def str_func(s):
+        return f"StReqPkt: bitstream:\n"
+
+    AddrType = mk_bits( AXI_ADDR_BITWIDTH )
+
+    field_dict = {}
+    field_dict['addr'] = AddrType
+    field_dict['data'] = DataType
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_tile_bitstream_pkt(
+                            num_tile_inports,
+                            num_tile_outports,
+                            num_fu_inports,
+                            num_fu_outports,
+                            OperationType,
+                            DataType,
+                            RegAddrType,
+                            PredRegAddrType,
+                            prefix="TileBitstreamPkt"):
+    new_name = f"{prefix}_{num_fu_inports}_{num_fu_outports}"
+
+    def str_func(s):
+        return f"TileBitstreamPkt: fu_in:{s.tile_in_route}|fu_out:{s.tile_out_route}|operation:{s.opt_type}\n"
+
+    TilePortType = mk_bits( clog2(num_tile_inports + 1) )
+    TileOutType = mk_bits( num_tile_outports )
+
+    # Tile routing:
+    # 4 i/os, [No op, N, S, W, E]
+    # 3 Fu inport and 1 Fu Outport
+    # Ex: FMA with E * N + W & send W
+    # field_dict['tile_in_route'] = [TilePortType(4), TilePortType(1), TilePortType(3)]
+    # field_dict['tile_out_route'] = [TilePortType(3)]
+    #
+    # Ex: Mul with S * N & send N
+    # field_dict['tile_in_route'] = [TilePortType(2), TilePortType(1), TilePortType(0)]
+    # field_dict['tile_out_route'] = [TilePortType(1)]
+    
+    field_dict = {}
+    field_dict['tile_in_route'] = [TilePortType for _ in range(num_fu_inports)]
+    field_dict['tile_out_route'] = TileOutType
+    field_dict['tile_pred_route'] = TileOutType
+    field_dict['const_val'] = DataType
+    field_dict['pred_fwd_route'] = TilePortType
+    field_dict['pred_gen'] = Bits1
+    field_dict['opt_type'] = OperationType
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
 
 #=========================================================================
 # Crossbar (tiles <-> SRAM) packet
