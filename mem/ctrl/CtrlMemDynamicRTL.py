@@ -49,9 +49,9 @@ class CtrlMemDynamicRTL(Component):
     s.recv_pkt_from_controller = RecvIfcRTL(IntraCgraPktType)
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(IntraCgraPktType)
-    # Receives data from the tile, used for returning data to CPU.
+    # Receives data/cmd from the functional unit, used for returning data to the controller/CPU.
     s.recv_from_element = RecvIfcRTL(CgraPayloadType)
-    # Receives data from the tile, used for returning data to CPU.
+    # Sends data/cmd to the functional unit, which is usually initialized by the controller/CPU.
     s.send_to_element = SendIfcRTL(CgraPayloadType)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
