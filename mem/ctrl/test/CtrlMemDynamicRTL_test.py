@@ -43,7 +43,7 @@ class TestHarness(Component):
 
     # Connections.
     if isinstance(s.fu, RetRTL):
-      s.fu.send_to_controller //= s.ctrl_mem.recv_from_tile
+      s.fu.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
     s.fu.recv_opt //= s.ctrl_mem.send_ctrl
     s.src_pkt.send //= s.ctrl_mem.recv_pkt_from_controller
     s.complete_signal_sink_out.recv //= s.ctrl_mem.send_pkt_to_controller

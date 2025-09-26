@@ -58,9 +58,9 @@ class RetRTL(Fu):
         s.send_out[j].val @= 0
         s.send_out[j].msg @= DataType()
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
-      s.recv_from_controller.rdy @= 0
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_ctrl_mem.rdy @= 0
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -79,11 +79,11 @@ class RetRTL(Fu):
             s.recv_opt.rdy @= s.recv_all_val
           elif s.recv_in[s.in0_idx].msg.predicate:
             # Only when the predicate is true, the value will be sent back to CPU.
-            s.send_to_controller.val @= s.recv_all_val & s.reached_vector_factor
-            # s.send_to_controller.msg @= s.recv_in[s.in0_idx].msg
-            s.send_to_controller.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
-            s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_controller.rdy
-            s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_controller.rdy
+            s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
+            # s.send_to_ctrl_mem.msg @= s.recv_in[s.in0_idx].msg
+            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
+            s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
+            s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
@@ -97,8 +97,8 @@ class RetRTL(Fu):
            (s.recv_opt.msg.operation == OPT_RET) & \
             ~s.already_done & \
             s.recv_all_val & \
-            s.send_to_controller.val & \
-            s.send_to_controller.rdy:
+            s.send_to_ctrl_mem.val & \
+            s.send_to_ctrl_mem.rdy:
           s.already_done <<= 1
         else:
           s.already_done <<= s.already_done
@@ -107,7 +107,7 @@ class RetRTL(Fu):
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
-    out_str = str(s.send_to_controller.msg)
+    out_str = str(s.send_to_ctrl_mem.msg)
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out_to_controller: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send_to_controller.val: {s.send_to_controller.val}) '
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out_to_ctrl_mem: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send_to_ctrl_mem.val: {s.send_to_ctrl_mem.val}) '
 

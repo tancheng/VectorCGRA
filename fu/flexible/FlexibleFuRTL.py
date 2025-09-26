@@ -55,8 +55,8 @@ class FlexibleFuRTL(Component):
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
-    s.send_to_controller = SendIfcRTL(CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(CgraPayloadType)
 
     s.to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
@@ -89,18 +89,18 @@ class FlexibleFuRTL(Component):
     def connect_to_controller():
       for i in range(s.fu_list_size):
         # const connection.
-        s.fu[i].recv_from_controller.msg @= s.recv_from_controller.msg
-        s.fu[i].recv_from_controller.val @= s.recv_from_controller.val
-        s.recv_from_controller_rdy_vector[i] @= s.fu[i].recv_from_controller.rdy
-      s.recv_from_controller.rdy @= reduce_or(s.recv_from_controller_rdy_vector)
+        s.fu[i].recv_from_ctrl_mem.msg @= s.recv_from_ctrl_mem.msg
+        s.fu[i].recv_from_ctrl_mem.val @= s.recv_from_ctrl_mem.val
+        s.recv_from_controller_rdy_vector[i] @= s.fu[i].recv_from_ctrl_mem.rdy
+      s.recv_from_ctrl_mem.rdy @= reduce_or(s.recv_from_controller_rdy_vector)
 
-      s.send_to_controller.msg @= CgraPayloadType(0, 0, 0, 0, 0)
-      s.send_to_controller.val @= 0
+      s.send_to_ctrl_mem.msg @= CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.val @= 0
       for i in range(s.fu_list_size):
-        if s.fu[i].send_to_controller.val:
-          s.send_to_controller.msg @= s.fu[i].send_to_controller.msg
-          s.send_to_controller.val @= s.fu[i].send_to_controller.val
-        s.fu[i].send_to_controller.rdy @= s.send_to_controller.rdy
+        if s.fu[i].send_to_ctrl_mem.val:
+          s.send_to_ctrl_mem.msg @= s.fu[i].send_to_ctrl_mem.msg
+          s.send_to_ctrl_mem.val @= s.fu[i].send_to_ctrl_mem.val
+        s.fu[i].send_to_ctrl_mem.rdy @= s.send_to_ctrl_mem.rdy
 
     @update
     def comb_logic():

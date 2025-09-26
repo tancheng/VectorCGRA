@@ -83,10 +83,10 @@ class FpAddRTL(Fu):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
-      s.recv_from_controller.rdy @= 0
+      s.recv_from_ctrl_mem.rdy @= 0
 
       s.fadd.a @= 0
       s.fadd.b @= 0

@@ -39,9 +39,9 @@ class NahRTL(Fu):
         s.send_out[i].val @= 0
         s.send_out[i].msg @= DataType()
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
-      s.recv_from_controller.rdy @= 0
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_ctrl_mem.rdy @= 0
 
       if s.recv_opt.msg.operation == OPT_NAH:
         s.recv_opt.rdy @= 1

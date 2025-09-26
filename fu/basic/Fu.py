@@ -44,8 +44,8 @@ class Fu(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
     # Components.
     # Redundant interfaces for MemUnit
