@@ -38,8 +38,8 @@ class TwoPrlCombo(Component):
     s.recv_const     = RecvIfcRTL(DataType)
     s.recv_opt       = RecvIfcRTL(CtrlType)
     s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
     # Redundant interfaces for MemUnit
     s.to_mem_raddr   = SendIfcRTL(AddrType)
@@ -98,9 +98,9 @@ class TwoPrlCombo(Component):
 
     @update
     def update_send_to_controller():
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
-      s.recv_from_controller.rdy @= 0
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_ctrl_mem.rdy @= 0
 
   def line_trace( s ):
     return s.Fu0.line_trace() + " ; " + s.Fu1.line_trace()

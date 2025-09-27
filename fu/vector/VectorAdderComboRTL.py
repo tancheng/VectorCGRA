@@ -45,8 +45,8 @@ class VectorAdderComboRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
     # Components
     s.Fu = [VectorAdderRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
@@ -79,10 +79,10 @@ class VectorAdderComboRTL(Component):
       s.recv_in[0].rdy @= s.Fu[0].recv_in[0].rdy
       s.recv_in[1].rdy @= s.Fu[0].recv_in[1].rdy
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
-      s.recv_from_controller.rdy @= 0
+      s.recv_from_ctrl_mem.rdy @= 0
 
       for i in range(num_lanes):
         s.Fu[i].recv_opt.val @= s.recv_opt.val
