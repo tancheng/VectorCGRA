@@ -21,7 +21,7 @@ from ....lib.status_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_init_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_progress_out, sink_overwrite_fu_output_predicate):
+  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_init_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_progress_out, sink_overwrite_fu_output_predicate, sink_overwrite_fu_output):
     
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
@@ -37,7 +37,7 @@ class TestHarness(Component):
     s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
     s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
     s.sink_overwrite_fu_output_predicate = TestSinkRTL(ValidType, sink_overwrite_fu_output_predicate)
-  
+    s.sink_overwrite_fu_output = TestSinkRTL(ValidType, sink_overwrite_fu_output)
     s.context_switch = Module(data_nbits, ctrl_addr_nbits)
 
     @update
@@ -57,9 +57,11 @@ class TestHarness(Component):
       s.sink_progress_out.recv.msg @= s.context_switch.progress_out
       s.sink_overwrite_fu_output_predicate.recv.val @= 1
       s.sink_overwrite_fu_output_predicate.recv.msg @= s.context_switch.overwrite_fu_output_predicate
+      s.sink_overwrite_fu_output.recv.val @= 1
+      s.sink_overwrite_fu_output.recv.msg @= s.context_switch.overwrite_fu_output
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and s.src_init_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_overwrite_fu_output_predicate.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_init_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_overwrite_fu_output_predicate.done() and s.sink_overwrite_fu_output.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()
@@ -96,36 +98,44 @@ def test():
   CtrlAddrType = mk_bits(ctrl_addr_nbits)
   OptType = mk_bits(clog2(NUM_OPTS))
 
+  # All input commands are registered by ContextSwitchRTL for 1 cycle,
+  # so as to make timing right when interacting with CtrlMemDynamicRTL. 
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
               CmdType(CMD_RECORD_INIT_PHI_ADDR), # cycle 1
-              # Tile receives the PAUSE command at clock cycle 2.
+              # Tile receives the PAUSE command at clock cycle 2, processes the command at cycle 3,
+              # and is in pausing status at cycle 4.
               CmdType(CMD_PAUSE), # cycle 2
               # Some random commands that might be issued during pausing.
               CmdType(CMD_CONST), # cycle 3
               CmdType(CMD_CONST), # cycle 4
-              # Tile receives the RESUME command at clock cycle 5.
+              # Tile receives the RESUME command at clock cycle 5, processes the command at cycle 6,
+              # and is in pausing status at cycle 7.
               CmdType(CMD_RESUME), # cycle 5
               # Some random commands that might be issued during resuming.
               CmdType(CMD_CONST), # cycle 6
               CmdType(CMD_CONST), # cycle 7
-              CmdType(CMD_CONST) # cycle 8
+              CmdType(CMD_CONST), # cycle 8
+              CmdType(CMD_CONST)  # cycle 9
               ]
-
+  
+  # All inputs provided by CtrlMemDynamicRTL have 1-cycle delay because of recv_pkt_queue.
   src_opts = [
+              # Simulates 1-cycle delay comapred to src_cmds.
+              OptType(OPT_NAH),
               # Some random operations executed in FU.
               OptType(OPT_NAH),
               OptType(OPT_NAH),
-              # FU executes PHI_CONST at clock cycle 3.
+              # FU executes PHI_CONST at clock cycle 4.
               OptType(OPT_PHI_CONST),
-              # FU executes the initial PHI_CONST at clock cycle 4
+              # FU executes the initial PHI_CONST at clock cycle 5
               # for the first time duing PAUSING status.
               OptType(OPT_PHI_CONST),
               # Some random operations executed in FU.
               OptType(OPT_NAH),
               OptType(OPT_NAH),
-              # FU executes PHI_CONST at clock cycle 7
+              # FU executes PHI_CONST at clock cycle 8
               OptType(OPT_PHI_CONST),
-              # FU executes the initial PHI_CONST at clock cycle 8
+              # FU executes the initial PHI_CONST at clock cycle 9
               # for the first time during RESUMING status.
               OptType(OPT_PHI_CONST),
               ]
@@ -135,6 +145,9 @@ def test():
   # Address 2 contains PHI_CONST (Output other data, i.e., the operand of +=).
   # Address 3 contains the initial PHI_CONST (Output iteration indexs).
   src_ctrl_mem_rd_addr = [
+                         # Simulates 1-cycle delay comapred to src_cmds.
+                         CtrlAddrType(0),
+                         # Starts execution.
                          CtrlAddrType(0),
                          CtrlAddrType(1),
                          CtrlAddrType(2),
@@ -147,6 +160,9 @@ def test():
 
   # Preloads the address 3 of the initial PHI_CONST.
   src_init_phi_addr = [
+                         # Simulates 1-cycle delay comapred to src_cmds.
+                         CtrlAddrType(0),
+                         # Starts execution.
                          CtrlAddrType(3),
                          CtrlAddrType(0),
                          CtrlAddrType(0),
@@ -158,12 +174,15 @@ def test():
                         ]
 
   src_progress_in = [
+                     # Simulates 1-cycle delay comapred to src_cmds.
+                     DataType(0, 0),
+                     # The following are ground truth values:
                      # A fake progress "4321", should not be recorded because not in the PAUSING status.
                      DataType(4321, 1),
                      # Some random FU's outputs.
                      DataType(0, 0),
                      # A fake progress "8765", should not be recorded 
-                     # because FU is executing PHI_CONST.
+                     # because FU is not executing the initial PHI_CONST at address 3.
                      DataType(8765, 1),
                      # The target progress (loop iteration) 
                      # output by FU when executing the initial PHI_CONST for 
@@ -179,6 +198,9 @@ def test():
                      ]
   
   sink_progress_out = [
+                       # Simulates 1-cycle delay comapred to src_cmds.
+                       DataType(0, 0),
+                       # The following are ground truth values:
                        DataType(0, 0),
                        DataType(0, 0),
                        DataType(0, 0),
@@ -195,6 +217,9 @@ def test():
                       ]
   
   sink_overwrite_fu_output_predicate = [
+                                    # Simulates 1-cycle delay comapred to src_cmds.
+                                    0,
+                                    # The following are ground truth values:
                                     0,
                                     0,
                                     0,
@@ -207,6 +232,22 @@ def test():
                                     0
                                    ]
 
+  sink_overwrite_fu_output = [
+                                # Simulates 1-cycle delay comapred to src_cmds.
+                                0,
+                                # The following are ground truth values:
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                # clock cycle 8 has overwrite_fu_output = 1 to replace the output 
+                                # of PHI_CONST, so as to resume the progress.
+                                1
+                                ]
+
   th = TestHarness(Module, 
                    data_nbits,
                    ctrl_addr_nbits,
@@ -216,6 +257,7 @@ def test():
                    src_ctrl_mem_rd_addr,
                    src_progress_in, 
                    sink_progress_out, 
-                   sink_overwrite_fu_output_predicate)
+                   sink_overwrite_fu_output_predicate,
+                   sink_overwrite_fu_output)
 
   run_sim(th)

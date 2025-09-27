@@ -135,10 +135,12 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RESUME) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RECORD_INIT_PHI_ADDR) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE):
         s.recv_pkt_queue.send.rdy @= 1
@@ -181,10 +183,11 @@ class CtrlMemDynamicRTL(Component):
           s.send_ctrl.val @= b1(0)
         else:
           s.send_ctrl.val @= 1
-      if s.recv_pkt_queue.send.val & \
-         ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
-          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE)):
-        s.send_ctrl.val @= b1(0)
+      # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
+      #if s.recv_pkt_queue.send.val & \
+      #   ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
+      #    (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE)):
+      #  s.send_ctrl.val @= b1(0)
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
@@ -194,10 +197,11 @@ class CtrlMemDynamicRTL(Component):
         if s.recv_pkt_queue.send.val:
           if s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH:
             s.start_iterate_ctrl <<= 1
-          elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
-            s.start_iterate_ctrl <<= 0
-          elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE:
-            s.start_iterate_ctrl <<= 0
+          # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
+          #elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
+          #  s.start_iterate_ctrl <<= 0
+          #elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE:
+          #  s.start_iterate_ctrl <<= 0
 
     @update_ff
     def issue_complete():
