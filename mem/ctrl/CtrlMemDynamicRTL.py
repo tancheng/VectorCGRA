@@ -49,10 +49,10 @@ class CtrlMemDynamicRTL(Component):
     s.recv_pkt_from_controller = RecvIfcRTL(IntraCgraPktType)
     # Sends the ctrl packets towards the controller.
     s.send_pkt_to_controller = SendIfcRTL(IntraCgraPktType)
-    # Receives data from the tile, used for returning data to CPU.
-    s.recv_from_tile = RecvIfcRTL(CgraPayloadType)
-    # Receives data from the tile, used for returning data to CPU.
-    s.send_to_tile = SendIfcRTL(CgraPayloadType)
+    # Receives data/cmd from the functional unit, used for returning data to the controller/CPU.
+    s.recv_from_element = RecvIfcRTL(CgraPayloadType)
+    # Sends data/cmd to the functional unit, which is usually initialized by the controller/CPU.
+    s.send_to_element = SendIfcRTL(CgraPayloadType)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -88,8 +88,8 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_msg():
       s.recv_pkt_queue.send.rdy @= 0
-      s.send_to_tile.msg @= CgraPayloadType(0, 0, 0, 0, 0)
-      s.send_to_tile.val @= 0
+      s.send_to_element.msg @= CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_element.val @= 0
       s.reg_file.wen[0] @= 0
       s.reg_file.waddr[0] @= s.recv_pkt_queue.send.msg.payload.ctrl_addr
       # Initializes the fields of the control signal.
@@ -125,8 +125,8 @@ class CtrlMemDynamicRTL(Component):
       elif s.recv_pkt_queue.send.val & \
            ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE)):
-        s.send_to_tile.msg @= s.recv_pkt_queue.send.msg.payload
-        s.send_to_tile.val @= 1
+        s.send_to_element.msg @= s.recv_pkt_queue.send.msg.payload
+        s.send_to_element.val @= 1
 
       if (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
@@ -156,14 +156,14 @@ class CtrlMemDynamicRTL(Component):
     def update_send_pkt_to_controller():
       s.send_pkt_to_controller.val @= 0
       s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
-      s.recv_from_tile.rdy @= 0
+      s.recv_from_element.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
-        if s.recv_from_tile.val & (~s.sent_complete):
+        if s.recv_from_element.val & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
               IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
-                               s.recv_from_tile.msg)
+                              s.recv_from_element.msg)
           s.send_pkt_to_controller.val @= 1
-          s.recv_from_tile.rdy @= s.send_pkt_to_controller.rdy
+          s.recv_from_element.rdy @= s.send_pkt_to_controller.rdy
         elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.

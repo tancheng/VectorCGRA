@@ -47,8 +47,8 @@ class VectorAllReduceRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
     TempDataType = mk_bits(data_bitwidth)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
@@ -95,23 +95,23 @@ class VectorAllReduceRTL(Component):
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out * s.recv_in[1].msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_controller.msg.data.payload[0:data_bitwidth]
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth]
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_controller.msg.data.payload[0:data_bitwidth]
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth]
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_controller.msg.data.payload[0:data_bitwidth] + s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] + s.recv_in[1].msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_controller.msg.data.payload[0:data_bitwidth] * s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] * s.recv_in[1].msg.payload
 
     @update
     def update_signal():
       for i in range(num_inports):
         s.recv_in[i].rdy @= b1(0)
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
-      s.recv_from_controller.rdy @= 0
+      s.recv_from_ctrl_mem.rdy @= 0
 
       s.recv_in[0].rdy @= (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL) | \
@@ -122,14 +122,14 @@ class VectorAllReduceRTL(Component):
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
-                           s.send_to_controller.rdy)
+                           s.send_to_ctrl_mem.rdy)
       s.recv_opt.rdy @= s.send_out[0].rdy
       s.recv_in[1].rdy @= (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)) & \
                            s.send_out[0].rdy) | \
                           (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
-                           s.send_to_controller.rdy)
+                           s.send_to_ctrl_mem.rdy)
       s.send_out[0].val @= (s.recv_in[0].val & \
                             s.recv_opt.val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
@@ -140,11 +140,11 @@ class VectorAllReduceRTL(Component):
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE))) | \
                            (s.recv_opt.val & \
-                            s.recv_from_controller.val & \
+                            s.recv_from_ctrl_mem.val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL))) | \
                            (s.recv_opt.val & \
-                            s.recv_from_controller.val & \
+                            s.recv_from_ctrl_mem.val & \
                             s.recv_in[1].val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)))
@@ -158,10 +158,10 @@ class VectorAllReduceRTL(Component):
           s.recv_in[1].val & \
           ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL))):
-        s.send_to_controller.val @= 1
+        s.send_to_ctrl_mem.val @= 1
         if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL):
-          s.send_to_controller.msg @= \
+          s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,
                                 DataType(s.reduce_add.out,
                                          s.recv_in[0].msg.predicate, 0, 0),
@@ -170,7 +170,7 @@ class VectorAllReduceRTL(Component):
                                 0)
         if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL):
-          s.send_to_controller.msg @= \
+          s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,
                                 DataType(s.reduce_add.out,
                                          s.recv_in[0].msg.predicate, 0, 0),
@@ -179,7 +179,7 @@ class VectorAllReduceRTL(Component):
                                 0)
 
       if s.recv_opt.val & s.already_sent_to_controller:
-        s.recv_from_controller.rdy @= 1
+        s.recv_from_ctrl_mem.rdy @= 1
 
     @update
     def update_predicate():
@@ -193,7 +193,7 @@ class VectorAllReduceRTL(Component):
                                        s.recv_in[1].msg.predicate
       elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)):
-        s.send_out[0].msg.predicate @= s.recv_from_controller.msg.data.predicate & \
+        s.send_out[0].msg.predicate @= s.recv_from_ctrl_mem.msg.data.predicate & \
                                        s.recv_in[1].msg.predicate
 
     @update_ff
@@ -207,8 +207,8 @@ class VectorAllReduceRTL(Component):
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
             ~s.already_sent_to_controller & \
-            s.send_to_controller.val & \
-            s.send_to_controller.rdy:
+            s.send_to_ctrl_mem.val & \
+            s.send_to_ctrl_mem.rdy:
           s.already_sent_to_controller <<= 1
         # Recovers already_sent_to_controller once the ctrl proceeds to the next one.
         elif s.recv_opt.val & \

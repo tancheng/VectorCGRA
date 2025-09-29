@@ -55,8 +55,8 @@ class VectorMulComboRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
     s.recv_opt = RecvIfcRTL(CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = SendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = RecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
     TempDataType = mk_bits(data_bitwidth)
     FuDataType = mk_bits(sub_bw)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
@@ -83,10 +83,10 @@ class VectorMulComboRTL(Component):
                            s.recv_opt.val
       s.send_out[0].msg.payload @= 0
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
 
-      s.recv_from_controller.rdy @= 0
+      s.recv_from_ctrl_mem.rdy @= 0
 
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)
