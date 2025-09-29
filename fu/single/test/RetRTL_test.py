@@ -41,7 +41,7 @@ class TestHarness(Component):
 
     s.src_in.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
-    s.dut.send_to_controller //= s.sink.recv
+    s.dut.send_to_ctrl_mem //= s.sink.recv
 
   def done(s):
     return s.src_opt.done() and s.src_in.done() and s.sink.done()

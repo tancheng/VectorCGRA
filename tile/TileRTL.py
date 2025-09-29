@@ -150,8 +150,8 @@ class TileRTL(Component):
     s.element.recv_const //= s.const_mem.send_const
 
     # Fu data <-> ctrl memory (eventually towards/from CPU via controller).
-    s.element.send_to_controller //= s.ctrl_mem.recv_from_tile
-    s.element.recv_from_controller //= s.ctrl_mem.send_to_tile
+    s.element.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
+    s.element.recv_from_ctrl_mem //= s.ctrl_mem.send_to_element
 
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport

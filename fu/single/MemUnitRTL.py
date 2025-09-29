@@ -40,8 +40,8 @@ class MemUnitRTL(Component):
     s.recv_const = ValRdyRecvIfcRTL(DataType)
     s.recv_opt = ValRdyRecvIfcRTL(CtrlType)
     s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
-    s.send_to_controller = ValRdySendIfcRTL(s.CgraPayloadType)
-    s.recv_from_controller = ValRdyRecvIfcRTL(s.CgraPayloadType)
+    s.send_to_ctrl_mem = ValRdySendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = ValRdyRecvIfcRTL(s.CgraPayloadType)
 
     # Interfaces to the data sram, need to interface them with
     # the data memory module in top level.
@@ -90,9 +90,9 @@ class MemUnitRTL(Component):
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
 
-      s.send_to_controller.val @= 0
-      s.send_to_controller.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
-      s.recv_from_controller.rdy @= 0
+      s.send_to_ctrl_mem.val @= 0
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.recv_from_ctrl_mem.rdy @= 0
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
