@@ -220,9 +220,9 @@ def test_tile_alu(cmdline_opts):
                   # Clock cycle 2: DataType(1, 1) for iteration 1.
                   DataType(1, 1),
                   # Clock cycle 3: DataType(2, 0), as iteration 2 cannot be initiated during the pausing status.
-                  DataType(2, 0),
+                  DataType(0, 0),
                   # Clock cycle 4: DataType(3, 0), as iteration 3 cannot be initiated during the pausing status.
-                  DataType(3, 0),
+                  DataType(0, 0),
                   # Clock cycle 5: Resumes the recorded progress DataType(2, 1) to continune iteration 2.
                   DataType(2, 1),
                   # Clock cycle 6: DataType(3, 1) to continue iteration 3.

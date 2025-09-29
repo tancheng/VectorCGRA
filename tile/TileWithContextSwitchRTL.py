@@ -298,24 +298,14 @@ class TileWithContextSwitchRTL(Component):
     
     @update
     def resume_progress():
-      s.fu_crossbar.recv_data[0].val @= s.element.send_out[0].val
       s.element.send_out[0].rdy @= s.fu_crossbar.recv_data[0].rdy
-      s.fu_crossbar.recv_data[0].msg.bypass @= s.element.send_out[0].msg.bypass
-      s.fu_crossbar.recv_data[0].msg.delay @= s.element.send_out[0].msg.delay
-      # Only replaces payload as required by context switch module
-      if s.context_switch.overwrite_fu_output:
-        s.fu_crossbar.recv_data[0].msg.payload @= s.context_switch.progress_out.payload
+      if s.context_switch.overwrite_fu_outport.val == 1:
+        s.fu_crossbar.recv_data[0].val @= 1
+        s.fu_crossbar.recv_data[0].msg @= s.context_switch.overwrite_fu_outport.msg
       else:
-        s.fu_crossbar.recv_data[0].msg.payload @= s.element.send_out[0].msg.payload
+        s.fu_crossbar.recv_data[0].val @= s.element.send_out[0].val
+        s.fu_crossbar.recv_data[0].msg @= s.element.send_out[0].msg
     
-    @update
-    def stop_initiating_new_iterations():
-      if s.context_switch.overwrite_fu_output_predicate:
-        # predicate = 0 will broadcast to all operations through the dataflow.
-        s.fu_crossbar.recv_data[0].msg.predicate @= 0
-      else:
-        s.fu_crossbar.recv_data[0].msg.predicate @= s.element.send_out[0].msg.predicate
-
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
     def already_done():

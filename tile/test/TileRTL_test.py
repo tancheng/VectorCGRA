@@ -185,8 +185,8 @@ def test_tile_alu(cmdline_opts):
                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
       # For constant 5, 7.
-      #IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
-      #IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
 
       IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
 
@@ -196,12 +196,12 @@ def test_tile_alu(cmdline_opts):
               [DataType(5, 1), DataType(7, 1)]]
 
   sink_out = [
-              # Nothing;       7 - 3 = 4.
-              [                DataType(4, 1)],
+              # Nothing at cycle 0;     7 - 3 = 4 at cycle 1.
+              [                         DataType(4, 1)],
               [],
               [],
-              # 5 + 4 = 9;     7 - 3 = 4.
-              [DataType(9, 1), DataType(4, 1)]]
+              # 5 + 4 = 9 at cycle 0;   7 - 3 = 4 at cycle 1.
+              [DataType(9, 1),          DataType(4, 1)]]
                                              # src  dst        src/dst cgra x/y
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0,   0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
@@ -310,12 +310,13 @@ def test_tile_multicycle_exclusive(cmdline_opts):
               [DataType(12, 1), DataType(8, 1)]]
 
   sink_out = [
-              # Nothing;       8 + 3 = 11.
-              [                DataType(11, 1)],
+              # Nothing at cycle 0;     8 + 3 = 11 at cycle 1.
+              [                         DataType(11, 1)],
               [],
               [],
-              # 12 ÷ 4 = 3;   8 + 3 = 11.
-              [DataType(3, 1), DataType(11, 1)]]
+              # 12 / 4 = 3 at cycle 0;  8 + 3 = 11 at cycle 1.
+              [DataType(3, 1),          DataType(11, 1)]]
+
                                              # src  dst        src/dst cgra x/y
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]

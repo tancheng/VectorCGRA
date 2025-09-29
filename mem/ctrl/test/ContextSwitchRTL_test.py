@@ -21,7 +21,7 @@ from ....lib.status_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_init_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_progress_out, sink_overwrite_fu_output_predicate, sink_overwrite_fu_output):
+  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_init_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_overwrite_fu_outport):
     
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
@@ -35,9 +35,7 @@ class TestHarness(Component):
     s.src_init_phi_addr = TestSrcRTL(CtrlAddrType, src_init_phi_addr)
     s.src_ctrl_mem_rd_addr = TestSrcRTL(CtrlAddrType, src_ctrl_mem_rd_addr)
     s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
-    s.sink_progress_out = TestSinkRTL(DataType, sink_progress_out)
-    s.sink_overwrite_fu_output_predicate = TestSinkRTL(ValidType, sink_overwrite_fu_output_predicate)
-    s.sink_overwrite_fu_output = TestSinkRTL(ValidType, sink_overwrite_fu_output)
+    s.sink_overwrite_fu_outport = TestSinkRTL(DataType, sink_overwrite_fu_outport)
     s.context_switch = Module(data_nbits, ctrl_addr_nbits)
 
     @update
@@ -53,15 +51,11 @@ class TestHarness(Component):
       s.src_init_phi_addr.send.rdy @= 1
       s.context_switch.ctrl_mem_rd_addr @= s.src_ctrl_mem_rd_addr.send.msg
       s.src_ctrl_mem_rd_addr.send.rdy @= 1
-      s.sink_progress_out.recv.val @= 1
-      s.sink_progress_out.recv.msg @= s.context_switch.progress_out
-      s.sink_overwrite_fu_output_predicate.recv.val @= 1
-      s.sink_overwrite_fu_output_predicate.recv.msg @= s.context_switch.overwrite_fu_output_predicate
-      s.sink_overwrite_fu_output.recv.val @= 1
-      s.sink_overwrite_fu_output.recv.msg @= s.context_switch.overwrite_fu_output
+      s.sink_overwrite_fu_outport.recv.val @= 1
+      s.sink_overwrite_fu_outport.recv.msg @= s.context_switch.overwrite_fu_outport.msg
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and s.src_init_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_progress_out.done() and s.sink_overwrite_fu_output_predicate.done() and s.sink_overwrite_fu_output.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_init_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_overwrite_fu_outport.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()
@@ -197,57 +191,26 @@ def test():
                      DataType(0, 0)
                      ]
   
-  sink_progress_out = [
+  sink_overwrite_fu_outport  = [
                        # Simulates 1-cycle delay comapred to src_cmds.
-                       DataType(0, 0),
+                       DataType(-1, 0),
                        # The following are ground truth values:
+                       # msg:DataType(-1, 0) with val:0 have no effects to FU's output
+                       DataType(-1, 0),
+                       DataType(-1, 0),
+                       DataType(-1, 0),
+                       # msg:DataType(0, 0) with val:1 replace FU's outport to stop task execution.
                        DataType(0, 0),
-                       DataType(0, 0),
-                       DataType(0, 0),
-                       DataType(0, 0),
-                       DataType(0, 0),
-                       DataType(0, 0),
-                       DataType(0, 0),
+                       DataType(-1, 0),
+                       DataType(-1, 0),
+                       DataType(-1, 0),
                        # ContextSiwtch module should output the target progress
                        # when FU executes the initail PHI_CONST for the first time 
                        # during the RESUMING status at cycle 8. 
-                       # The 'predicate' bit alone can inidicates that the progress_out is valid,
-                       # we therefore omit the 'valid' bit for simplicity.
+                       # msg:DataType(1234, 1) with val:1 replace FU's outport to resume task progress.
                        DataType(1234, 1)
                       ]
   
-  sink_overwrite_fu_output_predicate = [
-                                    # Simulates 1-cycle delay comapred to src_cmds.
-                                    0,
-                                    # The following are ground truth values:
-                                    0,
-                                    0,
-                                    0,
-                                    # clock cycle 4 has overwrite_fu_output_predicate = 1, 
-                                    # as in the PAUSING status and executing the initial PHI_CONST.
-                                    1,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                   ]
-
-  sink_overwrite_fu_output = [
-                                # Simulates 1-cycle delay comapred to src_cmds.
-                                0,
-                                # The following are ground truth values:
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                # clock cycle 8 has overwrite_fu_output = 1 to replace the output 
-                                # of PHI_CONST, so as to resume the progress.
-                                1
-                                ]
-
   th = TestHarness(Module, 
                    data_nbits,
                    ctrl_addr_nbits,
@@ -256,8 +219,6 @@ def test():
                    src_init_phi_addr,
                    src_ctrl_mem_rd_addr,
                    src_progress_in, 
-                   sink_progress_out, 
-                   sink_overwrite_fu_output_predicate,
-                   sink_overwrite_fu_output)
+                   sink_overwrite_fu_outport)
 
   run_sim(th)
