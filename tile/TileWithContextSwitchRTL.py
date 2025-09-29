@@ -148,8 +148,8 @@ class TileWithContextSwitchRTL(Component):
     s.element.recv_const //= s.const_mem.send_const
 
     # Fu data <-> ctrl memory (eventually towards/from CPU via controller).
-    s.element.send_to_controller //= s.ctrl_mem.recv_from_tile
-    s.element.recv_from_controller //= s.ctrl_mem.send_to_tile
+    s.element.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
+    s.element.recv_from_ctrl_mem //= s.ctrl_mem.send_to_element
 
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
@@ -297,7 +297,7 @@ class TileWithContextSwitchRTL(Component):
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
     
     @update
-    def resume_progress():
+    def overwrite_fu_outport():
       s.element.send_out[0].rdy @= s.fu_crossbar.recv_data[0].rdy
       if s.context_switch.overwrite_fu_outport.val == 1:
         s.fu_crossbar.recv_data[0].val @= 1
