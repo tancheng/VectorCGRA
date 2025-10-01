@@ -193,17 +193,17 @@ def test():
   
   sink_overwrite_fu_outport  = [
                        # Simulates 1-cycle delay comapred to src_cmds.
-                       DataType(-1, 0),
+                       DataType(0, 0),
                        # The following are ground truth values:
-                       # msg:DataType(-1, 0) with val:0 have no effects to FU's output
-                       DataType(-1, 0),
-                       DataType(-1, 0),
-                       DataType(-1, 0),
+                       # msg:DataType(0, 0) with val:0 have no effects to FU's output
+                       DataType(0, 0),
+                       DataType(0, 0),
+                       DataType(0, 0),
                        # msg:DataType(0, 0) with val:1 replace FU's outport to stop task execution.
                        DataType(0, 0),
-                       DataType(-1, 0),
-                       DataType(-1, 0),
-                       DataType(-1, 0),
+                       DataType(0, 0),
+                       DataType(0, 0),
+                       DataType(0, 0),
                        # ContextSiwtch module should output the target progress
                        # when FU executes the initail PHI_CONST for the first time 
                        # during the RESUMING status at cycle 8. 

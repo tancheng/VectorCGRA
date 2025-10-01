@@ -87,7 +87,7 @@ class ContextSwitchRTL(Component):
         s.overwrite_fu_outport.msg @= s.progress_reg
       else:
         s.overwrite_fu_outport.val @= 0
-        s.overwrite_fu_outport.msg @= DataType(-1, 0)
+        s.overwrite_fu_outport.msg @= DataType(0, 0)
 
     @update_ff
     def update_regs():
@@ -96,7 +96,7 @@ class ContextSwitchRTL(Component):
         s.status_reg <<= STATUS_PAUSING
       elif (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_RESUME)):
         s.status_reg <<= STATUS_RESUMING
-      elif (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_LAUNCH)):
+      elif (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
         s.status_reg <<= STATUS_RUNNING
       else:
         s.status_reg <<= s.status_reg

@@ -197,6 +197,8 @@ class CtrlMemDynamicRTL(Component):
         if s.recv_pkt_queue.send.val:
           if s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH:
             s.start_iterate_ctrl <<= 1
+    # TODO: issue #191, stop iterate ctrl after 10 cycels during pausing status, 
+    # so as to clear channels safely.
           # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
           #elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
           #  s.start_iterate_ctrl <<= 0
