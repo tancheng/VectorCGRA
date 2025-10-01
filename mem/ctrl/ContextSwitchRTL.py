@@ -72,7 +72,7 @@ class ContextSwitchRTL(Component):
       s.progress_is_null @= (s.progress_reg == DataType(0, 0))
       s.is_pausing @= (s.status_reg == STATUS_PAUSING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
-      s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) and (s.init_phi_addr_reg == s.ctrl_mem_rd_addr))
+      s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) & (s.init_phi_addr_reg == s.ctrl_mem_rd_addr))
 
       # The output of PHI_CONST (first node in DFG) during the PAUSING status should always 
       # have DataType(0, 0), as it will be broadcasted to all other operations in this iteration 
