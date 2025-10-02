@@ -21,12 +21,27 @@ PORT_ROUTING_CROSSBAR = 0
 PORT_FU_CROSSBAR = 1
 PORT_CONST = 2
 
+PORT_RF_NORTH = 0
+PORT_RF_SOUTH = 1
+
 LINK_NO_MEM   = 0
 LINK_FROM_MEM = 1
 LINK_TO_MEM   = 2
 
 # Constant for maximum control-message count.
 MAX_CTRL_COUNT = 1024
+
+# Constant for maximum thread-count
+MAX_THREAD_COUNT = 512
+
+# Constant for maximum predicate math ops per cfg
+MAX_PRED_MATH = 4
+
+# Constant for maximum bitstream count
+MAX_BITSTREAM_SIZE = 30
+
+# Axi Address Bitwidth
+AXI_ADDR_BITWIDTH = 44
 
 # Constant for prologue max count.
 PROLOGUE_MAX_COUNT = 7

@@ -41,99 +41,97 @@ from ...lib.opt_type import *
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
+    def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
+                    CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
+                    ControllerIdType, cgra_id, width, height,
+                    ctrl_mem_size, data_mem_size_global,
+                    data_mem_size_per_bank, num_banks_per_cgra,
+                    num_registers_per_reg_bank,
+                    src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
+                    idTo2d_map, complete_signal_sink_out,
+                    multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, cgra_id, width, height,
-                ctrl_mem_size, data_mem_size_global,
-                data_mem_size_per_bank, num_banks_per_cgra,
-                num_registers_per_reg_bank,
-                src_ctrl_pkt, ctrl_steps, topology, controller2addr_map,
-                idTo2d_map, complete_signal_sink_out,
-                multi_cgra_rows, multi_cgra_columns, src_query_pkt):
+        DataAddrType = mk_bits(clog2(data_mem_size_global))
+        s.num_tiles = width * height
+        s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
+        s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
 
-    DataAddrType = mk_bits(clog2(data_mem_size_global))
-    s.num_tiles = width * height
-    s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
-    s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
+        s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
+                    CtrlSignalType, NocPktType, ControllerIdType,
+                    # CGRA terminals on x/y. Assume in total 4, though this
+                    # test is for single CGRA.
+                    multi_cgra_rows, multi_cgra_columns,
+                    width, height, ctrl_mem_size,
+                    data_mem_size_global, data_mem_size_per_bank,
+                    num_banks_per_cgra, num_registers_per_reg_bank,
+                    ctrl_steps, ctrl_steps, FunctionUnit,
+                    FuList, topology, controller2addr_map, idTo2d_map,
+                    is_multi_cgra = False)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, ControllerIdType,
-                # CGRA terminals on x/y. Assume in total 4, though this
-                # test is for single CGRA.
-                multi_cgra_rows, multi_cgra_columns,
-                width, height, ctrl_mem_size,
-                data_mem_size_global, data_mem_size_per_bank,
-                num_banks_per_cgra, num_registers_per_reg_bank,
-                ctrl_steps, ctrl_steps, FunctionUnit,
-                FuList, topology, controller2addr_map, idTo2d_map,
-                is_multi_cgra = False)
+        cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
+        s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
 
-    cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
-    s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
+        # Connections
+        s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
 
-    # Connections
-    s.dut.cgra_id //= cgra_id
-    s.complete_signal_sink_out.recv //= s.dut.send_to_cpu_pkt
+        complete_count_value = \
+                sum(1 for pkt in complete_signal_sink_out \
+                    if pkt.payload.cmd == CMD_COMPLETE)
 
-    complete_count_value = \
-            sum(1 for pkt in complete_signal_sink_out \
-                if pkt.payload.cmd == CMD_COMPLETE)
+        CompleteCountType = mk_bits(clog2(complete_count_value + 1))
+        s.complete_count = Wire(CompleteCountType)
 
-    CompleteCountType = mk_bits(clog2(complete_count_value + 1))
-    s.complete_count = Wire(CompleteCountType)
+        @update
+        def conditional_issue_ctrl_or_query():
+            s.dut.recv_from_cpu_pkt.val @= s.src_ctrl_pkt.send.val
+            s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
+            s.src_ctrl_pkt.send.rdy @= 0
+            s.src_query_pkt.send.rdy @= 0
+            if (s.complete_count >= complete_count_value) & \
+                ~s.src_ctrl_pkt.send.val:
+                s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
+                s.dut.recv_from_cpu_pkt.msg @= s.src_query_pkt.send.msg
+                s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
+            else:
+                s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
 
-    @update
-    def conditional_issue_ctrl_or_query():
-      s.dut.recv_from_cpu_pkt.val @= s.src_ctrl_pkt.send.val
-      s.dut.recv_from_cpu_pkt.msg @= s.src_ctrl_pkt.send.msg
-      s.src_ctrl_pkt.send.rdy @= 0
-      s.src_query_pkt.send.rdy @= 0
-      if (s.complete_count >= complete_count_value) & \
-         ~s.src_ctrl_pkt.send.val:
-        s.dut.recv_from_cpu_pkt.val @= s.src_query_pkt.send.val
-        s.dut.recv_from_cpu_pkt.msg @= s.src_query_pkt.send.msg
-        s.src_query_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
-      else:
-        s.src_ctrl_pkt.send.rdy @= s.dut.recv_from_cpu_pkt.rdy
+        @update_ff
+        def update_complete_count():
+            if s.reset:
+                s.complete_count <<= 0
+            else:
+                if s.complete_signal_sink_out.recv.val & s.complete_signal_sink_out.recv.rdy & \
+                (s.complete_count < complete_count_value):
+                    s.complete_count <<= s.complete_count + CompleteCountType(1)
 
-    @update_ff
-    def update_complete_count():
-      if s.reset:
-        s.complete_count <<= 0
-      else:
-        if s.complete_signal_sink_out.recv.val & s.complete_signal_sink_out.recv.rdy & \
-           (s.complete_count < complete_count_value):
-          s.complete_count <<= s.complete_count + CompleteCountType(1)
+        # Connects memory address upper and lower bound for each CGRA.
+        # s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
+        # s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
-    # Connects memory address upper and lower bound for each CGRA.
-    s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
-    s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
+        # for tile_col in range(width):
+        #     s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
+        #     s.dut.recv_data_on_boundary_north[tile_col].val //= 0
+        #     s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
 
-    for tile_col in range(width):
-      s.dut.send_data_on_boundary_north[tile_col].rdy //= 0
-      s.dut.recv_data_on_boundary_north[tile_col].val //= 0
-      s.dut.recv_data_on_boundary_north[tile_col].msg //= DataType()
+        #     s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
+        #     s.dut.recv_data_on_boundary_south[tile_col].val //= 0
+        #     s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
 
-      s.dut.send_data_on_boundary_south[tile_col].rdy //= 0
-      s.dut.recv_data_on_boundary_south[tile_col].val //= 0
-      s.dut.recv_data_on_boundary_south[tile_col].msg //= DataType()
+        # for tile_row in range(height):
+        #     s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
+        #     s.dut.recv_data_on_boundary_west[tile_row].val //= 0
+        #     s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
 
-    for tile_row in range(height):
-      s.dut.send_data_on_boundary_west[tile_row].rdy //= 0
-      s.dut.recv_data_on_boundary_west[tile_row].val //= 0
-      s.dut.recv_data_on_boundary_west[tile_row].msg //= DataType()
+        #     s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
+        #     s.dut.recv_data_on_boundary_east[tile_row].val //= 0
+        #     s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
-      s.dut.send_data_on_boundary_east[tile_row].rdy //= 0
-      s.dut.recv_data_on_boundary_east[tile_row].val //= 0
-      s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
+    def done(s):
+        return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
+                and s.complete_signal_sink_out.done())
 
-  def done(s):
-    return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
-            and s.complete_signal_sink_out.done())
-
-  def line_trace(s):
-    return s.dut.line_trace()
+    def line_trace(s):
+        return s.dut.line_trace()
 
 def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
@@ -156,7 +154,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   data_mem_size_global = 128
   data_mem_size_per_bank = 16
   num_banks_per_cgra = 2
-  num_cgra_columns = 4
+  num_cgra_columns = 1
   num_cgra_rows = 1
   num_cgras = num_cgra_columns * num_cgra_rows
   num_ctrl_operations = 64
@@ -185,12 +183,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   for i in range(num_cgras):
     controller2addr_map[i] = [i * per_cgra_data_size,
                               (i + 1) * per_cgra_data_size - 1]
-  idTo2d_map = {
-          0: [0, 0],
-          1: [1, 0],
-          2: [2, 0],
-          3: [3, 0],
-  }
+  idTo2d_map = {0: [0, 0]}
 
   cgra_id_nbits = clog2(num_cgras)
   addr_nbits = clog2(data_mem_size_global)
@@ -580,7 +573,7 @@ def test_homogeneous_2x2(cmdline_opts):
             SelRTL,
             RetRTL,
            ]
-  th = init_param(topology, FuList)
+  th = init_param(topology, FuList, x_tiles=2, y_tiles=2)
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -671,4 +664,3 @@ def test_systolic_3x3(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-
