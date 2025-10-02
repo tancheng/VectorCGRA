@@ -1,10 +1,13 @@
 build
 __pycache__
 .hypothesis
+**/csrc/
 
 # PyMTL specific
 pymtl_import_config_*.json
 __init__.py
+**/obj_dir*/
+ucli.key
 
 # Verilog generated
 *.v
@@ -20,7 +23,6 @@ __init__.py
 *.daidir
 *.vcd
 *.vpd
-
 
 # IDE/Editor
 .vscode/
