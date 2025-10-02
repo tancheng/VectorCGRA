@@ -16,7 +16,9 @@ class STEP_ControllerRTL(Component):
                 CpuPktType,
                 CfgBitstreamType,
                 CfgType,
-                CfgMetadataType):
+                CfgMetadataType,
+                CfgTokenizerType
+                ):
     BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_SIZE))
     
     # CPU ports
@@ -28,6 +30,9 @@ class STEP_ControllerRTL(Component):
     
     # RF ports
     s.send_cfg_to_rf = SendIfcRTL(CfgMetadataType)
+
+    # Tokenizer ports
+    s.send_cfg_to_tokenizer = SendIfcRTL(CfgTokenizerType)
     
     # Internal Ports
     s.pc = Wire(BitstreamAddrType)
@@ -80,6 +85,7 @@ class STEP_ControllerRTL(Component):
         # Default interface values
         s.send_cfg_to_tiles.val <<= Bits1(0)
         s.send_cfg_to_rf.val <<= Bits1(0)
+        s.send_cfg_to_tokenizer.val <<= Bits1(0)
         s.send_to_cpu_pkt.val <<= Bits1(0)
         # Return to idle state
         s.state <<= s.STATE_IDLE
@@ -121,6 +127,8 @@ class STEP_ControllerRTL(Component):
             s.send_cfg_to_tiles.val <<= Bits1(1)
             s.send_cfg_to_rf.msg <<= s.cfg_mem.rdata[0].metadata
             s.send_cfg_to_rf.val <<= Bits1(1)
+            s.send_cfg_to_tokenizer.msg <<= s.cfg_mem.rdata[0].metadata.tokenizer_cfg
+            s.send_cfg_to_tokenizer.val <<= Bits1(1)
             
             # Update PC and control signals
             s.pc_next <<= s.cfg_mem.rdata[0].metadata.br_id

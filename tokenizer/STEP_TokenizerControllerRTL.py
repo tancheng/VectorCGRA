@@ -40,15 +40,14 @@ class STEP_TokenizerControllerRTL(Component):
         s.tokenizers = [ STEP_TokenizerRTL(num_tokens, max_delay) for _ in range(num_returner_ports) ]
 
         ### Debug Ports
+        # s.tokenizer_take = [ OutPort(1) for _ in range(num_returner_ports) ]
         s.token_shifter = [ OutPort(max_delay) for _ in range(num_returner_ports) ]
-        s.tokenizer_take = [ OutPort(1) for _ in range(num_returner_ports) ]
         s.tokenizer_avail = [ OutPort(1) for _ in range(num_returner_ports) ]
         s.tokenizer_count = [ OutPort(mk_bits(clog2(num_tokens + 1))) for _ in range(num_returner_ports) ]
         for i in range(num_returner_ports):
             s.token_shifter[i] //= s.tokenizers[i].token_shifter
             s.tokenizer_avail[i] //= s.tokenizers[i].token_avail
             s.tokenizer_count[i] //= s.tokenizers[i].token_count
-        
 
         # Wire Connections
         for i in range(num_returner_ports):
@@ -77,11 +76,9 @@ class STEP_TokenizerControllerRTL(Component):
             # Token take default
             for j in range(num_returner_ports):
                 s.tokenizers[j].token_take @= 0
-                s.tokenizer_take[j] @= 0
             
             # Token ake logic
             for i in range(num_taker_ports):
                 for j in range(num_returner_ports):
                     if s.tokenizer_cfg.token_route_sink_enable[i][Bits3(num_returner_ports - j - 1)]:
                         s.tokenizers[j].token_take @= s.token_take[i]
-                        s.tokenizer_take[j] @= s.token_take[i]

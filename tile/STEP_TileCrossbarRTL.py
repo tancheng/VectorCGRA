@@ -47,11 +47,9 @@ class STEP_TileCrossbarRTL(Component):
                     TileBitstreamType,
                     RegAddrType,
                 ):
-        # TODO: @darrenl only 4 supported
-        assert num_tile_inports == 4
-        assert num_tile_outports == 4
         AbsoluteTileInPortType = mk_bits( clog2(num_tile_inports) )
         AbsoluteTileOutPortType = mk_bits( clog2(num_tile_outports) )
+        TileInPortType = mk_bits( clog2(num_tile_inports + 1) )
 
         # I/O Interfaces
         s.tile_in_data_port = [ InPort(DataType) for _ in range(num_tile_inports) ]
@@ -94,7 +92,7 @@ class STEP_TileCrossbarRTL(Component):
             s.pred_in_val @= 1
             for i in range(num_fu_inports):
                 if s.tile_bitstream.tile_in_route[i] > 0:
-                    input_idx = Bits2(s.tile_bitstream.tile_in_route[i] - 1)
+                    input_idx = AbsoluteTileInPortType(s.tile_bitstream.tile_in_route[i] - 1)
                     if ~s.tile_in_pred_port[input_idx]:
                         s.pred_in_val @= 0
             
@@ -116,20 +114,14 @@ class STEP_TileCrossbarRTL(Component):
                     s.tile_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= 0
 
         @update
-        def update_port_valids():
+        def update_fu_out_routing():
             # Default Ports:
             for i in range(num_fu_inports):
                 s.send_to_fu[i] @= DataType()
-            for i in range(num_tile_outports):
-                s.tile_out_data_port[i] @= DataType()
+            
 
             # Handle forwarding logic when predicates are false
-            if (s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH):
-                # Forward input data that matches write address, or any data if different addr type
-                for i in range(num_tile_outports):
-                    if s.tile_bitstream.tile_out_route[i]:
-                        s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_data_port[AbsoluteTileOutPortType(s.should_forward - 1)]
-            else:
+            if ~((s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH)):
                 # Normal operation - send to FU based on configuration
                 for i in range(num_fu_inports):
                     tile_port_idx = AbsoluteTileInPortType(s.tile_bitstream.tile_in_route[i] - 1)
@@ -138,9 +130,22 @@ class STEP_TileCrossbarRTL(Component):
                     else:
                         s.send_to_fu[i] @= DataType()
 
+        @update_ff
+        def update_data_port_out():
+            # Default port
+            for i in range(num_tile_outports):
+                s.tile_out_data_port[i] <<= DataType()
+
+            # Handle forwarding logic when predicates are false
+            if (s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH):
+                # Forward input data that matches write address, or any data if different addr type
+                for i in range(num_tile_outports):
+                    if s.tile_bitstream.tile_out_route[i]:
+                        s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] <<= s.tile_in_data_port[AbsoluteTileOutPortType(s.should_forward - 1)]
+            else:
                 # Route FU output to tile outputs
                 # TODO: @darrenl currently assuming only 1 fu outport
                 if (s.tile_bitstream.opt_type != OPT_NAH):
                     for i in range(num_tile_outports):
                         if s.tile_bitstream.tile_out_route[i]:
-                            s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.recv_from_fu[0]
+                            s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] <<= s.recv_from_fu[0]

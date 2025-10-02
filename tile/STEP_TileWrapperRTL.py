@@ -37,7 +37,8 @@ class STEP_TileWrapperRTL(Component):
                     RegAddrType,
                     PredRegAddrType,
                     ):
-
+        assert(num_tile_inports == num_tile_outports)
+        assert(num_tile_inports in [4,8])
         # Tile ID
         # 0 1
         # 2 3
@@ -77,54 +78,81 @@ class STEP_TileWrapperRTL(Component):
                                 ) for _ in range(num_tile_cols)] for _ in range(num_tile_rows)]
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
-        s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
-        s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
-        DirectionType = mk_bits( clog2(num_tile_inports + 1))
-        s.should_forward = OutPort(DirectionType)
+        # check_row = 1
+        # check_col = 1
+        # s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
+        # s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
         
-        s.tile_bitstream_cmd = OutPort(OperationType)
-        s.tile_bitstream_cmd //= s.tiles[0][1].tile_bitstream.opt_type
-        s.tile_bitstream_loc = OutPort(Bits3)
-        s.tile_bitstream_loc //= (s.tiles[0][1].tile_bitstream.tile_in_route[0])
-        s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+        # s.tile_bitstream_cmd = OutPort(OperationType)
+        # s.tile_bitstream_cmd //= s.tiles[check_row][check_col].tile_bitstream.opt_type
+        # s.tile_bitstream_loc = OutPort(Bits4)
+        # s.tile_bitstream_loc //= (s.tiles[check_row][check_col].tile_bitstream.tile_in_route[0])
+        # s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
 
-        s.tiles_in_pred_from_rf = [OutPort(1) for _ in range(num_tiles)]
-        s.tiles_in_pred_val = [OutPort(1) for _ in range(num_tiles)]
-        for i in range(num_tile_rows):
-            for j in range(num_tile_cols):
-                s.tiles[i][j].tile_in_pred_port_rf_buffer //= s.tiles_in_pred_from_rf[i * num_tile_cols + j]
-                s.tiles[i][j].pred_in_val //= s.tiles_in_pred_val[i * num_tile_cols + j]
 
-        s.should_forward //= s.tiles[0][1].should_forward
-        for i in range(num_fu_inports):
-            s.fu_in[i] //= s.tiles[0][1].fu_in[i]
-        for i in range(num_fu_outports):
-            s.fu_out[i] //= s.tiles[0][1].fu_out[i]
-        for i in range(num_tile_inports):
-            s.tile_in_test[i] //= s.tiles[0][1].tile_in_test[i]
+        # for i in range(num_fu_inports):
+        #     s.fu_in[i] //= s.tiles[check_row][check_col].fu_in[i]
+        # for i in range(num_fu_outports):
+        #     s.fu_out[i] //= s.tiles[check_row][check_col].fu_out[i]
+        # for i in range(num_tile_inports):
+        #     s.tile_in_test[i] //= s.tiles[check_row][check_col].tile_in_test[i]
         
-        s.tile_pred_out_test = OutPort(1)
-        s.tile_pred_out_test //= s.tiles[0][3].tile_out_pred_port[PORT_WEST]
-        
+        # s.tile_data_out = OutPort(DataType)
+        # s.tile_data_out //= s.tiles[check_row][check_col].tile_out_data_port[PORT_NORTHWEST]
         #####
 
 
         for i in range(num_tile_rows):
             for j in range(num_tile_cols):
-                # North Connections
                 if i > 0:
+                    # North Connections
                     s.tiles[i][j].tile_in_data_port[PORT_NORTH] //= s.tiles[i-1][j].tile_out_data_port[PORT_SOUTH]
                     s.tiles[i][j].tile_out_data_port[PORT_NORTH] //= s.tiles[i-1][j].tile_in_data_port[PORT_SOUTH]
                     s.tiles[i][j].tile_in_pred_port[PORT_NORTH] //= s.tiles[i-1][j].tile_out_pred_port[PORT_SOUTH]
                     s.tiles[i][j].tile_out_pred_port[PORT_NORTH] //= s.tiles[i-1][j].tile_in_pred_port[PORT_SOUTH]
+                    if (num_tile_inports == 8):
+                        # North West Connections
+                        if j > 0:
+                            s.tiles[i][j].tile_in_data_port[PORT_NORTHWEST] //= s.tiles[i-1][j-1].tile_out_data_port[PORT_SOUTHEAST]
+                            s.tiles[i][j].tile_out_data_port[PORT_NORTHWEST] //= s.tiles[i-1][j-1].tile_in_data_port[PORT_SOUTHEAST]
+                            s.tiles[i][j].tile_in_pred_port[PORT_NORTHWEST] //= s.tiles[i-1][j-1].tile_out_pred_port[PORT_SOUTHEAST]
+                            s.tiles[i][j].tile_out_pred_port[PORT_NORTHWEST] //= s.tiles[i-1][j-1].tile_in_pred_port[PORT_SOUTHEAST]
+                        # North East Connections
+                        if j < num_tile_cols - 1:
+                            s.tiles[i][j].tile_in_data_port[PORT_NORTHEAST] //= s.tiles[i-1][j+1].tile_out_data_port[PORT_SOUTHWEST]
+                            s.tiles[i][j].tile_out_data_port[PORT_NORTHEAST] //= s.tiles[i-1][j+1].tile_in_data_port[PORT_SOUTHWEST]
+                            s.tiles[i][j].tile_in_pred_port[PORT_NORTHEAST] //= s.tiles[i-1][j+1].tile_out_pred_port[PORT_SOUTHWEST]
+                            s.tiles[i][j].tile_out_pred_port[PORT_NORTHEAST] //= s.tiles[i-1][j+1].tile_in_pred_port[PORT_SOUTHWEST]
+                        if i == num_tile_rows - 1:
+                            # Tie off Diagonal Connections
+                            if (num_tile_inports == 8):
+                                if j > 0:
+                                    # South West tie off
+                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= DataType()
+                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
+                                if j < num_tile_cols - 1:
+                                    # South East tie off
+                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= DataType()
+                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
                 else:
                     # Connect North Ports to LD
                     s.tiles[i][j].tile_in_data_port[PORT_NORTH] //= DataType()
                     s.tiles[i][j].tile_out_data_port[PORT_NORTH] //= s.send_north_data_port[j]
                     s.tiles[i][j].tile_in_pred_port[PORT_NORTH] //= 0
                     s.tiles[i][j].tile_out_pred_port[PORT_NORTH] //= s.send_north_pred_port[j]
+                    # Tie off Diagonal Connections
+                    if (num_tile_inports == 8):
+                        if j > 0:
+                            # North West tie off
+                            s.tiles[i][j].tile_in_data_port[PORT_NORTHWEST] //= DataType()
+                            s.tiles[i][j].tile_in_pred_port[PORT_NORTHWEST] //= 0
+                        if j < num_tile_cols - 1:
+                            # North East tie off
+                            s.tiles[i][j].tile_in_data_port[PORT_NORTHEAST] //= DataType()
+                            s.tiles[i][j].tile_in_pred_port[PORT_NORTHEAST] //= 0
 
                 if j > 0:
+                    # West Connections
                     s.tiles[i][j].tile_in_data_port[PORT_WEST] //= s.tiles[i][j-1].tile_out_data_port[PORT_EAST]
                     s.tiles[i][j].tile_out_data_port[PORT_WEST] //= s.tiles[i][j-1].tile_in_data_port[PORT_EAST]
                     s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= s.tiles[i][j-1].tile_out_pred_port[PORT_EAST]
@@ -133,6 +161,14 @@ class STEP_TileWrapperRTL(Component):
                     s.tiles[i][j].tile_in_data_port[PORT_WEST] //= s.recv_west_data_port[i]
                     # Pred in will always be 1 as to fire. If predicated, will take its own rf predication
                     s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= 1
+                    # Tie off Diagonal Connections
+                    if num_tile_inports == 8:# and i > 0 and i < num_tile_rows - 1:
+                        # North West tie off
+                        s.tiles[i][j].tile_in_data_port[PORT_NORTHWEST] //= DataType()
+                        s.tiles[i][j].tile_in_pred_port[PORT_NORTHWEST] //= 0
+                        # South West tie off
+                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= DataType()
+                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
 
                 # Connect East Ports to fabric I/O
                 if j == num_tile_cols - 1:
@@ -140,6 +176,14 @@ class STEP_TileWrapperRTL(Component):
                     s.tiles[i][j].tile_in_pred_port[PORT_EAST] //= 0
                     s.tiles[i][j].tile_out_data_port[PORT_EAST] //= s.send_east_data_port[i]
                     s.tiles[i][j].tile_out_pred_port[PORT_EAST] //= s.send_east_pred_port[i]
+                    # Tie off Diagonal Connections
+                    if num_tile_inports == 8: # and i > 0 and i < num_tile_rows - 1:
+                        # North East tie off
+                        s.tiles[i][j].tile_in_data_port[PORT_NORTHEAST] //= DataType()
+                        s.tiles[i][j].tile_in_pred_port[PORT_NORTHEAST] //= 0
+                        # South East tie off
+                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= DataType()
+                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
                 
                 # Connect South Ports to Ld/St Unit
                 if i == num_tile_rows - 1:

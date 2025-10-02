@@ -52,6 +52,7 @@ class STEP_TileRTL(Component):
                 ):
         assert num_fu_inports == 3
         assert num_fu_outports == 1
+        assert(num_tile_inports in [4,8])
 
         # I/O Interfaces
         s.tile_in_data_port = [ InPort(DataType) for _ in range(num_tile_inports) ]
@@ -81,18 +82,12 @@ class STEP_TileRTL(Component):
                                         )
         
         ####### Test Connections
-        s.pred_in_val = OutPort(Bits1)
-        s.pred_in_val //= s.crossbar.pred_in_val
-        s.tile_in_pred_port_rf_buffer = OutPort(Bits1)
-        s.tile_in_pred_port_rf_buffer //= s.crossbar.pred_in_rf_buffer
         # TODO: @darrenl delete me
-        DirectionType = mk_bits( clog2(num_tile_inports + 1))
-        s.should_forward = OutPort(DirectionType)
-        s.should_forward //= s.crossbar.should_forward
+        # DirectionType = mk_bits( clog2(num_tile_inports + 1))
     
-        s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
-        for i in range(num_tile_inports):
-            s.tile_in_test[i] //= s.tile_in_data_port[i]
+        # s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+        # for i in range(num_tile_inports):
+        #     s.tile_in_test[i] //= s.tile_in_data_port[i]
 
         #######
 
