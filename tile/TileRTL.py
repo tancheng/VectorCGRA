@@ -16,7 +16,7 @@ Author : Cheng Tan
 
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
-from ..fu.single.GrantRTL import GrantRTL
+from ..fu.single.BranchRTL import BranchRTL
 from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
@@ -42,7 +42,7 @@ class TileRTL(Component):
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, BranchRTL, MemUnitRTL]):
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -76,22 +76,16 @@ class TileRTL(Component):
                               num_fu_inports, num_fu_outports,
                               data_mem_size, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
-    s.routing_crossbar = CrossbarRTL(DataType,
-                                     PredicateType,
+    s.routing_crossbar = CrossbarRTL(DataType, PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
-                                     num_tiles,
-                                     ctrl_mem_size,
-                                     num_tile_outports)
-    s.fu_crossbar = CrossbarRTL(DataType,
-                                PredicateType,
+                                     num_tiles)
+    s.fu_crossbar = CrossbarRTL(DataType, PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
-                                num_tiles,
-                                ctrl_mem_size,
-                                num_tile_outports)
+                                num_tiles)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
@@ -118,6 +112,9 @@ class TileRTL(Component):
     s.tile_out_or_link = [LinkOrRTL(DataType)
                           for _ in range(num_tile_outports)]
 
+    # Additional one register for partial predication
+    s.reg_predicate = RegisterRTL(PredicateType)
+
     # Signals indicating whether certain modules already done their jobs.
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
@@ -140,19 +137,14 @@ class TileRTL(Component):
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
 
-    # Ctrl address port.
-    s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
-    s.fu_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
-
     # Prologue port.
     s.element.prologue_count_inport //= s.ctrl_mem.prologue_count_outport_fu
-    for addr in range(ctrl_mem_size):
-      for i in range(num_routing_xbar_inports):
-        s.routing_crossbar.prologue_count_inport[addr][i] //= \
-            s.ctrl_mem.prologue_count_outport_routing_crossbar[addr][i]
-      for i in range(num_fu_xbar_inports):
-        s.fu_crossbar.prologue_count_inport[addr][i] //= \
-            s.ctrl_mem.prologue_count_outport_fu_crossbar[addr][i]
+    for i in range(num_routing_xbar_inports):
+      s.routing_crossbar.prologue_count_inport[i] //= \
+          s.ctrl_mem.prologue_count_outport_routing_crossbar[i]
+    for i in range(num_fu_xbar_inports):
+      s.fu_crossbar.prologue_count_inport[i] //= \
+          s.ctrl_mem.prologue_count_outport_fu_crossbar[i]
 
     for i in range(len(FuList)):
       if FuList[i] == MemUnitRTL:
@@ -180,6 +172,10 @@ class TileRTL(Component):
           s.ctrl_mem.send_ctrl.msg.routing_xbar_outport[i]
       s.fu_crossbar.crossbar_outport[i] //= \
           s.ctrl_mem.send_ctrl.msg.fu_xbar_outport[i]
+
+    # One partial predication register for flow control.
+    s.routing_crossbar.send_predicate //= s.reg_predicate.recv
+    s.reg_predicate.send //= s.element.recv_predicate
 
     # Connections on the `fu_crossbar`.
     for i in range(num_fu_outports):
@@ -234,6 +230,7 @@ class TileRTL(Component):
         elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONST):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
+            # s.const_mem.recv_const.msg.predicate @= 1
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
 
     @update
@@ -297,8 +294,7 @@ class TileRTL(Component):
     tile_in_channel_recv_str = "|".join([str(x.recv.msg) for x in s.tile_in_channel])
     tile_in_channel_send_str = "|".join([str(x.send.msg) for x in s.tile_in_channel])
     tile_in_channel_str = "|".join([str(x.line_trace()) for x in s.tile_in_channel])
-    out_str = "|".join(["(" + str(x.msg.payload) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
+    out_str = "|".join(["(" + str(x.msg.payload) + ", predicate: " + str(x.msg.predicate) + ", val: " + str(x.val) + ", rdy: " + str(x.rdy) + ")" for x in s.send_data])
     ctrl_mem = s.ctrl_mem.line_trace()
     const_mem = s.const_mem.line_trace()
     return f"send_str: {send_str}, tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
-

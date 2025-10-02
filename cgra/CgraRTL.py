@@ -16,6 +16,8 @@ from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+from ..cgra.DeSerializeRTL import DeSerializeRTL
+from ..cgra.SerializeRTL import SerializeRTL
 from ..tile.TileWrapperRTL import TileWrapperRTL
 
 class CgraRTL(Component):
@@ -54,6 +56,8 @@ class CgraRTL(Component):
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
+    # s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
+    # s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
     SingleBitType = mk_bits(1)
     s.send_to_cpu_pkt__last = OutPort(SingleBitType)
@@ -83,6 +87,29 @@ class CgraRTL(Component):
         else:
           s.cmd_e_count <<= s.cmd_e_count + 1
 
+    # Interfaces on the boundary of the CGRA.
+    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+
+    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+
+    # Components
+    # s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
+    #                   CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+    #                   data_mem_size_global, num_ctrl,
+    #                   total_steps, 4, 2, s.num_mesh_ports,
+    #                   s.num_mesh_ports, num_cgras, s.num_tiles,
+    #                   num_registers_per_reg_bank,
+    #                   FuList = FuList)
+    #           for i in range(s.num_tiles)]
+    
+    # s.cpu_to_controller_deserializer = DeSerializeRTL(CtrlPktType)
+    # s.cpu_to_controller_serializer = SerializeRTL(CtrlPktType)
     s.data_mem = DataMemWithCrossbarRTL(NocPktType,
                                         CgraPayloadType,
                                         DataType,
@@ -107,7 +134,7 @@ class CgraRTL(Component):
 
     # Address lower and upper bound.
     s.address_lower = 0
-    s.address_upper = controller2addr_map[s.cgra_id][1]
+    s.address_upper = controller2addr_map[0][0]
 
     # Connections
     # Connects the controller id.
@@ -118,6 +145,12 @@ class CgraRTL(Component):
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
+    # Connects cpu_to_controller_deserializer Unit with cpu packet
+    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+
+    # Connects cpu_to_controller_serializer Unit with cpu packet
+    s.controller.send_to_cpu_pkt  //= s.send_to_cpu_pkt
+
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
@@ -126,9 +159,17 @@ class CgraRTL(Component):
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
     s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
 
+    # if is_multi_cgra:
+    #   s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+    #   s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    if not is_multi_cgra:
+      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+      s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
+      s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
+
     # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
-    s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+    # s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    # s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
     s.tiles = TileWrapperRTL(CgraIdType, DataType, PredicateType, CtrlPktType,
                       CgraPayloadType, CtrlSignalType, ctrl_mem_size,
@@ -188,4 +229,3 @@ class CgraRTL(Component):
     res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
-
