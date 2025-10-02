@@ -2,23 +2,29 @@ build
 __pycache__
 .hypothesis
 
-*_v.cpp
-*_v.py
-*_v__ALL_pickled.cpp
-*_v.so
-*.v
-*.v.cases
-*config_CgraRTL__*.json
-*config_STEP__*.json
-obj_dir*/
-
-cgra_sim
-cgra/test/csrc/
-*.vcd
-parse_cases.py
-out.log
-
-*.daidir/
-ucli.key
+# PyMTL specific
 pymtl_import_config_*.json
 __init__.py
+
+# Verilog generated
+*.v
+*.v.cases
+
+# C++ generated
+*.cpp
+*_v.py
+*_v.so
+
+# Simulation artifacts
+*.log
+*.daidir
+*.vcd
+*.vpd
+
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
