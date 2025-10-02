@@ -146,8 +146,6 @@ class DataMemWithCrossbarRTL(Component):
     # Constructs the idTo2d lut.
     s.idTo2d_x_lut= [Wire(XType) for _ in range(multi_cgra_columns * multi_cgra_rows)]
     s.idTo2d_y_lut= [Wire(YType) for _ in range(multi_cgra_columns * multi_cgra_rows)]
-    print(f"CGRA ID to 2D LUT: {idTo2d_map}")
-    print(s.idTo2d_x_lut)
     for cgra_id in idTo2d_map:
       xy = idTo2d_map[cgra_id]
       s.idTo2d_x_lut[cgra_id] //= XType(xy[0])

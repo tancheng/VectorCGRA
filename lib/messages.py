@@ -228,14 +228,13 @@ def mk_cgra_payload(DataType,
                     prefix="MultiCgraPayload"):
 
   new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr"
-  # 11 bits from above
 
   field_dict = {}
-  field_dict['cmd'] = mk_bits(clog2(NUM_CMDS)) #4
-  field_dict['data'] = DataType #35
-  field_dict['data_addr'] = DataAddrType #7
-  field_dict['ctrl'] = CtrlType #111
-  field_dict['ctrl_addr'] = CtrlAddrType #3
+  field_dict['cmd'] = mk_bits(clog2(NUM_CMDS))
+  field_dict['data'] = DataType
+  field_dict['data_addr'] = DataAddrType
+  field_dict['ctrl'] = CtrlType
+  field_dict['ctrl_addr'] = CtrlAddrType
 
   def str_func(s):
       return f"MultiCgraNocPayload: cmd:{s.cmd}|data:{s.data}|data_addr:{s.data_addr}|" \
@@ -270,9 +269,9 @@ def mk_inter_cgra_pkt(num_cgra_columns,
              f"{opaque_nbits}_{num_vcs}_CgraPayload"
 
   field_dict = {}
-  field_dict['src'] = CgraIdType # src CGRA id
-  field_dict['dst'] = CgraIdType # dst CGRA id
-  field_dict['src_x'] = CgraXType # CGRA 2d coordinates
+  field_dict['src'] = CgraIdType
+  field_dict['dst'] = CgraIdType
+  field_dict['src_x'] = CgraXType
   field_dict['src_y'] = CgraYType
   field_dict['dst_x'] = CgraXType
   field_dict['dst_y'] = CgraYType
@@ -304,11 +303,11 @@ def mk_intra_cgra_pkt(num_cgra_columns,
                       CgraPayloadType,
                       prefix="IntraCgraPacket"):
 
-  CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1)) #1
-  CgraXType = mk_bits(max(clog2(num_cgra_columns), 1)) #1
-  CgraYType = mk_bits(max(clog2(num_cgra_rows), 1)) #1
+  CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1))
+  CgraXType = mk_bits(max(clog2(num_cgra_columns), 1))
+  CgraYType = mk_bits(max(clog2(num_cgra_rows), 1))
   # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-  TileIdType = mk_bits(clog2(num_tiles + 1)) # 3
+  TileIdType = mk_bits(clog2(num_tiles + 1))
   opaque_nbits = 8
   OpqType = mk_bits(opaque_nbits)
   num_vcs = 2
@@ -325,17 +324,16 @@ def mk_intra_cgra_pkt(num_cgra_columns,
            f"payload:{s.payload}\n"
 
   field_dict = {}
-  field_dict['src'] = TileIdType #3
-  field_dict['dst'] = TileIdType #3
-  field_dict['src_cgra_id'] = CgraIdType #1
-  field_dict['dst_cgra_id'] = CgraIdType #1
-  field_dict['src_cgra_x'] = CgraXType #1
-  field_dict['src_cgra_y'] = CgraYType #1
-  field_dict['dst_cgra_x'] = CgraXType #1
-  field_dict['dst_cgra_y'] = CgraYType #1
-  field_dict['opaque'] = OpqType #8
-  field_dict['vc_id'] = VcIdType #1
-  # 21 bits above
+  field_dict['src'] = TileIdType
+  field_dict['dst'] = TileIdType
+  field_dict['src_cgra_id'] = CgraIdType
+  field_dict['dst_cgra_id'] = CgraIdType
+  field_dict['src_cgra_x'] = CgraXType
+  field_dict['src_cgra_y'] = CgraYType
+  field_dict['dst_cgra_x'] = CgraXType
+  field_dict['dst_cgra_y'] = CgraYType
+  field_dict['opaque'] = OpqType
+  field_dict['vc_id'] = VcIdType
   field_dict['payload'] = CgraPayloadType
 
   return mk_bitstruct(new_name, field_dict,
