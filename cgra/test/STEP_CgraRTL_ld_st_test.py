@@ -127,10 +127,12 @@ def init_param():
     PredAddrType = mk_bits( clog2(num_pred_registers) )
 
     PortRouteType = mk_bits( num_returner_ports )
+    PortDelayType = mk_bits( clog2(num_tiles) )
     CfgTokenizerType = mk_cfg_tokenizer_pkt(num_taker_ports,
                                             num_returner_ports,
                                             num_tiles,
-                                            PortRouteType
+                                            PortRouteType,
+                                            PortDelayType
                                             )
     
     TileBitstreamType = mk_tile_bitstream_pkt(num_tile_inports,
@@ -165,47 +167,56 @@ def init_param():
             opt_type = OPT_NAH) for _ in range(num_tile_cols)]
 
     load_row = [TileBitstreamType(
-            opt_type = OPT_NAH) for _ in range(num_tile_cols - 2)] \
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
+            tile_out_route = TileOutType(0b0001),
+            tile_pred_route= TileOutType(0b0001),
+            const_val = DataType(0),
+            opt_type = OPT_ADD_CONST) for _ in range(num_tile_cols - 2)] \
             + \
             [TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_EAST + 1), TilePortType(0), TilePortType(0)],
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
             tile_out_route = TileOutType(0b1000),
             tile_pred_route= TileOutType(0b1000),
-            const_val = DataType(0),
+            const_val = DataType(0x10),
             opt_type = OPT_ADD_CONST)] \
             + \
             [TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_EAST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0010),
-            tile_pred_route= TileOutType(0b0010),
+            tile_in_route = [TilePortType(0), TilePortType(0), TilePortType(0)],
+            tile_out_route = TileOutType(0b0000),
+            tile_pred_route= TileOutType(0b0000),
             const_val = DataType(0x10),
-            opt_type = OPT_ADD_CONST)]
+            opt_type = OPT_NAH)]
 
     mul_row = [TileBitstreamType(
-            opt_type = OPT_NAH) for _ in range(num_tile_cols - 1)] \
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
+            tile_out_route = TileOutType(0b0001),
+            tile_pred_route= TileOutType(0b0001),
+            const_val = DataType(0),
+            opt_type = OPT_ADD_CONST) for _ in range(num_tile_cols - 1)] \
             + \
             [TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_EAST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0100),
-            tile_pred_route= TileOutType(0b0100),
-            const_val = DataType(2),
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
+            tile_out_route = TileOutType(0b0101),
+            tile_pred_route= TileOutType(0b0101),
+            const_val = DataType(3),
             opt_type = OPT_MUL_CONST)]
 
     # TODO: @darrenl OPT_PAS still needs some type of trigger and can't be valid for all clock cycles
+    # Above comment is changed and handled the tokenizer
     store_row = [TileBitstreamType(
             opt_type = OPT_NAH) for _ in range(num_tile_cols - 2)] \
             + \
             [TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_EAST + 1), TilePortType(0), TilePortType(0)],
+            tile_in_route = [TilePortType(0), TilePortType(0), TilePortType(0)],
             tile_out_route = TileOutType(0b0100),
             tile_pred_route= TileOutType(0b0100),
             const_val = DataType(0x10),
             opt_type = OPT_PAS)] \
             + \
             [TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_EAST + 1), TilePortType(PORT_NORTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b0111),
-            tile_pred_route= TileOutType(0b0111),
+            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_NORTH + 1), TilePortType(0)],
+            tile_out_route = TileOutType(0b0101),
+            tile_pred_route= TileOutType(0b0101),
             opt_type = OPT_ADD)]
 
     ### Full Bitstream Pkt ###
@@ -220,21 +231,23 @@ def init_param():
             [PortRouteType(0b0100) if i == 0 else PortRouteType(0) for i in range(num_rd_ports)],
             token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
                 + \
-                [PortDelayType(0), PortDelayType(1)]
+                [PortDelayType(0), PortDelayType(num_tile_cols - 2)]
                 + \
                 [PortDelayType(0) for _ in range(num_st_ports)]
         ),
         CfgTokenizerType(token_route_sink_enable=[
                 PortRouteType(0),
                 PortRouteType(0),
-                PortRouteType(0b0001),
-                PortRouteType(0b10001),
+                PortRouteType(0b110001),
+                PortRouteType(0),
             ],
-            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
+            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports - 2)] \
                 + \
-                [PortDelayType(0), PortDelayType(1)]
+                [PortDelayType(num_tile_cols), PortDelayType(num_tile_cols + 1)]
                 + \
-                [PortDelayType(0) for _ in range(num_st_ports)]
+                [PortDelayType(0) for _ in range(num_ld_ports)]
+                + \
+                [PortDelayType(0), PortDelayType(num_tile_cols + 2)]
         )
     ]
 
@@ -258,9 +271,9 @@ def init_param():
         CfgMetadataType(
                         pred_tile_valid = [b1(1) for _ in range(num_tiles)],
                         in_regs = [RegAddrType(0) for _ in range(num_tile_cols)],
-                        in_regs_val = [b1(0) for _ in range(num_tile_cols - 2)] + [b1(1)] * 2,
+                        in_regs_val = [b1(0) for _ in range(num_tile_cols - 2)] + [b1(1), b1(0)],
                         out_regs = [RegAddrType(i) for i in range(num_tile_cols)],
-                        out_regs_val = [b1(0) for _ in range(num_tile_cols - 1)] + [b1(1)],
+                        out_regs_val = [b1(0) for _ in range(num_tile_cols - 2)] + [b1(1)] * 2,
                         st_enable = [b1(0) for _ in range(num_st_ports - 1)] + [b1(1)],
                         tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 1,
