@@ -20,3 +20,5 @@ out.log
 
 *.daidir/
 ucli.key
+pymtl_import_config_*.json
+__init__.py
