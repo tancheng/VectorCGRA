@@ -16,8 +16,6 @@ from ..mem.data.DataMemWithCrossbarRTL import DataMemWithCrossbarRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
-from ..cgra.DeSerializeRTL import DeSerializeRTL
-from ..cgra.SerializeRTL import SerializeRTL
 from ..tile.TileWrapperRTL import TileWrapperRTL
 
 class CgraRTL(Component):
