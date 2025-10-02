@@ -29,6 +29,7 @@ class TestHarness(Component):
             CfgType,
             CfgBitstreamType,
             CfgMetadataType,
+            CfgTokenizerType,
             TileBitstreamType,
             OperationType,
             DataType,
@@ -65,6 +66,7 @@ class TestHarness(Component):
             CfgType,
             CfgBitstreamType,
             CfgMetadataType,
+            CfgTokenizerType,
             TileBitstreamType,
             OperationType,
             DataType,
@@ -114,6 +116,8 @@ def init_param():
     num_st_ports = num_tile_cols // 2
     num_consts = 4
     thread_count = 2
+    num_taker_ports = num_rd_ports
+    num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
 
     DataType = mk_bits(8)
     OperationType = mk_bits( clog2(NUM_OPTS) )
@@ -122,11 +126,13 @@ def init_param():
     RegAddrType = mk_bits( clog2(num_registers) )
     PredAddrType = mk_bits( clog2(num_pred_registers) )
 
-    PredMathType = mk_pred_math_pkt(PredAddrType,
-                                    DataType,
-                                    OperationType
-                                )
-
+    PortRouteType = mk_bits( num_returner_ports )
+    CfgTokenizerType = mk_cfg_tokenizer_pkt(num_taker_ports,
+                                            num_returner_ports,
+                                            num_tiles,
+                                            PortRouteType
+                                            )
+    
     TileBitstreamType = mk_tile_bitstream_pkt(num_tile_inports,
                                                 num_tile_outports,
                                                 num_fu_inports,
@@ -148,7 +154,7 @@ def init_param():
                                             DataType,
                                             RegAddrType,
                                             PredAddrType,
-                                            PredMathType,
+                                            CfgTokenizerType,
                                         )
     CfgType = mk_cfg_pkt(CfgBitstreamType, CfgMetadataType)
 
@@ -208,6 +214,30 @@ def init_param():
         CfgBitstreamType(bitstream=(no_op_row * (num_tile_rows - 2) + mul_row + store_row))
     ]
 
+    ### Tokenizer Cfg Pkt ###
+    cfg_tokenizer_pkt = [
+        CfgTokenizerType(token_route_sink_enable=
+            [PortRouteType(0b0100) if i == 0 else PortRouteType(0) for i in range(num_rd_ports)],
+            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
+                + \
+                [PortDelayType(0), PortDelayType(1)]
+                + \
+                [PortDelayType(0) for _ in range(num_st_ports)]
+        ),
+        CfgTokenizerType(token_route_sink_enable=[
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0b0001),
+                PortRouteType(0b10001),
+            ],
+            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
+                + \
+                [PortDelayType(0), PortDelayType(1)]
+                + \
+                [PortDelayType(0) for _ in range(num_st_ports)]
+        )
+    ]
+
     ### Inputs into dut ###
     cfg_metadata = [
         CfgMetadataType(
@@ -218,6 +248,7 @@ def init_param():
                         out_regs_val = [b1(0) for _ in range(num_tile_cols)],
                         ld_enable = [b1(0) for _ in range(num_ld_ports - 1)] + [b1(1)],
                         ld_reg_addr = [RegAddrType(0) for _ in range(num_ld_ports)],
+                        tokenizer_cfg = cfg_tokenizer_pkt[0],
                         cfg_id = 0,
                         br_id = 1,
                         thread_count = thread_count,
@@ -231,6 +262,7 @@ def init_param():
                         out_regs = [RegAddrType(i) for i in range(num_tile_cols)],
                         out_regs_val = [b1(0) for _ in range(num_tile_cols - 1)] + [b1(1)],
                         st_enable = [b1(0) for _ in range(num_st_ports - 1)] + [b1(1)],
+                        tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 1,
                         br_id = 0,
                         thread_count = thread_count,
@@ -256,6 +288,7 @@ def init_param():
                         CfgType,
                         CfgBitstreamType,
                         CfgMetadataType,
+                        CfgTokenizerType,
                         TileBitstreamType,
                         OperationType,
                         DataType,

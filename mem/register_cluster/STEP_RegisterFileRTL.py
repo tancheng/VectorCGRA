@@ -21,7 +21,7 @@ class STEP_RegisterFileRTL(Component):
     s.rd_addr = [RecvIfcRTL(AddrType) for _ in range(num_rd_ports)]
     s.wr_addr = [RecvIfcRTL(AddrType) for _ in range(num_wr_ports)]
     s.wr_data = [RecvIfcRTL(DataType) for _ in range(num_wr_ports)]
-    s.rd_data = [SendIfcRTL(DataType) for _ in range(num_rd_ports)]  # Should be SendIfcRTL for output
+    s.rd_data = [OutPort(DataType) for _ in range(num_rd_ports)]
     s.rd_thread_idx = [InPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_rd_ports)]
     s.wr_thread_idx = [InPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_wr_ports)]
    
@@ -115,8 +115,7 @@ class STEP_RegisterFileRTL(Component):
       
       # Initialize output interfaces
       for port_id in range(num_rd_ports):
-        s.rd_data[port_id].msg @= 0
-        s.rd_data[port_id].val @= 0
+        s.rd_data[port_id] @= 0
       
       # Handle read ports - drive selected banks
       for bank_id in range(num_reg_banks):
@@ -124,8 +123,7 @@ class STEP_RegisterFileRTL(Component):
           if s.rd_bank_sel[bank_id][port_id]:
             s.reg_bank[bank_id].rd_reg_addr[port_id] @= s.rd_lower_addr[bank_id][port_id]
             s.reg_bank[bank_id].rd_reg_valid[port_id] @= 1
-            s.rd_data[port_id].msg @= s.reg_bank[bank_id].send_reg_data[port_id]
-            s.rd_data[port_id].val @= s.reg_bank[bank_id].send_reg_valid[port_id]
+            s.rd_data[port_id] @= s.reg_bank[bank_id].send_reg_data[port_id]
      
       # Handle write ports - drive selected banks
       for bank_id in range(num_reg_banks):
@@ -141,7 +139,6 @@ class STEP_RegisterFileRTL(Component):
     
     for port_id in range(num_wr_ports):
       s.wr_addr[port_id].rdy //= 1
-      s.wr_data[port_id].rdy //= 1
   
   def line_trace(s):
     reg_bank_str = "reg_banks: " + "|".join([reg_bank.line_trace() for reg_bank in s.reg_bank])

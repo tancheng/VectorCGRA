@@ -46,16 +46,23 @@ class TestHarness(Component):
                     send_cfg_done_msgs
                     ):
         # Configure sources
-        s.recv_wr_data = [TestSrcRTL(RegDataType, recv_wr_data_msgs[i], 4) for i in range(num_wr_ports)]
+        wr_data_delay = 2
+        ld_data_delay = wr_data_delay + 1
+        ld_data_end_delay = ld_data_delay + max([len(recv_ld_data_msgs) for i in range(num_ld_ports)])
+        s.recv_wr_data = [TestSrcRTL(RegDataType, recv_wr_data_msgs[i], wr_data_delay) for i in range(num_wr_ports)]
         s.recv_cfg_from_ctrl = TriggeredConfigSource(CfgMetadataType, recv_cfg_from_ctrl_msgs)
-        s.recv_ld_data = [TestSrcRTL(RegDataType, recv_ld_data_msgs[i], 10) for i in range(num_ld_ports)]
-        s.recv_ld_data_id = [TestSrcRTL(mk_bits(clog2(MAX_THREAD_COUNT)), recv_ld_data_id_msgs[i], 10) for i in range(num_ld_ports)]
-        s.recv_ld_st_complete = TestSrcRTL(Bits1, [1], 12)
+        s.recv_ld_data = [TestSrcRTL(RegDataType, recv_ld_data_msgs[i], ld_data_delay) for i in range(num_ld_ports)]
+        s.recv_ld_data_id = [TestSrcRTL(mk_bits(clog2(MAX_THREAD_COUNT)), recv_ld_data_id_msgs[i], ld_data_delay) for i in range(num_ld_ports)]
+        s.recv_ld_st_complete = TestSrcRTL(Bits1, [1], ld_data_end_delay)
+        s.recv_tile_token_avail = [TestSrcRTL(Bits1, [1]) for _ in range(num_rd_ports)]
+        s.recv_tile_token_shifter_out = [TestSrcRTL(Bits1, [1] * len(recv_wr_data_msgs[i]) + [0], wr_data_delay) for i in range(num_rd_ports)]
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.send_rd_data = [TestSinkRTL(RegDataType, send_rd_data_msgs[i], cmp_fn = cmp_fn) for i in range(num_rd_ports)]
+        s.send_rd_data = [TestSinkRTL(RegDataType, send_rd_data_msgs[i], ld_data_end_delay, cmp_fn = cmp_fn) for i in range(num_rd_ports)]
         s.send_cfg_done = TestSinkRTL(Bits1, send_cfg_done_msgs, cmp_fn = cmp_fn)
+        s.send_tile_token_take = [TestSinkRTL(Bits1, [1]) for _ in range(num_rd_ports)]
+        s.send_tile_token_return = [TestSinkRTL(Bits1, [1]) for _ in range(num_rd_ports)]
 
         s.dut = STEP_RegisterFileControllerRTL(num_tiles,
                                                 RegDataType,
@@ -76,9 +83,19 @@ class TestHarness(Component):
 
         # Connections
         for i in range(num_wr_ports):
-            s.dut.wr_data[i] //= s.recv_wr_data[i].send
+            s.dut.wr_data[i] //= s.recv_wr_data[i].send.msg
+            s.recv_wr_data[i].send.rdy //= 1
         for i in range(num_rd_ports):
-            s.dut.rd_data[i] //= s.send_rd_data[i].recv
+            s.dut.rd_data[i] //= s.send_rd_data[i].recv.msg
+            s.send_rd_data[i].recv.val //= 1
+            s.dut.tile_token_take[i] //= s.send_tile_token_take[i].recv.msg
+            s.dut.tile_token_take[i] //= s.send_tile_token_take[i].recv.val
+            s.dut.tile_token_return[i] //= s.send_tile_token_return[i].recv.msg
+            s.dut.tile_token_return[i] //= s.send_tile_token_return[i].recv.val
+            s.dut.tile_token_avail[i] //= s.recv_tile_token_avail[i].send.msg
+            s.dut.tile_token_shifter_out[i] //= s.recv_tile_token_shifter_out[i].send.msg
+            s.recv_tile_token_avail[i].send.rdy //= 1
+            s.recv_tile_token_shifter_out[i].send.rdy //= 1
         for i in range(num_ld_ports):
             s.dut.ld_data[i] //= s.recv_ld_data[i].send.msg
             s.dut.ld_data_valid[i] //= s.recv_ld_data[i].send.val
@@ -181,7 +198,7 @@ def init_param():
         # Write data for reg addr 0
         [], 
         # Write data for reg addr 1
-        [RegDataType(1), RegDataType(1)],
+        [RegDataType(1), RegDataType(2)],
         # Write data for reg addr 2
         [],
         # Write data for reg addr 3
@@ -193,7 +210,7 @@ def init_param():
         # Read data for reg addr 0
         [RegDataType(0),RegDataType(0), RegDataType(5),RegDataType(7)], 
         # Read data for reg addr 1
-        [RegDataType(0),RegDataType(0), RegDataType(1), RegDataType(1)],
+        [RegDataType(0),RegDataType(0), RegDataType(1), RegDataType(2)],
         # Read data for reg addr 2
         [],
         # Read data for reg addr 3

@@ -32,6 +32,7 @@ class TestHarness(Component):
                     num_fu_outports,
                     DataType,
                     TileBitstreamType,
+                    OperationType,
                     RegAddrType,
                     PredRegAddrType,
                     tile_in_bitstream_msgs,
@@ -43,18 +44,16 @@ class TestHarness(Component):
         s.num_tile_outports = num_tile_outports
 
         # Configure sources - recv_from_cpu_pkt launches every cycle
-        def delay_func(i):
-            return 2 + 2*i
-        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], delay_func(i)) for i in range(num_tile_inports)]
+        initial_delay = 2
+        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], initial_delay) for i in range(num_tile_inports)]
         s.tile_bitstream = TestSrcRTL(TileBitstreamType, tile_in_bitstream_msgs, 0)
-        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, 2)
-        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], delay_func(i)) for i in range(num_tile_inports)]
-        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1)], delay_func(i)) for i in range(num_tile_outports)]
-        s.tile_in_wr_addr_pkts = [TestSrcRTL(RegAddrType, [RegAddrType(1)], 2) for _ in range(num_tile_inports)]
+        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, initial_delay)
+        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], initial_delay) for i in range(num_tile_inports)]
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], cmp_fn = cmp_fn) for i in range(num_tile_outports)]
+        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], initial_delay, cmp_fn = cmp_fn) for i in range(num_tile_outports)]
+        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1)], initial_delay) for i in range(num_tile_outports)]
 
         s.dut = STEP_TileRTL(num_tile_inports,
                                 num_tile_outports,
@@ -62,21 +61,25 @@ class TestHarness(Component):
                                 num_fu_outports,
                                 DataType,
                                 TileBitstreamType,
+                                OperationType,
                                 RegAddrType,
                                 PredRegAddrType,
                             )
 
         # Connections
         for i in range(num_tile_inports):
-            s.dut.tile_in_port[i] //= s.data_in_pkts[i].send
-            s.dut.pred_in[i] //= s.pred_in_pkts[i].send.msg
+            s.dut.tile_in_data_port[i] //= s.data_in_pkts[i].send.msg
+            s.dut.tile_in_pred_port[i] //= s.pred_in_pkts[i].send.msg
+            s.data_in_pkts[i].send.rdy //= 1
             s.pred_in_pkts[i].send.rdy //= 1
-            s.dut.wr_addr_in[i] //= s.tile_in_wr_addr_pkts[i].send.msg
         for i in range(num_tile_outports):
-            s.dut.tile_out_port[i] //= s.data_out_pkts[i].recv
-            s.dut.pred_out[i] //= s.pred_out_pkts[i].recv.msg
+            s.dut.tile_out_data_port[i] //= s.data_out_pkts[i].recv.msg
+            s.dut.tile_out_pred_port[i] //= s.pred_out_pkts[i].recv.msg
+            s.data_out_pkts[i].recv.val //= 1
+            s.pred_out_pkts[i].recv.val //= 1
         s.dut.recv_tile_bitstream //= s.tile_bitstream.send
-        s.dut.pred_in_rf //= s.pred_in_rf_pkts.send
+        s.dut.tile_in_pred_port_rf //= s.pred_in_rf_pkts.send.msg
+        s.pred_in_rf_pkts.send.rdy //= 1
 
     def done(s):
         for i in range(s.num_tile_inports):
@@ -108,6 +111,7 @@ def init_param():
     DataType = mk_bits(8)
     OperationType = mk_bits( clog2(NUM_OPTS) )
     TilePortType = mk_bits( clog2(num_tile_inports + 1) ) # +1 for no connection
+    TileOutType = mk_bits( num_tile_outports ) # Binary for each direction if valid
     RegAddrType = mk_bits( clog2(num_regs) )
     PredRegAddrType = mk_bits( clog2(num_pred_regs) )
 
@@ -116,6 +120,7 @@ def init_param():
                                                 num_fu_inports,
                                                 num_fu_outports,
                                                 OperationType,
+                                                DataType,
                                                 RegAddrType,
                                                 PredRegAddrType,
                                                 )
@@ -124,8 +129,8 @@ def init_param():
     tile_in_bitstream_msgs = [
         TileBitstreamType(
             tile_in_route = [TilePortType(1), TilePortType(2), TilePortType(0)],
-            tile_out_route = [TilePortType(1)],
-            reg_wr_addr = RegAddrType(0),
+            tile_out_route = TileOutType(0b1000),
+            tile_pred_route = TileOutType(0b1000),
             opt_type = OPT_ADD)
     ]
 
@@ -162,6 +167,7 @@ def init_param():
                     num_fu_outports,
                     DataType,
                     TileBitstreamType,
+                    OperationType,
                     RegAddrType,
                     PredRegAddrType,
                     tile_in_bitstream_msgs,

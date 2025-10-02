@@ -393,7 +393,7 @@ def mk_cfg_metadata_pkt(
                         DataType,
                         RegAddrType,
                         PredAddrType,
-                        PredMathType,
+                        CfgTokenizerType,
                         prefix="CfgMetadataPkt"):
     
     ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
@@ -414,11 +414,35 @@ def mk_cfg_metadata_pkt(
     field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
+    field_dict['tokenizer_cfg'] = CfgTokenizerType
     field_dict['cfg_id'] = CfgIdType
     field_dict['br_id'] = CfgIdType
     field_dict['thread_count'] = ThreadCountType
     field_dict['start_cfg'] = Bits1
     field_dict['end_cfg'] = Bits1
+
+    return mk_bitstruct(new_name, field_dict,
+        namespace = {'__str__': str_func}
+)
+
+def mk_cfg_tokenizer_pkt(num_taker_ports,
+                        num_returner_ports,
+                        max_delay,
+                        PortRouteType,
+                        PortDelayType,
+                        prefix="TokenizerCfgPkt"
+                        ):
+    new_name = f"{prefix}"
+
+    # Additional for 0th index = Unused Port
+    # PortRouteType Convention => [rf_wr_port_0, rf_wr_port_1, ld_port0, ld_port1, st_port_0, st_port_1]
+
+    def str_func(s):
+        return f"TokenizerCfgPkt: \n"
+
+    field_dict = {}
+    field_dict['token_route_sink_enable'] = [PortRouteType for _ in range(num_taker_ports)]
+    field_dict['token_route_delay_to_sink'] = [PortDelayType for _ in range(num_returner_ports)]
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}

@@ -26,31 +26,37 @@ from ...lib.basic.TimedWriteSource import TimedWriteSource
 class TestHarness(Component):
 
     def construct(s):
-        num_credits = 4
-        max_delay = 4
-        num_test_credits = 5
+        num_tokens = 4
+        max_delay = 16
+        num_test_tokens = 5
         # Configure source
-        s.send_credit = TestSrcRTL(Bits1, [1, 0] * num_test_credits, 0)
+        s.send_token_take = TestSrcRTL(Bits1, [1, 0] * num_test_tokens, 0)
+        s.token_return = TestSrcRTL(Bits1, [1] + [0] * 7 + [1, 0], 2)
+        s.token_delay = TestSrcRTL(mk_bits(clog2(max_delay)), [2], 0)
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.recv_credit = TestSinkRTL(Bits1, [1] * num_test_credits, cmp_fn = cmp_fn)
-        s.recv_credit_avail = TestSinkRTL(Bits1, [1] * 6, cmp_fn = cmp_fn)
+        s.recv_token = TestSinkRTL(Bits1, [1] * num_test_tokens, cmp_fn = cmp_fn)
+        s.recv_token_avail = TestSinkRTL(Bits1, [], cmp_fn = cmp_fn)
 
-        s.dut = STEP_TokenizerRTL(num_credits,
+        s.dut = STEP_TokenizerRTL(num_tokens,
                                     max_delay
                                     )
 
         # Connections
-        s.dut.take_credit //= s.send_credit.send.msg
-        s.send_credit.send.rdy //= 1
-        s.dut.out_credit //= s.recv_credit.recv.msg
-        s.dut.out_credit //= s.recv_credit.recv.val
-        s.dut.credit_avail //= s.recv_credit_avail.recv.msg
-        s.dut.credit_avail //= s.recv_credit_avail.recv.val
+        s.dut.token_take //= s.send_token_take.send.msg
+        s.send_token_take.send.rdy //= 1
+        s.dut.token_return //= s.token_return.send.msg
+        s.token_return.send.rdy //= 1
+        s.dut.token_shifter_out //= s.recv_token.recv.msg
+        s.dut.token_shifter_out //= s.recv_token.recv.val
+        s.dut.token_avail //= s.recv_token_avail.recv.msg
+        s.dut.token_avail //= s.recv_token_avail.recv.val
+        s.dut.token_delay //= s.token_delay.send.msg
+        s.token_delay.send.rdy //= 1
 
     def done(s):
-        return s.send_credit.done() and s.recv_credit.done() and s.recv_credit_avail.done()
+        return s.send_token_take.done() and s.recv_token.done() and s.recv_token_avail.done()
 
     def line_trace(s):
         return s.dut.line_trace()

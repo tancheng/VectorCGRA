@@ -16,6 +16,9 @@ class STEP_StoreRTL( Component ):
         s.i_tile_pred = InPort( 1 )             # Tile data indicator  
         s.o_tile_complete = OutPort( 1 )        # All tile stores complete
         
+        # Return token for new data
+        s.token_return = OutPort( 1 )
+
         # Internal queues and state
         StoreReqType = mk_st_req_pkt(DataType)
         
@@ -37,6 +40,9 @@ class STEP_StoreRTL( Component ):
         # Input request handling with tile tracking
         @update_ff
         def tile_tracking():
+            # Default trigger token as output addr is valid
+            s.token_return <<= s.store_queue.send.val
+
             if s.reset | s.o_tile_complete:
                 s.tile_counter <<= 0
                 s.tile_last_seen <<= 0
@@ -45,6 +51,9 @@ class STEP_StoreRTL( Component ):
                 if s.store_ifc.i_req & s.store_queue.recv.rdy:
                     if s.i_tile_pred:
                         s.stores_in_tile <<= s.stores_in_tile + 1
+                    else:
+                        # If not a valid predicate, then immediately return a token
+                        s.token_return <<= 1
                     s.tile_counter <<= s.tile_counter + 1
                         
                     # Check if we've hit the threshold
@@ -84,7 +93,7 @@ class STEP_StoreRTL( Component ):
                 elif resp_recv & ~addr_sent:
                     s.outstanding_stores <<= s.outstanding_stores - 1
                 # If both happen same cycle, counter stays same
-       
+
         # Direct address channel control - no state machine
         @update
         def addr_channel():

@@ -3,6 +3,7 @@ from ..controller.STEP_ControllerRTL import STEP_ControllerRTL
 from ..controller.STEP_RegisterFileControllerRTL import STEP_RegisterFileControllerRTL
 from ..mem.STEP_LD_ST.STEP_LoadStoreRTL import STEP_LoadStoreRTL
 from ..tile.STEP_TileWrapperRTL import STEP_TileWrapperRTL
+from ..tokenizer.STEP_TokenizerControllerRTL import STEP_TokenizerControllerRTL
 from ..lib.basic.AxiInterface import SendAxiReadLoadAddrIfcRTL, SendAxiReadStoreAddrIfcRTL, \
                             RecvAxiLoadIfcRTL, RecvAxiStoreIfcRTL
 
@@ -22,6 +23,7 @@ class STEP_CgraRTL(Component):
             CfgType,
             CfgBitstreamType,
             CfgMetadataType,
+            CfgTokenizerType,
             TileBitstreamType,
             OperationType,
 
@@ -51,6 +53,10 @@ class STEP_CgraRTL(Component):
         num_ld_ports = num_tile_cols // 2
         num_st_ports = num_tile_cols // 2
         ld_st_queue_depth = 8
+        num_tokens = ld_st_queue_depth
+        max_delay = num_tiles
+        num_taker_ports = num_rd_ports
+        num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
 
         # Additional Type
         AxiAddrType = mk_bits( AXI_ADDR_BITWIDTH )
@@ -110,6 +116,16 @@ class STEP_CgraRTL(Component):
             PredRegAddrType,
         )
 
+        s.tokenizer = STEP_TokenizerControllerRTL(
+            CfgTokenizerType,
+            num_rd_ports,
+            num_wr_ports,
+            num_ld_ports,
+            num_st_ports,
+            num_tokens,
+            max_delay
+        )
+
         ### Wire Connections ###
         ##### Core Controller Connections
         s.core_controller.recv_from_cpu_pkt //= s.recv_from_cpu_pkt # cpu -> core
@@ -147,14 +163,8 @@ class STEP_CgraRTL(Component):
             s.ld_st_unit.ld_tile_pred[i] //= s.tile_fabric.send_north_pred_port[i*2] # fabric -> ld/st
             s.ld_st_unit.st_tile_pred[i] //= s.tile_fabric.send_south_pred_port[i*2] # fabric -> ld/st
 
-            # Data and Control Load - North ONLY
-            s.ld_st_unit.ld_ifc[i].i_req //= s.tile_fabric.send_north_data_port[i*2].val # ld/st -> fabric
-            s.ld_st_unit.ld_ifc[i].o_rdy //= s.tile_fabric.send_north_data_port[i*2].rdy # fabric -> ld/st
-            # Tie off North Unused Ports
-            s.tile_fabric.send_north_data_port[i*2+1].rdy //= 0 # fabric -> 0
 
             # Data and Control Store - SOUTH ONLY
-            s.ld_st_unit.st_ifc[i].i_req //= s.tile_fabric.send_south_data_port[i*2].val # fabric -> ld/st
             s.ld_st_unit.st_ifc[i].i_data //= s.tile_fabric.send_south_data_port[i*2+1].msg # fabric -> ld/st
             s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2].rdy # ld/st -> fabric
             s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2+1].rdy # ld/st -> fabric
@@ -189,6 +199,27 @@ class STEP_CgraRTL(Component):
         s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
         for i in range(num_st_ports):
             s.st_axi[i] //= s.ld_st_unit.st_axi[i]
+
+
+        ###### Tokenizer & Rf
+        for i in range(num_taker_ports):
+            s.tokenizer.token_take[i] //= s.rf_controller.tile_token_take[i] # rf -> tokenizer
+            s.tokenizer.token_return[i] //= s.rf_controller.tile_token_return[i] # rf -> tokenizer [initial slots]
+            s.tokenizer.token_shifter_out[i] //= s.rf_controller.tile_token_shifter_out[i] # tokenizer -> rf
+            s.tokenizer.token_avail[i] //= s.rf_controller.tile_token_avail[i] # tokenizer -> rf
+        
+        ##### Tokenizer & Ld/St Connections
+        for i in range(num_taker_ports, num_returner_ports - num_ld_ports):
+            s.tokenizer.token_return[i] //= s.ld_st_unit.ld_token_return[i - num_taker_ports]
+            s.tokenizer.token_return[i + num_ld_ports] //= s.ld_st_unit.st_token_return[i - num_taker_ports]
+
+        for i in range(num_ld_ports):
+            # Data and Control Load - North ONLY
+            s.tokenizer.token_shifter_out[i + num_wr_ports] //= s.ld_st_unit.ld_ifc[i].i_req # tokenizer -> ld/st
+            # s.ld_st_unit.ld_ifc[i].o_rdy //=  # fabric -> ld/st
+
+            # Data and Control Store - SOUTH ONLY
+            s.tokenizer.token_shifter_out[i + num_wr_ports + num_ld_ports] //= s.ld_st_unit.st_ifc[i].i_req # tokenizer -> ld/st
 
         #### Test Connections ###
         # TODO @darrenl to remove

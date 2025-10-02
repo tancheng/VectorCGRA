@@ -3,53 +3,58 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 
 class STEP_TokenizerRTL(Component):
-    def construct(s, num_credits, max_delay):
+    def construct(s, num_tokens, max_delay):
         """
-        Credit-based tokenizer component
+        token-based tokenizer component
         
         Parameters:
-        - num_credits: Initial number of credits available
-        - refresh_cycles: Number of cycles before a credit is refreshed
-        - credit_bits: Bit width for credit counter
+        - num_tokens: Initial number of tokens available
+        - refresh_cycles: Number of cycles before a token is refreshed
+        - token_bits: Bit width for token counter
         """
         
         # Interface
-        s.take_credit = InPort(Bits1)      # Signal to take a credit
-        s.out_credit = OutPort(1)
-        s.credit_avail = OutPort(1)
+        s.token_take = InPort(Bits1)      # Signal to take a token
+        s.token_return = InPort(Bits1)
+        s.token_shifter_out = OutPort(1)
+        s.token_avail = OutPort(1)
         
-        s.credit_shifter = OutPort(max_delay)
-        s.credit_shifter_n = OutPort(max_delay)
-        s.credit_count = OutPort( clog2(num_credits + 1) )
+        DelayIdxType = mk_bits( clog2(max_delay) )
+        s.token_shifter = OutPort( max_delay )
+        s.token_shifter_n = OutPort( max_delay )
+        s.token_count = OutPort( clog2(num_tokens + 1) )
+        s.token_delay = InPort( DelayIdxType )
 
-        s.out_credit //= s.credit_shifter[0]
+        @update
+        def update_shifter_out():
+            s.token_shifter_out @= s.token_shifter[DelayIdxType(max_delay - 1) - s.token_delay + 1]
         
         @update
         def update_shifter_n():
-            s.credit_shifter_n @= (1 << (max_delay - 1)) | (s.credit_shifter >> 1)
+            s.token_shifter_n @= (1 << (max_delay - 1)) | (s.token_shifter >> 1)
         
         @update
-        def update_credit_avail():
-            s.credit_avail @= 0
-            if s.credit_count:
-                s.credit_avail @= 1
+        def update_token_avail():
+            s.token_avail @= 0
+            if s.token_count:
+                s.token_avail @= 1
         
         @update_ff
-        def update_credit():
+        def update_token():
             if s.reset:
-                s.credit_count <<= num_credits
-                s.credit_shifter <<= 0
+                s.token_count <<= num_tokens
+                s.token_shifter <<= 0
             else:
-                s.credit_shifter <<= s.credit_shifter >> 1
+                s.token_shifter <<= s.token_shifter >> 1
                 
-                if s.take_credit & s.out_credit:
-                    s.credit_shifter <<= s.credit_shifter_n
-                elif s.take_credit:
-                    s.credit_shifter <<= s.credit_shifter_n
-                    s.credit_count <<= s.credit_count - 1
-                elif s.out_credit:
-                    s.credit_count <<= s.credit_count + 1
+                if s.token_take:
+                    s.token_shifter <<= s.token_shifter_n
+                
+                if s.token_return & ~s.token_take:
+                    s.token_count <<= s.token_count + 1
+                elif s.token_take & ~s.token_return:
+                    s.token_count <<= s.token_count - 1
 
 
         def line_trace(s):
-            return f"credits:{s.credits_avail} pending:{s.pending_refreshes} counter:{s.refresh_counter} take:{s.take_credit} valid:{s.credit_valid}"
+            return f"tokens:{s.tokens_avail} pending:{s.pending_refreshes} counter:{s.refresh_counter} take:{s.token_take} valid:{s.token_valid}"

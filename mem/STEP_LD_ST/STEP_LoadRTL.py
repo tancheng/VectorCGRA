@@ -14,7 +14,10 @@ class STEP_LoadRTL( Component ):
         s.thread_count = InPort( clog2(MAX_THREAD_COUNT) )
         s.i_tile_pred = InPort( 1 )             # Tile data indicator  
         s.o_tile_complete = OutPort( 1 )        # All tile loads complete
-       
+
+        # Return token for new data
+        s.token_return = OutPort( 1 )
+
         # Internal queues for streaming
         LdReqType = mk_ld_req_pkt()
         LdRespType = mk_ld_resp_pkt(DataType)
@@ -34,6 +37,9 @@ class STEP_LoadRTL( Component ):
         # Input request handling with tile tracking
         @update_ff
         def tile_tracking():
+            # Default trigger token as output addr is valid
+            s.token_return <<= s.addr_queue.send.val
+
             if s.reset | s.o_tile_complete:
                 s.tile_counter <<= 0
                 s.tile_last_seen <<= 0
@@ -42,6 +48,9 @@ class STEP_LoadRTL( Component ):
                 if s.load_ifc.i_req & s.addr_queue.recv.rdy:
                     if s.i_tile_pred:
                         s.loads_in_tile <<= s.loads_in_tile + 1
+                    else:
+                        # If not a valid predicate, then immediately return a token
+                        s.token_return <<= 1
                     s.tile_counter <<= s.tile_counter + 1
                         
                     # Check if we've hit the threshold
@@ -81,7 +90,7 @@ class STEP_LoadRTL( Component ):
                 elif data_recv & ~addr_sent:
                     s.outstanding_reqs <<= s.outstanding_reqs - 1
                 # If both happen same cycle, counter stays same
-       
+        
         # Direct address channel control - no state machine
         @update
         def addr_channel():

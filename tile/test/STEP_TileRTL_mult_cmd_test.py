@@ -44,18 +44,17 @@ class TestHarness(Component):
         s.num_tile_outports = num_tile_outports
 
         # Configure sources - recv_from_cpu_pkt launches every cycle
-        def delay_func(i):
-            return 2 + 2*i
+        intial_delay = 2
         interval_delay = 7
-        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], delay_func(i), interval_delay) for i in range(num_tile_inports)]
+        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], intial_delay, interval_delay) for i in range(num_tile_inports)]
         s.tile_bitstream = TestSrcRTL(TileBitstreamType, tile_in_bitstream_msgs, 0, interval_delay)
-        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, 2, interval_delay)
-        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], delay_func(i), interval_delay) for i in range(num_tile_inports)]
-        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1)], delay_func(i), interval_delay) for i in range(num_tile_outports)]
+        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, intial_delay, interval_delay)
+        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], intial_delay, interval_delay) for i in range(num_tile_inports)]
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], cmp_fn = cmp_fn) for i in range(num_tile_outports)]
+        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], intial_delay, interval_delay, cmp_fn = cmp_fn) for i in range(num_tile_outports)]
+        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1)], intial_delay, interval_delay) for i in range(num_tile_outports)]
 
         s.dut = STEP_TileRTL(num_tile_inports,
                                 num_tile_outports,
@@ -70,14 +69,17 @@ class TestHarness(Component):
 
         # Connections
         for i in range(num_tile_inports):
-            s.dut.tile_in_data_port[i] //= s.data_in_pkts[i].send
+            s.dut.tile_in_data_port[i] //= s.data_in_pkts[i].send.msg
             s.dut.tile_in_pred_port[i] //= s.pred_in_pkts[i].send.msg
+            s.data_in_pkts[i].send.rdy //= 1
             s.pred_in_pkts[i].send.rdy //= 1
         for i in range(num_tile_outports):
-            s.dut.tile_out_data_port[i] //= s.data_out_pkts[i].recv
+            s.dut.tile_out_data_port[i] //= s.data_out_pkts[i].recv.msg
             s.dut.tile_out_pred_port[i] //= s.pred_out_pkts[i].recv.msg
+            s.data_out_pkts[i].recv.val //= 1
+            s.pred_out_pkts[i].recv.val //= 1
         s.dut.recv_tile_bitstream //= s.tile_bitstream.send
-        s.dut.tile_in_pred_port_rf //= s.pred_in_rf_pkts.send
+        s.dut.tile_in_pred_port_rf //= s.pred_in_rf_pkts.send.msg
 
     def done(s):
         for i in range(s.num_tile_inports):
@@ -132,11 +134,6 @@ def init_param():
             opt_type = OPT_ADD),
         TileBitstreamType(
             tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b1001),
-            tile_pred_route = TileOutType(0b1001),
-            opt_type = OPT_NAH),
-        TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
             tile_out_route = TileOutType(0b1000),
             tile_pred_route = TileOutType(0b1000),
             opt_type = OPT_MUL),
@@ -151,13 +148,18 @@ def init_param():
             tile_out_route = TileOutType(0b1000),
             tile_pred_route = TileOutType(0b1000),
             opt_type = OPT_ADD_CONST),
+        TileBitstreamType(
+            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
+            tile_out_route = TileOutType(0b1001),
+            tile_pred_route = TileOutType(0b1001),
+            opt_type = OPT_NAH),
     ]
 
     data_in_msgs = [
         # North
-        [DataType(2), DataType(3), DataType(4), DataType(5), DataType(7)],
+        [DataType(2), DataType(4), DataType(5), DataType(7)],
         # South
-        [DataType(1), DataType(3), DataType(2)],
+        [DataType(1), DataType(2)],
         # West
         [],
         # East

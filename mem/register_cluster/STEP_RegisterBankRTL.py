@@ -12,6 +12,7 @@ Author : Cheng Tan
 """
 from pymtl3 import *
 from pymtl3.stdlib.primitive import RegisterFile
+# from pymtl3.stdlib.mem import SramRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
@@ -39,6 +40,13 @@ class STEP_RegisterBankRTL(Component):
     # Component
     s.reg_file = RegisterFile(DataType, num_registers * MAX_THREAD_COUNT, rd_ports=num_rd_ports,
                               wr_ports=num_wr_ports)
+    # s.reg_file = SramRTL(
+    #                         data_nbits=DataType.nbits,
+    #                         num_entries=num_registers * MAX_THREAD_COUNT,
+    #                         num_rd_ports=num_rd_ports,
+    #                         num_wr_ports=num_wr_ports,
+    #                         mask_size=1  # or appropriate mask granularity
+    #                     )
     
     @update
     def access_registers():

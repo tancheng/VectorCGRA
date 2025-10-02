@@ -45,6 +45,8 @@ class TestHarness(Component):
         s.o_data = TestSinkRTL(DataType, ld_data_msgs, cmp_fn=cmp_fn)
         s.ld_complete = TestSinkRTL(Bits1, [1], cmp_fn=cmp_fn)
         s.o_data_id = TestSinkRTL(mk_bits(clog2(MAX_THREAD_COUNT)), [i+2 for i in range(num_req - num_empty)], cmp_fn=cmp_fn)
+        s.ld_token_return = TestSinkRTL(Bits1, [1] * num_req, cmp_fn=cmp_fn)
+        s.st_token_return = TestSinkRTL(Bits1, [], cmp_fn=cmp_fn)
 
         s.dut = STEP_LoadStoreRTL(DataType, num_ports)
 
@@ -57,6 +59,8 @@ class TestHarness(Component):
         s.recv_from_tile.send.rdy //= 1
         s.recv_from_tile_pred.send.rdy //= 1
         s.dut.ld_axi[0] //= s.recv_from_ld_axi.send
+        s.dut.ld_token_return[0] //= s.ld_token_return.recv.msg
+        s.dut.ld_token_return[0] //= s.ld_token_return.recv.val
 
         # Store Connections
         s.dut.st_axi[0] //= s.recv_from_st_axi.send
@@ -64,6 +68,8 @@ class TestHarness(Component):
         s.dut.st_ifc[0].i_data //= 0
         s.dut.st_ifc[0].i_req //= 0
         s.dut.st_tile_pred[0] //= 0
+        s.dut.st_token_return[0] //= s.st_token_return.recv.msg
+        s.st_token_return.recv.val //= 0
 
         # Enablement Connections
         s.dut.ld_st_complete //= s.ld_complete.recv.msg

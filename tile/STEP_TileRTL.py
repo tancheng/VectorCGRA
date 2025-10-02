@@ -54,8 +54,8 @@ class STEP_TileRTL(Component):
         assert num_fu_outports == 1
 
         # I/O Interfaces
-        s.tile_in_data_port = [ RecvIfcRTL(DataType) for _ in range(num_tile_inports) ]
-        s.tile_out_data_port = [ SendIfcRTL(DataType) for _ in range(num_tile_outports) ]
+        s.tile_in_data_port = [ InPort(DataType) for _ in range(num_tile_inports) ]
+        s.tile_out_data_port = [ OutPort(DataType) for _ in range(num_tile_outports) ]
         s.tile_in_pred_port = [ InPort(Bits1) for _ in range(num_tile_inports) ]
         s.tile_out_pred_port = [ OutPort(Bits1) for _ in range(num_tile_outports) ]
         s.recv_tile_bitstream = RecvIfcRTL(TileBitstreamType)
@@ -81,8 +81,6 @@ class STEP_TileRTL(Component):
                                         )
         
         ####### Test Connections
-        s.ready_to_fire = OutPort(Bits1)
-        s.ready_to_fire //= s.crossbar.ready_to_fire
         s.pred_in_val = OutPort(Bits1)
         s.pred_in_val //= s.crossbar.pred_in_val
         s.tile_in_pred_port_rf_buffer = OutPort(Bits1)
@@ -91,17 +89,10 @@ class STEP_TileRTL(Component):
         DirectionType = mk_bits( clog2(num_tile_inports + 1))
         s.should_forward = OutPort(DirectionType)
         s.should_forward //= s.crossbar.should_forward
-
-        s.in_buffer = [ OutPort(DataType) for _ in range(num_tile_inports) ]
-        s.in_buffer_val = [ OutPort(Bits1) for _ in range(num_tile_inports) ]
-
-        for i in range(num_tile_inports):
-            s.in_buffer[i] //= s.crossbar.in_buffer[i]
-            s.in_buffer_val[i] //= s.crossbar.in_buffer_val[i]
     
         s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
         for i in range(num_tile_inports):
-            s.tile_in_test[i] //= s.tile_in_data_port[i].msg
+            s.tile_in_test[i] //= s.tile_in_data_port[i]
 
         #######
 
