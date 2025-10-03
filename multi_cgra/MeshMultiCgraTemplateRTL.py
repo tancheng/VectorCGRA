@@ -17,7 +17,7 @@ class MeshMultiCgraTemplateRTL(Component):
                 num_ctrl, total_steps, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
-                preload_data = None):
+                is_multi_cgra = True):
         # id2ctrlMemSize_map = {
         #   0: 6,
         #   1: 6,
@@ -69,7 +69,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  preload_data = None
+                                  is_multi_cgra
                                   )
                   for cgra_id in range(s.num_cgras)]
         # class CgraTemplateRTL(Component):
