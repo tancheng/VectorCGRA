@@ -39,7 +39,7 @@ class CgraTemplateRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
-           data_mem_size_global)
+           data_mem_size_global * num_cgras)
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)

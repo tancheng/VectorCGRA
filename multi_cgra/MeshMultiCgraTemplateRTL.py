@@ -9,7 +9,7 @@ from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 class MeshMultiCgraTemplateRTL(Component):
 
     def construct(s, CgraDataType, PredicateType, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, NocPktType,
+                CgraPayloadType, CtrlSignalType, NocPktType, data_nbits,
                 cgra_rows, cgra_columns, tile_rows, tile_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
@@ -17,6 +17,8 @@ class MeshMultiCgraTemplateRTL(Component):
                 num_ctrl, total_steps, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
+                idTo2d_map, 
+                mem_access_is_combinational,
                 is_multi_cgra = True):
         # id2ctrlMemSize_map = {
         #   0: 6,
@@ -56,16 +58,20 @@ class MeshMultiCgraTemplateRTL(Component):
             idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
         s.cgra = [CgraTemplateRTL(CgraDataType, PredicateType, CtrlPktType, CgraPayloadType,
-                                  CtrlSignalType, NocPktType, ControllerIdType, 
+                                  CtrlSignalType, NocPktType, ControllerIdType, data_nbits,
                                   cgra_rows, cgra_columns, 
                                   # tile_columns, 
-                                  id2cgraSize_map[cgra_id][1],
+                                  # id2cgraSize_map[cgra_id][1],
                                   # tile_rows,
-                                  id2cgraSize_map[cgra_id][0],
+                                  # id2cgraSize_map[cgra_id][0],
                                   # ctrl_mem_size, 
                                   id2ctrlMemSize_map[cgra_id],
                                   data_mem_size_global,
-                                  data_mem_size_per_bank, num_ctrl, total_steps,
+                                  data_mem_size_per_bank, 
+                                  num_banks_per_cgra,
+                                  num_registers_per_reg_bank,
+                                  num_ctrl, total_steps,
+                                  mem_access_is_combinational,
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
