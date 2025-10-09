@@ -195,7 +195,8 @@ class CtrlMemDynamicRTL(Component):
         s.start_iterate_ctrl <<= 0
       else:
         if s.recv_pkt_queue.send.val:
-          if s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH:
+          if (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
+                  (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RESUME):
             s.start_iterate_ctrl <<= 1
     # TODO: issue #191, stop iterate ctrl after 10 cycels during pausing status, 
     # so as to clear channels safely.
@@ -214,7 +215,8 @@ class CtrlMemDynamicRTL(Component):
            s.send_pkt_to_controller.rdy & \
            (s.send_pkt_to_controller.msg.payload.cmd == CMD_COMPLETE):
           s.sent_complete <<= 1
-        elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH):
+        elif s.recv_pkt_queue.send.val & ( (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
+                (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RESUME) ):
           s.sent_complete <<= 0
 
     @update_ff

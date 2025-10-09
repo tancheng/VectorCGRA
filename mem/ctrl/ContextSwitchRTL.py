@@ -96,8 +96,6 @@ class ContextSwitchRTL(Component):
         s.status_reg <<= STATUS_PAUSING
       elif (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_RESUME)):
         s.status_reg <<= STATUS_RESUMING
-      elif (~s.progress_is_null & s.is_resuming & s.is_executing_phi):
-        s.status_reg <<= STATUS_RUNNING
       else:
         s.status_reg <<= s.status_reg
 
