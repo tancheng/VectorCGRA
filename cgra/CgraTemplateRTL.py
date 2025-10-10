@@ -39,7 +39,7 @@ class CgraTemplateRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
-           data_mem_size_global * num_cgras)
+           data_mem_size_global)
 
     # Interfaces
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
@@ -47,18 +47,23 @@ class CgraTemplateRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
-    # FIXME: Think about how to handle the boundary for the case of
-    # multi-cgra modeling.
-    # # Interfaces on the boundary of the CGRA.
-    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+    if is_multi_cgra:
+      # FIXME: Think about how to handle the boundary for the case of
+      # multi-cgra modeling.
+      # # Interfaces on the boundary of the CGRA.
 
-    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+      # mock width and height for now.
+      width = 2
+      height = 2
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,

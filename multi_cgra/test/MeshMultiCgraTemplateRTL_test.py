@@ -314,8 +314,8 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   # num_fu_outports = 2
   # num_routing_outports = num_tile_outports + num_fu_inports
   # ctrl_mem_size = 16
-  num_cgra_rows = 1
-  num_cgra_columns = 1
+  num_cgra_rows = 2
+  num_cgra_columns = 2
   num_x_tiles_per_cgra = 2
   num_y_tiles_per_cgra = 2
   num_banks_per_cgra = 2
@@ -426,10 +426,12 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                                   ctrl = CtrlType(OPT_LD_CONST,
                                                                   [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
                                                                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                    # Note that we still need to set FU xbar.
-                                                                    FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                   # Note that we still need to set FU xbar.
+                                                                   FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                   # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                   write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
                                                                   write_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
@@ -438,9 +440,11 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                                   ctrl = CtrlType(OPT_INC,
                                                                   [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                                                                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                    TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                   [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                   read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
                                                                   read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
 
@@ -454,9 +458,11 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                                   ctrl = CtrlType(OPT_STR_CONST,
                                                                   [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                                                                   [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                    TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                   TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                   TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
                                                                   [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                    FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
         # Pre-configure per-tile total config count.
         # Only execute one operation (i.e., store) is enough for this tile.
         # If this is set more than 1, no `COMPLETE` signal would be set back
