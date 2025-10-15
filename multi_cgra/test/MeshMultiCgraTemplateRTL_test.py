@@ -208,34 +208,43 @@ class TestHarness(Component):
       return tiles
 
     def safe_remove_port(tile, port):
-      tile_set = tile.invalidOutPorts
-      if port in tile_set:
-          tile_set.remove(port)
+      tile_out_port_set = tile.invalidOutPorts
+      tile_in_port_set = tile.invalidInPorts
+      if port in tile_out_port_set:
+        tile_out_port_set.remove(port)
+      if port in tile_in_port_set:
+        tile_in_port_set.remove(port)
 
     tiles_1 = copy.deepcopy(tiles)
     tiles_2 = copy.deepcopy(tiles)
     tiles_3 = copy.deepcopy(tiles)
 
     # remove invalid ports for each tile on boundary
-    safe_remove_port(tiles[0][0], PORT_NORTH)
-    safe_remove_port(tiles[0][1], PORT_NORTH)
+    # cgra 0
+    print(f">>>>>>>>>>>>>>>> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
+    safe_remove_port(tiles[1][0], PORT_NORTH)
+    safe_remove_port(tiles[1][1], PORT_NORTH)
     safe_remove_port(tiles[0][1], PORT_EAST)
     safe_remove_port(tiles[1][1], PORT_EAST)
+    print(f"~~~~~~~~~~~~~~~~ tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
 
+    # cgra 1
     safe_remove_port(tiles_1[1][0], PORT_WEST)
     safe_remove_port(tiles_1[0][0], PORT_WEST)
-    safe_remove_port(tiles_1[0][0], PORT_NORTH)
-    safe_remove_port(tiles_1[0][1], PORT_NORTH)
+    safe_remove_port(tiles_1[1][0], PORT_NORTH)
+    safe_remove_port(tiles_1[1][1], PORT_NORTH)
 
-    safe_remove_port(tiles_2[1][0], PORT_SOUTH)
-    safe_remove_port(tiles_2[1][1], PORT_SOUTH)
+    # cgra 2
+    safe_remove_port(tiles_2[0][0], PORT_SOUTH)
+    safe_remove_port(tiles_2[0][1], PORT_SOUTH)
     safe_remove_port(tiles_2[1][1], PORT_EAST)
     safe_remove_port(tiles_2[0][1], PORT_EAST)
 
+    # cgra 3
+    safe_remove_port(tiles_3[0][0], PORT_WEST)
     safe_remove_port(tiles_3[1][0], PORT_WEST)
-    safe_remove_port(tiles_3[1][0], PORT_SOUTH)
-    safe_remove_port(tiles_3[0][0], PORT_EAST)
-    safe_remove_port(tiles_3[1][1], PORT_SOUTH)
+    safe_remove_port(tiles_3[0][0], PORT_SOUTH)
+    safe_remove_port(tiles_3[0][1], PORT_SOUTH)
 
     tiles = handleReshape(tiles)
     tiles_1 = handleReshape(tiles_1)
