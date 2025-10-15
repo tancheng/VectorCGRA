@@ -39,7 +39,7 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
-
+import copy
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -207,13 +207,46 @@ class TestHarness(Component):
           tiles.append(t)
       return tiles
 
+    def safe_remove_port(tile, port):
+      tile_set = tile.invalidOutPorts
+      if port in tile_set:
+          tile_set.remove(port)
+
+    tiles_1 = copy.deepcopy(tiles)
+    tiles_2 = copy.deepcopy(tiles)
+    tiles_3 = copy.deepcopy(tiles)
+
+    # remove invalid ports for each tile on boundary
+    safe_remove_port(tiles[0][0], PORT_NORTH)
+    safe_remove_port(tiles[0][1], PORT_NORTH)
+    safe_remove_port(tiles[0][1], PORT_EAST)
+    safe_remove_port(tiles[1][1], PORT_EAST)
+
+    safe_remove_port(tiles_1[1][0], PORT_WEST)
+    safe_remove_port(tiles_1[0][0], PORT_WEST)
+    safe_remove_port(tiles_1[0][0], PORT_NORTH)
+    safe_remove_port(tiles_1[0][1], PORT_NORTH)
+
+    safe_remove_port(tiles_2[1][0], PORT_SOUTH)
+    safe_remove_port(tiles_2[1][1], PORT_SOUTH)
+    safe_remove_port(tiles_2[1][1], PORT_EAST)
+    safe_remove_port(tiles_2[0][1], PORT_EAST)
+
+    safe_remove_port(tiles_3[1][0], PORT_WEST)
+    safe_remove_port(tiles_3[1][0], PORT_SOUTH)
+    safe_remove_port(tiles_3[0][0], PORT_EAST)
+    safe_remove_port(tiles_3[1][1], PORT_SOUTH)
+
     tiles = handleReshape(tiles)
+    tiles_1 = handleReshape(tiles_1)
+    tiles_2 = handleReshape(tiles_2)
+    tiles_3 = handleReshape(tiles_3)
 
     id2validTiles = {
       0: tiles,
-      1: tiles,
-      2: tiles,
-      3: tiles
+      1: tiles_1,
+      2: tiles_2,
+      3: tiles_3
     }
     id2validLinks = {
       0: links,
