@@ -21,7 +21,7 @@ from ....lib.status_type import *
 
 class TestHarness(Component):
 
-  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_init_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_overwrite_fu_outport):
+  def construct(s, Module, data_nbits, ctrl_addr_nbits, src_cmds, src_opts, src_phi_addr, src_ctrl_mem_rd_addr, src_progress_in, sink_overwrite_fu_outport):
     
     CmdType = mk_bits(clog2(NUM_CMDS))
     StatusType = mk_bits(clog2(NUM_STATUS))
@@ -32,7 +32,7 @@ class TestHarness(Component):
 
     s.src_cmds = TestSrcRTL(CmdType, src_cmds)
     s.src_opts = TestSrcRTL(OptType, src_opts)
-    s.src_init_phi_addr = TestSrcRTL(CtrlAddrType, src_init_phi_addr)
+    s.src_phi_addr = TestSrcRTL(CtrlAddrType, src_phi_addr)
     s.src_ctrl_mem_rd_addr = TestSrcRTL(CtrlAddrType, src_ctrl_mem_rd_addr)
     s.src_progress_in = TestSrcRTL(DataType, src_progress_in)
     s.sink_overwrite_fu_outport = TestSinkRTL(DataType, sink_overwrite_fu_outport)
@@ -47,15 +47,15 @@ class TestHarness(Component):
       s.src_opts.send.rdy @= 1
       s.context_switch.progress_in @= s.src_progress_in.send.msg
       s.src_progress_in.send.rdy @= 1
-      s.context_switch.init_phi_addr @= s.src_init_phi_addr.send.msg
-      s.src_init_phi_addr.send.rdy @= 1
+      s.context_switch.phi_addr @= s.src_phi_addr.send.msg
+      s.src_phi_addr.send.rdy @= 1
       s.context_switch.ctrl_mem_rd_addr @= s.src_ctrl_mem_rd_addr.send.msg
       s.src_ctrl_mem_rd_addr.send.rdy @= 1
       s.sink_overwrite_fu_outport.recv.val @= 1
       s.sink_overwrite_fu_outport.recv.msg @= s.context_switch.overwrite_fu_outport.msg
 
   def done(s):
-    return s.src_cmds.done() and s.src_opts.done() and s.src_init_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_overwrite_fu_outport.done()
+    return s.src_cmds.done() and s.src_opts.done() and s.src_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_overwrite_fu_outport.done()
 
   def line_trace(s):
     return s.context_switch.line_trace()
@@ -96,7 +96,7 @@ def test_pause_resume_iteration():
   # All input commands are registered by ContextSwitchRTL for 1 cycle,
   # so as to make timing right when interacting with CtrlMemDynamicRTL. 
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
-              CmdType(CMD_RECORD_INIT_PHI_ADDR), # cycle 1
+              CmdType(CMD_RECORD_PHI_ADDR), # cycle 1
               # Tile receives the PAUSE command at clock cycle 2, processes the command at cycle 3,
               # and is in pausing status at cycle 4.
               CmdType(CMD_PAUSE), # cycle 2
@@ -154,7 +154,7 @@ def test_pause_resume_iteration():
                          ]
 
   # Preloads the address 3 of the initial PHI_CONST.
-  src_init_phi_addr = [
+  src_phi_addr = [
                          # Simulates 1-cycle delay comapred to src_cmds.
                          CtrlAddrType(0),
                          # Starts execution.
@@ -217,7 +217,7 @@ def test_pause_resume_iteration():
                    ctrl_addr_nbits,
                    src_cmds, 
                    src_opts, 
-                   src_init_phi_addr,
+                   src_phi_addr,
                    src_ctrl_mem_rd_addr,
                    src_progress_in, 
                    sink_overwrite_fu_outport)
@@ -225,7 +225,7 @@ def test_pause_resume_iteration():
   run_sim(th)
 
 # testcase for PHI_CONST that is responsible for accumulation.
-def test_pause_resume_accumulation():
+def test_preserve_resume_accumulation():
   Module = ContextSwitchRTL
   data_nbits = 16
   ctrl_addr_nbits = 16
@@ -237,7 +237,7 @@ def test_pause_resume_accumulation():
   # All input commands are registered by ContextSwitchRTL for 1 cycle,
   # so as to make timing right when interacting with CtrlMemDynamicRTL. 
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
-              CmdType(CMD_RECORD_INIT_PHI_ADDR), # cycle 1
+              CmdType(CMD_RECORD_PHI_ADDR), # cycle 1
               # Tile receives the PRESERVE command at clock cycle 2, processes the command at cycle 3,
               # and is in preserving status at cycle 4.
               CmdType(CMD_PRESERVE), # cycle 2
@@ -309,7 +309,7 @@ def test_pause_resume_accumulation():
                          ]
 
   # Preloads the address 2 of the PHI_CONST.
-  src_init_phi_addr = [
+  src_phi_addr = [
                          # Simulates 1-cycle delay comapred to src_cmds.
                          CtrlAddrType(0),
                          # Starts execution.
@@ -380,7 +380,7 @@ def test_pause_resume_accumulation():
                    ctrl_addr_nbits,
                    src_cmds, 
                    src_opts, 
-                   src_init_phi_addr,
+                   src_phi_addr,
                    src_ctrl_mem_rd_addr,
                    src_accumulation_in, 
                    sink_overwrite_fu_outport)

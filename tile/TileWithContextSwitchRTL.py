@@ -160,7 +160,7 @@ class TileWithContextSwitchRTL(Component):
     s.context_switch.recv_cmd_vld //= s.recv_from_controller_pkt.val
     s.context_switch.recv_opt //= s.ctrl_mem.send_ctrl.msg.operation
     s.context_switch.progress_in //= s.element.send_out[0].msg
-    s.context_switch.init_phi_addr //= s.recv_from_controller_pkt.msg.payload.ctrl_addr
+    s.context_switch.phi_addr //= s.recv_from_controller_pkt.msg.payload.ctrl_addr
     s.context_switch.ctrl_mem_rd_addr //= s.ctrl_mem.ctrl_addr_outport
 
     # Prologue port.
@@ -192,7 +192,6 @@ class TileWithContextSwitchRTL(Component):
     for i in range(num_tile_inports):
       s.recv_data[i] //= s.tile_in_channel[i].recv
       s.tile_in_channel[i].send //= s.routing_crossbar.recv_data[i]
-      s.tile_in_channel[i].clear //= 0
 
     # Connects specific xbar control signals to the corresponding crossbar.
     for i in range(num_routing_xbar_outports):
@@ -250,7 +249,7 @@ class TileWithContextSwitchRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RECORD_INIT_PHI_ADDR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PAUSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RESUME)):
@@ -261,6 +260,9 @@ class TileWithContextSwitchRTL(Component):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
+        elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CLEAR):
+            for i in range(num_tile_inports):
+              s.tile_in_channel[i].clear @= 1
 
     @update
     def update_send_out_signal():
