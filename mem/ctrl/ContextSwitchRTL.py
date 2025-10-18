@@ -2,7 +2,7 @@
 ==========================================================================
 ContextSwitchRTL.py
 ==========================================================================
-Records/resumes progress (itertion) for functional unit (FU).
+Records/resumes progress (itertion / accumulation) for functional unit (FU).
 
 Author : Yufei Yang
   Date : Aug 11, 2025
@@ -54,6 +54,7 @@ class ContextSwitchRTL(Component):
     s.init_phi_addr_reg = Wire(CtrlAddrType)
     s.progress_is_null = Wire(b1)
     s.is_pausing = Wire(b1)
+    s.is_preserving = Wire(b1)
     s.is_resuming = Wire(b1)
     s.is_executing_phi = Wire(b1)
     # s.recv_pkt_queue in CtrlMemDynamicRTL.py introduces 1 clock cycle delay to commands,
@@ -71,12 +72,13 @@ class ContextSwitchRTL(Component):
       # Update condition.
       s.progress_is_null @= (s.progress_reg == DataType(0, 0))
       s.is_pausing @= (s.status_reg == STATUS_PAUSING)
+      s.is_preserving @= (s.status_reg == STATUS_PRESERVING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
       s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) & (s.init_phi_addr_reg == s.ctrl_mem_rd_addr))
 
       # The output of PHI_CONST (first node in DFG) during the PAUSING status should always 
       # have DataType(0, 0), as it will be broadcasted to all other operations in this iteration 
-      # via the dataflow, thereby stop initiating new iterations. 
+      # via the dataflow, thereby stop initiating new iterations.
       # PHI_CONST's output of the first time execution during the RESUMING
       # status should be replaced with the value of progress_reg to resume the progress.
       if (s.is_pausing & s.is_executing_phi):
@@ -94,13 +96,16 @@ class ContextSwitchRTL(Component):
       # Updates the status register.
       if (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_PAUSE)):
         s.status_reg <<= STATUS_PAUSING
+      elif (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_PRESERVE)):
+        s.status_reg <<= STATUS_PRESERVING
       elif (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_RESUME)):
         s.status_reg <<= STATUS_RESUMING
       else:
         s.status_reg <<= s.status_reg
 
       # Updates the progress register.
-      if (s.progress_is_null & s.is_pausing & s.is_executing_phi & s.progress_in.predicate):
+      if (s.progress_is_null & s.is_pausing & s.is_executing_phi & s.progress_in.predicate) | \
+              (s.is_preserving & s.is_executing_phi & s.progress_in.predicate):
         # Records the progress.
         s.progress_reg <<= s.progress_in
       elif (~s.progress_is_null & s.is_resuming & s.is_executing_phi):

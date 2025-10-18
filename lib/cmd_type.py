@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 22
+NUM_CMDS = 23
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -38,6 +38,7 @@ CMD_GLOBAL_REDUCE_ADD                = 18
 CMD_GLOBAL_REDUCE_MUL                = 19
 CMD_GLOBAL_REDUCE_ADD_RESPONSE       = 20
 CMD_GLOBAL_REDUCE_MUL_RESPONSE       = 21
+CMD_PRESERVE                         = 22
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -61,6 +62,7 @@ CMD_SYMBOL_DICT = {
   CMD_GLOBAL_REDUCE_ADD:                "(GLOBAL_REDUCE_ADD)",
   CMD_GLOBAL_REDUCE_MUL:                "(GLOBAL_REDUCE_MUL)",
   CMD_GLOBAL_REDUCE_ADD_RESPONSE:       "(GLOBAL_REDUCE_ADD_RESPONSE)",
-  CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)"
+  CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)",
+  CMD_PRESERVE:                         "(PRESERVE_SUM_VALUE)"
 }
 
