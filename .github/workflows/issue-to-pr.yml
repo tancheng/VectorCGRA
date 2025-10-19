@@ -1,4 +1,4 @@
-name: Auto PR from issue
+name: Auto PR from Issue
 on:
   issues:
     types: [labeled]
