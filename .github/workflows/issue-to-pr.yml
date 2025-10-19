@@ -1,5 +1,6 @@
 name: Auto PR from Issue
 on:
+  workflow_dispatch:
   issues:
     types: [labeled]
 
