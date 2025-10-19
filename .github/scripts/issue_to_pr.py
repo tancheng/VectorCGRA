@@ -21,7 +21,7 @@ ALLOWED_PREFIXES = (
     "README.md",
 )
 MAX_FILE_BYTES = 200_000  # reject file contents larger than this
-MODEL = "gpt-3.5-turbo"   # change to preferred model (gpt-4o-mini, gpt-4, etc.)
+MODEL = "gpt-4o"   # change to preferred model (gpt-4o-mini, gpt-4, etc.)
 
 def run(cmd, **kwargs):
     print("> " + " ".join(cmd))
