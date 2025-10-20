@@ -1,5 +1,4 @@
 name: Auto PR from Issue (Gemini)
-
 on:
   workflow_dispatch:
   issues:
@@ -7,15 +6,14 @@ on:
   issue_comment:
     types: [created]
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   create_auto_pr:
-    # run for manual dispatch, or when an issue labelled 'autopr', or when a comment starts with /autopr
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr' && github.event.issue.pull_request == null) || (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/autopr')) }}
+    # run for manual dispatch, or when an issue labelled 'autopr-gemini', or when a comment starts with /autopr-gemini
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr-gemini' && github.event.issue.pull_request == null) || (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/autopr-gemini')) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -111,7 +109,7 @@ PROMPT
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
         run: |
-          python .github/scripts/issue_to_pr.py "${{ github.event.issue.number }}" "${{ github.repository }}" --from-file model_output.txt
+          python .github/scripts/issue_to_pr_gemini.py "${{ github.event.issue.number }}" "${{ github.repository }}" --from-file model_output.txt
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
