@@ -65,7 +65,7 @@ jobs:
           # gemini_model: "gemini-1.0"   # optional
           output_file: model_output.txt
 
-      - name: Debug: show model head (for troubleshooting)
+      - name: Debug show model head (for troubleshooting)
         if: always()
         run: |
           echo "---- model_output (head) ----"
