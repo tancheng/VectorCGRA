@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # scripts/generate_patch.py
-# Refactored, robust caller for Google's Gemini generateContent API
+# Robust caller for Google's Gemini generateContent API that validates patches with git.
 # Exits non-zero on error so your GitHub Action fails early.
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ import time
 import json
 import re
 import logging
+import subprocess
 from typing import Optional
 import requests
 
@@ -17,6 +18,8 @@ import requests
 MAX_RETRIES = 3
 INITIAL_BACKOFF = 2  # seconds
 TIMEOUT_SECONDS = 60
+PATCH_PATH = "ai_fix.patch"
+RAW_OUTPUT_PATH = "ai_fix_raw_output.txt"
 
 # Configure logging
 logging.basicConfig(
@@ -34,36 +37,51 @@ def get_env_var(name: str, required: bool = True, default: Optional[str] = None)
         sys.exit(2)
     return value
 
+import textwrap
+
+MAX_BODY_LEN = 4000  # tune for your token budget
+
+def _sanitize(s: str) -> str:
+    if s is None:
+        return ""
+    s = s.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if len(s) > MAX_BODY_LEN:
+        return s[:MAX_BODY_LEN] + "\n\n...(truncated)..."
+    return s
 
 def build_prompt(title: str, body: str) -> str:
-    return (
-        "You are an expert software developer and GitHub bot.\n"
-        "Read the following GitHub issue and generate the code changes required to fix it.\n\n"
-        f'ISSUE TITLE: "{title}"\n\n'
-        "ISSUE BODY:\n"
-        f'"{body}"\n\n'
-        "IMPORTANT: Respond ONLY with the code changes in a 'diff' or 'patch' format, "
-        "starting with '--- a/' or 'diff --git'. Do not include any other text, explanations, "
-        "or markdown formatting like '```patch'. Just provide the raw patch file content."
-    )
+    title = _sanitize(title)
+    body = _sanitize(body)
 
+    prompt = textwrap.dedent(f"""
+        You are an expert software developer and GitHub bot.
+        Read the following GitHub issue and generate the code changes required to fix it.
+
+        ISSUE TITLE: "{title}"
+
+        ISSUE BODY:
+        "{body}"
+
+        IMPORTANT (STRICT FORMAT REQUIREMENT):
+        - Respond ONLY with the code changes in a unified git diff / patch format.
+        - The response MUST start exactly with a diff header, e.g.:
+            diff --git a/path/to/file b/path/to/file
+          or
+            --- a/path/to/file
+        - Include proper unified hunk headers (lines beginning with @@ -old, +new @@).
+        - Do NOT include any explanatory text, headings, or Markdown code fences (no ```).
+        - Output only the raw patch content — nothing else.
+    """).strip()
+
+    return prompt
 
 def call_gemini(api_key: str, prompt: str, model: str) -> str:
     """
     Call the Gemini (Generative Language) API and return the raw text response.
     Retries on transient network errors.
     """
-    # Use the API-key-in-url approach (common for Google's simple API key usage).
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-
-    payload = {
-        "contents": [
-            {"parts": [{"text": prompt}]}
-        ],
-        # You can tune model settings here if needed.
-        # "temperature": 0.0,
-        # "candidateCount": 1,
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     backoff = INITIAL_BACKOFF
     for attempt in range(1, MAX_RETRIES + 1):
@@ -71,41 +89,33 @@ def call_gemini(api_key: str, prompt: str, model: str) -> str:
             logger.info("Calling Gemini API (attempt %d/%d)...", attempt, MAX_RETRIES)
             resp = requests.post(url, json=payload, timeout=TIMEOUT_SECONDS)
             resp.raise_for_status()
-            return resp.text  # return raw response text; we'll parse JSON next
+            return resp.text
         except requests.exceptions.RequestException as exc:
             logger.warning("Request attempt %d failed: %s", attempt, exc)
             if attempt == MAX_RETRIES:
                 logger.error("Exceeded max retries calling Gemini API.")
-                logger.debug("Last response (if any): %s", getattr(exc, "response", None))
                 raise
-            else:
-                logger.info("Sleeping %s seconds before retrying...", backoff)
-                time.sleep(backoff)
-                backoff *= 2
-
+            logger.info("Sleeping %s seconds before retrying...", backoff)
+            time.sleep(backoff)
+            backoff *= 2
     raise RuntimeError("Unreachable code in call_gemini")
 
 
 def parse_gemini_response_text(response_text: str) -> str:
-    """
-    Parse the JSON returned by the Gemini API and extract the candidate text.
-    Be defensive about the JSON structure and report helpful debug info on failure.
-    """
+    """Parse the JSON returned by Gemini and extract the candidate text."""
     try:
         response_json = json.loads(response_text)
     except json.JSONDecodeError:
         logger.exception("Failed to decode Gemini response as JSON.")
         raise
 
-    # The expected structure (based on the API shape used) is:
-    # { "candidates": [ { "content": { "parts": [ {"text": "..."}, ... ] } }, ... ] }
     try:
         candidates = response_json.get("candidates")
         if not candidates or not isinstance(candidates, list):
             raise KeyError("No 'candidates' list in response")
 
         first = candidates[0]
-        content = first.get("content")
+        content = first.get("content", {})
         parts = content.get("parts")
         if not parts or not isinstance(parts, list):
             raise KeyError("No 'content.parts' list in response")
@@ -121,17 +131,118 @@ def parse_gemini_response_text(response_text: str) -> str:
         raise
 
 
+def sanitize_line_endings(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    if text.startswith("\ufeff"):
+        text = text.lstrip("\ufeff")
+    return text
+
+
+def strip_fenced_code(text: str) -> str:
+    # Remove fenced code blocks if present (```patch ... ```), non-greedy.
+    m = re.search(r"```(?:patch|diff)?\n([\s\S]+?)\n```", text, re.IGNORECASE)
+    if m:
+        logger.debug("Removed fenced code block wrapper.")
+        return m.group(1).strip()
+    return text
+
+
+def find_first_diff_index(text: str) -> int:
+    m = re.search(r'(^|\n)(diff --git |--- a/)', text)
+    if m:
+        # return index of 'diff' or '--- a/'
+        return m.start(2) if m.start(2) >= 0 else m.start(1)
+    return 0
+
+
+def attempt_repair_patch(candidate: str) -> str:
+    """
+    Best-effort repairs:
+      - normalize line endings,
+      - strip fences,
+      - remove leading text before first diff header.
+    """
+    candidate = sanitize_line_endings(candidate).strip()
+    candidate = strip_fenced_code(candidate)
+    idx = find_first_diff_index(candidate)
+    if idx > 0:
+        candidate = candidate[idx:].lstrip("\n")
+    # Final trim
+    candidate = candidate.strip("\n")
+    return candidate
+
+
+def write_file(path: str, content: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(content)
+
+
+def git_apply_check(patch_path: str) -> bool:
+    """
+    Returns True if `git apply --check patch_path` succeeds.
+    """
+    try:
+        subprocess.run(["git", "apply", "--check", patch_path],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode(errors="replace") if e.stderr else ""
+        logger.warning("git apply --check failed: %s", stderr.strip()[:2000])
+        return False
+    except FileNotFoundError:
+        logger.error("git not found on PATH; cannot validate patch with git.")
+        return False
+
+
+def validate_and_save_patch(candidate: str) -> None:
+    """
+    Validate candidate patch using git; if valid, save to PATCH_PATH.
+    Otherwise save raw output to RAW_OUTPUT_PATH and exit non-zero.
+    """
+    candidate = attempt_repair_patch(candidate)
+
+    # quick heuristic: must contain a diff header
+    if not (candidate.startswith("diff --git") or candidate.startswith("--- a/")):
+        logger.error("Candidate patch does not start with a recognized diff header.")
+        logger.debug("Top of candidate (200 chars): %s", candidate[:200])
+        write_file(RAW_OUTPUT_PATH, candidate)
+        logger.info("Saved raw model output to %s for inspection.", RAW_OUTPUT_PATH)
+        sys.exit(3)
+
+    # write to temp path for checking
+    temp_path = PATCH_PATH + ".tmp"
+    write_file(temp_path, candidate)
+
+    # run git apply --check
+    if git_apply_check(temp_path):
+        # move into final path
+        write_file(PATCH_PATH, candidate)
+        logger.info("Patch validated and written to %s (size %d bytes).", PATCH_PATH, len(candidate.encode("utf-8")))
+    else:
+        # attempt a permissive whitespace fix check (optional)
+        try:
+            subprocess.run(["git", "apply", "--check", "--whitespace=fix", temp_path],
+                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            write_file(PATCH_PATH, candidate)
+            logger.info("Patch passed permissive whitespace check and was written to %s.", PATCH_PATH)
+            return
+        except subprocess.CalledProcessError:
+            logger.warning("Permissive whitespace check failed.")
+
+        # final fallback: save raw output and fail
+        write_file(RAW_OUTPUT_PATH, candidate)
+        logger.error("Patch failed validation. Saved raw model output to %s for inspection.", RAW_OUTPUT_PATH)
+        # Print a diagnostic snippet (safe)
+        snippet = candidate[:2000] + ("..." if len(candidate) > 2000 else "")
+        logger.error("Diagnostic snippet (first 2000 chars):\n%s", snippet)
+        sys.exit(4)
+
+
 def extract_patch(raw_text: str) -> Optional[str]:
     """
-    Try to extract a diff/patch from the model output.
-    Acceptable starts: 'diff --git', '--- a/'.
-    If wrapped in triple-backticks, remove them.
+    Keep the original extraction logic but then run the validator.
     """
     text = raw_text.strip()
-
-    # If the model returned the JSON string (rare), ensure it's string
-    # Remove common triple-backtick fences with optional language
-    # Use non-greedy match so we can handle additional text before/after.
     code_block_match = re.search(r"```(?:patch|diff|\s)?\n([\s\S]+?)\n```", text, re.IGNORECASE)
     if code_block_match:
         candidate = code_block_match.group(1).strip()
@@ -139,35 +250,26 @@ def extract_patch(raw_text: str) -> Optional[str]:
     else:
         candidate = text
 
-    # If the content contains multiple sections, try to find the diff portion
+    # try to find 'diff --git' block
     diff_match = re.search(r"(diff --git[\s\S]+)$", candidate, re.MULTILINE)
     if diff_match:
         return diff_match.group(1).strip()
 
-    # Alternative start
     alt_match = re.search(r"(^--- a/[\s\S]+)$", candidate, re.MULTILINE)
     if alt_match:
         return alt_match.group(1).strip()
 
-    # If candidate itself begins with a patch-like header, accept it
     if candidate.startswith("diff --git") or candidate.startswith("--- a/"):
         return candidate.strip()
 
-    # No clear patch found
     return None
-
-
-def save_patch(path: str, content: str) -> None:
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write(content)
-    logger.info("Wrote patch to %s (size %d bytes).", path, len(content.encode("utf-8")))
 
 
 def main() -> None:
     api_key = get_env_var("GEMINI_API_KEY")
     issue_title = get_env_var("ISSUE_TITLE", required=True)
     issue_body = get_env_var("ISSUE_BODY", required=True)
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # override with env var if desired
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
     prompt = build_prompt(issue_title, issue_body)
 
@@ -181,33 +283,30 @@ def main() -> None:
         candidate_text = parse_gemini_response_text(raw_response_text)
     except Exception:
         logger.error("Could not parse Gemini JSON response.")
+        # Save raw for debugging
+        try:
+            write_file(RAW_OUTPUT_PATH, raw_response_text)
+            logger.info("Saved raw API response to %s for inspection.", RAW_OUTPUT_PATH)
+        except Exception:
+            logger.exception("Failed to save raw API response.")
         sys.exit(1)
 
-    patch = extract_patch(candidate_text)
+    patch_candidate = extract_patch(candidate_text)
 
-    if not patch:
-        # Provide helpful debug output but do not print the API key or long raw responses
-        snippet = candidate_text.strip()[:1000] + ("..." if len(candidate_text) > 1000 else "")
+    if not patch_candidate:
         logger.error("Response did not contain a recognizable patch/diff header.")
-        logger.debug("Model output (first 1000 chars):\n%s", snippet)
-        # Save the raw output for inspection (avoid leaking secrets). This can help debugging.
-        fallback_path = "ai_fix_raw_output.txt"
+        # Save raw model output for inspection
         try:
-            save_patch(fallback_path, candidate_text)
-            logger.info("Saved raw model output to %s for inspection.", fallback_path)
+            write_file(RAW_OUTPUT_PATH, candidate_text)
+            logger.info("Saved raw model output to %s for inspection.", RAW_OUTPUT_PATH)
         except Exception:
             logger.exception("Failed to save raw model output.")
         sys.exit(3)
 
-    # Save validated patch
-    try:
-        save_patch("ai_fix.patch", patch)
-    except Exception:
-        logger.exception("Failed to write ai_fix.patch")
-        sys.exit(1)
+    # Validate and save (this will exit non-zero if invalid)
+    validate_and_save_patch(patch_candidate)
 
-    logger.info("Successfully generated ai_fix.patch.")
-    # Exit 0 on success
+    logger.info("Successfully generated %s.", PATCH_PATH)
     sys.exit(0)
 
 
