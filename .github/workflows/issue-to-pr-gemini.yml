@@ -97,7 +97,7 @@ PROMPT
           echo "Wrote model_output.txt (size in bytes):"
           wc -c model_output.txt || true
 
-      - name: Debug: show model output head
+      - name: Debug show model output head
         if: always()
         run: |
           echo "---- model_output.txt head ----"
