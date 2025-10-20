@@ -13,7 +13,13 @@ permissions:
 
 jobs:
   create_auto_pr:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr-gemini' && github.event.issue.pull_request == null) || (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/autopr-gemini')) }}
+    # Run for manual dispatch, or when an issue labeled autopr-gemini, or when a comment starts with /autopr-gemini
+    if: ${{ github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'issues' &&
+             github.event.label.name == 'autopr-gemini' &&
+             github.event.issue.pull_request == null) ||
+            (github.event_name == 'issue_comment' &&
+             startsWith(github.event.comment.body, '/autopr-gemini')) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure git identity for Actions
+      - name: Configure git identity
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
@@ -32,61 +38,31 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Gemini CLI (npm)
+      - name: Install Gemini CLI
         run: |
           npm install -g @google/gemini-cli@latest
-          if command -v gemini >/dev/null 2>&1; then
-            gemini --version || true
-          else
-            echo "gemini command not found; npx will be used"
-          fi
+          echo "Gemini CLI version:"
+          gemini --version || true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Python deps (if needed by script)
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install pyyaml
 
-      # -------------------- FIXED: Build prompt step --------------------
-      - name: Build prompt file from issue/comment
+      - name: Build prompt file (single-line safe)
         env:
-          # compute title/body via GitHub expressions in step env (safe for YAML)
           ISSUE_TITLE: ${{ github.event.issue.title || github.event.pull_request.title || '' }}
           ISSUE_BODY: ${{ github.event.issue.body || github.event.comment.body || github.event.pull_request.body || '' }}
         run: |
-          echo "ISSUE_TITLE (env head): ${ISSUE_TITLE:0:200}"
-          echo "ISSUE_BODY (env head): ${ISSUE_BODY:0:200}"
-          cat > /tmp/gemini_prompt.txt <<'PROMPT'
-You are an assistant that converts a GitHub issue or PR/comment into a set of concrete code changes.
-Return ONLY a JSON object with this exact schema:
-
-{
-  "files": [
-    { "path": "relative/path/to/file", "content": "full file contents as a single string (newlines allowed)" }
-  ],
-  "commit_message": "A concise commit message"
-}
-
-Constraints:
-- Return valid JSON only (no extra explanation or text).
-- If no code changes are necessary, return {"files":[], "commit_message":"no changes needed"}.
-- Only modify source/docs/tests (do not modify .github/workflows or CI files).
-- Keep edits minimal and focused on the issue or comment.
-
-Issue title:
-$ISSUE_TITLE
-
-Issue / comment body:
-$ISSUE_BODY
-
-PROMPT
-          echo "Wrote prompt to /tmp/gemini_prompt.txt (head):"
-          head -n 40 /tmp/gemini_prompt.txt || true
-      # ------------------ end Build prompt step --------------------------
+          PROMPT="You are an assistant that converts a GitHub issue or PR/comment into a set of concrete code changes. Return ONLY a JSON object with schema: {\"files\":[{\"path\":\"relative/path/to/file\",\"content\":\"full file contents\"}],\"commit_message\":\"A concise commit message\"}. Constraints: valid JSON only; if no code changes needed, return {\"files\":[],\"commit_message\":\"no changes needed\"}; only modify source/docs/tests (not .github/workflows); keep edits minimal. Issue title: $ISSUE_TITLE  Issue/Comment body: $ISSUE_BODY"
+          echo "$PROMPT" > /tmp/gemini_prompt.txt
+          echo "Prompt written to /tmp/gemini_prompt.txt ($(wc -c < /tmp/gemini_prompt.txt) bytes)"
+          head -c 400 /tmp/gemini_prompt.txt || true
 
       - name: Run Gemini CLI and save output
         env:
@@ -98,9 +74,10 @@ PROMPT
           else
             npx @google/gemini-cli chat --model="gemini-1.0" --api-key="${GEMINI_API_KEY}" --prompt-file=/tmp/gemini_prompt.txt > model_output.txt 2>&1 || true
           fi
+          echo "model_output.txt size:"
           wc -c model_output.txt || true
 
-      - name: Debug show model output head
+      - name: Debug: show model output head
         if: always()
         run: |
           echo "---- model_output.txt head ----"
