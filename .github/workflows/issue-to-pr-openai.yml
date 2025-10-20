@@ -6,7 +6,7 @@ on:
 
 jobs:
   create_auto_pr:
-    if: github.event.label.name == 'autopr'
+    if: github.event.label.name == 'autopr-openai'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -46,7 +46,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_ACTOR: ${{ github.actor }}
-        run: python .github/scripts/issue_to_pr.py "${{ github.event.issue.number }}" "${{ github.repository }}"
+        run: python .github/scripts/issue_to_pr_openai.py "${{ github.event.issue.number }}" "${{ github.repository }}"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
