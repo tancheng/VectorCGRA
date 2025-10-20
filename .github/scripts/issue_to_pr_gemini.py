@@ -167,7 +167,7 @@ def main() -> None:
     api_key = get_env_var("GEMINI_API_KEY")
     issue_title = get_env_var("ISSUE_TITLE", required=True)
     issue_body = get_env_var("ISSUE_BODY", required=True)
-    model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")  # override with env var if desired
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # override with env var if desired
 
     prompt = build_prompt(issue_title, issue_body)
 
