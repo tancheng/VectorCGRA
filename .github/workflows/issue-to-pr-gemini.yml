@@ -6,7 +6,7 @@ on:
 
 jobs:
   create_auto_pr:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr' && github.event.issue.pull_request == null) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr-gemini' && github.event.issue.pull_request == null) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
