@@ -1,4 +1,4 @@
-name: Auto PR from Issue
+name: Auto PR from Issue (OpenAI)
 on:
   workflow_dispatch:
   issues:
