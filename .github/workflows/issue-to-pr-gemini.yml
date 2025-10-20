@@ -1,4 +1,5 @@
 name: Auto PR from Issue (Gemini)
+
 on:
   workflow_dispatch:
   issues:
@@ -6,14 +7,14 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   create_auto_pr:
-    # run for manual dispatch, or when an issue labelled 'autopr-gemini', or when a comment starts with /autopr-gemini
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'autopr-gemini' && github.event.issue.pull_request == null) || (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/autopr-gemini')) }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -34,7 +35,6 @@ jobs:
       - name: Install Gemini CLI (npm)
         run: |
           npm install -g @google/gemini-cli@latest
-          # sanity: show version if available
           if command -v gemini >/dev/null 2>&1; then
             gemini --version || true
           else
@@ -51,11 +51,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyyaml
 
+      # -------------------- FIXED: Build prompt step --------------------
       - name: Build prompt file from issue/comment
+        env:
+          # compute title/body via GitHub expressions in step env (safe for YAML)
+          ISSUE_TITLE: ${{ github.event.issue.title || github.event.pull_request.title || '' }}
+          ISSUE_BODY: ${{ github.event.issue.body || github.event.comment.body || github.event.pull_request.body || '' }}
         run: |
-          # fill issue_title and issue_body from the event (works for issues and comments)
-          ISSUE_TITLE="${{ github.event.issue.title || github.event.pull_request.title || '' }}"
-          ISSUE_BODY="${{ github.event.issue.body || github.event.comment.body || github.event.pull_request.body || '' }}"
+          echo "ISSUE_TITLE (env head): ${ISSUE_TITLE:0:200}"
+          echo "ISSUE_BODY (env head): ${ISSUE_BODY:0:200}"
           cat > /tmp/gemini_prompt.txt <<'PROMPT'
 You are an assistant that converts a GitHub issue or PR/comment into a set of concrete code changes.
 Return ONLY a JSON object with this exact schema:
@@ -82,19 +86,18 @@ $ISSUE_BODY
 PROMPT
           echo "Wrote prompt to /tmp/gemini_prompt.txt (head):"
           head -n 40 /tmp/gemini_prompt.txt || true
+      # ------------------ end Build prompt step --------------------------
 
       - name: Run Gemini CLI and save output
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -x
-          # Prefer the installed binary; fallback to npx if not present.
           if command -v gemini >/dev/null 2>&1; then
             gemini chat --model="gemini-1.0" --api-key="${GEMINI_API_KEY}" --prompt-file=/tmp/gemini_prompt.txt > model_output.txt 2>&1 || true
           else
             npx @google/gemini-cli chat --model="gemini-1.0" --api-key="${GEMINI_API_KEY}" --prompt-file=/tmp/gemini_prompt.txt > model_output.txt 2>&1 || true
           fi
-          echo "Wrote model_output.txt (size in bytes):"
           wc -c model_output.txt || true
 
       - name: Debug show model output head
