@@ -11,6 +11,7 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
+from ..lib.util.common import *
 from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
@@ -47,18 +48,23 @@ class CgraTemplateRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
-    # FIXME: Think about how to handle the boundary for the case of
-    # multi-cgra modeling.
-    # # Interfaces on the boundary of the CGRA.
-    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
+    # todo, mock width and height for now.
+    width = 2
+    height = 2
+    if is_multi_cgra:
+      # FIXME: Think about how to handle the boundary for the case of
+      # multi-cgra modeling.
+      # # Interfaces on the boundary of the CGRA.
+    
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
 
-    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
@@ -160,6 +166,38 @@ class CgraTemplateRTL(Component):
         srcTileIndex = link.srcTile.getIndex(TileList)
         dstTileIndex = link.dstTile.getIndex(TileList)
         s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+
+    if is_multi_cgra: 
+      for row in range(height):
+        for col in range(width):
+          tile_id = row * width + col
+          if row == height - 1:
+            # Only connect if the port is valid
+            if PORT_NORTH not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[col]
+            if PORT_NORTH not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[col]
+              
+          if row == 0:
+            # Only connect if the port is valid
+            if PORT_SOUTH not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[col]
+            if PORT_SOUTH not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
+              
+          if col == 0:
+            # Only connect if the port is valid
+            if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
+            if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
+              
+          if col == width - 1:
+            # Only connect if the port is valid
+            if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_EAST] //= s.send_data_on_boundary_east[row]
+            if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
 
     for i in range(s.num_tiles):
 
