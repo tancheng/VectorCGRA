@@ -132,62 +132,51 @@ class MeshMultiCgraTemplateRTL(Component):
         # Connects the tiles on the boundary of each two adjacent CGRAs.
         for cgra_row in range(cgra_rows):
           for cgra_col in range(cgra_columns):
-            print(f"> cgra_row = {cgra_row}, cgra_col = {cgra_col}")
-            if cgra_row != 0:
+            idx = cgra_row * cgra_columns + cgra_col
+            
+            # Connect North-South boundaries
+            if cgra_row > 0:
+              neighbor_idx = (cgra_row - 1) * cgra_columns + cgra_col
               for tile_col in range(tile_columns):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_south[tile_col] //= \
-                    s.cgra[(cgra_row - 1) * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col]
-                print(f"1. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_south[{tile_col}] //= s.cgra[{(cgra_row - 1) * cgra_columns + cgra_col}].recv_data_on_boundary_north[{tile_col}]")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col] //= \
-                    s.cgra[(cgra_row - 1) * cgra_columns + cgra_col].send_data_on_boundary_north[tile_col]
-                print(f"2. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_south[{tile_col}] //= s.cgra[{(cgra_row - 1) * cgra_columns + cgra_col}].send_data_on_boundary_north[{tile_col}]")
+                s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
+                    s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
+                s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
+                    s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
             else:
+              # Bottom edge - drive recv inputs and send rdy
               for tile_col in range(tile_columns):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_south[tile_col].rdy //= 0
-                print(f"3. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_south[{tile_col}].rdy //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].val //= 0
-                print(f"4. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_south[{tile_col}].val //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
-                print(f"5. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_south[{tile_col}].msg //= CgraDataType()")
-
+                s.cgra[idx].recv_data_on_boundary_south[tile_col].val //= 0
+                s.cgra[idx].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
+                s.cgra[idx].send_data_on_boundary_south[tile_col].rdy //= 0
+                
+            # Top edge
             if cgra_row == cgra_rows - 1:
               for tile_col in range(tile_columns):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_north[tile_col].rdy //= 0
-                print(f"6. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_north[{tile_col}].rdy //= 0" )
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].val //= 0
-                print(f"7. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_north[{tile_col}].val //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
-                print(f"8. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_north[{tile_col}].msg //= CgraDataType()")
+                s.cgra[idx].recv_data_on_boundary_north[tile_col].val //= 0
+                s.cgra[idx].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
+                s.cgra[idx].send_data_on_boundary_north[tile_col].rdy //= 0
 
-            if cgra_col != 0:
+            # Connect East-West boundaries
+            if cgra_col > 0:
+              neighbor_idx = cgra_row * cgra_columns + cgra_col - 1
               for tile_row in range(tile_rows):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].msg //= \
-                    s.cgra[cgra_row * cgra_columns + cgra_col - 1].recv_data_on_boundary_east[tile_row].msg
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].val //= \
-                    s.cgra[cgra_row * cgra_columns + cgra_col - 1].recv_data_on_boundary_east[tile_row].val
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].rdy //= \
-                    s.cgra[cgra_row * cgra_columns + cgra_col - 1].recv_data_on_boundary_east[tile_row].rdy
-                print(f"9. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_west[{tile_row}] //= s.cgra[{cgra_row * cgra_columns + cgra_col - 1}].recv_data_on_boundary_east[{tile_row}]")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row] //= \
-                    s.cgra[cgra_row * cgra_columns + cgra_col - 1].send_data_on_boundary_east[tile_row]
-                print(f"10. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_west[{tile_row}] //= s.cgra[{cgra_row * cgra_columns + cgra_col - 1}].send_data_on_boundary_east[{tile_row}]")
+                s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
+                    s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
+                s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
+                    s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
             else:
+              # Left edge - drive recv inputs and send rdy
               for tile_row in range(tile_rows):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_west[tile_row].rdy //= 0
-                print(f"11. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_west[{tile_row}].rdy //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].val //= 0
-                print(f"12. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_west[{tile_row}].val //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
-                print(f"13. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_west[{tile_row}].msg //= CgraDataType()")
-
+                s.cgra[idx].recv_data_on_boundary_west[tile_row].val //= 0
+                s.cgra[idx].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
+                s.cgra[idx].send_data_on_boundary_west[tile_row].rdy //= 0
+                
+            # Right edge
             if cgra_col == cgra_columns - 1:
               for tile_row in range(tile_rows):
-                s.cgra[cgra_row * cgra_columns + cgra_col].send_data_on_boundary_east[tile_row].rdy //= 0
-                print(f"14. s.cgra[{cgra_row * cgra_columns + cgra_col}].send_data_on_boundary_east[{tile_row}].rdy //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].val //= 0
-                print(f"15. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_east[{tile_row}].val //= 0")
-                s.cgra[cgra_row * cgra_columns + cgra_col].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
-                print(f"16. s.cgra[{cgra_row * cgra_columns + cgra_col}].recv_data_on_boundary_east[{tile_row}].msg //= CgraDataType()")
+                s.cgra[idx].recv_data_on_boundary_east[tile_row].val //= 0
+                s.cgra[idx].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
+                s.cgra[idx].send_data_on_boundary_east[tile_row].rdy //= 0
 
     def line_trace(s):
         res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())

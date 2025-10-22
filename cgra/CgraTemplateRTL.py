@@ -172,44 +172,31 @@ class CgraTemplateRTL(Component):
         for col in range(width):
           tile_id = row * width + col
           if row == height - 1:
-            if PORT_NORTH in TileList[tile_id].getInvalidOutPorts():
-              s.send_data_on_boundary_north[col].rdy //= 0
-            else:
+            # Only connect if the port is valid
+            if PORT_NORTH not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[col]
-            if PORT_SOUTH in TileList[tile_id].getInvalidInPorts():
-              s.recv_data_on_boundary_north[col].val //= 0
-              s.recv_data_on_boundary_north[col].msg //= DataType(0, 0)
-            else:
+            if PORT_NORTH not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[col]
+              
           if row == 0:
-            if PORT_SOUTH in TileList[tile_id].getInvalidOutPorts():
-              s.send_data_on_boundary_south[col].rdy //= 0
-            else:
+            # Only connect if the port is valid
+            if PORT_SOUTH not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[col]
-            if PORT_SOUTH in TileList[tile_id].getInvalidInPorts():
-              s.recv_data_on_boundary_south[col].val //= 0
-              s.recv_data_on_boundary_south[col].msg //= DataType(0, 0)
-            else:
+            if PORT_SOUTH not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
+              
           if col == 0:
-            if PORT_WEST in TileList[tile_id].getInvalidOutPorts():
-              s.send_data_on_boundary_west[row].rdy //= 0
-            else:
+            # Only connect if the port is valid
+            if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
-            if PORT_WEST in TileList[tile_id].getInvalidInPorts():
-              s.recv_data_on_boundary_west[row].val //= 0
-              s.recv_data_on_boundary_west[row].msg //= DataType(0, 0)
-            else:
+            if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
+              
           if col == width - 1:
-            if PORT_EAST in TileList[tile_id].getInvalidOutPorts():
-              s.send_data_on_boundary_east[row].rdy //= 0
-            else:
+            # Only connect if the port is valid
+            if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_EAST] //= s.send_data_on_boundary_east[row]
-            if PORT_EAST in TileList[tile_id].getInvalidInPorts():
-              s.recv_data_on_boundary_east[row].val //= 0
-              s.recv_data_on_boundary_east[row].msg //= DataType(0, 0)
-            else:
+            if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
 
     for i in range(s.num_tiles):
