@@ -164,7 +164,7 @@ def main():
     files = data.get("files", [])
     commit_message = data.get("commit_message", f"Auto changes for issue #{issue_number}")
 
-    branch = f"auto/issue-{issue_number}"
+    branch = f"autopr/issue-{issue_number}"
 
     # Create branch
     run(["git", "checkout", "-b", branch], check=True)
