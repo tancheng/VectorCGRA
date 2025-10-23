@@ -10,16 +10,7 @@ from datetime import datetime
 from openai import OpenAI
 
 # Configuration: tune these as you like
-ALLOWED_PREFIXES = (
-    "src/",
-    "lib/",
-    "include/",
-    "tests/",
-    "docs/",
-    "README.md",
-    "README.rst",
-    "README.md",
-)
+ALLOWED_PREFIXES = ("",)  # allow all paths
 MAX_FILE_BYTES = 200_000  # reject file contents larger than this
 MODEL = "gpt-4o"   # change to preferred model (gpt-4o-mini, gpt-4, etc.)
 
