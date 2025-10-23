@@ -52,7 +52,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: "auto/issue-${{ github.event.issue.number }}"
+          branch: "autopr/issue-${{ github.event.issue.number }}"
           base: master
           title: "Auto PR for #${{ github.event.issue.number }}"
           commit-message: "Auto changes for issue #${{ github.event.issue.number }}"
