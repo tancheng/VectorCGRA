@@ -43,7 +43,7 @@ jobs:
 
       - name: Generate patch using OpenAI
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.CODEX_API_KEY }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: python .github/scripts/issue_to_pr_openai.py "${{ github.event.issue.number }}" "${{ github.repository }}"
