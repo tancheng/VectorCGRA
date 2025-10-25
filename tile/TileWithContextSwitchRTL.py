@@ -127,6 +127,11 @@ class TileWithContextSwitchRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
+    
+    # Used for:
+    # Clearing the 'first' signal in PhiRTL to correctly resume the progress.
+    # Clearing the 'prologue_counter' signal in CrossbarRTL to correctly resume the progress.
+    s.clear = Wire(1)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -185,6 +190,15 @@ class TileWithContextSwitchRTL(Component):
         s.element.from_mem_rdata[i].msg //= DataType()
         s.element.to_mem_waddr[i].rdy //= 0
         s.element.to_mem_wdata[i].rdy //= 0
+    
+    # Feed clear signal to PhiRTL and CrossbarRTL to correctly resume the progress.
+    for i in range(len(FuList)):
+      if FuList[i] == PhiRTL:
+        s.element.clear[i] //= s.clear
+      else:
+        s.element.clear[i] //= 0
+    s.fu_crossbar.clear //= s.clear
+    s.routing_crossbar.clear //= s.clear
 
     # Connections on the `routing_crossbar`.
     # The data from other tiles should be connected to the
@@ -247,11 +261,14 @@ class TileWithContextSwitchRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_TERMINATE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PAUSE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PRESERVE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RESUME)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
@@ -260,9 +277,18 @@ class TileWithContextSwitchRTL(Component):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
-        elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CLEAR):
+
+        if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CLEAR):
+            s.ctrl_mem.recv_pkt_from_controller.val @= 1
+            s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
+            s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
+            s.clear @= 1
             for i in range(num_tile_inports):
               s.tile_in_channel[i].clear @= 1
+        else:
+            s.clear @= 0
+            for i in range(num_tile_inports):
+              s.tile_in_channel[i].clear @= 0
 
     @update
     def update_send_out_signal():
