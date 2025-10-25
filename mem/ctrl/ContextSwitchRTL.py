@@ -29,13 +29,16 @@ class ContextSwitchRTL(Component):
     OptType = mk_bits(clog2(NUM_OPTS))
 
     # Interface
+    # Inputs from recv_pkt.
     s.recv_cmd = InPort(CmdType)
     s.recv_cmd_vld = InPort(b1)
+    s.phi_addr = InPort(CtrlAddrType)
+
+    # Inputs from ctrl mem and FU.
     # We don't need recv_opt.predicate as progress_in.predicate is enough to tell whether the opt is valid.
     s.recv_opt = InPort(OptType)
     s.progress_in = InPort(DataType)
     # The ctrl mem address of target PHI_CONST operation in the ctrl mem of current tile.
-    s.phi_addr = InPort(CtrlAddrType)
     s.ctrl_mem_rd_addr = InPort(CtrlAddrType)
     # When s.overwrite_fu_outport.val is high, FU's outport should be replaced with s.overwrite_fu_outport.msg.
     s.overwrite_fu_outport = SendIfcRTL(DataType)
@@ -49,15 +52,19 @@ class ContextSwitchRTL(Component):
     s.is_preserving = Wire(b1)
     s.is_resuming = Wire(b1)
     s.is_executing_phi = Wire(b1)
-    # s.recv_pkt_queue in CtrlMemDynamicRTL.py introduces 1 clock cycle delay to commands,
-    # therefore we also add a queue for input recv_cmd to make timing right.
+    # s.recv_pkt_queue in CtrlMemDynamicRTL.py introduces 1 clock cycle delay to recv_pkt,
+    # therefore we also add a queue for input recv_cmd and phi_addr within recv_pkt to synchronize.
     s.recv_cmd_queue = NormalQueueRTL(CmdType)
+    s.recv_phi_addr_queue = NormalQueueRTL(CtrlAddrType)
 
     @update
     def update_queue():
       s.recv_cmd_queue.recv.val @= s.recv_cmd_vld
       s.recv_cmd_queue.recv.msg @= s.recv_cmd
       s.recv_cmd_queue.send.rdy @= 1
+      s.recv_phi_addr_queue.recv.val @= s.recv_cmd_vld
+      s.recv_phi_addr_queue.recv.msg @= s.phi_addr
+      s.recv_phi_addr_queue.send.rdy @= 1
 
     @update
     def update_msg():
@@ -109,8 +116,8 @@ class ContextSwitchRTL(Component):
         s.progress_reg <<= s.progress_reg
 
       # Records the target PHI_CONST's ctrl mem address to the register.
-      if (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_RECORD_PHI_ADDR)):
-        s.phi_addr_reg <<= s.phi_addr
+      if (s.recv_cmd_queue.send.val & (s.recv_cmd_queue.send.msg == CMD_RECORD_PHI_ADDR) & s.recv_phi_addr_queue.send.val):
+        s.phi_addr_reg <<= s.recv_phi_addr_queue.send.msg
       else:
         s.phi_addr_reg <<= s.phi_addr_reg
 

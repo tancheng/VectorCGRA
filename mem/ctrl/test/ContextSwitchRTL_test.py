@@ -93,8 +93,8 @@ def test_pause_resume_iteration():
   CtrlAddrType = mk_bits(ctrl_addr_nbits)
   OptType = mk_bits(clog2(NUM_OPTS))
 
-  # All input commands are registered by ContextSwitchRTL for 1 cycle,
-  # so as to make timing right when interacting with CtrlMemDynamicRTL. 
+  # ContextSwitchRTL registers input cmds and phi_addr from recv_pkt for 1-cycle, so as to
+  # synchornize with the recv_pkt_queue in CtrlMemDynamicRTL.
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
               CmdType(CMD_RECORD_PHI_ADDR), # cycle 1
               # Tile receives the PAUSE command at clock cycle 2, processes the command at cycle 3,
@@ -112,8 +112,25 @@ def test_pause_resume_iteration():
               CmdType(CMD_CONST), # cycle 8
               CmdType(CMD_CONST)  # cycle 9
               ]
-  
-  # All inputs provided by CtrlMemDynamicRTL have 1-cycle delay because of recv_pkt_queue.
+
+  # Preloads the address 3 of the initial PHI_CONST.
+  src_phi_addr = [
+                         # Starts execution.
+                         CtrlAddrType(3),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0)
+                        ]
+ 
+  # CtrlMemDynamicRTL registers recv_pkt for 1 cycle, so any inputs of ContextSwitchRTL that are generated
+  # by CtrlMemDynamicRTL (src_opts, src_ctrl_mem_rd_addr, and src_progress_in) will have 1-cycle delay. 
+  # We need to simulate this 1-cycle delay for those inputs, as ContextSwitchRTL has not been really connected 
+  # to ctrl mem and FU in this testcase.
   src_opts = [
               # Simulates 1-cycle delay comapred to src_cmds.
               OptType(OPT_NAH),
@@ -152,21 +169,6 @@ def test_pause_resume_iteration():
                          CtrlAddrType(2),
                          CtrlAddrType(3)
                          ]
-
-  # Preloads the address 3 of the initial PHI_CONST.
-  src_phi_addr = [
-                         # Simulates 1-cycle delay comapred to src_cmds.
-                         CtrlAddrType(0),
-                         # Starts execution.
-                         CtrlAddrType(3),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0)
-                        ]
 
   src_progress_in = [
                      # Simulates 1-cycle delay comapred to src_cmds.
@@ -234,8 +236,8 @@ def test_preserve_resume_accumulation():
   CtrlAddrType = mk_bits(ctrl_addr_nbits)
   OptType = mk_bits(clog2(NUM_OPTS))
 
-  # All input commands are registered by ContextSwitchRTL for 1 cycle,
-  # so as to make timing right when interacting with CtrlMemDynamicRTL. 
+  # ContextSwitchRTL registers input cmds and phi_addr from recv_pkt for 1-cycle, so as to
+  # synchornize with the recv_pkt_queue in CtrlMemDynamicRTL.
   src_cmds = [# Preloads the ctrl mem address of DFG's initial PHI_CONST at clock cycle 1.
               CmdType(CMD_RECORD_PHI_ADDR), # cycle 1
               # Tile receives the PRESERVE command at clock cycle 2, processes the command at cycle 3,
@@ -258,7 +260,28 @@ def test_preserve_resume_accumulation():
               CmdType(CMD_CONST)  # cycle 13
               ]
   
-  # All inputs provided by CtrlMemDynamicRTL have 1-cycle delay because of recv_pkt_queue.
+  # Preloads the address 2 of the PHI_CONST.
+  src_phi_addr = [
+                         # Starts execution.
+                         CtrlAddrType(2),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0),
+                         CtrlAddrType(0)
+                        ]
+
+  # CtrlMemDynamicRTL registers recv_pkt for 1 cycle, so any inputs of ContextSwitchRTL that are generated
+  # by CtrlMemDynamicRTL (src_opts, src_ctrl_mem_rd_addr, and src_progress_in) will have 1-cycle delay.
+  # We need to simulate this 1-cycle delay for those inputs, as ContextSwitchRTL has not been really connected
+  # to ctrl mem and FU in this testcase.
   src_opts = [
               # Simulates 1-cycle delay comapred to src_cmds.
               OptType(OPT_NAH),
@@ -307,25 +330,6 @@ def test_preserve_resume_accumulation():
                          CtrlAddrType(2),
                          CtrlAddrType(3)
                          ]
-
-  # Preloads the address 2 of the PHI_CONST.
-  src_phi_addr = [
-                         # Simulates 1-cycle delay comapred to src_cmds.
-                         CtrlAddrType(0),
-                         # Starts execution.
-                         CtrlAddrType(2),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0),
-                         CtrlAddrType(0)
-                        ]
 
   src_accumulation_in = [
                      # Simulates 1-cycle delay comapred to src_cmds.
