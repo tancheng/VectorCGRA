@@ -52,6 +52,9 @@ class VectorAllReduceRTL(Component):
     TempDataType = mk_bits(data_bitwidth)
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
+
     # Redundant interfaces for MemUnit.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
     s.from_mem_rdata = RecvIfcRTL(DataType)

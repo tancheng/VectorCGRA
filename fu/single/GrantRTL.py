@@ -122,7 +122,7 @@ class GrantRTL(Fu):
 
     @update_ff
     def record_grt_once():
-      if s.reset:
+      if s.reset | s.clear:
         s.already_grt_once <<= 0
       else:
         if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & (s.recv_opt.msg.operation == OPT_GRT_ONCE):

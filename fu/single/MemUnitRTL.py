@@ -50,8 +50,8 @@ class MemUnitRTL(Component):
     s.to_mem_waddr = ValRdySendIfcRTL(AddrType)
     s.to_mem_wdata = ValRdySendIfcRTL(DataType)
 
-    # Redundant interface for PhiRTL
-    s.clear = InPort(1)
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)

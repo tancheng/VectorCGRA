@@ -875,66 +875,66 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Resumes tile 0's execution.
       [
+        # Clears all channels.
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0, data = DataType(1, 1))),
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1, data = DataType(1, 1))),
-        # Clears all channels.
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CLEAR)),
         # Resumes execution.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_RESUME))
       ],
 
       # Restarts tile 1's execution.
       [
+        # Clears all channels. 
+        IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1, data = DataType(1, 1))),
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 2, data = DataType(1, 1))),
-        # Clears all channels. 
-        IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CLEAR)),
         # Restarts execution.
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_LAUNCH))
       ],
 
       # Restarts tile 4's execution.
       [
-        # Resets ctrl mem raddr.
-        IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Clears all channels.
         IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CLEAR)),
+        # Resets ctrl mem raddr.
+        IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
         IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_LAUNCH))
       ],
 
       # Restarts tile 5's execution.
       [
-        # Resets ctrl mem raddr.
-        IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Clears all channels. 
         IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CLEAR)),
+        # Resets ctrl mem raddr.
+        IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
         IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_LAUNCH))
       ],
 
       # Resumes tile 8's execution.
       [
-        # Resets ctrl mem raddr.
-        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Clears all channels.
         IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CLEAR)),
+        # Resets ctrl mem raddr.
+        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resumes execution.
         IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_RESUME))
       ],
 
       # Restarts tile 9's execution.
       [
+        # Clears all channels.
+        IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
-        # Clears all channels. 
-        IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CLEAR)),
         # Restarts execution.
         IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_LAUNCH))
       ]
@@ -943,7 +943,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   
   src_query_pkt = \
       [
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = kStoreAddress)),
+#          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = kStoreAddress)),
       ]
 
   expected_complete_sink_out_pkg = \
@@ -952,7 +952,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       ]
   expected_mem_sink_out_pkt = \
       [
-          # IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
+#          IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
       ]
 
   for activation in preload_data:

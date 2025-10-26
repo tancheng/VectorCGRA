@@ -118,9 +118,7 @@ class PhiRTL(Fu):
     # only once.
     @update_ff
     def br_start_once():
-      if s.reset:
-        s.first <<= b1(1)
-      if s.clear:
+      if s.reset | s.clear:
         s.first <<= b1(1)
       if (s.recv_opt.msg.operation == OPT_PHI_CONST) & s.reached_vector_factor:
         s.first <<= b1(0)

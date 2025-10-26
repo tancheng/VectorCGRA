@@ -51,7 +51,7 @@ class SelRTL(Component):
     s.to_mem_waddr = SendIfcRTL(AddrType)
     s.to_mem_wdata = SendIfcRTL(DataType)
 
-    # Redundant interface for PhiRTL
+    # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)
 
     s.in0 = Wire(FuInType)

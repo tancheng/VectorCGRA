@@ -47,6 +47,8 @@ class Fu(Component):
     # Used for command delivery between functional unit and control memory, which is usually sent to (or received from) the controller.
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
+
+    # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)
 
     # Components.
