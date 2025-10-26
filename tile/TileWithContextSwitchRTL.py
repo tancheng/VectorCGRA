@@ -308,9 +308,12 @@ class TileWithContextSwitchRTL(Component):
 
       # FIXME: Do we still need separate element and routing_xbar?
       # FIXME: Do we need to consider reg bank here?
-      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
-      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
-      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
+      #s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
+      #s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
+      #s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
+      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val
+      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val 
+      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val 
 
       # FIXME: yo96, rename ctrl.rdy to ctrl.proceed or sth similar.
       # Allows either the FU-related go out first or routing-xbar go out first. And only
