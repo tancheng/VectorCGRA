@@ -848,14 +848,14 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_LAUNCH))
       ],
 
-      # Let all kernels free running for 6 cycles (too long will block the const mem of tile 15).
+      # Let all kernels free running for 12 cycles.
       # We send useless data to unused tile 15 to simulate the free-running.
       [ IntraCgraPktType(0, 15, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
 
       # Sends preserving command to tile 0 to record accumulation results.
       [ IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_PRESERVE)) ],
       
-      # Free running another 6 cycles to make sure tile 0 has already captured one accumulation result.
+      # Free running another 12 cycles to make sure tile 0 has already captured one accumulation result.
       [ IntraCgraPktType(0, 14, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
 
       # Sends pausing command to tile 8 to record iteration results.
@@ -864,6 +864,8 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Free running another 12 cycles to make sure all data has been drained.
       [ IntraCgraPktType(0, 13, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
       # Terminates all tiles after saving iteration and accumulation results.
+      # Terminating refers to stop issuing configs from tile's config mem,
+      # and clear all necessary values in various registers.
       [
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_TERMINATE)),
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_TERMINATE)),
@@ -875,8 +877,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Resumes tile 0's execution.
       [
-        # Clears all channels.
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
@@ -888,8 +888,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Restarts tile 1's execution.
       [
-        # Clears all channels. 
-        IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
@@ -901,8 +899,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Restarts tile 4's execution.
       [
-        # Clears all channels.
-        IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -911,8 +907,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Restarts tile 5's execution.
       [
-        # Clears all channels. 
-        IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -921,8 +915,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Resumes tile 8's execution.
       [
-        # Clears all channels.
-        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resumes execution.
@@ -931,8 +923,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Restarts tile 9's execution.
       [
-        # Clears all channels.
-        IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CLEAR)),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.

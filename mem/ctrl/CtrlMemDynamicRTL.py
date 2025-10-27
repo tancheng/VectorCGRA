@@ -140,7 +140,6 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
-         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CLEAR) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE):
@@ -225,7 +224,7 @@ class CtrlMemDynamicRTL(Component):
           s.prologue_count_reg_fu[i] <<= 0
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND):
         s.reg_file.raddr[0] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, CtrlAddrType)
-      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CLEAR):
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE):
         s.times <<= TimeType(0)
       else:
         if s.recv_pkt_queue.send.val & \

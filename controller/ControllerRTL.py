@@ -316,7 +316,6 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PRESERVE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RESUME) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CLEAR) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_TERMINATE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy

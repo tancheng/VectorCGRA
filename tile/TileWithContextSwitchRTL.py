@@ -266,7 +266,6 @@ class TileWithContextSwitchRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_TERMINATE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PAUSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PRESERVE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RESUME)):
@@ -278,7 +277,7 @@ class TileWithContextSwitchRTL(Component):
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
             s.recv_from_controller_pkt.rdy @= s.const_mem.recv_const.rdy
 
-        if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CLEAR):
+        if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_TERMINATE):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
@@ -308,12 +307,9 @@ class TileWithContextSwitchRTL(Component):
 
       # FIXME: Do we still need separate element and routing_xbar?
       # FIXME: Do we need to consider reg bank here?
-      #s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
-      #s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
-      #s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
-      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val
-      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val 
-      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val 
+      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
+      s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
+      s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
 
       # FIXME: yo96, rename ctrl.rdy to ctrl.proceed or sth similar.
       # Allows either the FU-related go out first or routing-xbar go out first. And only
@@ -340,7 +336,7 @@ class TileWithContextSwitchRTL(Component):
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
     def already_done():
-      if s.reset | s.ctrl_mem.send_ctrl.rdy:
+      if s.reset | s.ctrl_mem.send_ctrl.rdy | s.clear:
         s.element_done <<= 0
         s.fu_crossbar_done <<= 0
         s.routing_crossbar_done <<= 0

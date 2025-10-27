@@ -128,7 +128,7 @@ class MemUnitRTL(Component):
           # so that the consumer will not block due to the lack of data.
           # Then all initiated iterations can be normally drained.
           if s.recv_in[s.in0_idx].msg.predicate == 0:
-            s.send_out[0].val @= 1
+            s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
           else:
             # FIXME: As the memory access might take more than one cycle,
