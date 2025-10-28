@@ -183,7 +183,6 @@ class CtrlMemDynamicRTL(Component):
           s.send_ctrl.val @= b1(0)
         else:
           s.send_ctrl.val @= 1
-      # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
       if s.recv_pkt_queue.send.val & \
           (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE):
         s.send_ctrl.val @= b1(0)

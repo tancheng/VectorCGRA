@@ -165,6 +165,7 @@ class TileWithContextSwitchRTL(Component):
     s.context_switch.recv_cmd_vld //= s.recv_from_controller_pkt.val
     s.context_switch.recv_opt //= s.ctrl_mem.send_ctrl.msg.operation
     s.context_switch.progress_in //= s.element.send_out[0].msg
+    s.context_switch.progress_in_vld //= s.element.send_out[0].val
     s.context_switch.phi_addr //= s.recv_from_controller_pkt.msg.payload.ctrl_addr
     s.context_switch.ctrl_mem_rd_addr //= s.ctrl_mem.ctrl_addr_outport
 
@@ -199,6 +200,7 @@ class TileWithContextSwitchRTL(Component):
         s.element.clear[i] //= 0
     s.fu_crossbar.clear //= s.clear
     s.routing_crossbar.clear //= s.clear
+    s.const_mem.clear //= s.clear
 
     # Connections on the `routing_crossbar`.
     # The data from other tiles should be connected to the

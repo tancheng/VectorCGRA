@@ -53,6 +53,7 @@ class TestHarness(Component):
       s.src_ctrl_mem_rd_addr.send.rdy @= 1
       s.sink_overwrite_fu_outport.recv.val @= 1
       s.sink_overwrite_fu_outport.recv.msg @= s.context_switch.overwrite_fu_outport.msg
+      s.context_switch.progress_in_vld @= 1
 
   def done(s):
     return s.src_cmds.done() and s.src_opts.done() and s.src_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_overwrite_fu_outport.done()

@@ -40,6 +40,7 @@ class ConstQueueDynamicRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
 
     s.ctrl_proceed = InPort(b1)
+    s.clear = InPort(b1)
 
     # Component
     # 1 rd_port: number of read port is 0.
@@ -71,7 +72,7 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def update_wr_cur():
       not_full = (s.wr_cur < const_mem_size)
-      if s.reset:
+      if s.reset | s.clear:
         s.wr_cur <<= 0
       # Checks if there's a valid const (from producer) to be written.
       else:
@@ -90,7 +91,7 @@ class ConstQueueDynamicRTL(Component):
 
     @update_ff
     def update_rd_cur():
-      if s.reset:
+      if s.reset | s.clear:
         s.rd_cur <<= 0
       else:
         # Checks whether the "reader" successfully read the data at rd_cur,

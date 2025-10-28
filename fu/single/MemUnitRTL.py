@@ -130,6 +130,7 @@ class MemUnitRTL(Component):
           if s.recv_in[s.in0_idx].msg.predicate == 0:
             s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
+            s.recv_opt.rdy @= s.send_out[0].rdy
           else:
             # FIXME: As the memory access might take more than one cycle,
             # the send_out valid no need to depend on recv_all_val.
@@ -138,7 +139,7 @@ class MemUnitRTL(Component):
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.from_mem_rdata.msg.predicate & \
                                          s.reached_vector_factor
-          s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
+            s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
 
         # LD_CONST indicates the address is a const.
         elif s.recv_opt.msg.operation == OPT_LD_CONST:
