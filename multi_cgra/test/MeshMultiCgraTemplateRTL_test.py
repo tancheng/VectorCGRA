@@ -207,7 +207,7 @@ class TestHarness(Component):
           tiles.append(t)
       return tiles
 
-    def safe_remove_port(tile, port):
+    def keep_port_valid(tile, port):
       tile_out_port_set = tile.invalidOutPorts
       tile_in_port_set = tile.invalidInPorts
       if port in tile_out_port_set:
@@ -221,30 +221,30 @@ class TestHarness(Component):
 
     # remove invalid ports for each tile on boundary
     # cgra 0
-    print(f">>>>>>>>>>>>>>>> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
-    safe_remove_port(tiles[1][0], PORT_NORTH)
-    safe_remove_port(tiles[1][1], PORT_NORTH)
-    safe_remove_port(tiles[0][1], PORT_EAST)
-    safe_remove_port(tiles[1][1], PORT_EAST)
-    print(f"~~~~~~~~~~~~~~~~ tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
+    print(f"> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
+    keep_port_valid(tiles[1][0], PORT_NORTH)
+    keep_port_valid(tiles[1][1], PORT_NORTH)
+    keep_port_valid(tiles[0][1], PORT_EAST)
+    keep_port_valid(tiles[1][1], PORT_EAST)
+    print(f"> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
 
     # cgra 1
-    safe_remove_port(tiles_1[1][0], PORT_WEST)
-    safe_remove_port(tiles_1[0][0], PORT_WEST)
-    safe_remove_port(tiles_1[1][0], PORT_NORTH)
-    safe_remove_port(tiles_1[1][1], PORT_NORTH)
+    keep_port_valid(tiles_1[1][0], PORT_WEST)
+    keep_port_valid(tiles_1[0][0], PORT_WEST)
+    keep_port_valid(tiles_1[1][0], PORT_NORTH)
+    keep_port_valid(tiles_1[1][1], PORT_NORTH)
 
     # cgra 2
-    safe_remove_port(tiles_2[0][0], PORT_SOUTH)
-    safe_remove_port(tiles_2[0][1], PORT_SOUTH)
-    safe_remove_port(tiles_2[1][1], PORT_EAST)
-    safe_remove_port(tiles_2[0][1], PORT_EAST)
+    keep_port_valid(tiles_2[0][0], PORT_SOUTH)
+    keep_port_valid(tiles_2[0][1], PORT_SOUTH)
+    keep_port_valid(tiles_2[1][1], PORT_EAST)
+    keep_port_valid(tiles_2[0][1], PORT_EAST)
 
     # cgra 3
-    safe_remove_port(tiles_3[0][0], PORT_WEST)
-    safe_remove_port(tiles_3[1][0], PORT_WEST)
-    safe_remove_port(tiles_3[0][0], PORT_SOUTH)
-    safe_remove_port(tiles_3[0][1], PORT_SOUTH)
+    keep_port_valid(tiles_3[0][0], PORT_WEST)
+    keep_port_valid(tiles_3[1][0], PORT_WEST)
+    keep_port_valid(tiles_3[0][0], PORT_SOUTH)
+    keep_port_valid(tiles_3[0][1], PORT_SOUTH)
 
     tiles = handleReshape(tiles)
     tiles_1 = handleReshape(tiles_1)

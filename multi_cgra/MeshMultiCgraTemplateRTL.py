@@ -130,11 +130,15 @@ class MeshMultiCgraTemplateRTL(Component):
           s.cgra[i].send_to_cpu_pkt.rdy //= 0
 
         # Connects the tiles on the boundary of each two adjacent CGRAs.
+        # Example for 4 CGRAs (2x2):
+        #              (cgra_col=0)   -- (cgra_col=1)
+        # (cgra_row=1) CGRA 2 [idx=2] -- CGRA 3 [idx=3]
+        # (cgra_row=0) CGRA 0 [idx=0] -- CGRA 1 [idx=1]
         for cgra_row in range(cgra_rows):
           for cgra_col in range(cgra_columns):
             idx = cgra_row * cgra_columns + cgra_col
             
-            # Connect North-South boundaries
+            # Connects North-South boundaries
             if cgra_row > 0:
               neighbor_idx = (cgra_row - 1) * cgra_columns + cgra_col
               for tile_col in range(tile_columns):
@@ -143,13 +147,13 @@ class MeshMultiCgraTemplateRTL(Component):
                 s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
                     s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
             else:
-              # Bottom edge - drive recv inputs and send rdy
+              # Bottom edge: connects south boundary to 0
               for tile_col in range(tile_columns):
                 s.cgra[idx].recv_data_on_boundary_south[tile_col].val //= 0
                 s.cgra[idx].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_south[tile_col].rdy //= 0
-                
-            # Top edge
+
+            # Top edge: connects north boundary to 0
             if cgra_row == cgra_rows - 1:
               for tile_col in range(tile_columns):
                 s.cgra[idx].recv_data_on_boundary_north[tile_col].val //= 0
@@ -165,13 +169,13 @@ class MeshMultiCgraTemplateRTL(Component):
                 s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
                     s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
             else:
-              # Left edge - drive recv inputs and send rdy
+              # Left edge: connects west boundary to 0
               for tile_row in range(tile_rows):
                 s.cgra[idx].recv_data_on_boundary_west[tile_row].val //= 0
                 s.cgra[idx].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_west[tile_row].rdy //= 0
                 
-            # Right edge
+            # Right edge: connects east boundary to 0
             if cgra_col == cgra_columns - 1:
               for tile_row in range(tile_rows):
                 s.cgra[idx].recv_data_on_boundary_east[tile_row].val //= 0
