@@ -1006,9 +1006,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -1016,12 +1013,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
-                                                     ctrl = CtrlType(fu_xbar_outport = [
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(fu_xbar_outport = [
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
@@ -1212,7 +1203,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
 
-          # NAH.
+          # NOT.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                       ctrl = CtrlType(OPT_NOT,
@@ -2194,9 +2185,6 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -2204,12 +2192,6 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
-                                                     ctrl = CtrlType(fu_xbar_outport = [
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(fu_xbar_outport = [
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
@@ -2400,7 +2382,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
 
-          # NAH.
+          # NOT.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                       ctrl = CtrlType(OPT_NOT,

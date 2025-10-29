@@ -1208,7 +1208,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                         write_reg_from = write_reg_from_code))),
 
-            # NAH.
+            # NOT.
             IntraCgraPktType(0, 5,
                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                         ctrl = CtrlType(OPT_NOT,
@@ -1818,7 +1818,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                         write_reg_from = write_reg_from_code))),
 
-            # NAH.
+            # NOT.
             IntraCgraPktType(0, 5,
                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                         ctrl = CtrlType(OPT_NOT,
@@ -2512,7 +2512,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                         write_reg_from = write_reg_from_code))),
 
-            # NAH.
+            # NOT.
             IntraCgraPktType(0, 5, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                         ctrl = CtrlType(OPT_NOT,
@@ -2936,7 +2936,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                         write_reg_from = write_reg_from_code))),
 
-            # NAH.
+            # NOT.
             IntraCgraPktType(0, 5, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                         ctrl = CtrlType(OPT_NOT,
