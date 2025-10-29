@@ -73,10 +73,10 @@ class TestHarness(Component):
       3: 16
     }
     id2cgraSize_map = {
-      0: [4, 4],
-      1: [4, 4],
-      2: [4, 4],
-      3: [4, 4]
+      0: [2, 2],
+      1: [2, 2],
+      2: [2, 2],
+      3: [2, 2]
     }
     # id2validTiles = {}
     # id2validLinks = {}
@@ -336,72 +336,24 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_sim(test_harness, max_cycles = 500):
+def run_sim(test_harness, max_cycles = 200):
   test_harness.apply(DefaultPassGroup())
   test_harness.sim_reset()
 
   # Runs simulation.
   ncycles = 0
-  print("="*80)
-  print("STARTING SIMULATION")
-  print("="*80)
-  print(f"cycle {ncycles}: {test_harness.line_trace()}")
-  
-  ctrl_done = False
-  query_done = False
-  output_done = False
-  
-  while ncycles < max_cycles:
+  print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
+  while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    
-    # Print every 10 cycles for less verbose output
-    if ncycles % 10 == 0 or ncycles < 50:
-      print(f"cycle {ncycles}: complete_count={test_harness.complete_count}, ctrl_done={test_harness.src_ctrl_pkt.done()}, query_done={test_harness.src_query_pkt.done()}, output_done={test_harness.expected_sink_out.done()}")
-      # print(f"  {test_harness.line_trace()}")
-    
-    # Check individual completion status
-    if not ctrl_done and test_harness.src_ctrl_pkt.done():
-      ctrl_done = True
-      print(f"[cycle {ncycles}] Control packets completed")
-    
-    if not query_done and test_harness.src_query_pkt.done():
-      query_done = True
-      print(f"[cycle {ncycles}] Query packets completed")
-      
-    if not output_done and test_harness.expected_sink_out.done():
-      output_done = True
-      print(f"[cycle {ncycles}] Output verification completed")
-    
-    # Check if all done
-    if test_harness.done():
-      print("="*80)
-      print(f"SIMULATION COMPLETED SUCCESSFULLY at cycle {ncycles}")
-      print("="*80)
-      break
-  
-  # Final status
-  if ncycles >= max_cycles:
-    print("="*80)
-    print(f"SIMULATION TIMEOUT at cycle {ncycles}")
-    print(f"  Control packets sent: {test_harness.src_ctrl_pkt.done()}")
-    print(f"  Query packets sent: {test_harness.src_query_pkt.done()}")
-    print(f"  Expected outputs received: {test_harness.expected_sink_out.done()}")
-    print(f"  Complete count: {test_harness.complete_count}")
-    print("="*80)
-    
-    # Print last few cycles for debugging
-    print("\nLast state:")
-    print(test_harness.line_trace())
-    
-    assert False, f"Simulation timed out after {max_cycles} cycles"
+    print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
 
-  # Extra cycles for cleanup
+  # Checks timeout.
+  assert ncycles < max_cycles
+
   test_harness.sim_tick()
   test_harness.sim_tick()
   test_harness.sim_tick()
-  
-  print(f"\nTotal cycles: {ncycles}")
 
 
 def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
@@ -503,32 +455,92 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   cmp_func = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
 
   '''
-  Simplified test: Just preload data and read it back.
+  Creates test performing load -> inc -> store on cgra 2. Specifically,
+  cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
+  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
+  cgra 2 tile 2 waits for the data from tile 0, and performs stores (0xff) to memory address 3.
+  Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
+  therefore, all the memory addresses from cgra 2 are remote.
   '''
   src_ctrl_pkt = \
-      [
-        # Preload data to address 34 (belongs to cgra 1)
-        IntraCgraPktType(0, 0, 0, 0, 1, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(254, 1), data_addr = 34)),
-        # Preload data to address 3 (belongs to cgra 0)
-        IntraCgraPktType(0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(123, 1), data_addr = 3)),
-      ]
+          [
+           # Preloads data.                                            address 34 belongs to cgra 1 (not cgra 0)
+           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(254, 1), data_addr = 34)),
+           # Tile 0.
+           # Indicates the load address of 2.    dst_cgra_y
+           IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(34, 1))),
+                          # src dst src_cgra dst_cgra
+           IntraCgraPktType(0,  0,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                      ctrl = CtrlType(OPT_LD_CONST,
+                                                                      [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # Note that we still need to set FU xbar.
+                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
+                                                                      write_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
+           IntraCgraPktType(0,  0,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                      ctrl = CtrlType(OPT_INC,
+                                                                      [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                                                                      read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
+
+           # Tile 2. Note that tile 0 and tile 2 can access the memory, as they are on
+           # the first column.
+           # Indicates the store address of 3.
+           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
+                          # src dst src_cgra dst_cgra
+           IntraCgraPktType(0,  2,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                      ctrl = CtrlType(OPT_STR_CONST,
+                                                                      [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+           # Pre-configure per-tile total config count.
+           # Only execute one operation (i.e., store) is enough for this tile.
+           # If this is set more than 1, no `COMPLETE` signal would be set back
+           # to CPU/test_harness.
+           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+
+           # For launching the two tiles.
+           IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
+           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
+          ]
 
   src_query_pkt = \
-      [
-        # Query the data we just stored
-        IntraCgraPktType(0, 0, 0, 0, 1, 0, payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
-        IntraCgraPktType(0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 3)),
-      ]
+          [
+           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 3)),
+           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
+          ]
 
   expected_sink_out_pkt = \
-      [
-        # Load responses
-        IntraCgraPktType(0, num_tiles, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
-        IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(123, 1), data_addr = 3)),
-      ]
+          [
+                          # src  dst        src/dst cgra x/y
+           IntraCgraPktType(0,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+           IntraCgraPktType(2,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+                                                                                                                         # Expected updated value.
+           IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 3)),
+           IntraCgraPktType(0,   num_tiles, 1, 0, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
+          ]
 
-  ctrl_steps_per_iter = 1
-  ctrl_steps_total = 1
+  ctrl_steps_per_iter = 2
+  ctrl_steps_total = 2
 
   th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
                    CgraPayloadType, CtrlType, InterCgraPktType, data_nbits,
