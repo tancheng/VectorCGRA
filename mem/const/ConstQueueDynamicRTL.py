@@ -72,7 +72,7 @@ class ConstQueueDynamicRTL(Component):
     @update_ff
     def update_wr_cur():
       not_full = (s.wr_cur < const_mem_size)
-      if s.reset | s.clear:
+      if s.reset:
         s.wr_cur <<= 0
       # Checks if there's a valid const (from producer) to be written.
       else:

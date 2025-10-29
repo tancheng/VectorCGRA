@@ -888,7 +888,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Resumes tile 0's execution.
       [ 
         # Resends the const for PHI_COSNT with predicate = 0 to correctly resume the progress.
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 0))),
+#        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 0))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
@@ -912,7 +912,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 4's execution.
       [
         # Resends const for ADD_CONST.
-        IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
+ #       IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -922,7 +922,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 5's execution.
       [
         # Resends const for CMP.
-        IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+  #      IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -932,9 +932,9 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Resumes tile 8's execution.
       [
         # Resends the const for PHI_COSNT with predicate = 0 to correctly resume the progress.
-        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 0))),
+   #     IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 0))),
         # Resends const for ADD_CONST.
-        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
+   #     IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resumes execution.
@@ -944,7 +944,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 9's execution.
       [
         # Resends const for ADD_CONST.
-        IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
+   #     IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.

@@ -38,7 +38,7 @@ class ContextSwitchRTL(Component):
     # We don't need recv_opt.predicate as progress_in.predicate is enough to tell whether the opt is valid.
     s.recv_opt = InPort(OptType)
     s.progress_in = InPort(DataType)
-    s.progress_in_vld = InPort(b1) 
+    s.progress_in_val = InPort(b1) 
     # The ctrl mem address of target PHI_CONST operation in the ctrl mem of current tile.
     s.ctrl_mem_rd_addr = InPort(CtrlAddrType)
     # When s.overwrite_fu_outport.val is high, FU's outport should be replaced with s.overwrite_fu_outport.msg.
@@ -53,8 +53,6 @@ class ContextSwitchRTL(Component):
     s.is_preserving = Wire(b1)
     s.is_resuming = Wire(b1)
     s.is_executing_phi = Wire(b1)
-    s.progress_in_valid = Wire(b1)
-    s.progress_in_invalid = Wire(b1)
     # s.recv_pkt_queue in CtrlMemDynamicRTL.py introduces 1 clock cycle delay to recv_pkt,
     # therefore we also add a queue for input recv_cmd and phi_addr within recv_pkt to synchronize.
     s.recv_cmd_queue = NormalQueueRTL(CmdType)
@@ -77,20 +75,18 @@ class ContextSwitchRTL(Component):
       s.is_preserving @= (s.status_reg == STATUS_PRESERVING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
       s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) & (s.phi_addr_reg == s.ctrl_mem_rd_addr))
-      s.progress_in_valid @= s.progress_in.predicate & s.progress_in_vld
-      s.progress_in_invalid @= ~s.progress_in.predicate & s.progress_in_vld
 
       # Updates overwrite_fu_outport, there are 3 scenarios:
       # (1) During the PAUSING status, FU's output iteration should always be replaced with DataType(0,0) that
       # has predicate=0, so as to avoid initiating new iterations.
-      # (2) During the PRESERVING status, only needs to record FU's output accumulation without any replacement.
-      # (3) During the RESUMING status, as long as progress (iteration/accumulation reuslts) has not been 
-      # sucessfully resumed, i.e., s.progress_in_invalid == 1, FU's output when executing PHI_CONST operation
-      # should always be replaced with the recorded progress.
+      # (2) During the PRESERVING status, only needs to record FU's output iteration/accumulation to progress_reg.
+      # (3) During the RESUMING status, PHI_CONST will output the const value with predicate=1 for the first 
+      # time execution, this output should be replaced with the value in progress_reg.
       if (s.is_pausing & s.is_executing_phi):
         s.overwrite_fu_outport.val @= 1
         s.overwrite_fu_outport.msg @= DataType(0, 0)
-      elif (~s.progress_reg_is_null & s.is_resuming & s.is_executing_phi & s.progress_in_invalid):
+      elif (~s.progress_reg_is_null & s.is_resuming & s.is_executing_phi & \
+              s.progress_in.predicate & s.progress_in_val):
         s.overwrite_fu_outport.val @= 1
         s.overwrite_fu_outport.msg @= s.progress_reg
       else:
@@ -110,12 +106,14 @@ class ContextSwitchRTL(Component):
         s.status_reg <<= s.status_reg
 
       # Updates the progress register.
-      if (s.progress_reg_is_null & s.is_pausing & s.is_executing_phi & s.progress_in_valid) | \
-              (s.is_preserving & s.is_executing_phi & s.progress_in_valid):
+      if (s.progress_reg_is_null & s.is_pausing & s.is_executing_phi) | \
+           (s.is_preserving & s.is_executing_phi) & \
+           (s.progress_in.predicate & s.progress_in_val):
         # Records the progress.
         s.progress_reg <<= s.progress_in
-      elif (~s.progress_reg_is_null & s.is_resuming & s.is_executing_phi & s.progress_in_valid):
-        # Clears the register at next clock cycle if progress has been resumed, i.e., s.progress_in_valid == 1.
+      elif (~s.progress_reg_is_null & s.is_resuming & s.is_executing_phi & \
+              s.progress_in.predicate & s.progress_in_val):
+        # Clears the register at next clock cycle if progress is resumed.
         s.progress_reg <<= DataType(0, 0)
       else:
         # Keeps the progress.
@@ -131,7 +129,7 @@ class ContextSwitchRTL(Component):
     recv_cmd_str = f'|| recv_cmd_queue.send.val: {s.recv_cmd_queue.send.val} | recv_cmd_queue.send: {s.recv_cmd_queue.send} '
     recv_opt_str = f'|| recv_opt: {s.recv_opt} '
     progress_in_str = f'|| progress_in: {s.progress_in} '
-    overwrite_fu_outport_str = f'|| overwrite_fu_outport: {s.overwrite_fu_outport} '
+    overwrite_fu_outport_str = f'|| overwrite_fu_outport.val: {s.overwrite_fu_outport.val}, overwrite_fu_outport.msg: {s.overwrite_fu_outport.msg}, overwrite_fu_outport.rdy: {s.overwrite_fu_outport.rdy} '
     phi_addr_str = f'|| phi_addr: {s.phi_addr} '
     ctrl_mem_rd_addr_str = f'|| ctrl_mem_rd_addr: {s.ctrl_mem_rd_addr} '
     register_content_str = f'|| progress_reg: {s.progress_reg} | status_reg: {s.status_reg}i | phi_addr_reg: {s.phi_addr_reg} '

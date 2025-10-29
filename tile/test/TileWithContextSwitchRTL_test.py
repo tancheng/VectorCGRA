@@ -203,8 +203,8 @@ def test_tile_alu(cmdline_opts):
                   DataType(2, 1),
                   # Clock cycle 4: DataType(3, 1) to simulate i+=1 even under the pausing status.
                   DataType(3, 1),
-                  # Clock cycle 5: DataType(4, 0) to allow output replacement during the resuming status.
-                  DataType(4, 0),
+                  # Clock cycle 5: DataType(4, 1) to allow output replacement during the resuming status.
+                  DataType(4, 1),
                   # Clock cycle 6: DataType(3, 1) to simulate i+=1 after resuming the progress.
                   DataType(3, 1),
               ],

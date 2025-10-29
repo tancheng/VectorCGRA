@@ -165,7 +165,7 @@ class TileWithContextSwitchRTL(Component):
     s.context_switch.recv_cmd_vld //= s.recv_from_controller_pkt.val
     s.context_switch.recv_opt //= s.ctrl_mem.send_ctrl.msg.operation
     s.context_switch.progress_in //= s.element.send_out[0].msg
-    s.context_switch.progress_in_vld //= s.element.send_out[0].val
+    s.context_switch.progress_in_val //= s.element.send_out[0].val
     s.context_switch.phi_addr //= s.recv_from_controller_pkt.msg.payload.ctrl_addr
     s.context_switch.ctrl_mem_rd_addr //= s.ctrl_mem.ctrl_addr_outport
 

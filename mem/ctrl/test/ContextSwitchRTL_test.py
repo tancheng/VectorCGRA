@@ -53,7 +53,7 @@ class TestHarness(Component):
       s.src_ctrl_mem_rd_addr.send.rdy @= 1
       s.sink_overwrite_fu_outport.recv.val @= 1
       s.sink_overwrite_fu_outport.recv.msg @= s.context_switch.overwrite_fu_outport.msg
-      s.context_switch.progress_in_vld @= 1
+      s.context_switch.progress_in_val @= 1
 
   def done(s):
     return s.src_cmds.done() and s.src_opts.done() and s.src_phi_addr.done() and s.src_ctrl_mem_rd_addr.done() and s.src_progress_in.done() and s.sink_overwrite_fu_outport.done()
@@ -173,12 +173,12 @@ def test_pause_resume_iteration():
 
   src_progress_in = [
                      # Simulates 1-cycle delay comapred to src_cmds.
-                     DataType(0, 0),
+                     DataType(0, 1),
                      # The following are ground truth values:
                      # A fake progress "4321", should not be recorded because not in the PAUSING status.
                      DataType(4321, 1),
                      # Some random FU's outputs.
-                     DataType(0, 0),
+                     DataType(0, 1),
                      # A fake progress "8765", should not be recorded 
                      # because FU is not executing the initial PHI_CONST at address 3 and in PAUSING status.
                      DataType(8765, 1),
@@ -188,11 +188,11 @@ def test_pause_resume_iteration():
                      # Should be recorded to progress register at the rising
                      # edge of clock cycle 5
                      DataType(1234, 1),
-                     # Some random FU's outputs.
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0)
+                     # Some random FU's outputs with predicate=1.
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1)
                      ]
   
   sink_overwrite_fu_outport  = [
@@ -209,7 +209,7 @@ def test_pause_resume_iteration():
                        DataType(0, 0),
                        DataType(0, 0),
                        # ContextSiwtch module should output the target progress
-                       # when FU executes the initail PHI_CONST for the first time 
+                       # when FU executes the initial PHI_CONST for the first time 
                        # during the RESUMING status at cycle 8. 
                        # msg:DataType(1234, 1) with val:1 replace FU's outport to resume task progress.
                        DataType(1234, 1)
@@ -339,23 +339,23 @@ def test_preserve_resume_accumulation():
                      # A fake accumulation "4321", should not be recorded because not in the RESERVING status.
                      DataType(4321, 1),
                      # Some random FU's outputs.
-                     DataType(0, 0),
+                     DataType(0, 1),
                      # A target accumulation "8765" with predicate=1, should be recorded 
                      # as FU is executing the PHI_CONST at address 2 and in PRESERVING status.
                      DataType(8765, 1),
                      # Some random FU's outputs.
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0),
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1),
                      # A target accumulation "1357" with predicate=1, should be recorded 
                      # as FU is executing the PHI_CONST at address 2 and in PRESERVING status.
                      # (8765, 1) will be covered by (1357, 1)
                      DataType(1357, 1),
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0),
-                     DataType(0, 0)
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1),
+                     DataType(0, 1)
                      ]
   
   sink_overwrite_fu_outport  = [
