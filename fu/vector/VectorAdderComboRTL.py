@@ -47,6 +47,9 @@ class VectorAdderComboRTL(Component):
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
+    
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
 
     # Components
     s.Fu = [VectorAdderRTL(sub_bw, CtrlType, 4, 2, data_mem_size)

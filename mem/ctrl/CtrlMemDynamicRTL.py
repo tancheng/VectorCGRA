@@ -135,11 +135,11 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_PRESERVE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RESUME) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
-         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE):
@@ -183,11 +183,9 @@ class CtrlMemDynamicRTL(Component):
           s.send_ctrl.val @= b1(0)
         else:
           s.send_ctrl.val @= 1
-      # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
-      #if s.recv_pkt_queue.send.val & \
-      #   ((s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE) | \
-      #    (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE)):
-      #  s.send_ctrl.val @= b1(0)
+      if s.recv_pkt_queue.send.val & \
+          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE):
+        s.send_ctrl.val @= b1(0)
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
@@ -200,11 +198,8 @@ class CtrlMemDynamicRTL(Component):
             s.start_iterate_ctrl <<= 1
     # TODO: issue #191, stop iterate ctrl after 10 cycels during pausing status, 
     # so as to clear channels safely.
-          # Deleted by yufeiyang on Sep 25, 2025, as it has conflict with ContextSwitchRTL.
-          #elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
-          #  s.start_iterate_ctrl <<= 0
-          #elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_PAUSE:
-          #  s.start_iterate_ctrl <<= 0
+          elif s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE:
+            s.start_iterate_ctrl <<= 0
 
     @update_ff
     def issue_complete():
@@ -228,6 +223,8 @@ class CtrlMemDynamicRTL(Component):
           s.prologue_count_reg_fu[i] <<= 0
       elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND):
         s.reg_file.raddr[0] <<= trunc(s.recv_pkt_queue.send.msg.payload.data.payload, CtrlAddrType)
+      elif s.recv_pkt_queue.send.val & (s.recv_pkt_queue.send.msg.payload.cmd == CMD_TERMINATE):
+        s.times <<= TimeType(0)
       else:
         if s.recv_pkt_queue.send.val & \
            (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU):

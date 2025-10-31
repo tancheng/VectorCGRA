@@ -69,6 +69,7 @@ class TestHarness( Component ):
       s.from_mem_rdata[i].send //= s.dut.from_mem_rdata[i]
       s.to_mem_waddr[i].recv   //= s.dut.to_mem_waddr[i]
       s.to_mem_wdata[i].recv   //= s.dut.to_mem_wdata[i]
+      s.dut.clear[i] //= 0
 
   def done(s):
     return s.src_in0.done() and s.src_in1.done() and \
