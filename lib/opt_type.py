@@ -21,6 +21,7 @@ OpCodeType = mk_bits(clog2(NUM_OPTS))
 OPT_START                        = OpCodeType( 0  )
 OPT_NAH                          = OpCodeType( 1  )
 OPT_PAS                          = OpCodeType( 31 )
+OPT_CONST                        = OpCodeType( 80 )
 OPT_ADD                          = OpCodeType( 2  )
 OPT_ADD_CONST                    = OpCodeType( 25 )
 OPT_INC                          = OpCodeType( 3  )
@@ -104,6 +105,7 @@ OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
   OPT_NAH                        : "(NAH)",
   OPT_PAS                        : "(->)",
+  OPT_CONST                      : "(const)",
   OPT_ADD                        : "(+)",
   OPT_ADD_CONST                  : "(+')",
   OPT_INC                        : "(++)",
