@@ -486,9 +486,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -496,12 +493,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
-                                                     ctrl = CtrlType(fu_xbar_outport = [
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-                                                     data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(fu_xbar_outport = [
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
@@ -695,7 +686,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
 
-          # NAH.
+          # NOT.
           IntraCgraPktType(0, 5,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                       ctrl = CtrlType(OPT_NOT,
@@ -887,13 +878,12 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Resumes tile 0's execution.
       [ 
-        # Resends the const for PHI_COSNT with predicate = 0 to correctly resume the progress.
-#        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 0))),
+        # Resends const for PHI_COSNT.
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resets FU's prologue
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0, data = DataType(1, 1))),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1, data = DataType(1, 1))),
         # Resumes execution.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_RESUME))
       ],
@@ -912,7 +902,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 4's execution.
       [
         # Resends const for ADD_CONST.
- #       IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
+        IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -922,7 +912,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 5's execution.
       [
         # Resends const for CMP.
-  #      IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+        IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
@@ -931,10 +921,10 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
       # Resumes tile 8's execution.
       [
-        # Resends the const for PHI_COSNT with predicate = 0 to correctly resume the progress.
-   #     IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 0))),
+        # Resends const for PHI_COSNT.
+        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
         # Resends const for ADD_CONST.
-   #     IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
+        IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Resumes execution.
@@ -944,7 +934,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
       # Restarts tile 9's execution.
       [
         # Resends const for ADD_CONST.
-   #     IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
+        IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
         # Restarts execution.
