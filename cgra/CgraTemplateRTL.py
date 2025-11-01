@@ -15,12 +15,13 @@ from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+from ..lib.util.data_struct_attr import *
+from ..lib.messages import *
 
 
 class CgraTemplateRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType, data_bitwidth,
+  def construct(s, CgraPayloadType,
                 multi_cgra_rows,
                 multi_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
@@ -30,6 +31,25 @@ class CgraTemplateRTL(Component):
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 is_multi_cgra = True):
+    
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
+    
+    CgraIdType = mk_bits(max(1, clog2(multi_cgra_rows * multi_cgra_columns)))
+    
+    # Reconstruct packet types
+    num_tiles = len(TileList)
+    # Calculate num_rd_tiles from TileList (number of tiles with read ports)
+    num_rd_tiles = dataSPM.getNumOfValidReadPorts()
+    
+    CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                    num_tiles, CgraPayloadType)
+    
+    NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
