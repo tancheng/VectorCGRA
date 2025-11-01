@@ -65,8 +65,7 @@ class TestHarness(Component):
 
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_func)
 
-    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, data_nbits, cgra_rows, cgra_columns,
+    s.dut = DUT(CgraPayloadType, cgra_rows, cgra_columns,
                 height, width, ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
