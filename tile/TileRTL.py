@@ -225,6 +225,13 @@ class TileRTL(Component):
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
 
+    # Clear ports are only useful during context switching.
+    # We connect to 0 to make sure they have drivers.
+    for i in range(len(FuList)):
+      s.element.clear[i] //= 0
+    s.fu_crossbar.clear //= 0
+    s.routing_crossbar.clear //= 0
+
     @update
     def feed_pkt():
         s.ctrl_mem.recv_pkt_from_controller.msg @= CtrlPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) # , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)

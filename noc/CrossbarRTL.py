@@ -60,6 +60,8 @@ class CrossbarRTL(Component):
 
     s.ctrl_addr_inport = InPort(CtrlAddrType)
 
+    s.clear = InPort(b1)
+
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
     s.prologue_allowing_vector = Wire(num_outports)
@@ -104,7 +106,7 @@ class CrossbarRTL(Component):
 
     @update_ff
     def update_prologue_counter():
-      if s.reset:
+      if s.reset | s.clear:
         for addr in range(ctrl_mem_size):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= 0
