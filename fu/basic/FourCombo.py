@@ -55,6 +55,9 @@ class FourCombo(Component):
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
+
     # Components
     s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
     s.Fu1 = Fu1(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
