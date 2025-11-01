@@ -66,9 +66,7 @@ class MeshMultiCgraRTL(Component):
       for cgra_col in range(cgra_columns):
         idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
-    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, NocPktType,
-                      ControllerIdType, data_nbits, cgra_rows, cgra_columns,
+    s.cgra = [CgraRTL(CgraPayloadType, cgra_rows, cgra_columns,
                       tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
