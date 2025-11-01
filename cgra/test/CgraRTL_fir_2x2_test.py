@@ -19,10 +19,10 @@ from ...fu.double.SeqAddMemRTL import SeqAddMemRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
+from ...fu.quadra.FourIncCmpNotGrantRTL import FourIncCmpNotGrantRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
-from ...fu.single.FourIncCmpNotGrantRTL import FourIncCmpNotGrantRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
@@ -154,8 +154,7 @@ FuList = [AdderRTL,
           SelRTL,
           RetRTL,
           FourIncCmpNotGrantRTL,
-          SeqAddMemRTL,
-          ]
+         ]
 x_tiles = 2
 y_tiles = 2
 data_bitwidth = 32
@@ -214,10 +213,10 @@ addr_nbits = clog2(data_mem_size_global)
 predicate_nbits = 1
 
 CtrlType = mk_ctrl(num_fu_inports,
-                    num_fu_outports,
-                    num_tile_inports,
-                    num_tile_outports,
-                    num_registers_per_reg_bank)
+                   num_fu_outports,
+                   num_tile_inports,
+                   num_tile_outports,
+                   num_registers_per_reg_bank)
 
 CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
@@ -443,11 +442,11 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   src_opt_pkt = [
       # tile 0
       [
-          # Const for PHI_CONST.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
-
           # Const for ADD_CONST_LD.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
+
+          # Const for PHI_CONST.
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
 
           # Pre-configure per-tile config count per iter.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
@@ -460,8 +459,10 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                       ctrl = CtrlType(OPT_PHI_CONST,
                                                                       fu_in_code,
+                                                                      # [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      #  TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                       TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
           # ADD_CONST_LD.
@@ -487,16 +488,21 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
                                                      data = DataType(1, 1))),
+          # Prologue for phi_const should be carefully set. i.e., phi_const
+          # by default should have a prologue to skip the first time non-const
+          # operand arrival. So if it also needs prologue due to loop pipelining,
+          # the prologue count should be incremented by 1. Therefore, we set
+          # it to 2 here.
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
                                                         TileInType(3), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
-                                                     data = DataType(1, 1))),
+                                                     data = DataType(2, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(fu_xbar_outport = [
-                                                        FuOutType(3), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -702,9 +708,9 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                      ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
           # Launch the tile.
@@ -719,7 +725,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
   expected_complete_sink_out_pkg = \
       [
-          IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0))) for _ in range(1)
+          IntraCgraPktType(src = 1, dst = 4, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0))) for _ in range(1)
       ]
   expected_mem_sink_out_pkt = \
       [
