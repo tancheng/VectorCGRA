@@ -69,9 +69,7 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, ControllerIdType,
-                data_nbits,
+    s.dut = DUT(CgraPayloadType,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
