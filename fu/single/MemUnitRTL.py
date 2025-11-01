@@ -114,10 +114,10 @@ class MemUnitRTL(Component):
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_LD:
           s.recv_all_val @= s.recv_in[s.in0_idx].val
-          # FIXME: to_mem_raddr shouldn't be ready if the existing request not yet returned.
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
           s.to_mem_raddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
           # Do not access memory by setting raddr.val=0 if the raddr has predicate=0.
+          # Note that this only happends "once" when all the required inputs are arrived.
           if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.to_mem_raddr.val @= 0
           else:
@@ -127,13 +127,13 @@ class MemUnitRTL(Component):
           # we still need to simulate that memory returns a fake data with predicate=0,
           # so that the consumer will not block due to the lack of data.
           # Then all initiated iterations can be normally drained.
+          # Note that this only happends "after" all the required inputs are arrived.
+          # Otherwise, the recv_opt's opcode would be consumed at the wrong timing.
           if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
             s.recv_opt.rdy @= s.send_out[0].rdy
           else:
-            # FIXME: As the memory access might take more than one cycle,
-            # the send_out valid no need to depend on recv_all_val.
             s.send_out[0].val @= s.from_mem_rdata.val
             s.send_out[0].msg @= s.from_mem_rdata.msg
             # Predicate of 0 is already handled and returned with fake data. So just
@@ -141,14 +141,16 @@ class MemUnitRTL(Component):
             s.send_out[0].msg.predicate @= s.from_mem_rdata.msg.predicate & \
                                            s.reached_vector_factor
             s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
+
+        # ADD_CONST_LD indicates the address is added on a const, then perform load.
         elif s.recv_opt.msg.operation == OPT_ADD_CONST_LD:
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
-          # FIXME: to_mem_raddr shouldn't be ready if the existing request not yet returned.
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
           s.recv_const.rdy @= s.recv_all_val & s.to_mem_raddr.rdy
           s.to_mem_raddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits] +
                                          s.recv_const.msg.payload[0:AddrType.nbits])
           # Do not access memory by setting raddr.val=0 if the raddr has predicate=0.
+          # Note that this only happends "once" when all the required inputs are arrived.
           if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.to_mem_raddr.val @= 0
           else:
@@ -158,13 +160,13 @@ class MemUnitRTL(Component):
           # we still need to simulate that memory returns a fake data with predicate=0,
           # so that the consumer will not block due to the lack of data.
           # Then all initiated iterations can be normally drained.
+          # Note that this only happends "after" all the required inputs are arrived.
+          # Otherwise, the recv_opt's opcode would be consumed at the wrong timing.
           if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
             s.recv_opt.rdy @= s.send_out[0].rdy
           else:
-            # FIXME: As the memory access might take more than one cycle,
-            # the send_out valid no need to depend on recv_all_val.
             s.send_out[0].val @= s.from_mem_rdata.val
             s.send_out[0].msg @= s.from_mem_rdata.msg
             # Predicate of 0 is already handled and returned with fake data. So just
