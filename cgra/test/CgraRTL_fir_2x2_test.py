@@ -15,7 +15,6 @@ from pymtl3.stdlib.test_utils import (run_sim,
 
 from ..CgraRTL import CgraRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
-from ...fu.double.SeqAddMemRTL import SeqAddMemRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
