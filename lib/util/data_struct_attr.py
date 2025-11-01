@@ -1,0 +1,6 @@
+kAttrData = 'data'
+kAttrDataAddr = 'data_addr'
+kAttrCtrl = 'ctrl'
+kAttrCtrlAddr = 'ctrl_addr'
+kAttrPredicate = 'predicate'
+kAttrPayload = 'payload'
