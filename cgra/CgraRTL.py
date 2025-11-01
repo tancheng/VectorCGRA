@@ -16,13 +16,13 @@ from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+from ..lib.util.data_struct_attr import *
+from ..lib.messages import *
 
 
 class CgraRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType,
-                data_bitwidth,
+  def construct(s, CgraPayloadType,
                 multi_cgra_rows,
                 multi_cgra_columns,
                 width, height,
@@ -33,6 +33,25 @@ class CgraRTL(Component):
                 FunctionUnit, FuList, cgra_topology,
                 controller2addr_map, idTo2d_map,
                 is_multi_cgra = True):
+
+    # Derive all types from CgraPayloadType
+    DataType = CgraPayloadType.get_field_type('data')
+    PredicateType = DataType.get_field_type('predicate')
+    CtrlSignalType = CgraPayloadType.get_field_type('ctrl')
+    data_bitwidth = DataType.get_field_type('payload').nbits
+    
+    
+    num_tiles = width * height
+    num_rd_tiles = height + width - 1
+    
+    CgraIdType = mk_bits(max(1, clog2(multi_cgra_rows * multi_cgra_columns)))
+    
+    CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                    num_tiles, CgraPayloadType)
+    
+    NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.

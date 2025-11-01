@@ -59,9 +59,7 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, ControllerIdType,
-                data_nbits,
+    s.dut = DUT(CgraPayloadType,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 multi_cgra_rows, multi_cgra_columns,
