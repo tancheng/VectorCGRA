@@ -26,7 +26,7 @@ class MeshMultiCgraRTL(Component):
                 num_registers_per_reg_bank,
                 num_ctrl, total_steps, 
                 mem_access_is_combinational,
-                FunctionUnit, FuList,
+                FunctionUnit, FuList, per_cgra_topology,
                 controller2addr_map):
 
     # Constant
@@ -59,7 +59,7 @@ class MeshMultiCgraRTL(Component):
                       num_registers_per_reg_bank,
                       num_ctrl, total_steps,
                       mem_access_is_combinational,
-                      FunctionUnit, FuList, "Mesh",
+                      FunctionUnit, FuList, per_cgra_topology,
                       controller2addr_map, idTo2d_map)
               for cgra_id in range(s.num_cgras)]
 
