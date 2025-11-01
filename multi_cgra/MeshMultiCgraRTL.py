@@ -15,6 +15,7 @@ from ..lib.opt_type import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 from ..lib.messages import *
+from ..lib.util.data_struct_attr import *
 
 class MeshMultiCgraRTL(Component):
 
@@ -29,10 +30,10 @@ class MeshMultiCgraRTL(Component):
                 controller2addr_map):
 
     # Derive types from `CgraPayloadType`
-    CgraDataType = CgraPayloadType.get_field_type('data')
-    PredicateType = CgraDataType.get_field_type('predicate')
-    CtrlSignalType = CgraPayloadType.get_field_type('ctrl')
-    data_nbits = CgraDataType.get_field_type('payload').nbits
+    CgraDataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = CgraDataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_nbits = CgraDataType.get_field_type(kAttrPayload).nbits
     
     # Reconstruct packet types
     num_tiles = tile_rows * tile_columns
