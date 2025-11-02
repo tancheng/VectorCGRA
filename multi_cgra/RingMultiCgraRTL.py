@@ -63,10 +63,7 @@ class RingMultiCgraRTL(Component):
     for cgra_id in range(s.num_cgras):
         idTo2d_map[cgra_id] = (cgra_id, 0)
 
-    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, NocPktType,
-                      ControllerIdType,
-                      data_nbits,
+    s.cgra = [CgraRTL(CgraPayloadType,
                       # Constructs the topology as 1d.
                       1, s.num_cgras,
                       tile_columns, tile_rows,
