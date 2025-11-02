@@ -11,31 +11,15 @@ class MeshMultiCgraTemplateRTL(Component):
     def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CgraPayloadType, CtrlSignalType, NocPktType, data_nbits,
                 cgra_rows, cgra_columns, 
-                per_cgra_rows, per_cgra_columns,
+                # per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 num_ctrl, total_steps, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
-                idTo2d_map, 
                 mem_access_is_combinational,
                 is_multi_cgra = True):
-        # id2ctrlMemSize_map = {
-        #   0: 6,
-        #   1: 6,
-        #   2: 6,
-        #   3: 6,
-        # }
-        # id2cgraSize_map = {
-        #   0: [4, 4],
-        #   1: [4, 4],
-        #   2: [4, 4],
-        #   3: [4, 4],
-        # }
-        # id2validTiles = {}
-        # id2validLinks = {}
-        # id2dataSPM = {}
 
         # Constant
         s.num_cgras = cgra_rows * cgra_columns
@@ -61,11 +45,8 @@ class MeshMultiCgraTemplateRTL(Component):
         s.cgra = [CgraTemplateRTL(CgraDataType, PredicateType, CtrlPktType, CgraPayloadType,
                                   CtrlSignalType, NocPktType, ControllerIdType, data_nbits,
                                   cgra_rows, cgra_columns, 
-                                  per_cgra_rows, per_cgra_columns,
-                                  # per_cgra_columns, 
-                                  # id2cgraSize_map[cgra_id][1],
-                                  # per_cgra_rows,
-                                  # id2cgraSize_map[cgra_id][0],
+                                  # per_cgra_rows, per_cgra_columns,
+                                  id2cgraSize_map[cgra_id][0], id2cgraSize_map[cgra_id][1],    
                                   # ctrl_mem_size, 
                                   id2ctrlMemSize_map[cgra_id],
                                   data_mem_size_global,
@@ -139,6 +120,8 @@ class MeshMultiCgraTemplateRTL(Component):
         for cgra_row in range(cgra_rows):
           for cgra_col in range(cgra_columns):
             idx = cgra_row * cgra_columns + cgra_col
+            per_cgra_rows = id2cgraSize_map[idx][0]
+            per_cgra_columns = id2cgraSize_map[idx][1]
             
             # Connects North-South boundaries
             if cgra_row > 0:
