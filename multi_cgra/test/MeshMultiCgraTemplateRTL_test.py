@@ -348,7 +348,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
         id2validTiles[id] = paramCGRA.getValidTiles()
         id2validLinks[id] = paramCGRA.getValidLinks()
         id2dataSPM[id] = paramCGRA.dataSPM
-        id2ctrlMemSize_map[id] = [paramCGRA.ctrl_mem_size, ]
+        id2ctrlMemSize_map[id] = paramCGRA.configMemSize
         id2cgraSize_map[id] = [paramCGRA.rows, paramCGRA.columns]
   else:
     dataSPM = None
