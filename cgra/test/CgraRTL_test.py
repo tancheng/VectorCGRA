@@ -34,6 +34,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 
 #-------------------------------------------------------------------------
@@ -142,10 +143,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
                test_name = 'default', total_execute_ctrl_count = 1):
   tile_ports = 4
-  assert(topology == "Mesh" or topology == "KingMesh")
-  if topology == "Mesh":
+  assert(topology == MESH or topology == KING_MESH)
+  if topology == MESH:
     tile_ports = 4
-  elif topology == "KingMesh":
+  elif topology == KING_MESH:
     tile_ports = 8
   num_tile_inports  = tile_ports
   num_tile_outports = tile_ports
