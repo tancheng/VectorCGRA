@@ -10,7 +10,8 @@ class MeshMultiCgraTemplateRTL(Component):
 
     def construct(s, CgraDataType, PredicateType, CtrlPktType,
                 CgraPayloadType, CtrlSignalType, NocPktType, data_nbits,
-                cgra_rows, cgra_columns, tile_rows, tile_columns,
+                cgra_rows, cgra_columns, 
+                per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -42,7 +43,7 @@ class MeshMultiCgraTemplateRTL(Component):
 
         # Mesh position takes column as argument first.
         MeshPos = mk_mesh_pos(cgra_columns, cgra_rows)
-        # s.num_tiles = tile_rows * tile_columns
+        # s.num_tiles = per_cgra_rows * per_cgra_columns
         # CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
         DataAddrType = mk_bits(clog2(data_mem_size_global))
         ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
@@ -60,9 +61,10 @@ class MeshMultiCgraTemplateRTL(Component):
         s.cgra = [CgraTemplateRTL(CgraDataType, PredicateType, CtrlPktType, CgraPayloadType,
                                   CtrlSignalType, NocPktType, ControllerIdType, data_nbits,
                                   cgra_rows, cgra_columns, 
-                                  # tile_columns, 
+                                  per_cgra_rows, per_cgra_columns,
+                                  # per_cgra_columns, 
                                   # id2cgraSize_map[cgra_id][1],
-                                  # tile_rows,
+                                  # per_cgra_rows,
                                   # id2cgraSize_map[cgra_id][0],
                                   # ctrl_mem_size, 
                                   id2ctrlMemSize_map[cgra_id],
@@ -96,7 +98,7 @@ class MeshMultiCgraTemplateRTL(Component):
         # s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
         #               CgraPayloadType, CtrlSignalType, NocPktType,
         #               ControllerIdType, cgra_rows, cgra_columns,
-        #               tile_columns, tile_rows,
+        #               per_cgra_columns, per_cgra_rows,
         #               ctrl_mem_size, data_mem_size_global,
         #               data_mem_size_per_bank, num_banks_per_cgra,
         #               num_registers_per_reg_bank,
@@ -141,21 +143,21 @@ class MeshMultiCgraTemplateRTL(Component):
             # Connects North-South boundaries
             if cgra_row > 0:
               neighbor_idx = (cgra_row - 1) * cgra_columns + cgra_col
-              for tile_col in range(tile_columns):
+              for tile_col in range(per_cgra_columns):
                 s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
                     s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
                 s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
                     s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
             else:
               # Bottom edge: connects south boundary to 0
-              for tile_col in range(tile_columns):
+              for tile_col in range(per_cgra_columns):
                 s.cgra[idx].recv_data_on_boundary_south[tile_col].val //= 0
                 s.cgra[idx].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_south[tile_col].rdy //= 0
 
             # Top edge: connects north boundary to 0
             if cgra_row == cgra_rows - 1:
-              for tile_col in range(tile_columns):
+              for tile_col in range(per_cgra_columns):
                 s.cgra[idx].recv_data_on_boundary_north[tile_col].val //= 0
                 s.cgra[idx].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_north[tile_col].rdy //= 0
@@ -163,21 +165,21 @@ class MeshMultiCgraTemplateRTL(Component):
             # Connect East-West boundaries
             if cgra_col > 0:
               neighbor_idx = cgra_row * cgra_columns + cgra_col - 1
-              for tile_row in range(tile_rows):
+              for tile_row in range(per_cgra_rows):
                 s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
                     s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
                 s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
                     s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
             else:
               # Left edge: connects west boundary to 0
-              for tile_row in range(tile_rows):
+              for tile_row in range(per_cgra_rows):
                 s.cgra[idx].recv_data_on_boundary_west[tile_row].val //= 0
                 s.cgra[idx].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_west[tile_row].rdy //= 0
                 
             # Right edge: connects east boundary to 0
             if cgra_col == cgra_columns - 1:
-              for tile_row in range(tile_rows):
+              for tile_row in range(per_cgra_rows):
                 s.cgra[idx].recv_data_on_boundary_east[tile_row].val //= 0
                 s.cgra[idx].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_east[tile_row].rdy //= 0

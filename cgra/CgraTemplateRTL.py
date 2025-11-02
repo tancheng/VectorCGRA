@@ -22,8 +22,8 @@ class CgraTemplateRTL(Component):
 
   def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
                 CtrlSignalType, NocPktType, CgraIdType, data_bitwidth,
-                multi_cgra_rows,
-                multi_cgra_columns,
+                multi_cgra_rows, multi_cgra_columns,
+                per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -48,18 +48,15 @@ class CgraTemplateRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
-    # todo, mock width and height for now.
-    width = 2
-    height = 2
     if is_multi_cgra:
-      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
-      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
-      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
 
     # Components
     s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
@@ -163,11 +160,11 @@ class CgraTemplateRTL(Component):
         s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
 
     if is_multi_cgra: 
-      for row in range(height):
-        for col in range(width):
-          tile_id = row * width + col
+      for row in range(per_cgra_rows):
+        for col in range(per_cgra_columns):
+          tile_id = row * per_cgra_columns + col
           # Only connects if the port is valid
-          if row == height - 1:
+          if row == per_cgra_rows - 1:
             if PORT_NORTH not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[col]
             if PORT_NORTH not in TileList[tile_id].getInvalidInPorts():
@@ -185,7 +182,7 @@ class CgraTemplateRTL(Component):
             if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
               
-          if col == width - 1:
+          if col == per_cgra_columns - 1:
             if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
               s.tile[tile_id].send_data[PORT_EAST] //= s.send_data_on_boundary_east[row]
             if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
