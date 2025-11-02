@@ -13,6 +13,7 @@ Author : Cheng Tan
 from pymtl3 import *
 from .cmd_type import *
 from .opt_type import *
+from .util.data_struct_attr import *
 
 #=========================================================================
 # Generic data message
@@ -32,10 +33,10 @@ def mk_data(payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
     return f"{s.payload}.{s.predicate}.{s.bypass}.{s.delay}"
 
   return mk_bitstruct( new_name, {
-      'payload'  : PayloadType,
-      'predicate': PredicateType,
-      'bypass'   : BypassType,
-      'delay'    : DelayType,
+      kAttrPayload  : PayloadType,
+      kAttrPredicate: PredicateType,
+      kAttrBypass   : BypassType,
+      kAttrDelay    : DelayType,
     },
     namespace = { '__str__': str_func }
   )
@@ -55,8 +56,8 @@ def mk_predicate( payload_nbits=1, predicate_nbits=1, prefix="CGRAData" ):
     return f"{s.payload}.{s.predicate}"
 
   return mk_bitstruct( new_name, {
-      'payload'  : PayloadType,
-      'predicate': PredicateType,
+      kAttrPayload  : PayloadType,
+      kAttrPredicate: PredicateType,
     },
     namespace = { '__str__': str_func }
   )
@@ -142,28 +143,28 @@ def mk_ctrl(num_fu_inports = 4,
     return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
-  field_dict['operation'] = OperationType
+  field_dict[kAttrOperation] = OperationType
   # The fu_in indicates the input register ID (i.e., operands) for the
   # operation.
-  field_dict['fu_in'] = [FuInType for _ in range(num_fu_inports)]
+  field_dict[kAttrFuIn] = [FuInType for _ in range(num_fu_inports)]
 
-  field_dict['routing_xbar_outport'] = [TileInportsType for _ in range(
+  field_dict[kAttrRoutingXbarOutport] = [TileInportsType for _ in range(
       num_routing_outports)]
-  field_dict['fu_xbar_outport'] = [FuOutType for _ in range(
+  field_dict[kAttrFuXbarOutport] = [FuOutType for _ in range(
       num_routing_outports)]
 
-  field_dict['vector_factor_power'] = VectorFactorPowerType
+  field_dict[kAttrVectorFactorPower] = VectorFactorPowerType
 
-  field_dict['is_last_ctrl'] = b1
+  field_dict[kAttrIsLastCtrl] = b1
 
   # Register file related signals.
   # Indicates whether to write data into the register bank, and the
   # corresponding inport.
-  field_dict['write_reg_from'] = [RegFromType for _ in range(num_fu_inports)]
-  field_dict['write_reg_idx'] = [RegIdxType for _ in range(num_fu_inports)]
+  field_dict[kAttrWriteRegFrom] = [RegFromType for _ in range(num_fu_inports)]
+  field_dict[kAttrWriteRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
   # Indicates whether to read data from the register bank.
-  field_dict['read_reg_from'] = [b1 for _ in range(num_fu_inports)]
-  field_dict['read_reg_idx'] = [RegIdxType for _ in range(num_fu_inports)]
+  field_dict[kAttrReadRegFrom] = [b1 for _ in range(num_fu_inports)]
+  field_dict[kAttrReadRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
 
   return mk_bitstruct( new_name, field_dict,
     namespace = { '__str__': str_func }
@@ -202,11 +203,11 @@ def mk_cgra_payload(DataType,
   new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr"
 
   field_dict = {}
-  field_dict['cmd'] = mk_bits(clog2(NUM_CMDS))
-  field_dict['data'] = DataType
-  field_dict['data_addr'] = DataAddrType
-  field_dict['ctrl'] = CtrlType
-  field_dict['ctrl_addr'] = CtrlAddrType
+  field_dict[kAttrCmd] = mk_bits(clog2(NUM_CMDS))
+  field_dict[kAttrData] = DataType
+  field_dict[kAttrDataAddr] = DataAddrType
+  field_dict[kAttrCtrl] = CtrlType
+  field_dict[kAttrCtrlAddr] = CtrlAddrType
 
   def str_func(s):
       return f"MultiCgraNocPayload: cmd:{s.cmd}|data:{s.data}|data_addr:{s.data_addr}|" \
@@ -243,18 +244,18 @@ def mk_inter_cgra_pkt(num_cgra_columns,
              f"{opaque_nbits}_{num_vcs}_CgraPayload"
 
   field_dict = {}
-  field_dict['src'] = CgraIdType # src CGRA id
-  field_dict['dst'] = CgraIdType # dst CGRA id
-  field_dict['src_x'] = CgraXType # CGRA 2d coordinates
-  field_dict['src_y'] = CgraYType
-  field_dict['dst_x'] = CgraXType
-  field_dict['dst_y'] = CgraYType
-  field_dict['src_tile_id'] = TileIdType
-  field_dict['dst_tile_id'] = TileIdType
-  field_dict['remote_src_port'] = RemoteSrcPortType
-  field_dict['opaque'] = OpqType
-  field_dict['vc_id'] = VcIdType
-  field_dict['payload'] = CgraPayloadType
+  field_dict[kAttrSrc] = CgraIdType # src CGRA id
+  field_dict[kAttrDst] = CgraIdType # dst CGRA id
+  field_dict[kAttrSrcX] = CgraXType # CGRA 2d coordinates
+  field_dict[kAttrSrcY] = CgraYType
+  field_dict[kAttrDstX] = CgraXType
+  field_dict[kAttrDstY] = CgraYType
+  field_dict[kAttrSrcTileId] = TileIdType
+  field_dict[kAttrDstTileId] = TileIdType
+  field_dict[kAttrRemoteSrcPort] = RemoteSrcPortType
+  field_dict[kAttrOpaque] = OpqType
+  field_dict[kAttrVcId] = VcIdType
+  field_dict[kAttrPayload] = CgraPayloadType
 
   def str_func(s):
     return f"InterCgraPkt: {s.src}->{s.dst} || " \
@@ -300,17 +301,17 @@ def mk_intra_cgra_pkt(num_cgra_columns,
            f"payload:{s.payload}\n"
 
   field_dict = {}
-  field_dict['src'] = TileIdType
-  field_dict['dst'] = TileIdType
-  field_dict['src_cgra_id'] = CgraIdType
-  field_dict['dst_cgra_id'] = CgraIdType
-  field_dict['src_cgra_x'] = CgraXType
-  field_dict['src_cgra_y'] = CgraYType
-  field_dict['dst_cgra_x'] = CgraXType
-  field_dict['dst_cgra_y'] = CgraYType
-  field_dict['opaque'] = OpqType
-  field_dict['vc_id'] = VcIdType
-  field_dict['payload'] = CgraPayloadType
+  field_dict[kAttrSrc] = TileIdType
+  field_dict[kAttrDst] = TileIdType
+  field_dict[kAttrSrcCgraId] = CgraIdType
+  field_dict[kAttrDstCgraId] = CgraIdType
+  field_dict[kAttrSrcCgraX] = CgraXType
+  field_dict[kAttrSrcCgraY] = CgraYType
+  field_dict[kAttrDstCgraX] = CgraXType
+  field_dict[kAttrDstCgraY] = CgraYType
+  field_dict[kAttrOpaque] = OpqType
+  field_dict[kAttrVcId] = VcIdType
+  field_dict[kAttrPayload] = CgraPayloadType
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}
@@ -360,11 +361,11 @@ def mk_tile_sram_xbar_pkt(number_src = 5,
     return f"{s.src}>{s.dst}:(addr){s.addr}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}"
 
   return mk_bitstruct(new_name, {
-      'src': SrcType,
-      'dst': DstType,
-      'addr': AddrType,
-      'src_cgra': CgraIdType,
-      'src_tile': TileIdType,
+      kAttrSrc: SrcType,
+      kAttrDst: DstType,
+      kAttrAddr: AddrType,
+      kAttrSrcCgra: CgraIdType,
+      kAttrSrcTile: TileIdType,
     },
     namespace = {'__str__': str_func}
   )
@@ -391,13 +392,13 @@ def mk_mem_access_pkt(DataType,
     return f"{s.src}>{s.dst}:(addr){s.addr}.(data){s.data}.(src_cgra){s.src_cgra}.(src_tile){s.src_tile}.(remote_src_port){s.remote_src_port}"
 
   return mk_bitstruct(new_name, {
-      'src': SrcType,
-      'dst': DstType,
-      'addr': AddrType,
-      'data': DataType,
-      'src_cgra': CgraIdType,
-      'src_tile': TileIdType,
-      'remote_src_port': RemoteSrcPortType,
+      kAttrSrc: SrcType,
+      kAttrDst: DstType,
+      kAttrAddr: AddrType,
+      kAttrData: DataType,
+      kAttrSrcCgra: CgraIdType,
+      kAttrSrcTile: TileIdType,
+      kAttrRemoteSrcPort: RemoteSrcPortType,
     },
     namespace = {'__str__': str_func}
   )
@@ -423,3 +424,13 @@ def mk_controller_noc_xbar_pkt(InterCgraPktType,
     namespace = {'__str__': str_func}
   )
 
+#=========================================================================
+# CGRA ID type
+#=========================================================================
+
+def mk_cgra_id_type(num_cgra_columns,
+                    num_cgra_rows,
+                    prefix="CgraId"):
+
+  num_cgras = num_cgra_columns * num_cgra_rows
+  return mk_bits(max(1, clog2(num_cgras)))

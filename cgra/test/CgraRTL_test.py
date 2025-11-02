@@ -34,6 +34,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 
 #-------------------------------------------------------------------------
@@ -59,9 +60,7 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, ControllerIdType,
-                data_nbits,
+    s.dut = DUT(CgraPayloadType,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 multi_cgra_rows, multi_cgra_columns,
@@ -144,10 +143,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
                test_name = 'default', total_execute_ctrl_count = 1):
   tile_ports = 4
-  assert(topology == "Mesh" or topology == "KingMesh")
-  if topology == "Mesh":
+  assert(topology == MESH or topology == KING_MESH)
+  if topology == MESH:
     tile_ports = 4
-  elif topology == "KingMesh":
+  elif topology == KING_MESH:
     tile_ports = 8
   num_tile_inports  = tile_ports
   num_tile_outports = tile_ports

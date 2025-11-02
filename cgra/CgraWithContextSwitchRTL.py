@@ -16,13 +16,13 @@ from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileWithContextSwitchRTL import TileWithContextSwitchRTL
+from ..lib.util.data_struct_attr import *
+from ..lib.messages import *
 
 
 class CgraWithContextSwitchRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType,
-                data_bitwidth,
+  def construct(s, CgraPayloadType,
                 multi_cgra_rows,
                 multi_cgra_columns,
                 width, height,
@@ -34,13 +34,29 @@ class CgraWithContextSwitchRTL(Component):
                 controller2addr_map, idTo2d_map,
                 is_multi_cgra = True):
 
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
+    
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
+    
+    num_tiles = width * height
+    num_rd_tiles = height + width - 1
+    
+    CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                    num_tiles, CgraPayloadType)
+    
+    NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
-    assert(cgra_topology == "Mesh" or cgra_topology == "KingMesh")
+    assert(cgra_topology == MESH or cgra_topology == KING_MESH)
     s.num_mesh_ports = 4
-    if cgra_topology == "Mesh":
+    if cgra_topology == MESH:
       s.num_mesh_ports = 4
-    elif cgra_topology == "KingMesh":
+    elif cgra_topology == KING_MESH:
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
@@ -167,7 +183,7 @@ class CgraWithContextSwitchRTL(Component):
       if i % width < width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
-      if cgra_topology == "KingMesh":
+      if cgra_topology == KING_MESH:
         if i % width > 0 and i // width < height - 1:
           s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
           s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
