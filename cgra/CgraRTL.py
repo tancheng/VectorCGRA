@@ -35,10 +35,10 @@ class CgraRTL(Component):
                 is_multi_cgra = True):
 
     # Derive all types from CgraPayloadType
-    DataType = CgraPayloadType.get_field_type('data')
-    PredicateType = DataType.get_field_type('predicate')
-    CtrlSignalType = CgraPayloadType.get_field_type('ctrl')
-    data_bitwidth = DataType.get_field_type('payload').nbits
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     
     
     num_tiles = width * height
