@@ -18,6 +18,7 @@ from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
 from ..lib.util.data_struct_attr import *
 from ..lib.messages import *
+from ..lib.util.common import *
 
 
 class CgraRTL(Component):
@@ -55,11 +56,11 @@ class CgraRTL(Component):
 
     # Other topology can simply modify the tiles connections, or
     # leverage the template for modeling.
-    assert(cgra_topology == "Mesh" or cgra_topology == "KingMesh")
+    assert(cgra_topology == MESH or cgra_topology == KING_MESH)
     s.num_mesh_ports = 4
-    if cgra_topology == "Mesh":
+    if cgra_topology == MESH:
       s.num_mesh_ports = 4
-    elif cgra_topology == "KingMesh":
+    elif cgra_topology == KING_MESH:
       s.num_mesh_ports = 8
 
     s.num_tiles = width * height
@@ -186,7 +187,7 @@ class CgraRTL(Component):
       if i % width < width - 1:
         s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
 
-      if cgra_topology == "KingMesh":
+      if cgra_topology == KING_MESH:
         if i % width > 0 and i // width < height - 1:
           s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
           s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
