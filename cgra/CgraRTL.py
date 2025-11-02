@@ -44,7 +44,7 @@ class CgraRTL(Component):
     num_tiles = width * height
     num_rd_tiles = height + width - 1
     
-    CgraIdType = mk_bits(max(1, clog2(multi_cgra_rows * multi_cgra_columns)))
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     
     CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
                                     num_tiles, CgraPayloadType)

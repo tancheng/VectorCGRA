@@ -423,3 +423,13 @@ def mk_controller_noc_xbar_pkt(InterCgraPktType,
     namespace = {'__str__': str_func}
   )
 
+#=========================================================================
+# CGRA ID type
+#=========================================================================
+
+def mk_cgra_id_type(num_cgra_columns,
+                    num_cgra_rows,
+                    prefix="CgraId"):
+
+  num_cgras = num_cgra_columns * num_cgra_rows
+  return mk_bits(max(1, clog2(num_cgras)))

@@ -39,7 +39,7 @@ class CgraWithContextSwitchRTL(Component):
     CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
     data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     
-    CgraIdType = mk_bits(max(1, clog2(multi_cgra_rows * multi_cgra_columns)))
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     
     num_tiles = width * height
     num_rd_tiles = height + width - 1
