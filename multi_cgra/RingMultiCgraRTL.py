@@ -28,13 +28,13 @@ class RingMultiCgraRTL(Component):
                 FunctionUnit, FuList,
                 controller2addr_map):
 
-    # Derive all types from CgraPayloadType
+    # Derives all types from CgraPayloadType.
     CgraDataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = CgraDataType.get_field_type(kAttrPredicate)
     CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
     data_nbits = CgraDataType.get_field_type(kAttrPayload).nbits
     
-    # Reconstruct packet types
+    # Reconstructs packet types.
     num_tiles = tile_rows * tile_columns
     num_rd_tiles = tile_rows + tile_columns - 1
     

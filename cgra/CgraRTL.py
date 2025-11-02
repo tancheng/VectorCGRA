@@ -34,7 +34,7 @@ class CgraRTL(Component):
                 controller2addr_map, idTo2d_map,
                 is_multi_cgra = True):
 
-    # Derive all types from CgraPayloadType
+    # Derives all types from CgraPayloadType.
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
     CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)

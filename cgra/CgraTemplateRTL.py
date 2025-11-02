@@ -39,9 +39,9 @@ class CgraTemplateRTL(Component):
     
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     
-    # Reconstruct packet types
+    # Reconstructs packet types.
     num_tiles = len(TileList)
-    # Calculate num_rd_tiles from TileList (number of tiles with read ports)
+    # Calculates num_rd_tiles from TileList (number of tiles with read ports).
     num_rd_tiles = dataSPM.getNumOfValidReadPorts()
     
     CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
