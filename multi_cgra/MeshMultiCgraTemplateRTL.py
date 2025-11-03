@@ -2,14 +2,15 @@ from ..cgra.CgraRTL import CgraRTL
 from ..cgra.CgraTemplateRTL import CgraTemplateRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ..lib.messages import *
 from ..lib.opt_type import *
+from ..lib.util.data_struct_attr import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
 
 class MeshMultiCgraTemplateRTL(Component):
 
-    def construct(s, CgraDataType, PredicateType, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, NocPktType, data_nbits,
+    def construct(s, CgraPayloadType,
                 cgra_rows, cgra_columns, 
                 # per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
@@ -20,6 +21,19 @@ class MeshMultiCgraTemplateRTL(Component):
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
                 is_multi_cgra = True):
+
+        # Derives all types from CgraPayloadType.
+        CgraDataType = CgraPayloadType.get_field_type(kAttrData)
+        
+        # Reconstructs packet types.
+        num_tiles = id2cgraSize_map[0][0] * id2cgraSize_map[0][1]
+        num_rd_tiles = id2cgraSize_map[0][0] + id2cgraSize_map[0][1] - 1
+        
+        CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
+                                        num_tiles, CgraPayloadType)
+        NocPktType = mk_inter_cgra_pkt(cgra_columns, cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
 
         # Constant
         s.num_cgras = cgra_rows * cgra_columns

@@ -71,8 +71,7 @@ class TestHarness(Component):
     
  
 
-    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, 
-                CgraPayloadType, CtrlSignalType, NocPktType, data_nbits, 
+    s.dut = DUT(CgraPayloadType,
                 cgra_rows, cgra_columns, 
                 # per_cgra_rows, per_cgra_columns, 
                 ctrl_mem_size, data_mem_size_global,
