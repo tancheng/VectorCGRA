@@ -60,32 +60,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   is_multi_cgra
                                   )
                   for cgra_id in range(s.num_cgras)]
-        # class CgraTemplateRTL(Component):
-        #     def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-        #         CtrlSignalType, NocPktType, CgraIdType, multi_cgra_rows,
-        #         multi_cgra_columns, ctrl_mem_size, data_mem_size_global,
-        #         data_mem_size_per_bank, num_banks_per_cgra,
-        #         num_registers_per_reg_bank, num_ctrl, 
-        #         total_steps, FunctionUnit, FuList, TileList, LinkList,
-        #         dataSPM, controller2addr_map, idTo2d_map,
-        #         preload_data = None,
-        #         is_multi_cgra = True,
-        #         cgraWidth = 2,
-        #         cgraHeight = 2):
-
-
-
-        # s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-        #               CgraPayloadType, CtrlSignalType, NocPktType,
-        #               ControllerIdType, cgra_rows, cgra_columns,
-        #               per_cgra_columns, per_cgra_rows,
-        #               ctrl_mem_size, data_mem_size_global,
-        #               data_mem_size_per_bank, num_banks_per_cgra,
-        #               num_registers_per_reg_bank,
-        #               num_ctrl, total_steps, FunctionUnit, FuList,
-        #               "Mesh", controller2addr_map, idTo2d_map,
-        #               preload_data = None)
-        #       for cgra_id in range(s.num_cgras)]
+        
         # Latency is 1.
         s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
