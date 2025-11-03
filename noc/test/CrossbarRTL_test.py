@@ -37,7 +37,7 @@ class TestHarness(Component):
     s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_outports)]
 
-    s.dut = CrossbarUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = CrossbarUnit(DataType, CtrlType, num_inports,
                          num_outports, num_tiles, ctrl_mem_size)
 
     for i in range(num_inports):

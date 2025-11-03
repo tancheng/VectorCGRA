@@ -86,7 +86,6 @@ class TileRTL(Component):
                               num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
-                                     PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
@@ -95,7 +94,6 @@ class TileRTL(Component):
                                      ctrl_mem_size,
                                      num_tile_outports)
     s.fu_crossbar = CrossbarRTL(DataType,
-                                PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,

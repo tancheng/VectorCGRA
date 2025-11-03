@@ -83,7 +83,6 @@ class TileWithContextSwitchRTL(Component):
     # so here we increase the size of const_mem to avoid deadlock.
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size+10)
     s.routing_crossbar = CrossbarRTL(DataType,
-                                     PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
@@ -92,7 +91,6 @@ class TileWithContextSwitchRTL(Component):
                                      ctrl_mem_size,
                                      num_tile_outports)
     s.fu_crossbar = CrossbarRTL(DataType,
-                                PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
