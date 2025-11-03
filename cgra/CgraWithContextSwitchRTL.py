@@ -111,8 +111,7 @@ class CgraWithContextSwitchRTL(Component):
                                       s.num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
-    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
-                                 NocPktType, DataType, DataAddrType,
+    s.controller = ControllerRTL(NocPktType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.

@@ -19,21 +19,32 @@ from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 
 from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
+from ..lib.util.data_struct_attr import *
 
 class ControllerRTL(Component):
 
   def construct(s,
-                CgraIdType,
-                IntraCgraPktType,
                 InterCgraPktType,
-                DataType,
-                DataAddrType,
                 multi_cgra_rows,
                 multi_cgra_columns,
                 num_tiles,
                 controller2addr_map,
                 idTo2d_map):
 
+    # Derives types from InterCgraPktType.
+    CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
+    
+    # Derives CgraIdType from grid dimensions.
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
+    
+    # Reconstructs IntraCgraPktType.
+    IntraCgraPktType = mk_intra_cgra_pkt(multi_cgra_columns,
+                                         multi_cgra_rows,
+                                         num_tiles,
+                                         CgraPayloadType)
+    
     assert(multi_cgra_columns >= multi_cgra_rows)
 
     # Used for calculating the x/y position.
