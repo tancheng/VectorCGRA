@@ -31,9 +31,7 @@ class TestHarness(Component):
 
     s.sink = TestSinkRTL(ControllerXbarPktType, expected_output)
 
-    s.dut = GlobalReduceUnitRTL(DataType,
-                                InterCgraPktType,
-                                ControllerXbarPktType)
+    s.dut = GlobalReduceUnitRTL(InterCgraPktType)
 
     # Connections
     s.dut.recv_count //= s.src_count.send

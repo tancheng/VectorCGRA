@@ -95,7 +95,7 @@ class ControllerRTL(Component):
     # Global reduce unit.
     # TODO: We need multiple GlobalReduceUnitRTL to enable more than 1 reduction
     # across the fabric: https://github.com/tancheng/VectorCGRA/issues/184.
-    s.global_reduce_unit = GlobalReduceUnitRTL(DataType, InterCgraPktType, ControllerXbarPktType)
+    s.global_reduce_unit = GlobalReduceUnitRTL(InterCgraPktType)
 
     # LUT for global data address mapping.
     addr_offset_nbits = 0
