@@ -17,12 +17,13 @@ from ...lib.opt_type import *
 
 class Fu(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size = 4, ctrl_mem_size = 4,
                 latency = 1, vector_factor_power = 0,
                 data_bitwidth = 32):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
     # Constants.
     num_entries = 2
     DataAddrType = mk_bits(clog2(data_mem_size))
