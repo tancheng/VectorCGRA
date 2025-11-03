@@ -17,12 +17,12 @@ from ..single.ShifterRTL   import ShifterRTL
 
 class ThreeMulAdderShifterRTL(ThreeCombo):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size, ctrl_mem_size = 4,
                 data_bitwidth = 32):
 
-    super(ThreeMulAdderShifterRTL, s).construct(DataType, PredicateType,
+    super(ThreeMulAdderShifterRTL, s).construct(DataType,
                                                 CtrlType, MulRTL,
                                                 AdderRTL, ShifterRTL,
                                                 num_inports, num_outports,
