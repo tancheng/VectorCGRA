@@ -91,8 +91,6 @@ class CgraTemplateRTL(Component):
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
-                                      CgraPayloadType,
-                                      DataType,
                                       data_mem_size_global,
                                       data_mem_size_per_bank,
                                       num_banks_per_cgra,

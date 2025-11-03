@@ -50,8 +50,6 @@ class TestHarness(Component):
     s.send_to_noc_store_pkt = TestSinkRTL(NocPktType, send_to_noc_store_pkt)
 
     s.mem_controller = DataMemControllerRTL(NocPktType,
-                                        CgraPayloadType,
-                                        DataType,
                                         data_mem_size_global,
                                         data_mem_size_per_bank,
                                         num_banks,
