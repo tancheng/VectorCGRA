@@ -1,10 +1,11 @@
-from imp import source_from_cache
-from locale import D_FMT
-from multiprocessing import Value
 import sys
-from uu import Error
-from _pytest import config
+import os
 import yaml
+
+# Add project root to path to allow imports from lib
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from lib.opt_type import *
 
@@ -36,18 +37,29 @@ yaml_to_VectorCGRA_map = {
     "DATA_MOV": None, #?
     "CTRL_MOV": None, #?
     "RESERVE": None, #?
-    "GRANT_PREDICATE": None, #?
+    "GRANT_PREDICATE": OPT_GRT_PRED,
     "GRANT_ALWAYS": None, #?
     "GRANT_ONCE": None, #?
     "PHI": OPT_PHI,
     "LOOP_CONTROL": None, #?
+    "PHI_CONST": OPT_PHI_CONST, 
+    
+    "RETURN": OPT_RET,
+    "LDD": OPT_LD,
+    "NE": OPT_NE,
+}
+
+yaml_to_VectorCGRA_map_const = {
+    "NE": OPT_NE_CONST,
+    "ADD": OPT_ADD_CONST,
 }
 
 
 def _type(Operand):
-    if Operand[0] == "$":
+    impl = Operand['operand']
+    if impl[0] == "$":
         return 'REG'
-    elif Operand[0] in ['NORTH', 'SOUTH', 'WEST', 'EAST']:
+    elif impl.upper() in ['NORTH', 'SOUTH', 'WEST', 'EAST', 'SOUTHEAST', 'SOUTHWEST', 'NORTHWEST', 'NORTHEAST']:
         return 'PORT'
     else:
         return 'IMM'
@@ -63,15 +75,17 @@ def _is_take_up_fu_operation(operation):
     else:
         return True
     
-def _reg_cluster_no_of(operand):
-    if operand[0] == "$":
-        return int(operand[1:]) / 8
+def _reg_cluster_no_of(operand): # start from 1
+    impl = operand['operand']
+    if impl[0] == "$":
+        return int(impl[1:]) // 8 + 1
     else:
         raise ValueError("Operand is not a register")
 
 def _reg_cluster_intra_index_of(operand):
-    if operand[0] == "$":
-        return int(operand[1:]) % 8
+    impl = operand['operand']
+    if impl[0] == "$":
+        return int(impl[1:]) % 8
     else:
         raise ValueError("Operand is not a register")
 
@@ -85,7 +99,6 @@ OPR_FROM_REGISTER = 1
 
 class InstructionSignals:
     # to make signal of single instruction
-
     def __init__(self, 
                  # input
                  id_,
@@ -97,7 +110,7 @@ class InstructionSignals:
                  CgraPayloadType, 
                  TileInType, 
                  FuOutType, 
-                 configType, 
+                 CMD_CONFIG_input, 
                  CtrlType,
                  FuInType,
                  B1Type,
@@ -107,7 +120,7 @@ class InstructionSignals:
         self.CgraPayloadType = CgraPayloadType
         self.TileInType = TileInType
         self.FuOutType = FuOutType
-        self.configType = configType
+        self.CMD_CONFIG_ = CMD_CONFIG_input
         self.CtrlType = CtrlType
         self.FuInType = FuInType
         self.B1Type = B1Type
@@ -121,7 +134,7 @@ class InstructionSignals:
         
         # States
         self.TileInParams = [-1, -1, -1, -1, -1, -1, -1, -1]
-        self.FuOutParams = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.FuOutParams = [-1, -1, -1, -1, -1, -1, -1, -1]
         self.read_from_reg = [-1, -1, -1, -1]
         self.read_from_reg_idx = [-1, -1, -1, -1]
         self.write_to_reg = [-1, -1, -1, -1]
@@ -139,14 +152,43 @@ class InstructionSignals:
                         raise ValueError("Only one take up fu operation is allowed")
                     take_up_fu_operation_idx = idx
             
-            self.opCode = yaml_to_VectorCGRA_map[self.operations[take_up_fu_operation_idx]['opcode']]
+            # TODO: fix logic here
+                  
+            take_up_fu_operation = self.operations[take_up_fu_operation_idx]
+            has_const = False
+            # if has src_operands, check if has const
+            try:
+                src_operands = take_up_fu_operation['src_operands']
+            except Exception as e:
+                src_operands = []
+            for src_operand in src_operands:
+                if _type(src_operand) == 'IMM':
+                    has_const = True
+                    break 
+                
+            if take_up_fu_operation['opcode'] == 'PHI_CONST':
+                has_const = False # PHI_CONST is special.
+            
+            if has_const:
+                self.opCode = yaml_to_VectorCGRA_map_const[self.operations[take_up_fu_operation_idx]['opcode']]
+            else:
+                self.opCode = yaml_to_VectorCGRA_map[self.operations[take_up_fu_operation_idx]['opcode']]
+
             const_operands = []
 
             for operation in self.operations: # for each operation in the instruction
                 
+                print("Working on operation: ", operation)
+                
                 operation_opcode = operation['opcode']
-                src_operands = operation['srcOperands']
-                dst_operands = operation['dstOperands']
+                try:
+                    src_operands = operation['src_operands']
+                except Exception as e:
+                    src_operands = []
+                try:
+                    dst_operands = operation['dst_operands']
+                except Exception as e:
+                    dst_operands = []
                 
                 # find all the const
                 for index, src_operand in enumerate(src_operands):
@@ -157,15 +199,16 @@ class InstructionSignals:
                 
                 for index, src_operand in enumerate(src_operands):
                     if _type(src_operand) == 'REG':
+                        print(f">>> index {index} is REG")
                         cluster_no = _reg_cluster_no_of(src_operand)
                         intra_index = _reg_cluster_intra_index_of(src_operand)
-                        if self.read_from_reg_idx[cluster_no] != -1 and self.read_from_reg_idx[cluster_no] != intra_index:
+                        if self.read_from_reg_idx[cluster_no - 1] != -1 and self.read_from_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when reading from register in read_from_reg_idx, when translate the operation {operation} to VectorCGRA")
-                        self.read_from_reg[cluster_no] = OPR_FROM_REGISTER
-                        self.read_from_reg_idx[cluster_no] = intra_index
-                        if self.shuffle_fu_operand_input_index[cluster_no] != -1:
+                        self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER
+                        self.read_from_reg_idx[cluster_no - 1] = intra_index
+                        if self.shuffle_fu_operand_input_index[index] != -1:
                             raise ValueError(f"Collision when reading from register in shuffle_fu_operand_input_index, when translate the operation {operation} to VectorCGRA")
-                        self.shuffle_fu_operand_input_index[cluster_no] = index # make the idx arg of the 
+                        self.shuffle_fu_operand_input_index[index] = cluster_no # shuffle the data to the correct inport of the FU from the register
                     if _type(src_operand) == 'PORT':
                         if src_operand['operand'] == 'NORTH':
                             port_in_xbar_idx = 1
@@ -186,10 +229,13 @@ class InstructionSignals:
                     if _type(dst_operand) == 'REG':
                         cluster_no = _reg_cluster_no_of(dst_operand)
                         intra_index = _reg_cluster_intra_index_of(dst_operand)
-                        if self.write_to_reg_idx[cluster_no] != -1 and self.write_to_reg_idx[cluster_no] != intra_index:
+                        if self.write_to_reg_idx[cluster_no - 1] != -1 and self.write_to_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
-                        self.write_to_reg[cluster_no] = FROM_FU
-                        self.write_to_reg_idx[cluster_no] = intra_index
+                        self.write_to_reg[cluster_no - 1] = FROM_FU
+                        self.write_to_reg_idx[cluster_no - 1] = intra_index
+                        if self.FuOutParams[cluster_no + 3] != -1:
+                            raise ValueError(f"Collision in writing result to register, when translate the operation {operation} to VectorCGRA")
+                        self.FuOutParams[cluster_no + 3] = 1
                     elif _type(dst_operand) == 'PORT':
                         if dst_operand['operand'] == 'NORTH':
                             port_out_xbar_idx = 0
@@ -199,63 +245,72 @@ class InstructionSignals:
                             port_out_xbar_idx = 2
                         elif dst_operand['operand'] == 'EAST':
                             port_out_xbar_idx = 3
-                        if self.FuOutParams[index] != -1:
-                            raise ValueError(f"Collision in writing to port in FuOutParams, when translate the operation {operation} to VectorCGRA")
-                        self.FuOutParams[port_out_xbar_idx] = index
+                        if self.FuOutParams[port_out_xbar_idx] != -1:
+                            raise ValueError(f"Collision in writing to port {dst_operand} in FuOutParams, when translate the operation {operation} to VectorCGRA")
+                        print(f">>> FuOutParams[{port_out_xbar_idx}] = {index + 1}")
+                        self.FuOutParams[port_out_xbar_idx] = 1 # we do not support multiple results 
                     else:
-                        raise ValueError(f"Unsupported type of dst operand, when translate the operation {operation} to VectorCGRA")
+                        raise ValueError(f"Unsupported type of dst operand {dst_operand}, when translate the operation {operation} to VectorCGRA")
         
         except Exception as e:
             print(f"Error in making ctrl pkt: {e}")
+            raise e
             return None
+        return const_operands
         
-        def makeCtrlPkt(self):
-            # make fu_in_code
-            for idx, fu_in_code in enumerate(self.shuffle_fu_operand_input_index):
-                if fu_in_code == -1:
-                    self.shuffle_fu_operand_input_index[idx] = 0 # 0 or idle inport of ALU?
-            fu_in_code_made = [self.FuInType(x) for x in self.shuffle_fu_operand_input_index]
-            
-            # make TileIn
-            TileIn_made = [self.TileInType(x) for x in self.TileInParams]
-            FuOut_made = [self.FuOutType(x) for x in self.FuOutParams]
-            
-            # made write reg from code
-            for idx, write_to_reg in enumerate(self.write_to_reg):
-                if write_to_reg == -1:
-                    self.write_to_reg[idx] = FROM_NOWHERE
-            write_reg_from_made = [self.B1Type(x) for x in self.write_to_reg]
-            
-            for idx, write_to_reg_idx in enumerate(self.write_to_reg_idx):
-                if write_to_reg_idx == -1:
-                    self.write_to_reg_idx[idx] = 0
-            write_reg_idx_made = [self.B2Type(x) for x in self.write_to_reg_idx]
-            
-            # make read reg from code
-            for idx, read_from_reg in enumerate(self.read_from_reg):
-                if read_from_reg == -1:
-                    self.read_from_reg[idx] = OPR_FROM_PORT
+    def makeCtrlPkt(self):
+        # make fu_in_code
+        for idx, fu_in_code in enumerate(self.shuffle_fu_operand_input_index):
+            if fu_in_code == -1:
+                self.shuffle_fu_operand_input_index[idx] = idx + 1 # 0 or idle inport of ALU?
+        fu_in_code_made = [self.FuInType(x) for x in self.shuffle_fu_operand_input_index] # is it correct?
+        
+        # make TileIn
+        for idx, tile_in_param in enumerate(self.TileInParams):
+            if tile_in_param == -1:
+                self.TileInParams[idx] = 0
+        TileIn_made = [self.TileInType(x) for x in self.TileInParams]
+        for idx, fu_out_param in enumerate(self.FuOutParams):
+            if fu_out_param == -1:
+                self.FuOutParams[idx] = 0
+        FuOut_made = [self.FuOutType(x) for x in self.FuOutParams]
+        
+        # made write reg from code
+        for idx, write_to_reg in enumerate(self.write_to_reg):
+            if write_to_reg == -1:
+                self.write_to_reg[idx] = FROM_NOWHERE
+        write_reg_from_made = [self.B1Type(x) for x in self.write_to_reg]
+        
+        for idx, write_to_reg_idx in enumerate(self.write_to_reg_idx):
+            if write_to_reg_idx == -1:
+                self.write_to_reg_idx[idx] = 0
+        write_reg_idx_made = [self.B2Type(x) for x in self.write_to_reg_idx]
+        
+        # make read reg from code
+        for idx, read_from_reg in enumerate(self.read_from_reg):
+            if read_from_reg == -1:
+                self.read_from_reg[idx] = OPR_FROM_PORT
 
-            read_reg_from_made = [self.B1Type(x) for x in self.read_from_reg]
-            
-            for idx, read_from_reg_idx in enumerate(self.read_from_reg_idx):
-                if read_from_reg_idx == -1:
-                    self.read_from_reg_idx[idx] = 0
-            read_reg_idx_made = [self.B2Type(x) for x in self.read_from_reg_idx]
-            
-            # make FuOut
-            pkt = self.IntraCgraPktType(0, self.id_, 
-                                        payload = self.CgraPayloadType(self.configType, self.ctrl_addr, 
-                                                                       ctrl = self.CtrlType(self.opCode,
-                                                                                            fu_in_code_made,
-                                                                                            TileIn_made,
-                                                                                            FuOut_made,
-                                                                                            write_reg_from_made,
-                                                                                            write_reg_idx_made,
-                                                                                            read_reg_from_made,
-                                                                                            read_reg_idx_made,
-                                                                                            )))
-            return pkt
+        read_reg_from_made = [self.B1Type(x) for x in self.read_from_reg]
+        
+        for idx, read_from_reg_idx in enumerate(self.read_from_reg_idx):
+            if read_from_reg_idx == -1:
+                self.read_from_reg_idx[idx] = 0
+        read_reg_idx_made = [self.B2Type(x) for x in self.read_from_reg_idx]
+        
+        # make FuOut
+        pkt = self.IntraCgraPktType(0, self.id_, 
+                                    payload = self.CgraPayloadType(self.CMD_CONFIG_, self.ctrl_addr, 
+                                                                    ctrl = self.CtrlType(self.opCode,
+                                                                                        fu_in_code_made,
+                                                                                        TileIn_made,
+                                                                                        FuOut_made,
+                                                                                        write_reg_from_made,
+                                                                                        write_reg_idx_made,
+                                                                                        read_reg_from_made,
+                                                                                        read_reg_idx_made,
+                                                                                        )))
+        return pkt
 
 class TileSignals:
     def __init__(self,
@@ -264,31 +319,61 @@ class TileSignals:
                 CgraPayloadType, 
                 TileInType, 
                 FuOutType, 
-                config, 
-                fuInCode, 
+                CMD_CONFIG_input, 
+                FuInType, 
                 id_, 
                 loop_times,
                 ii,
-                instructions):
+                instructions,
+                CMD_CONST_input,
+                CMD_CONFIG_COUNT_PER_ITER_input,
+                CMD_CONFIG_TOTAL_CTRL_COUNT_input,
+                DataType,
+                B1Type,
+                B2Type):
         self.CtrlType = CtrlType
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
         self.TileInType = TileInType
         self.FuOutType = FuOutType
-        self.config = config
-        self.fuInCode = fuInCode
+        self.CMD_CONFIG_ = CMD_CONFIG_input
+        self.FuInType = FuInType
         self.id_ = id_
         self.instructions = instructions
         self.loop_times = loop_times
         self.ii = ii
+        self.B1Type = B1Type
+        self.B2Type = B2Type
+        self.DataType = DataType
+        # constants
+        self.CMD_CONST_ = CMD_CONST_input
+        self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
+        self.CMD_CONFIG_TOTAL_CTRL_COUNT_ = CMD_CONFIG_TOTAL_CTRL_COUNT_input
+        
     
     def makeTileSignals(self):
         consts = []
         all_signals = []
+        all_instruction_signals = []
         
         # build all the instruction signals and get all the const
-        for instructions in instructions:
-            instruction_signals = InstructionSignals(instructions, self.CtrlType, self.IntraCgraPktType, self.CgraPayloadType, self.TileInType, self.FuOutType, self.config, self.fuInCode, self.id_)
+        for instruction in self.instructions:
+            instruction_signals = InstructionSignals(
+                id_ = self.id_,
+                operations = instruction['operations'],
+                opcode_in_EIR = instruction['operations'][0]['opcode'], # transient TODO: make it general
+                ctrl_addr = instruction['timestep'],
+                IntraCgraPktType = self.IntraCgraPktType,
+                CgraPayloadType = self.CgraPayloadType,
+                TileInType = self.TileInType,
+                FuOutType = self.FuOutType,
+                CMD_CONFIG_input = self.CMD_CONFIG_,
+                CtrlType = self.CtrlType,
+                FuInType = self.FuInType,
+                B1Type = self.B1Type,
+                B2Type = self.B2Type)
+            all_instruction_signals.append(instruction_signals)
+            
             const = instruction_signals.buildCtrlPkt()
             if const is not None:
                 consts.extend(const)
@@ -296,50 +381,129 @@ class TileSignals:
         # make the const signals
         for idx, const in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
-                                              payload = self.CgraPayloadType(CMD_CONST,
-                                                                             data = DataType(const, 1)))
+                                              payload = self.CgraPayloadType(self.CMD_CONST_,
+                                                                             data = self.DataType(const, 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
         ii_pkt = self.IntraCgraPktType(0, self.id_, 
-                                       payload = self.CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER,
-                                                                      data = DataType(self.ii, 1)))
+                                       payload = self.CgraPayloadType(self.CMD_CONFIG_COUNT_PER_ITER_,
+                                                                      data = self.DataType(self.ii, 1)))
         all_signals.append(ii_pkt)
         loop_times_pkt = self.IntraCgraPktType(0, self.id_, 
-                                               payload = self.CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT,
-                                                                              data = DataType(self.loop_times, 1)))
+                                               payload = self.CgraPayloadType(self.CMD_CONFIG_TOTAL_CTRL_COUNT_,
+                                                                              data = self.DataType(self.loop_times, 1)))
         all_signals.append(loop_times_pkt)
         
+        # make the main packets
+        for instruction_signals in all_instruction_signals:
+            pkt = instruction_signals.makeCtrlPkt()
+            all_signals.append(pkt)
         return all_signals
         
 class ScriptFactory:
     FromFu = 0
     FromRouting = 1
     
-    def __init__(self, path, CtrlType, IntraCgraPktType, CgraPayloadType, TileInType, FuOutType, config, fuInCode, id_, ii):
+    def __init__(self, 
+                 path, 
+                 CtrlType, 
+                 IntraCgraPktType, 
+                 CgraPayloadType, 
+                 TileInType, 
+                 FuOutType, 
+                 CMD_CONFIG_input, 
+                 FuInType, 
+                 ii,
+                 loop_times,
+                 CMD_CONST_input,
+                 CMD_CONFIG_COUNT_PER_ITER_input,
+                 CMD_CONFIG_TOTAL_CTRL_COUNT_input,
+                 DataType,
+                 B1Type,
+                 B2Type):
         self.yaml_struct = yaml.load(open(path, 'r'), Loader=yaml.FullLoader)
+        self.path = path
         self.CtrlType = CtrlType
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
         self.TileInType = TileInType
         self.FuOutType = FuOutType
-        self.config = config
-        self.fuInCode = fuInCode
+        self.CMD_CONFIG_ = CMD_CONFIG_input
+        self.FuInType = FuInType
+        self.ii = ii
+        self.loop_times = loop_times
+        self.CMD_CONST_ = CMD_CONST_input
+        self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
+        self.CMD_CONFIG_TOTAL_CTRL_COUNT_ = CMD_CONFIG_TOTAL_CTRL_COUNT_input
+        self.DataType = DataType
+        self.B1Type = B1Type
+        self.B2Type = B2Type
     
-    def makeVectorCGRAPkts(self, ScriptInsts, CtrlType, IntraCgraPktType, CgraPayloadType, TileInType, FuOutType, config, fuInCode, id_, FromFuOrRouting = FromRouting): #False means from routing inst
+    def makeVectorCGRAPkts(self):
         
         pkts = {}
         cores = self.yaml_struct['array_config']['cores']
         
         
         for core in cores:
-            x, y = core['x'], core['y']
-            entry = self.core['entries'][0]
+            x, y = core['column'], core['row']
+            entry = core['entries'][0]
             instructions = entry['instructions']
+            id_ = core['core_id']
             
-            TileSignals = TileSignals(CtrlType, IntraCgraPktType, CgraPayloadType, TileInType, FuOutType, config, fuInCode, id_, loop_times, ii, instructions)
-            tile_signals = TileSignals.makeTileSignals()
+            tile_signals = TileSignals(
+                CtrlType = self.CtrlType,
+                IntraCgraPktType = self.IntraCgraPktType,
+                CgraPayloadType = self.CgraPayloadType,
+                TileInType = self.TileInType,
+                FuOutType = self.FuOutType,
+                CMD_CONFIG_input = self.CMD_CONFIG_,
+                FuInType = self.FuInType,
+                id_ = id_,
+                loop_times = self.loop_times, 
+                ii = self.ii, 
+                instructions = instructions,
+                CMD_CONST_input = self.CMD_CONST_,
+                CMD_CONFIG_COUNT_PER_ITER_input = self.CMD_CONFIG_COUNT_PER_ITER_,
+                CMD_CONFIG_TOTAL_CTRL_COUNT_input = self.CMD_CONFIG_TOTAL_CTRL_COUNT_,
+                DataType = self.DataType,
+                B1Type = self.B1Type,
+                B2Type = self.B2Type,
+                )
+            tile_signals = tile_signals.makeTileSignals()
             pkts[(x, y)] = tile_signals
             
         return pkts
+    
+from validation.test.dummy import *
+    
+if __name__ == "__main__":
+    print("Test the Basic Functionality of the ScriptFactory")
+
+    script_factory = ScriptFactory(
+        path = "./validation/test/fir_acceptance_test.yaml",
+        CtrlType = CtrlTypeDummy,
+        IntraCgraPktType = IntraCgraPktTypeDummy,
+        CgraPayloadType = CgraPayloadTypeDummy,
+        TileInType = TileInTypeDummy,
+        FuOutType = FuOutTypeDummy,
+        CMD_CONFIG_input = CMD_CONFIG_Dummy(),
+        FuInType = FuInTypeDummy,
+        ii = 4,
+        loop_times = 2,
+        CMD_CONST_input = CMD_CONST_Dummy(),
+        CMD_CONFIG_COUNT_PER_ITER_input = CMD_CONFIG_COUNT_PER_ITER_Dummy(),
+        CMD_CONFIG_TOTAL_CTRL_COUNT_input = CMD_CONFIG_TOTAL_CTRL_COUNT_Dummy(),
+        DataType = DataTypeDummy,
+        B1Type = B1TypeDummy,
+        B2Type = B2TypeDummy,
+    )
+    
+    pkts = script_factory.makeVectorCGRAPkts()
+    for x, y in pkts:
+        print(f"Tile ({x}, {y}):")
+        for pkt in pkts[(x, y)]:
+            print(pkt)
+            print("--------------------------------")
     

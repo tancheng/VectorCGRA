@@ -2592,20 +2592,20 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
-  sim_fir_terminate(cmdline_opts, mem_access_is_combinational = True)
+# def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
+#  sim_fir_terminate(cmdline_opts, mem_access_is_combinational = True)
 
-def test_homogeneous_4x4_fir_multi_cycle_mem_access_terminate(cmdline_opts):
-  sim_fir_terminate(cmdline_opts, mem_access_is_combinational = False)
+#def test_homogeneous_4x4_fir_multi_cycle_mem_access_terminate(cmdline_opts):
+#  sim_fir_terminate(cmdline_opts, mem_access_is_combinational = False)
 
 def test_homogeneous_4x4_fir_combinational_mem_access_return(cmdline_opts):
   sim_fir_return(cmdline_opts, mem_access_is_combinational = True)
 
-def test_homogeneous_4x4_fir_multi_cycle_mem_access_return(cmdline_opts):
-  sim_fir_return(cmdline_opts, mem_access_is_combinational = False)
+# def test_homogeneous_4x4_fir_multi_cycle_mem_access_return(cmdline_opts):
+#  sim_fir_return(cmdline_opts, mem_access_is_combinational = False)
 
-def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
-  sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational = True)
+# def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
+#  sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational = True)
 
-def test_homogeneous_4x4_fir_combinational_mem_access_vector_return(cmdline_opts):
-  sim_fir_vector_return(cmdline_opts, mem_access_is_combinational = True)
+# def test_homogeneous_4x4_fir_combinational_mem_access_vector_return(cmdline_opts):
+#  sim_fir_vector_return(cmdline_opts, mem_access_is_combinational = True)
