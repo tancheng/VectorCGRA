@@ -35,7 +35,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, PredicateType, ConfigType, num_inports,
+    s.dut = FunctionUnit(DataType, ConfigType, num_inports,
                          num_outports, data_mem_size)
 
     s.src_in0.send //= s.dut.recv_in[0]

@@ -16,11 +16,12 @@ from ...lib.opt_type import *
 
 class MemUnitRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType, num_inports,
+  def construct(s, DataType, CtrlType, num_inports,
                 num_outports, data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0,
                 data_bitwidth = 32):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
     # Constant
     num_entries = 2
     AddrType = mk_bits(clog2(data_mem_size))
