@@ -108,8 +108,6 @@ class TileRTL(Component):
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    CgraPayloadType,
-                                   DataType,
-                                   CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports,
                                    num_fu_outports,

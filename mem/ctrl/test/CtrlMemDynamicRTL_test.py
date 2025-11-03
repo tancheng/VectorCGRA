@@ -36,7 +36,7 @@ class TestHarness(Component):
 
     s.fu = FuType(DataType, PredicateType, CtrlSignalType, 2, 2,
                   data_mem_size, ctrl_mem_size)
-    s.ctrl_mem = MemUnit(CtrlPktType, CgraPayloadType, DataType, CtrlSignalType,
+    s.ctrl_mem = MemUnit(CtrlPktType, CgraPayloadType,
                          ctrl_mem_size, num_fu_inports, num_fu_outports,
                          num_tile_inports, num_tile_outports, 1, num_tiles,
                          ctrl_count_per_iter, total_ctrl_steps_val)
