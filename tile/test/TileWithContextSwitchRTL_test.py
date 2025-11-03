@@ -59,8 +59,8 @@ class TestHarness(Component):
                   for i in range(num_tile_outports)]
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
-                CtrlType, data_nbits, ctrl_mem_size, data_mem_size, 1, 6, 
+    s.dut = DUT(IntraCgraPktType, CgraPayloadType,
+                ctrl_mem_size, data_mem_size, 1, 6, 
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,

@@ -27,19 +27,24 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..noc.ChannelWithClearRTL import ChannelWithClearRTL
 from ..rf.RegisterRTL import RegisterRTL
+from ..lib.util.data_struct_attr import *
 
 
 class TileWithContextSwitchRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType,
-                data_bitwidth,
+  def construct(s, CtrlPktType, CgraPayloadType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
                 total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+
+    # Derives types from CgraPayloadType.
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports

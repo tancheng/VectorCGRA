@@ -90,9 +90,7 @@ class CgraWithContextSwitchRTL(Component):
     s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
-    s.tile = [TileWithContextSwitchRTL(DataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType,
-                      data_bitwidth,
+    s.tile = [TileWithContextSwitchRTL(CtrlPktType, CgraPayloadType,
                       ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
