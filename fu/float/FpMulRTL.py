@@ -20,23 +20,24 @@ from pymtl3 import *
 from ..basic.Fu import Fu
 from ..pymtl3_hardfloat.HardFloat.MulFNRTL import MulFN
 from ...lib.opt_type import *
+from ...lib.util.data_struct_attr import *
 
 class FpMulRTL(Fu):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 ctrl_mem_size = 4,
                 data_bitwidth = 32,
                 exp_nbits = 8,
                 sig_nbits = 23):
 
-    super(FpMulRTL, s).construct(DataType, PredicateType, CtrlType,
+    super(FpMulRTL, s).construct(DataType, CtrlType,
                                  num_inports, num_outports,
                                  data_mem_size, ctrl_mem_size,
                                  data_bitwidth = data_bitwidth)
 
     # Local parameters
-    assert DataType.get_field_type('payload').nbits == exp_nbits + sig_nbits + 1
+    assert DataType.get_field_type(kAttrPayload).nbits == exp_nbits + sig_nbits + 1
 
     num_entries = 2
     FuInType    = mk_bits(clog2(num_inports + 1))
