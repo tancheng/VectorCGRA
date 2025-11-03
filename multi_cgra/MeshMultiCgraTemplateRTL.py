@@ -42,8 +42,7 @@ class MeshMultiCgraTemplateRTL(Component):
           for cgra_col in range(cgra_columns):
             idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
-        s.cgra = [CgraTemplateRTL(CgraDataType, PredicateType, CtrlPktType, CgraPayloadType,
-                                  CtrlSignalType, NocPktType, ControllerIdType, data_nbits,
+        s.cgra = [CgraTemplateRTL(CgraPayloadType,
                                   cgra_rows, cgra_columns, 
                                   # per_cgra_rows, per_cgra_columns,
                                   id2cgraSize_map[cgra_id][0], id2cgraSize_map[cgra_id][1],    
