@@ -32,9 +32,9 @@ class TestHarness( Component ):
     s.src_opt   = TestSrcRTL (CtrlType, ctrl_msgs     )
     s.sink_out0 = TestSinkRTL(DataType, sink_msgs0    )
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
                          num_outports, data_mem_size,
-                         num_lanes = 4, data_bitwidth = data_bw)
+                         num_lanes = 4)
 
     # s.dut.initial_carry_in //= 0
 
