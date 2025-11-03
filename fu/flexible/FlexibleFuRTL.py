@@ -62,6 +62,7 @@ class FlexibleFuRTL(Component):
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
     s.to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.to_mem_wdata = [SendIfcRTL(DataType) for _ in range(s.fu_list_size)]
+    s.clear = [InPort(b1) for _ in range(s.fu_list_size)]
 
     s.prologue_count_inport = InPort(PrologueCountType)
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -84,7 +85,8 @@ class FlexibleFuRTL(Component):
       s.from_mem_rdata[i] //= s.fu[i].from_mem_rdata
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
-
+      s.clear[i] //= s.fu[i].clear
+    
     @update
     def connect_to_controller():
       for i in range(s.fu_list_size):
@@ -116,6 +118,10 @@ class FlexibleFuRTL(Component):
 
         # opt connection.
         s.fu[i].recv_opt.msg @= s.recv_opt.msg
+        # Sets each FU's op code as NAH when prologue execution is not completed.
+        # As they are supposed to do nothing during that prologue cycles.
+        if s.prologue_count_inport != 0:
+          s.fu[i].recv_opt.msg.operation @= OPT_NAH
         s.fu[i].recv_opt.val @= s.recv_opt.val
         s.fu_recv_opt_rdy_vector[i] @= s.fu[i].recv_opt.rdy
 

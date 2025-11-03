@@ -17,6 +17,6 @@ from pymtl3 import *
 NUM_STATUS = 4
 
 STATUS_IDLE                       = 0
-STATUS_RUNNING                    = 1
+STATUS_PRESERVING                 = 1
 STATUS_RESUMING                   = 2
 STATUS_PAUSING                    = 3

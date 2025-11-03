@@ -308,9 +308,15 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONST) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PAUSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PRESERVE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RESUME) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_TERMINATE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val

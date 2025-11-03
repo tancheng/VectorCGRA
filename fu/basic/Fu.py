@@ -48,6 +48,9 @@ class Fu(Component):
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
+
     # Components.
     # Redundant interfaces for MemUnit
     s.to_mem_raddr = SendIfcRTL(DataAddrType)

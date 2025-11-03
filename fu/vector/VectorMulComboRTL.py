@@ -65,6 +65,9 @@ class VectorMulComboRTL(Component):
     s.Fu = [VectorMulRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
             for _ in range(num_lanes)]
 
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
+
     # Redundant interfaces for MemUnit
     AddrType = mk_bits(clog2(data_mem_size))
     s.to_mem_raddr = SendIfcRTL(AddrType)

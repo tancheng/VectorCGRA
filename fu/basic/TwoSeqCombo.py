@@ -41,6 +41,9 @@ class TwoSeqCombo(Component):
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
+
     # Redundant interfaces for MemUnit
     s.to_mem_raddr   = SendIfcRTL(AddrType)
     s.from_mem_rdata = RecvIfcRTL(DataType)

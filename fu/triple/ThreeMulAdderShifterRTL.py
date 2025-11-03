@@ -51,9 +51,11 @@ class ThreeMulAdderShifterRTL(ThreeCombo):
         s.Fu0.recv_opt.msg.operation @= OPT_MUL
         s.Fu1.recv_opt.msg.operation @= OPT_SUB
         s.Fu2.recv_opt.msg.operation @= OPT_LRS
-      # else:
-      #   for j in range(num_outports):
-      #     s.send_out[j].val @= b1(0)
+      else:
+        # Indicates no computation should happen no this fused FU.
+        s.Fu0.recv_opt.msg.operation @= OPT_START
+        s.Fu1.recv_opt.msg.operation @= OPT_START
+        s.Fu2.recv_opt.msg.operation @= OPT_START
 
       # TODO: need to handle the other cases
 
