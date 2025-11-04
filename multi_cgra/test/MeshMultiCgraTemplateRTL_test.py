@@ -351,27 +351,27 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
         id2cgraSize_map[id] = [paramCGRA.rows, paramCGRA.columns]
   else:
     dataSPM = None
-    tiles = []
+    tiles_0 = []
     links = None
 
     for r in range(per_cgra_rows):
-      tiles.append([])
+      tiles_0.append([])
       for c in range(per_cgra_columns):
-        tiles[r].append(Tile(c, r))
+        tiles_0[r].append(Tile(c, r))
     # Assumes first column tiles are connected to memory.
     dataSPM = DataSPM(per_cgra_columns, per_cgra_columns)
 
     links = [Link(None, None, 0, 0) for _ in range(16)]
 
     links[0].srcTile = None
-    links[0].dstTile = tiles[0][0]
+    links[0].dstTile = tiles_0[0][0]
     links[0].srcPort = 0
     links[0].dstPort = PORT_WEST
     links[0].fromMem = True
     links[0].memPort = 0
     links[0].validatePorts()
 
-    links[1].srcTile = tiles[0][0]
+    links[1].srcTile = tiles_0[0][0]
     links[1].dstTile = None
     links[1].srcPort = PORT_WEST
     links[1].dstPort = 0
@@ -380,14 +380,14 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
     links[1].validatePorts()
 
     links[2].srcTile = None
-    links[2].dstTile = tiles[1][0]
+    links[2].dstTile = tiles_0[1][0]
     links[2].srcPort = 1
     links[2].dstPort = PORT_WEST
     links[2].fromMem = True
     links[2].memPort = 1
     links[2].validatePorts()
 
-    links[3].srcTile = tiles[1][0]
+    links[3].srcTile = tiles_0[1][0]
     links[3].dstTile = None
     links[3].srcPort = PORT_WEST
     links[3].dstPort = 1
@@ -395,74 +395,74 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
     links[3].memPort = 1
     links[3].validatePorts()
 
-    links[4].srcTile = tiles[0][0]
-    links[4].dstTile = tiles[0][1]
+    links[4].srcTile = tiles_0[0][0]
+    links[4].dstTile = tiles_0[0][1]
     links[4].srcPort = PORT_EAST
     links[4].dstPort = PORT_WEST
     links[4].validatePorts()
 
-    links[5].srcTile = tiles[0][1]
-    links[5].dstTile = tiles[0][0]
+    links[5].srcTile = tiles_0[0][1]
+    links[5].dstTile = tiles_0[0][0]
     links[5].srcPort = PORT_WEST
     links[5].dstPort = PORT_EAST
     links[5].validatePorts()
 
-    links[6].srcTile = tiles[1][0]
-    links[6].dstTile = tiles[1][1]
+    links[6].srcTile = tiles_0[1][0]
+    links[6].dstTile = tiles_0[1][1]
     links[6].srcPort = PORT_EAST
     links[6].dstPort = PORT_WEST
     links[6].validatePorts()
 
-    links[7].srcTile = tiles[1][1]
-    links[7].dstTile = tiles[1][0]
+    links[7].srcTile = tiles_0[1][1]
+    links[7].dstTile = tiles_0[1][0]
     links[7].srcPort = PORT_WEST
     links[7].dstPort = PORT_EAST
     links[7].validatePorts()
 
-    links[8].srcTile = tiles[0][0]
-    links[8].dstTile = tiles[1][0]
+    links[8].srcTile = tiles_0[0][0]
+    links[8].dstTile = tiles_0[1][0]
     links[8].srcPort = PORT_NORTH
     links[8].dstPort = PORT_SOUTH
     links[8].validatePorts()
 
-    links[9].srcTile = tiles[1][0]
-    links[9].dstTile = tiles[0][0]
+    links[9].srcTile = tiles_0[1][0]
+    links[9].dstTile = tiles_0[0][0]
     links[9].srcPort = PORT_SOUTH
     links[9].dstPort = PORT_NORTH
     links[9].validatePorts()
 
-    links[10].srcTile = tiles[0][1]
-    links[10].dstTile = tiles[1][1]
+    links[10].srcTile = tiles_0[0][1]
+    links[10].dstTile = tiles_0[1][1]
     links[10].srcPort = PORT_NORTH
     links[10].dstPort = PORT_SOUTH
     links[10].validatePorts()
 
-    links[11].srcTile = tiles[1][1]
-    links[11].dstTile = tiles[0][1]
+    links[11].srcTile = tiles_0[1][1]
+    links[11].dstTile = tiles_0[0][1]
     links[11].srcPort = PORT_SOUTH
     links[11].dstPort = PORT_NORTH
     links[11].validatePorts()
 
-    links[12].srcTile = tiles[0][0]
-    links[12].dstTile = tiles[1][1]
+    links[12].srcTile = tiles_0[0][0]
+    links[12].dstTile = tiles_0[1][1]
     links[12].srcPort = PORT_NORTHEAST
     links[12].dstPort = PORT_SOUTHWEST
     links[12].validatePorts()
 
-    links[13].srcTile = tiles[1][1]
-    links[13].dstTile = tiles[0][0]
+    links[13].srcTile = tiles_0[1][1]
+    links[13].dstTile = tiles_0[0][0]
     links[13].srcPort = PORT_SOUTHWEST
     links[13].dstPort = PORT_NORTHEAST
     links[13].validatePorts()
 
-    links[14].srcTile = tiles[0][1]
-    links[14].dstTile = tiles[1][0]
+    links[14].srcTile = tiles_0[0][1]
+    links[14].dstTile = tiles_0[1][0]
     links[14].srcPort = PORT_NORTHWEST
     links[14].dstPort = PORT_SOUTHEAST
     links[14].validatePorts()
 
-    links[15].srcTile = tiles[1][0]
-    links[15].dstTile = tiles[0][1]
+    links[15].srcTile = tiles_0[1][0]
+    links[15].dstTile = tiles_0[0][1]
     links[15].srcPort = PORT_SOUTHEAST
     links[15].dstPort = PORT_NORTHWEST
     links[15].validatePorts()
@@ -474,44 +474,17 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
           tiles.append(t)
       return tiles
 
-    tiles_1 = copy.deepcopy(tiles)
-    tiles_2 = copy.deepcopy(tiles)
-    tiles_3 = copy.deepcopy(tiles)
+    tiles_1 = copy.deepcopy(tiles_0)
+    tiles_2 = copy.deepcopy(tiles_0)
+    tiles_3 = copy.deepcopy(tiles_0)
 
-    # remove invalid ports for each tile on boundary
-    # cgra 0
-    # print(f"> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
-    # keep_port_valid(tiles[1][0], PORT_NORTH)
-    # keep_port_valid(tiles[1][1], PORT_NORTH)
-    # keep_port_valid(tiles[0][1], PORT_EAST)
-    # keep_port_valid(tiles[1][1], PORT_EAST)
-    # print(f"> tiles[1][0] invalidOutPorts: {tiles[1][0].invalidOutPorts}, invalidInPorts: {tiles[1][0].invalidInPorts}")
-
-    # # cgra 1
-    # keep_port_valid(tiles_1[1][0], PORT_WEST)
-    # keep_port_valid(tiles_1[0][0], PORT_WEST)
-    # keep_port_valid(tiles_1[1][0], PORT_NORTH)
-    # keep_port_valid(tiles_1[1][1], PORT_NORTH)
-
-    # # cgra 2
-    # keep_port_valid(tiles_2[0][0], PORT_SOUTH)
-    # keep_port_valid(tiles_2[0][1], PORT_SOUTH)
-    # keep_port_valid(tiles_2[1][1], PORT_EAST)
-    # keep_port_valid(tiles_2[0][1], PORT_EAST)
-
-    # # cgra 3
-    # keep_port_valid(tiles_3[0][0], PORT_WEST)
-    # keep_port_valid(tiles_3[1][0], PORT_WEST)
-    # keep_port_valid(tiles_3[0][0], PORT_SOUTH)
-    # keep_port_valid(tiles_3[0][1], PORT_SOUTH)
-
-    tiles = handleReshape(tiles)
+    tiles_0 = handleReshape(tiles_0)
     tiles_1 = handleReshape(tiles_1)
     tiles_2 = handleReshape(tiles_2)
     tiles_3 = handleReshape(tiles_3)
 
     id2validTiles = {
-      0: tiles,
+      0: tiles_0,
       1: tiles_1,
       2: tiles_2,
       3: tiles_3
