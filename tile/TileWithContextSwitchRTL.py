@@ -27,19 +27,26 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..noc.ChannelWithClearRTL import ChannelWithClearRTL
 from ..rf.RegisterRTL import RegisterRTL
+from ..lib.util.data_struct_attr import *
 
 
 class TileWithContextSwitchRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType,
-                data_bitwidth,
+  def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
                 total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+
+    # Derives types from CgraPayloadType.
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
+    CtrlPktType = IntraCgraPktType
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -69,8 +76,7 @@ class TileWithContextSwitchRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
-                              data_bitwidth,
+    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, ctrl_mem_size,
                               num_tiles, FuList)
@@ -78,7 +84,6 @@ class TileWithContextSwitchRTL(Component):
     # so here we increase the size of const_mem to avoid deadlock.
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size+10)
     s.routing_crossbar = CrossbarRTL(DataType,
-                                     PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
@@ -87,7 +92,6 @@ class TileWithContextSwitchRTL(Component):
                                      ctrl_mem_size,
                                      num_tile_outports)
     s.fu_crossbar = CrossbarRTL(DataType,
-                                PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
@@ -100,8 +104,6 @@ class TileWithContextSwitchRTL(Component):
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    CgraPayloadType,
-                                   DataType,
-                                   CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports,
                                    num_fu_outports,

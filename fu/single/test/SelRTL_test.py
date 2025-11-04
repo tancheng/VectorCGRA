@@ -33,7 +33,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL( DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+    s.dut = FunctionUnit(DataType, CtrlType,
                          num_inports, num_outports, data_mem_size)
 
     s.src_data1.send //= s.dut.recv_in[1]

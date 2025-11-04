@@ -26,9 +26,9 @@ num_outports  = 2
 data_mem_size = 8
 
 def test_elaborate():
-  dut = VectorMulComboRTL( DataType, PredicateType, CtrlType,
+  dut = VectorMulComboRTL( DataType, CtrlType,
                             num_inports, num_outports, data_mem_size,
-                            data_bitwidth = data_bitwidth )
+                            )
   dut.apply( DefaultPassGroup(linetrace=True) )
   dut.sim_reset()
   dut.sim_tick()
@@ -36,9 +36,9 @@ def test_elaborate():
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
-  dut = VectorMulComboRTL( DataType, PredicateType, CtrlType,
+  dut = VectorMulComboRTL( DataType, CtrlType,
                            num_inports, num_outports, data_mem_size,
-                           data_bitwidth = data_bitwidth )
+                           )
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'VectorMulComboRTL' )
   config_model_with_cmdline_opts( dut, cmdline_opts, duts=[] )

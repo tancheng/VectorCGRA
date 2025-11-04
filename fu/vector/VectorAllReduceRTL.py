@@ -19,7 +19,7 @@ from ...lib.opt_type import *
 
 class VectorAllReduceRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size,
                 ctrl_mem_size = 4,
@@ -27,6 +27,8 @@ class VectorAllReduceRTL(Component):
                 num_lanes = 4,
                 data_bitwidth = 64):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     # Constants.
     assert(data_bitwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic.

@@ -34,7 +34,7 @@ def test_elaborate( cmdline_opts ):
   src_opt       = [ConfigType(OPT_ADD_CONST, pick_register),
                    ConfigType(OPT_SUB,       pick_register),
                    ConfigType(OPT_ADD_CONST, pick_register)]
-  dut = AluGenMacRTL(DataType, PredType, ConfigType, num_inports,
+  dut = AluGenMacRTL(DataType, ConfigType, num_inports,
                      num_outports, data_mem_size)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
@@ -56,7 +56,7 @@ class TestHarness( Component ):
     s.sink_out = TestSinkRTL(DataType,  sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, PredType, ConfigType,
+    s.dut = FunctionUnit(DataType, ConfigType,
                          num_inports, num_outports, data_mem_size)
 
     connect(s.src_in0.send,    s.dut.recv_in[0]        )

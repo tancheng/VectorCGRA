@@ -17,12 +17,13 @@ from ...lib.opt_type import *
 
 class ThreeCombo(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 Fu0, Fu1, Fu2,
                 num_inports, num_outports,
                 data_mem_size, ctrl_mem_size,
                 data_bitwidth = 32):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
     # Constant
     num_entries   = 2
     AddrType      = mk_bits(clog2(data_mem_size))
@@ -52,9 +53,9 @@ class ThreeCombo(Component):
     s.clear = InPort(b1)
 
     # Components
-    s.Fu0 = Fu0(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
-    s.Fu1 = Fu1(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
-    s.Fu2 = Fu2(DataType, PredicateType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
+    s.Fu0 = Fu0(DataType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
+    s.Fu1 = Fu1(DataType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
+    s.Fu2 = Fu2(DataType, CtrlType, 4, 2, data_mem_size, ctrl_mem_size)
 
     # Connections
     s.recv_in[0].msg //= s.Fu0.recv_in[0].msg

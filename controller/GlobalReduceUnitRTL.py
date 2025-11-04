@@ -16,11 +16,16 @@ from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..lib.cmd_type import *
 
 from pymtl3 import *
+from ..lib.messages import mk_controller_noc_xbar_pkt
+from ..lib.util.data_struct_attr import *
 
 class GlobalReduceUnitRTL(Component):
 
-  def construct(s, DataType, InterCgraPktType, ControllerXbarPktType):
+  def construct(s, InterCgraPktType):
 
+    CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
     # Interfaces.
     s.recv_count = RecvIfcRTL(InterCgraPktType)
     s.recv_data = RecvIfcRTL(InterCgraPktType)

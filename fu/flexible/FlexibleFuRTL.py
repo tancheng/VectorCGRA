@@ -23,9 +23,7 @@ from ...lib.util.common import *
 class FlexibleFuRTL(Component):
   def construct(s,
                 DataType,
-                PredicateType,
                 CtrlType,
-                data_bitwidth,
                 num_inports,
                 num_outports,
                 data_mem_size,
@@ -34,6 +32,8 @@ class FlexibleFuRTL(Component):
                 FuList,
                 exec_lantency = {}):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     # Constants.
     num_entries = 2
     if NahRTL not in FuList:
@@ -68,10 +68,10 @@ class FlexibleFuRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    s.fu = [FuList[i](DataType, PredicateType, CtrlType,
+    s.fu = [FuList[i](DataType, CtrlType,
                       num_inports, num_outports,
                       data_mem_size, ctrl_mem_size,
-                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
+                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, CtrlType, num_inports, num_outports,
                       data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)

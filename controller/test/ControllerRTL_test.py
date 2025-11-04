@@ -55,11 +55,7 @@ class TestHarness(Component):
     s.src_from_noc = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc = TestSinkRTL(PktType, expected_to_noc_pkts)
 
-    s.dut = ControllerRTL(ControllerIdType,
-                          CpuPktType,
-                          PktType,
-                          MsgType,
-                          AddrType,
+    s.dut = ControllerRTL(PktType,
                           1, # Number of controllers globally (x/y dimension).
                           num_cgras,
                           num_tiles,

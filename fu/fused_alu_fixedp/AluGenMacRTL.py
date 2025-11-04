@@ -12,19 +12,20 @@ from pymtl3 import *
 from ..basic.Fu import Fu
 from .AluGenMacWrapperRTL import AluGenMacWrapperRTL
 from ...lib.opt_type import *
+from ...lib.util.data_struct_attr import *
 
 class AluGenMacRTL(Fu):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 ctrl_mem_size = 4):
 
-    super(AluGenMacRTL, s).construct(DataType, PredicateType, CtrlType,
+    super(AluGenMacRTL, s).construct(DataType, CtrlType,
                                      num_inports, num_outports,
                                      data_mem_size, ctrl_mem_size)
 
     # Local parameters
-    assert DataType.get_field_type('payload').nbits == 16
+    assert DataType.get_field_type(kAttrPayload).nbits == 16
 
     num_entries = 3
     FuInType    = mk_bits(clog2(num_inports + 1))

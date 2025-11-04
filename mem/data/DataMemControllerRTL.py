@@ -31,12 +31,11 @@ from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.messages import *
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
+from ...lib.util.data_struct_attr import *
 
 class DataMemControllerRTL(Component):
   def construct(s,
                 NocPktType,
-                CgraPayloadType,
-                DataType,
                 data_mem_size_global,
                 data_mem_size_per_bank,
                 num_banks_per_cgra = 4,
@@ -48,6 +47,8 @@ class DataMemControllerRTL(Component):
                 mem_access_is_combinational = True,
                 idTo2d_map = {0: [0, 0]}):
 
+    CgraPayloadType = NocPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
     # Constants.
     global_addr_nbits = clog2(data_mem_size_global)
     per_bank_addr_nbits = clog2(data_mem_size_per_bank)

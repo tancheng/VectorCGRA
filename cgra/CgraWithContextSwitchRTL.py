@@ -90,9 +90,7 @@ class CgraWithContextSwitchRTL(Component):
     s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
 
     # Components
-    s.tile = [TileWithContextSwitchRTL(DataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType,
-                      data_bitwidth,
+    s.tile = [TileWithContextSwitchRTL(CtrlPktType,
                       ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
@@ -101,8 +99,6 @@ class CgraWithContextSwitchRTL(Component):
                       FuList = FuList)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemControllerRTL(NocPktType,
-                                      CgraPayloadType,
-                                      DataType,
                                       data_mem_size_global,
                                       data_mem_size_per_bank,
                                       num_banks_per_cgra,
@@ -113,8 +109,7 @@ class CgraWithContextSwitchRTL(Component):
                                       s.num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
-    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
-                                 NocPktType, DataType, DataAddrType,
+    s.controller = ControllerRTL(NocPktType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.

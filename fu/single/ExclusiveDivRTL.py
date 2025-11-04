@@ -15,13 +15,13 @@ from pymtl3.passes.backends.verilog import *
 
 class ExclusiveDivRTL(Fu):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size, ctrl_mem_size = 4,
                 latency = 4, vector_factor_power = 0,
                 data_bitwidth = 32):
 
-    super(ExclusiveDivRTL, s).construct(DataType, PredicateType, CtrlType,
+    super(ExclusiveDivRTL, s).construct(DataType, CtrlType,
                                num_inports, num_outports,
                                data_mem_size, ctrl_mem_size,
                                latency, vector_factor_power,
