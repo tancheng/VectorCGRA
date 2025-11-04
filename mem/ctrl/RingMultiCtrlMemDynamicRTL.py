@@ -45,6 +45,8 @@ class RingMultiCtrlMemDynamicRTL(Component):
     for i in range(s.num_tiles):
       s.ctrl_memories[i].cgra_id //= 0
       s.ctrl_memories[i].tile_id //= i
+      s.ctrl_memories[i].recv_from_element.val //= 1
+      s.ctrl_memories[i].recv_from_element.msg //= CgraPayloadType()
 
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt_from_controller
