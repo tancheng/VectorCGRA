@@ -79,8 +79,7 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
-                              data_bitwidth,
+    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, ctrl_mem_size,
                               num_tiles, FuList)

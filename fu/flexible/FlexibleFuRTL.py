@@ -71,7 +71,7 @@ class FlexibleFuRTL(Component):
     s.fu = [FuList[i](DataType, CtrlType,
                       num_inports, num_outports,
                       data_mem_size, ctrl_mem_size,
-                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
+                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, CtrlType, num_inports, num_outports,
                       data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)

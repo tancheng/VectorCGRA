@@ -32,7 +32,7 @@ class TestHarness(Component):
     s.src_opt = ValRdyTestSrcRTL(ConfigType, ctrl_msgs)
     s.sink_out = ValRdyTestSinkRTL(DataType, sink_msgs)
 
-    s.alu = AdderRTL(DataType, PredicateType, ConfigType, 2, 1, 8)
+    s.alu = AdderRTL(DataType, ConfigType, 2, 1, 8)
     s.const_queue = ConstQueueRTL(DataType, src_const)
 
     connect(s.src_in0.send, s.alu.recv_in[0])

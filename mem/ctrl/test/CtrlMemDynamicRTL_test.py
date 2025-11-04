@@ -34,7 +34,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
-    s.fu = FuType(DataType, PredicateType, CtrlSignalType, 2, 2,
+    s.fu = FuType(DataType, CtrlSignalType, 2, 2,
                   data_mem_size, ctrl_mem_size)
     s.ctrl_mem = MemUnit(CtrlPktType, CgraPayloadType,
                          ctrl_mem_size, num_fu_inports, num_fu_outports,
