@@ -37,7 +37,7 @@ from ..lib.util.data_struct_attr import *
 
 class TileRTL(Component):
 
-  def construct(s, CtrlPktType, CgraPayloadType,
+  def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
                 total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, num_cgras, num_tiles,
@@ -45,7 +45,9 @@ class TileRTL(Component):
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
 
-    # Derives types from CgraPayloadType.
+    # Derives types from IntraCgraPktType.
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
+    CtrlPktType = IntraCgraPktType
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
     CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)

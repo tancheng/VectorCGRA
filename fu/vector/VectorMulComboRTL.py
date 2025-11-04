@@ -25,7 +25,7 @@ class VectorMulComboRTL(Component):
                 data_mem_size,
                 ctrl_mem_size = 4,
                 vector_factor_power = 0,
-                num_lanes = 4):
+                num_lanes = 4, data_bitwidth = 64):
 
     PredicateType = DataType.get_field_type(kAttrPredicate)
     data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
