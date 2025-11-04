@@ -8,7 +8,7 @@ array_config:
       entries:
         - entry_id: "entry0"
           instructions:
-            - timestep: 0
+            - timestep: 4
               operations:
                 - opcode: "ADD"
                   src_operands:
@@ -21,13 +21,13 @@ array_config:
                       color: "RED"
                     - operand: "EAST"
                       color: "RED"
-            - timestep: 1
+            - timestep: 5
               operations:
                 - opcode: "PHI_CONST"
                   src_operands:
                     - operand: "$0"
                       color: "RED"
-                    - operand: "#CONST1"
+                    - operand: "3"
                       color: "RED"
                   dst_operands:
                     - operand: "$8"
@@ -38,7 +38,7 @@ array_config:
       entries:
         - entry_id: "entry0"
           instructions:
-            - timestep: 1
+            - timestep: 5
               operations:
                 - opcode: "GRANT_PREDICATE"
                   src_operands:
@@ -49,7 +49,7 @@ array_config:
                   dst_operands:
                     - operand: "$0"
                       color: "RED"
-            - timestep: 2
+            - timestep: 6
               operations:
                 - opcode: "RETURN"
                   src_operands:
@@ -68,7 +68,7 @@ array_config:
                   src_operands:
                     - operand: "NORTH"
                       color: "RED"
-                    - operand: "#CONST0"
+                    - operand: "2"
                       color: "RED"
                   dst_operands:
                     - operand: "$0"
@@ -106,7 +106,7 @@ array_config:
                   src_operands:
                     - operand: "NORTH"
                       color: "RED"
-                    - operand: "#CONST0"
+                    - operand: "10"
                       color: "RED"
                   dst_operands:
                     - operand: "$0"
@@ -129,11 +129,11 @@ array_config:
       entries:
         - entry_id: "entry0"
           instructions:
-            - timestep: 0
+            - timestep: 4
               operations:
                 - opcode: "PHI_CONST"
                   src_operands:
-                    - operand: "#CONST0"
+                    - operand: "2"
                       color: "RED"
                     - operand: "EAST"
                       color: "RED"
@@ -150,7 +150,7 @@ array_config:
                   src_operands:
                     - operand: "$0"
                       color: "RED"
-                    - operand: "#CONST0"
+                    - operand: "0"
                       color: "RED"
                   dst_operands:
                     - operand: "$8"
@@ -178,7 +178,7 @@ array_config:
                   src_operands:
                     - operand: "WEST"
                       color: "RED"
-                    - operand: "#CONST0"
+                    - operand: "1"
                       color: "RED"
                   dst_operands:
                     - operand: "SOUTH"

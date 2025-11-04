@@ -328,6 +328,10 @@ class TileSignals:
                 CMD_CONST_input,
                 CMD_CONFIG_COUNT_PER_ITER_input,
                 CMD_CONFIG_TOTAL_CTRL_COUNT_input,
+                CMD_CONFIG_PROLOGUE_FU_input,
+                CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input,
+                CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input,
+                CMD_LAUNCH_input,
                 DataType,
                 B1Type,
                 B2Type):
@@ -350,14 +354,81 @@ class TileSignals:
         self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
         self.CMD_CONFIG_TOTAL_CTRL_COUNT_ = CMD_CONFIG_TOTAL_CTRL_COUNT_input
         
-    
+        self.CMD_CONFIG_PROLOGUE_FU_ = CMD_CONFIG_PROLOGUE_FU_input
+        self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_ = CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input
+        self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_ = CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input
+        
+        self.CMD_LAUNCH_ = CMD_LAUNCH_input
+        
+        
+    def makeProloguePackets(self, instruction):
+        print(f"Making prologue packets for instruction {instruction}")
+        pkts = []
+        pkts.append(self.makePrologueFUPackets(instruction)) # always prologue FU
+        take_up_fu_operation_idx = -1
+        for idx, operation in enumerate(instruction['operations']):
+            if _is_take_up_fu_operation(operation):
+                if take_up_fu_operation_idx != -1:
+                    raise ValueError("Only one take up fu operation is allowed")
+                take_up_fu_operation_idx = idx
+        take_up_fu_operation = None  
+        if take_up_fu_operation_idx != -1:
+            take_up_fu_operation = instruction['operations'][take_up_fu_operation_idx]
+            # TODO: fix the logic for only having non-take up fu operation
+        else:
+            raise ValueError("No take up fu operation found")
+        try:
+            src_operands = take_up_fu_operation['src_operands']
+        except Exception as e:
+            src_operands = []
+        for src_operand in src_operands:
+            if _type(src_operand) == 'PORT':
+                print(f"src_operand is PORT, add Prologue. {src_operand}")
+                if src_operand['operand'] == 'NORTH':
+                    routing_xbar_idx = 0 # here is from 0, strange.
+                elif src_operand['operand'] == 'SOUTH':
+                    routing_xbar_idx = 1
+                elif src_operand['operand'] == 'WEST':
+                    routing_xbar_idx = 2
+                elif src_operand['operand'] == 'EAST':
+                    routing_xbar_idx = 3
+                pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
+        
+        try:
+            dst_operands = take_up_fu_operation['dst_operands']
+        except Exception as e:
+            dst_operands = []
+
+        for dst_operand in dst_operands:
+            if _type(dst_operand) == 'REG':
+                pkts.append(self.makePrologueFUCrossbarPackets(instruction))
+        return pkts
+        
+    def makePrologueFUPackets(self, instruction):
+        return self.IntraCgraPktType(0, self.id_, 
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = instruction['timestep'] % self.ii,
+                                                                     data = self.DataType(1, 1)))
+    def makePrologueRoutingCrossbarPackets(self, instruction, routing_xbar_idx):
+        return self.IntraCgraPktType(0, self.id_, 
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = instruction['timestep'] % self.ii,
+                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * 7),
+                                                                     data = self.DataType(1, 1)))
+    def makePrologueFUCrossbarPackets(self, instruction):
+        return self.IntraCgraPktType(0, self.id_, 
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = instruction['timestep'] % self.ii,
+                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
+                                                                     data = self.DataType(1, 1)))
     def makeTileSignals(self):
         consts = []
         all_signals = []
         all_instruction_signals = []
+        prologue_signals = []
         
         # build all the instruction signals and get all the const
         for instruction in self.instructions:
+            if instruction['timestep'] >= self.ii:
+                prologue_signals.extend(self.makeProloguePackets(instruction))
+            
             instruction_signals = InstructionSignals(
                 id_ = self.id_,
                 operations = instruction['operations'],
@@ -379,10 +450,10 @@ class TileSignals:
                 consts.extend(const)
         
         # make the const signals
-        for idx, const in enumerate(consts):
+        for idx, const_operand in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
                                               payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(const, 1)))
+                                                                             data = self.DataType(int(const_operand['operand']), 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
@@ -399,8 +470,30 @@ class TileSignals:
         for instruction_signals in all_instruction_signals:
             pkt = instruction_signals.makeCtrlPkt()
             all_signals.append(pkt)
-        return all_signals
+            
+        # make prologue packets
+        # re-order the prologue packets 
+        '''
+        ordered_prologue_signals = []
+        for pkt in prologue_signals:
+            if pkt.cmd == self.CMD_CONFIG_PROLOGUE_FU_:
+                ordered_prologue_signals.append(pkt)
+        for pkt in prologue_signals:
+            if pkt.cmd == self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_:
+                ordered_prologue_signals.append(pkt)
+        for pkt in prologue_signals:
+            if pkt.cmd == self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_:
+                ordered_prologue_signals.append(pkt)
+                
+        all_signals.extend(ordered_prologue_signals)
+        '''
+        all_signals.extend(prologue_signals)
+        # make the launch packet
+        launch_pkt = self.IntraCgraPktType(0, self.id_, 
+                                           payload = self.CgraPayloadType(self.CMD_LAUNCH_))
+        all_signals.append(launch_pkt)
         
+        return all_signals
 class ScriptFactory:
     FromFu = 0
     FromRouting = 1
@@ -419,6 +512,10 @@ class ScriptFactory:
                  CMD_CONST_input,
                  CMD_CONFIG_COUNT_PER_ITER_input,
                  CMD_CONFIG_TOTAL_CTRL_COUNT_input,
+                 CMD_CONFIG_PROLOGUE_FU_input,
+                 CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input,
+                 CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input,
+                 CMD_LAUNCH_input,
                  DataType,
                  B1Type,
                  B2Type):
@@ -436,6 +533,10 @@ class ScriptFactory:
         self.CMD_CONST_ = CMD_CONST_input
         self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
         self.CMD_CONFIG_TOTAL_CTRL_COUNT_ = CMD_CONFIG_TOTAL_CTRL_COUNT_input
+        self.CMD_CONFIG_PROLOGUE_FU_ = CMD_CONFIG_PROLOGUE_FU_input
+        self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_ = CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input
+        self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_ = CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input
+        self.CMD_LAUNCH_ = CMD_LAUNCH_input
         self.DataType = DataType
         self.B1Type = B1Type
         self.B2Type = B2Type
@@ -467,6 +568,10 @@ class ScriptFactory:
                 CMD_CONST_input = self.CMD_CONST_,
                 CMD_CONFIG_COUNT_PER_ITER_input = self.CMD_CONFIG_COUNT_PER_ITER_,
                 CMD_CONFIG_TOTAL_CTRL_COUNT_input = self.CMD_CONFIG_TOTAL_CTRL_COUNT_,
+                CMD_CONFIG_PROLOGUE_FU_input = self.CMD_CONFIG_PROLOGUE_FU_,
+                CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input = self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_,
+                CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input = self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_,
+                CMD_LAUNCH_input = self.CMD_LAUNCH_,
                 DataType = self.DataType,
                 B1Type = self.B1Type,
                 B2Type = self.B2Type,
@@ -495,6 +600,10 @@ if __name__ == "__main__":
         CMD_CONST_input = CMD_CONST_Dummy(),
         CMD_CONFIG_COUNT_PER_ITER_input = CMD_CONFIG_COUNT_PER_ITER_Dummy(),
         CMD_CONFIG_TOTAL_CTRL_COUNT_input = CMD_CONFIG_TOTAL_CTRL_COUNT_Dummy(),
+        CMD_CONFIG_PROLOGUE_FU_input = CMD_CONFIG_PROLOGUE_FU_Dummy(),
+        CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input = CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_Dummy(),
+        CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input = CMD_CONFIG_PROLOGUE_FU_CROSSBAR_Dummy(),
+        CMD_LAUNCH_input = CMD_LAUNCH_Dummy(),
         DataType = DataTypeDummy,
         B1Type = B1TypeDummy,
         B2Type = B2TypeDummy,
