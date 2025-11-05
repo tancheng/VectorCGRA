@@ -46,9 +46,9 @@ from ...lib.opt_type import *
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                IntraCgraPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                data_nbits, cgra_rows, cgra_columns, width, height, ctrl_mem_size,
+  def construct(s, DUT, FunctionUnit, FuList,
+                IntraCgraPktType,
+                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt,
@@ -59,6 +59,7 @@ class TestHarness(Component):
                 controller2addr_map, expected_sink_out_pkt,
                 cmp_func):
 
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     s.num_terminals = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
@@ -1081,8 +1082,7 @@ def initialize_test_harness(cmdline_opts,
     expected_sink_out_pkt.extend(expected_complete_sink_out_pkg)
     expected_sink_out_pkt.extend(expected_mem_sink_out_pkt)
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
-                   CgraPayloadType, CtrlType, InterCgraPktType, data_nbits,
+  th = TestHarness(DUT, FunctionUnit, FuList,IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
                    num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
