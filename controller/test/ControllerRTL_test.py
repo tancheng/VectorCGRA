@@ -24,10 +24,7 @@ from ...lib.opt_type import *
 class TestHarness(Component):
 
   def construct(s,
-                ControllerIdType,
                 CpuPktType,
-                MsgType,
-                AddrType,
                 PktType,
                 cgra_id,
                 from_tile_load_request_pkt_msgs,
@@ -253,10 +250,7 @@ expected_to_noc_pkts = [
 
 def test_simple(cmdline_opts):
   print("[LOG] controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType,
-                   IntraCgraPktType,
-                   DataType,
-                   DataAddrType,
+  th = TestHarness(IntraCgraPktType,
                    InterCgraPktType,
                    cgra_id,
                    from_tile_load_request_pkts,
