@@ -22,13 +22,13 @@ from ...lib.util.data_struct_attr import *
 
 class CtrlMemDynamicRTL(Component):
 
-  def construct(s, IntraCgraPktType, CgraPayloadType,
+  def construct(s, IntraCgraPktType,
                 ctrl_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, num_cgras,
                 num_tiles, ctrl_count_per_iter = 4,
                 total_ctrl_steps = 4):
 
-    DataType = CgraPayloadType.get_field_type(kAttrData)
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     CtrlType = CgraPayloadType.get_field_type(kAttrCtrl)
     # The total_ctrl_steps indicates the number of steps the ctrl
     # signals should proceed. For example, if the number of ctrl
