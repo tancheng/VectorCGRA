@@ -43,9 +43,9 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, data_bitwidth, cgra_id, width, height,
+  def construct(s, DUT, FunctionUnit, FuList,
+                CtrlPktType, CgraPayloadType,
+                cgra_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -54,6 +54,7 @@ class TestHarness(Component):
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
+    DataType = CgraPayloadType.get_field_type(kAttrData)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
@@ -963,9 +964,9 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   complete_signal_sink_out.extend(expected_complete_sink_out_pkg)
   complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                   ControllerIdType, data_bitwidth, cgra_id, x_tiles, y_tiles,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType, CgraPayloadType,
+                   cgra_id, x_tiles, y_tiles,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,

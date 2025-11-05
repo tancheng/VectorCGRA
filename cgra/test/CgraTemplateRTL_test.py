@@ -53,9 +53,9 @@ fuType2RTL["Grant"] = GrantRTL
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, data_nbits, cgra_id, ctrl_mem_size,
+  def construct(s, DUT, FunctionUnit, FuList,
+                CtrlPktType, CgraPayloadType,
+                cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
@@ -469,9 +469,9 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                   ControllerIdType, data_nbits, cgra_id,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType, CgraPayloadType,
+                   cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
