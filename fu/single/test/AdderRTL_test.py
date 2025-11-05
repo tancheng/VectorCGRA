@@ -22,7 +22,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
+  def construct(s, FunctionUnit, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const,
                 ctrl_msgs, sink_msgs):
@@ -90,7 +90,7 @@ def test_alu():
                    ConfigType(OPT_SUB,       pickRegister),
                    ConfigType(OPT_ADD_CONST, pickRegister)]
 
-  th = TestHarness(FU, DataType, PredType, ConfigType, num_inports,
+  th = TestHarness(FU, DataType, ConfigType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out)
   run_sim(th)

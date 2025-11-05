@@ -21,7 +21,7 @@ from ....lib.messages             import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src_const, src_opt, sink_msgs):
 
@@ -88,7 +88,7 @@ def test_Phi():
                CtrlType(OPT_PHI, pickRegister)]
 
   sink_out = [DataType(1, 0), DataType(3, 1), DataType(2, 1)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
+  th = TestHarness(FU, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out)
   run_sim(th)
@@ -113,7 +113,7 @@ def test_Phi_const():
                CtrlType(OPT_PHI_CONST, pickRegister),
                CtrlType(OPT_PHI_CONST, pickRegister) ]
   sink_out =  [DataType(3, 0), DataType(4, 1), DataType(7, 0)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -175,7 +175,7 @@ def test_Phi_vector():
               DataType(1, 0), DataType(3, 0), DataType(2, 0),
               DataType(1, 0), DataType(3, 0), DataType(2, 0),
               DataType(1, 1), DataType(3, 1), DataType(2, 1)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
