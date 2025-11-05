@@ -20,7 +20,7 @@ from ....lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 class TestHarness(Component):
-  def construct(s, MemUnit, DataType, PredicateType, CtrlPktType,
+  def construct(s, MemUnit, DataType, CtrlPktType,
                 CgraPayloadType, CtrlSignalType, ctrl_mem_size,
                 data_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, src0_msgs,
@@ -138,7 +138,6 @@ def test_ctrl():
 
   th = TestHarness(MemUnit,
                    DataType,
-                   PredicateType,
                    IntraCgraPktType,
                    CgraPayloadType,
                    CtrlType,
@@ -163,7 +162,6 @@ def test_ctrl_bound():
   MemUnit = CtrlMemDynamicRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
-  PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
   num_fu_inports = 2
   num_fu_outports = 2
@@ -230,7 +228,6 @@ def test_ctrl_bound():
   
   th = TestHarness(MemUnit,
                    DataType,
-                   PredicateType,
                    IntraCgraPktType,
                    CgraPayloadType,
                    CtrlType,
@@ -255,7 +252,6 @@ def test_return():
   MemUnit = CtrlMemDynamicRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
-  PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
   num_fu_inports = 2
   num_fu_outports = 2
@@ -325,7 +321,6 @@ def test_return():
 
   th = TestHarness(MemUnit,
                    DataType,
-                   PredicateType,
                    IntraCgraPktType,
                    CgraPayloadType,
                    CtrlType,

@@ -23,7 +23,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, NocPktType, CgraPayloadType, DataType, DataAddrType,
+  def construct(s, NocPktType, DataType, DataAddrType,
                 data_mem_size_global, data_mem_size_per_bank, num_banks,
                 rd_tiles, wr_tiles, num_cgra_rows, num_cgra_columns,
                 num_tiles,
@@ -209,7 +209,6 @@ def test_mem_controller(cmdline_opts):
   ]
 
   th = TestHarness(InterCgraPktType,
-                   CgraPayloadType,
                    DataType,
                    DataAddrType,
                    data_mem_size_global,
