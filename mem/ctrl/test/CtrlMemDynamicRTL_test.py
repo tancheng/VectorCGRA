@@ -42,8 +42,7 @@ class TestHarness(Component):
                          ctrl_count_per_iter, total_ctrl_steps_val)
 
     # Connections.
-    if isinstance(s.fu, RetRTL):
-      s.fu.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
+    s.fu.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
     s.fu.recv_opt //= s.ctrl_mem.send_ctrl
     s.src_pkt.send //= s.ctrl_mem.recv_pkt_from_controller
     s.complete_signal_sink_out.recv //= s.ctrl_mem.send_pkt_to_controller
