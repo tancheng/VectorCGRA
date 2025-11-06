@@ -21,7 +21,7 @@ from ....lib.opt_type import *
 #-------------------------------------------------------------------------
 class TestHarness(Component):
   def construct(s, MemUnit, CtrlPktType,
-                CtrlSignalType, ctrl_mem_size,
+                ctrl_mem_size,
                 data_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, src0_msgs,
                 src1_msgs, ctrl_pkts, sink_msgs, num_tiles,
@@ -29,6 +29,7 @@ class TestHarness(Component):
                 total_ctrl_steps_val, FuType):
 
     CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
     DataType = CgraPayloadType.get_field_type(kAttrData)
     s.src_data0 = TestSrcRTL(DataType, src0_msgs)
     s.src_data1 = TestSrcRTL(DataType, src1_msgs)
@@ -140,7 +141,6 @@ def test_ctrl():
 
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,
@@ -228,7 +228,6 @@ def test_ctrl_bound():
   
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,
@@ -319,7 +318,6 @@ def test_return():
 
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,

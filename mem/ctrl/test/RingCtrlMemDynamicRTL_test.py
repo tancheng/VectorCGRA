@@ -24,11 +24,13 @@ from ....lib.opt_type import *
 class TestHarness(Component):
 
   def construct(s, DUT, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+                ctrl_mem_size,
                 width, height, num_fu_inports,
                 num_fu_outports, num_tile_inports, num_tile_outports,
                 ctrl_pkts, sink_msgs):
 
+    CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
     s.width = width
     s.height = height
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
@@ -158,8 +160,6 @@ def test_Ctrl():
 
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
-                   CgraPayloadType,
-                   CtrlType,
                    ctrl_mem_size,
                    width,
                    height,

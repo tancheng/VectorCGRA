@@ -23,9 +23,10 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, InterCgraPktType, ControllerXbarPktType,
+  def construct(s, InterCgraPktType,
                 input_count, input_data, expected_output):
 
+    ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
     s.src_count = TestSrcRTL(InterCgraPktType, input_count)
     s.src_data = TestSrcRTL(InterCgraPktType, input_data)
 
@@ -167,7 +168,6 @@ def test_simple(cmdline_opts):
   ]
 
   th = TestHarness(InterCgraPktType,
-                   ControllerXbarPktType,
                    input_count,
                    input_data,
                    expected_output)

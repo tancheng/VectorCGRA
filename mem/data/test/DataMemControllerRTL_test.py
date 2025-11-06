@@ -23,7 +23,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, NocPktType, DataType, DataAddrType,
+  def construct(s, NocPktType,
                 data_mem_size_global, data_mem_size_per_bank, num_banks,
                 rd_tiles, wr_tiles, num_cgra_rows, num_cgra_columns,
                 num_tiles,
@@ -31,6 +31,9 @@ class TestHarness(Component):
                 write_data, noc_recv_load,
                 send_to_noc_load_request_pkt, send_to_noc_store_pkt):
 
+    CgraPayloadType = NocPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
     s.num_banks = num_banks
     s.rd_tiles = rd_tiles
     s.wr_tiles = wr_tiles
@@ -209,8 +212,6 @@ def test_mem_controller(cmdline_opts):
   ]
 
   th = TestHarness(InterCgraPktType,
-                   DataType,
-                   DataAddrType,
                    data_mem_size_global,
                    data_mem_size_per_bank,
                    num_banks,
