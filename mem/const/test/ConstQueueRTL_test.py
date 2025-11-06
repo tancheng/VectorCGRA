@@ -25,7 +25,7 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, DataType, PredicateType, ConfigType, src0_msgs,
+  def construct(s, DataType, ConfigType, src0_msgs,
                 src_const, ctrl_msgs, sink_msgs):
 
     s.src_in0 = ValRdyTestSrcRTL(DataType, src0_msgs)
@@ -81,6 +81,6 @@ def test_const_queue():
   src_opt =   [ConfigType(OPT_ADD, pickRegister),
                ConfigType(OPT_ADD, pickRegister),
                ConfigType(OPT_SUB, pickRegister)]
-  th = TestHarness(DataType, PredicateType, ConfigType, src_in0,
+  th = TestHarness(DataType, ConfigType, src_in0,
                    src_const, src_opt, sink_out)
   run_sim(th)

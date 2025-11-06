@@ -21,7 +21,7 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, bw, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, ctrl_msgs, sink_msgs0):
 
@@ -87,7 +87,7 @@ def test_vector_mul_combo():
               CtrlType(OPT_VEC_MUL_COMBINED, pickRegister),
               CtrlType(OPT_VEC_MUL,          pickRegister)]
 
-  th = TestHarness(FU, DataType, bw, PredType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_opt, sink_out)
   run_sim(th)

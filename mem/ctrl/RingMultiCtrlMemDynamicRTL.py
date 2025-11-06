@@ -36,7 +36,7 @@ class RingMultiCtrlMemDynamicRTL(Component):
 
     # Components
     s.ctrl_memories = [
-        CtrlMemDynamicRTL(CtrlPktType, CgraPayloadType,
+        CtrlMemDynamicRTL(CtrlPktType,
                           ctrl_mem_size, num_fu_inports,
                           num_fu_outports, num_tile_inports,
                           num_tile_outports, 1, num_tiles, ctrl_count_per_iter,

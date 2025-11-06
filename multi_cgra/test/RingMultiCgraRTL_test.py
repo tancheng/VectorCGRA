@@ -28,15 +28,16 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                data_nbits, cgra_rows, cgra_columns, width, height, ctrl_mem_size,
+  def construct(s, DUT, FunctionUnit, FuList,
+                IntraCgraPktType,
+                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, mem_access_is_combinational,
                 controller2addr_map,
                 complete_signal_sink_out):
 
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     s.num_cgras = cgra_rows * cgra_columns
     s.num_tiles = width * height
 
@@ -206,9 +207,8 @@ def test_homo_1x4(cmdline_opts):
     src_ctrl_pkt.extend(opt_per_tile)
 
   mem_access_is_combinational = True
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType, IntraCgraPktType,
-                   CgraPayloadType, CtrlType, InterCgraPktType,
-                   data_nbits, num_cgra_rows, num_cgra_columns,
+  th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
+                   num_cgra_rows, num_cgra_columns,
                    width, height, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,

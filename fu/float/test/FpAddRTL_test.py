@@ -54,7 +54,7 @@ def test_elaborate(cmdline_opts):
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredType, ConfigType,
+  def construct(s, FunctionUnit, DataType, ConfigType,
                 data_bitwidth, num_inports, num_outports,
                 data_mem_size, ctrl_mem_size,
                 exp_nbits, sig_nbits,
@@ -113,7 +113,7 @@ def test_add_basic():
   src_opt       = [ConfigType(OPT_FADD_CONST, pick_register),
                    ConfigType(OPT_FSUB,       pick_register),
                    ConfigType(OPT_FADD_CONST, pick_register)]
-  th = TestHarness(FU, DataType, PredType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    data_bitwidth, num_inports, num_outports,
                    data_mem_size, ctrl_mem_size,
                    exp_nbits, sig_nbits,

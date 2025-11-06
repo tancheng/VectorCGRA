@@ -21,7 +21,7 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 CgraPayloadType,
                 num_inports, num_outports,
                 data_mem_size,
@@ -95,7 +95,7 @@ def test_Ret():
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
   sink =    [CgraPayloadType(CMD_COMPLETE, data = DataType(2, 1), ctrl = CtrlType(OPT_RET, [FuInType(1), FuInType(0)]))] # , DataType(2, 1), DataType(3, 0)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, CgraPayloadType,
+  th = TestHarness(FU, DataType, CtrlType, CgraPayloadType,
                    num_inports, num_outports, data_mem_size, ctrl_mem_size,
                    data_nbits, src_in, src_opt, sink)
   run_sim(th)
