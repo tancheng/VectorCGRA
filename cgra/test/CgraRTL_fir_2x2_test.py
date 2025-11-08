@@ -734,3 +734,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
 def test_homogeneous_2x2_fir_combinational_mem_access_return(cmdline_opts):
   sim_fir_return(cmdline_opts, mem_access_is_combinational = True)
+
+def test_homogeneous_2x2_fir_non_combinational_mem_access_return(cmdline_opts):
+  sim_fir_return(cmdline_opts, mem_access_is_combinational = False)

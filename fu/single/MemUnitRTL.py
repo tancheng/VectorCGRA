@@ -147,7 +147,9 @@ class MemUnitRTL(Component):
         elif s.recv_opt.msg.operation == OPT_ADD_CONST_LD:
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
-          s.recv_const.rdy @= s.recv_all_val & s.to_mem_raddr.rdy
+          # It is okay to always set recv_const.rdy=1 here, because the const queue
+          # would only proceed once the operation is done executing.
+          s.recv_const.rdy @= 1
           s.to_mem_raddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits] +
                                          s.recv_const.msg.payload[0:AddrType.nbits])
           # Do not access memory by setting raddr.val=0 if the raddr has predicate=0.
@@ -179,7 +181,9 @@ class MemUnitRTL(Component):
         # LD_CONST indicates the address is a const.
         elif s.recv_opt.msg.operation == OPT_LD_CONST:
           s.recv_all_val @= s.recv_const.val
-          s.recv_const.rdy @= s.recv_all_val & s.to_mem_raddr.rdy
+          # It is okay to always set recv_const.rdy=1 here, because the const queue
+          # would only proceed once the operation is done executing.
+          s.recv_const.rdy @= 1
           s.to_mem_raddr.msg @= AddrType(s.recv_const.msg.payload[0:AddrType.nbits])
           s.to_mem_raddr.val @= s.recv_all_val & ~s.already_sent_raddr
           s.from_mem_rdata.rdy @= s.send_out[0].rdy
