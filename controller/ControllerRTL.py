@@ -16,7 +16,8 @@ from ..lib.messages import *
 from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
+# from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
+from ..noc.PyOCN.pymtl3_net.xbar.XbarRTL import XbarRTL
 
 from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
 from ..lib.util.data_struct_attr import *
@@ -88,7 +89,7 @@ class ControllerRTL(Component):
     # memory, load response from local memory, ctrl&data packet from cpu,
     # and command signal from inter-tile, i.e., intra-cgra, ring) and 1 
     # outport (only allow one request be sent out per cycle).
-    s.crossbar = XbarBypassQueueRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
+    s.crossbar = XbarRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
