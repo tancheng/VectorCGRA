@@ -120,7 +120,7 @@ class LoopControlRTL(Fu):
           if s.is_first_iter:
             # First iteration: output start value
             output_idx = s.start_value
-            s.next_index @= s.start_value + s.step_value
+            s.next_index @= s.start_value
             # Check if start is within bounds
             if s.start_value < s.end_value:
               s.loop_active @= b1(1)
