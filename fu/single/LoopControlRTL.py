@@ -101,53 +101,63 @@ class LoopControlRTL(Fu):
           # Get inputs:
           # recv_in[0]: parent_valid predicate
           # recv_in[1]: start value
-          # recv_in[2]: end value  
-          # recv_in[3]: step value
-          parent_valid = s.recv_in[0].msg.predicate if s.recv_in[0].val else PredicateType(0)
-          
-          # Read loop parameters from input ports
-          if s.recv_in[1].val:
-            s.start_value @= s.recv_in[1].msg.payload
-          if s.recv_in[2].val:
-            s.end_value @= s.recv_in[2].msg.payload
-          if s.recv_in[3].val:
-            s.step_value @= s.recv_in[3].msg.payload
-          
-          # Detect first iteration: current_index == 0 or predicate was 0
-          s.is_first_iter @= (s.current_index == PayloadType(0))
-          
-          # Compute next index and validity
-          current_idx = s.current_index
-          
-          if s.is_first_iter:
-            # First iteration: output start value
-            output_idx = s.start_value
-            s.next_index @= s.start_value
-            # Check if start is within bounds
-            # Handle both positive and negative step values
-            if s.step_value > PayloadType(0):
-              valid = s.start_value < s.end_value
-            elif s.step_value < PayloadType(0):
-              valid = s.start_value > s.end_value
-            else:
-              valid = b1(0)  # step == 0, invalid loop
-            s.loop_active @= b1(valid)
-            s.loop_valid @= parent_valid & PredicateType(valid)
+      # Only process when all required inputs are valid
+      all_inputs_valid = (
+        s.recv_opt.val and
+        s.recv_opt.msg.operation == OPT_LOOP_CONTROL and
+        s.recv_in[0].val and
+        s.recv_in[1].val and
+        s.recv_in[2].val and
+        s.recv_in[3].val
+      )
+
+      if all_inputs_valid:
+        parent_valid = s.recv_in[0].msg.predicate
+        s.start_value @= s.recv_in[1].msg.payload
+        s.end_value @= s.recv_in[2].msg.payload
+        s.step_value @= s.recv_in[3].msg.payload
+
+        # Detect first iteration: current_index == 0 or predicate was 0
+        s.is_first_iter @= (s.current_index == PayloadType(0))
+
+        # Compute next index and validity
+        current_idx = s.current_index
+
+        if s.is_first_iter:
+          # First iteration: output start value
+          output_idx = s.start_value
+          s.next_index @= s.start_value + s.step_value
+          # Check if start is within bounds
+          if s.start_value < s.end_value:
+            s.loop_active @= b1(1)
+            s.loop_valid @= parent_valid
           else:
-            # Subsequent iterations: output current index
-            output_idx = current_idx
-            s.next_index @= current_idx + s.step_value
-            # Check if current index is within bounds
-            if s.step_value > PayloadType(0):
-              valid = current_idx < s.end_value
-            elif s.step_value < PayloadType(0):
-              valid = current_idx > s.end_value
-            else:
-              valid = b1(0)  # step == 0, invalid loop
-            s.loop_active @= b1(valid)
-            s.loop_valid @= parent_valid & PredicateType(valid)
-          
-          # Output 0: current loop index with predicate
+            s.loop_active @= b1(0)
+            s.loop_valid @= PredicateType(0)
+        else:
+          # Subsequent iterations: output current index
+          output_idx = current_idx
+          s.next_index @= current_idx + s.step_value
+          # Check if current index is within bounds
+          if current_idx < s.end_value:
+            s.loop_active @= b1(1)
+            s.loop_valid @= parent_valid
+          else:
+            s.loop_active @= b1(0)
+            s.loop_valid @= PredicateType(0)
+
+        # Output 0: current loop index with predicate
+        # (rest of output logic unchanged)
+
+        # Set ready signals for inputs when all inputs are consumed
+        for i in range(4):
+          s.recv_in[i].rdy @= b1(1)
+        s.recv_opt.rdy @= b1(1)
+      else:
+        # Not all inputs valid, outputs remain default, ready signals low
+        for i in range(4):
+          s.recv_in[i].rdy @= b1(0)
+        s.recv_opt.rdy @= b1(0)
           s.send_out[0].msg.payload @= output_idx
           s.send_out[0].msg.predicate @= s.loop_valid & s.reached_vector_factor
           s.send_out[0].val @= b1(1)
