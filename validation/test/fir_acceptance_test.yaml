@@ -190,9 +190,9 @@ array_config:
               operations:
                 - opcode: "GRANT_PREDICATE"
                   src_operands:
-                    - operand: "SOUTH"
-                      color: "RED"
                     - operand: "$8"
+                      color: "RED"
+                    - operand: "SOUTH"
                       color: "RED"
                   dst_operands:
                     - operand: "WEST"

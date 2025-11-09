@@ -10,6 +10,7 @@ Author : Cheng Tan
 """
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
+from pymtl3.passes.sim.PrepareSimPass import b1
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
@@ -172,7 +173,7 @@ num_cgra_columns = 4
 num_cgra_rows = 1
 num_cgras = num_cgra_columns * num_cgra_rows
 num_ctrl_operations = 64
-num_registers_per_reg_bank = 16
+num_registers_per_reg_bank = 8
 TileInType = mk_bits(clog2(num_tile_inports + 1))
 FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
@@ -938,8 +939,42 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
   ---------------------------------------------------
   '''
+  
+  from ...validation.script_generator import ScriptFactory
+  script_factory = ScriptFactory(path = "./validation/test/fir_acceptance_test.yaml",
+                                    CtrlType = CtrlType,
+                                    IntraCgraPktType = IntraCgraPktType,
+                                    CgraPayloadType = CgraPayloadType,
+                                    TileInType = TileInType,
+                                    FuOutType = FuOutType,
+                                    CMD_CONFIG_input = CMD_CONFIG,
+                                    FuInType=FuInType,
+                                    ii = kCtrlCountPerIter,
+                                    loop_times = kTotalCtrlSteps,
+                                    CMD_CONST_input = CMD_CONST,
+                                    CMD_CONFIG_COUNT_PER_ITER_input = CMD_CONFIG_COUNT_PER_ITER,
+                                    CMD_CONFIG_TOTAL_CTRL_COUNT_input = CMD_CONFIG_TOTAL_CTRL_COUNT,
+                                    CMD_CONFIG_PROLOGUE_FU_input = CMD_CONFIG_PROLOGUE_FU,
+                                    CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input = CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR,
+                                    CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input = CMD_CONFIG_PROLOGUE_FU_CROSSBAR,
+                                    CMD_LAUNCH_input = CMD_LAUNCH,
+                                    DataType = DataType,
+                                    B1Type = b1,
+                                    B2Type = b2,
+                                    RegIdxType = RegIdxType,
+                                    CtrlAddrType = CtrlAddrType,
+                                    DataAddrType = DataAddrType,
+                                    num_registers_per_reg_bank = num_registers_per_reg_bank)
+  
+  src_opt_pkt0_ = script_factory.makeVectorCGRAPkts()
+                                                                   
+  # order the packets according to the x (first) and y (second) coordinates
+  src_opt_pkt0 = []
+  for x, y in src_opt_pkt0_:
+    src_opt_pkt0.append(src_opt_pkt0_[(x, y)])
 
-  src_opt_pkt = [
+
+  src_opt_pkt1 = [
       # tile 0
       [
           # Const for PHI_CONST.
@@ -1005,9 +1040,11 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
                                                      data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
-                                                     data = DataType(1, 1))),
+
+          # IntraCgraPktType(0, 0,
+          #                 payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
+          #                                           data = DataType(1, 1))),
+          
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
@@ -1020,13 +1057,14 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
                                                      data = DataType(1, 1))),
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
-                                                     ctrl = CtrlType(fu_xbar_outport = [
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-                                                     data = DataType(1, 1))),
-
+          
+          #IntraCgraPktType(0, 0,
+          #                 payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
+          #                           ctrl = CtrlType(fu_xbar_outport = [
+          #                               FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+          #                               FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+          #                            data = DataType(1, 1))),
+          
           # Launch the tile.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
       ],
@@ -1377,9 +1415,12 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           # IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
       ]
 
+  print("src_opt_pkt0: ", src_opt_pkt0)
+  print("src_opt_pkt1: ", src_opt_pkt1)
+
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
-  for src_opt in src_opt_pkt:
+  for src_opt in src_opt_pkt0:
       src_ctrl_pkt.extend(src_opt)
 
   complete_signal_sink_out.extend(expected_complete_sink_out_pkg)

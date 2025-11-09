@@ -160,3 +160,24 @@ class B2TypeDummy:
         
     def __str__(self):
         return f"b2({self.params})"
+    
+class RegIdxTypeDummy:
+    def __init__(self, params):
+        self.params = params
+        
+    def __str__(self):
+        return f"{self.params}"
+    
+class CtrlAddrTypeDummy:
+    def __init__(self, params):
+        self.params = params
+        
+    def __str__(self):
+        return f"{self.params}"
+    
+class DataAddrTypeDummy:
+    def __init__(self, params):
+        self.params = params
+        
+    def __str__(self):
+        return f"{self.params}"
