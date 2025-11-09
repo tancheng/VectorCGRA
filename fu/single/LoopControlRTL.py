@@ -81,11 +81,28 @@ class LoopControlRTL(Fu):
         s.current_index <<= PayloadType(0)
         s.loop_initialized <<= b1(0)
       else:
+        # Compute indices locally for sequential logic to avoid using stale wire values
+        in0_idx_ff = s.in0
+        in1_idx_ff = s.in1
+        in2_idx_ff = s.in2
+        in3_idx_ff = s.in3
+        
+        # Update from recv_opt if valid
+        if s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
+          if s.recv_opt.msg.fu_in[0] != 0:
+            in0_idx_ff = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
+          if s.recv_opt.msg.fu_in[1] != 0:
+            in1_idx_ff = zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
+          if s.recv_opt.msg.fu_in[2] != 0:
+            in2_idx_ff = zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
+          if s.recv_opt.msg.fu_in[3] != 0:
+            in3_idx_ff = zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
+        
         # Update state when we successfully process inputs
         # Check if valid operation is present and inputs are available
         if ( s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_CONTROL
-             and s.recv_in[s.in0_idx].val and s.recv_in[s.in1_idx].val
-             and s.recv_in[s.in2_idx].val and s.recv_in[s.in3_idx].val
+             and s.recv_in[in0_idx_ff].val and s.recv_in[in1_idx_ff].val
+             and s.recv_in[in2_idx_ff].val and s.recv_in[in3_idx_ff].val
              and s.send_out[0].rdy ):
           # Update current index after sending output
           s.current_index <<= s.next_index
