@@ -175,9 +175,9 @@ class LoopControlRTL(Fu):
           s.recv_in[3].rdy @= s.send_out[0].rdy
           s.recv_opt.rdy @= s.send_out[0].rdy
 
-  def line_trace(s):
+  def line_trace(self):
     opt_str = " #"
-    if s.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT.get(s.recv_opt.msg.operation, f"(op:{s.recv_opt.msg.operation})")
-    out_str = ",".join([f"{x.msg.payload}:{x.msg.predicate}" for x in s.send_out if x.val])
-    return f'[LC: idx={s.current_index}, nxt={s.next_index}, valid={s.loop_valid}] {opt_str} -> [{out_str}]'
+    if self.recv_opt.val:
+      opt_str = OPT_SYMBOL_DICT.get(self.recv_opt.msg.operation, f"(op:{self.recv_opt.msg.operation})")
+    out_str = ",".join([f"{x.msg.payload}:{x.msg.predicate}" for x in self.send_out if x.val])
+    return f'[LC: idx={self.current_index}, nxt={self.next_index}, valid={self.loop_valid}] {opt_str} -> [{out_str}]'
