@@ -51,14 +51,16 @@ class LoopControlRTL(Fu):
     s.end_value = Wire(PayloadType)
     s.step_value = Wire(PayloadType)
     
-    # For first iteration detection
+    # For first iteration detection - use sequential state flag
     s.is_first_iter = Wire(b1)
+    s.loop_initialized = Wire(b1)  # Tracks if loop has started
     
-    # Sequential state for tracking current index
+    # Sequential state for tracking current index and initialization
     @update_ff
     def update_index():
       if s.reset:
         s.current_index <<= PayloadType(0)
+        s.loop_initialized <<= b1(0)
       else:
         if ( s.recv_opt.val and s.send_out[0].rdy
              and s.recv_in[0].val and s.recv_in[1].val
@@ -66,6 +68,12 @@ class LoopControlRTL(Fu):
           if s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
             # Update current index after sending output
             s.current_index <<= s.next_index
+            # Mark loop as initialized after first iteration
+            if s.is_first_iter:
+              s.loop_initialized <<= b1(1)
+            # Reset initialization when loop completes (valid becomes 0)
+            elif not s.loop_valid:
+              s.loop_initialized <<= b1(0)
     
     @update
     def comb_logic():
@@ -89,18 +97,11 @@ class LoopControlRTL(Fu):
       s.is_first_iter @= b1(0)
       s.next_index @= PayloadType(0)
       
-      # Extract loop parameters from constant or operation attributes
-      # These would typically come from the recv_const interface or
-      # embedded in the operation configuration
+      # Extract loop parameters - default values
       s.start_value @= PayloadType(0)
       s.end_value @= PayloadType(0)
       s.step_value @= PayloadType(1)
 
-      if s.recv_opt.val:
-        if s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
-          # Get inputs:
-          # recv_in[0]: parent_valid predicate
-          # recv_in[1]: start value
       # Only process when all required inputs are valid
       all_inputs_valid = (
         s.recv_opt.val and
@@ -112,13 +113,19 @@ class LoopControlRTL(Fu):
       )
 
       if all_inputs_valid:
+        # Get inputs:
+        # recv_in[0]: parent_valid predicate
+        # recv_in[1]: start value
+        # recv_in[2]: end value  
+        # recv_in[3]: step value
         parent_valid = s.recv_in[0].msg.predicate
         s.start_value @= s.recv_in[1].msg.payload
         s.end_value @= s.recv_in[2].msg.payload
         s.step_value @= s.recv_in[3].msg.payload
 
-        # Detect first iteration: current_index == 0 or predicate was 0
-        s.is_first_iter @= (s.current_index == PayloadType(0))
+        # Detect first iteration: loop not yet initialized
+        # This correctly handles start_value=0 and loop reinvocation
+        s.is_first_iter @= ~s.loop_initialized
 
         # Compute next index and validity
         current_idx = s.current_index
@@ -147,37 +154,24 @@ class LoopControlRTL(Fu):
             s.loop_valid @= PredicateType(0)
 
         # Output 0: current loop index with predicate
-        # (rest of output logic unchanged)
-
+        s.send_out[0].msg.payload @= output_idx
+        s.send_out[0].msg.predicate @= s.loop_valid & s.reached_vector_factor
+        s.send_out[0].val @= b1(1)
+        
+        # Output 1: loop_valid (boolean predicate indicating if loop should continue)
+        if num_outports > 1:
+          s.send_out[1].msg.payload @= zext(s.loop_valid, PayloadType)
+          s.send_out[1].msg.predicate @= s.reached_vector_factor
+          s.send_out[1].val @= b1(1)
+        
         # Set ready signals for inputs when all inputs are consumed
         for i in range(4):
           s.recv_in[i].rdy @= b1(1)
         s.recv_opt.rdy @= b1(1)
-      else:
-        # Not all inputs valid, outputs remain default, ready signals low
-        for i in range(4):
-          s.recv_in[i].rdy @= b1(0)
-        s.recv_opt.rdy @= b1(0)
-          s.send_out[0].msg.payload @= output_idx
-          s.send_out[0].msg.predicate @= s.loop_valid & s.reached_vector_factor
-          s.send_out[0].val @= b1(1)
-          
-          # Output 1: loop_valid (boolean predicate indicating if loop should continue)
-          if num_outports > 1:
-            s.send_out[1].msg.payload @= zext(s.loop_valid, PayloadType)
-            s.send_out[1].msg.predicate @= s.reached_vector_factor
-            s.send_out[1].val @= b1(1)
-          
-          # Ready signals - all inputs consumed together
-          s.recv_in[0].rdy @= s.recv_in[0].val & s.send_out[0].rdy
-          s.recv_in[1].rdy @= s.recv_in[1].val & s.send_out[0].rdy
-          s.recv_in[2].rdy @= s.recv_in[2].val & s.send_out[0].rdy
-          s.recv_in[3].rdy @= s.recv_in[3].val & s.send_out[0].rdy
-          s.recv_opt.rdy @= s.send_out[0].rdy
 
-  def line_trace(self):
+  def line_trace(s):
     opt_str = " #"
-    if self.recv_opt.val:
-      opt_str = OPT_SYMBOL_DICT.get(self.recv_opt.msg.operation, f"(op:{self.recv_opt.msg.operation})")
-    out_str = ",".join([f"{x.msg.payload}:{x.msg.predicate}" for x in self.send_out if x.val])
-    return f'[LC: idx={self.current_index}, nxt={self.next_index}, valid={self.loop_valid}] {opt_str} -> [{out_str}]'
+    if s.recv_opt.val:
+      opt_str = OPT_SYMBOL_DICT.get(s.recv_opt.msg.operation, f"(op:{s.recv_opt.msg.operation})")
+    out_str = ",".join([f"{x.msg.payload}:{x.msg.predicate}" for x in s.send_out if x.val])
+    return f'[LC: idx={s.current_index}, nxt={s.next_index}, valid={s.loop_valid}] {opt_str} -> [{out_str}]'
