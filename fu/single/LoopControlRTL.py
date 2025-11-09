@@ -60,7 +60,9 @@ class LoopControlRTL(Fu):
       if s.reset:
         s.current_index <<= PayloadType(0)
       else:
-        if s.recv_opt.val and s.send_out[0].rdy:
+        if ( s.recv_opt.val and s.send_out[0].rdy
+             and s.recv_in[0].val and s.recv_in[1].val
+             and s.recv_in[2].val and s.recv_in[3].val ):
           if s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
             # Update current index after sending output
             s.current_index <<= s.next_index
