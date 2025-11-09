@@ -122,23 +122,28 @@ class LoopControlRTL(Fu):
             output_idx = s.start_value
             s.next_index @= s.start_value
             # Check if start is within bounds
-            if s.start_value < s.end_value:
-              s.loop_active @= b1(1)
-              s.loop_valid @= parent_valid
+            # Handle both positive and negative step values
+            if s.step_value > PayloadType(0):
+              valid = s.start_value < s.end_value
+            elif s.step_value < PayloadType(0):
+              valid = s.start_value > s.end_value
             else:
-              s.loop_active @= b1(0)
-              s.loop_valid @= PredicateType(0)
+              valid = b1(0)  # step == 0, invalid loop
+            s.loop_active @= b1(valid)
+            s.loop_valid @= parent_valid & PredicateType(valid)
           else:
             # Subsequent iterations: output current index
             output_idx = current_idx
             s.next_index @= current_idx + s.step_value
             # Check if current index is within bounds
-            if current_idx < s.end_value:
-              s.loop_active @= b1(1)
-              s.loop_valid @= parent_valid
+            if s.step_value > PayloadType(0):
+              valid = current_idx < s.end_value
+            elif s.step_value < PayloadType(0):
+              valid = current_idx > s.end_value
             else:
-              s.loop_active @= b1(0)
-              s.loop_valid @= PredicateType(0)
+              valid = b1(0)  # step == 0, invalid loop
+            s.loop_active @= b1(valid)
+            s.loop_valid @= parent_valid & PredicateType(valid)
           
           # Output 0: current loop index with predicate
           s.send_out[0].msg.payload @= output_idx
