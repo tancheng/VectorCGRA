@@ -21,7 +21,7 @@ array_config:
                       color: "RED"
                     - operand: "EAST"
                       color: "RED"
-            - timestep: 5
+            - timestep: 1
               operations:
                 - opcode: "PHI_CONST"
                   src_operands:
@@ -129,7 +129,7 @@ array_config:
       entries:
         - entry_id: "entry0"
           instructions:
-            - timestep: 4
+            - timestep: 0
               operations:
                 - opcode: "PHI_CONST"
                   src_operands:
