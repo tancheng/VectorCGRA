@@ -48,8 +48,8 @@ class TestHarness(Component):
   def done(s):
     return s.src_parent_valid.done() and s.sink_index.done() and s.sink_valid.done()
 
-  def line_trace(s):
-    return s.dut.line_trace()
+  def line_trace(self):
+    return self.dut.line_trace()
 
 def run_sim(test_harness, max_cycles = 100):
   test_harness.elaborate()
