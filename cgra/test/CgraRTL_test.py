@@ -22,6 +22,7 @@ from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
+from ...fu.single.LoopControlRTL import LoopControlRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
@@ -640,6 +641,17 @@ def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
   th = init_param(topology)
   th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL, MemUnitRTL])
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_heterogeneous_with_loop_control(cmdline_opts):
+  topology = "KingMesh"
+  th = init_param(topology)
+  th.set_param("top.dut.tile[1].construct", FuList=[ShifterRTL, AdderRTL, MemUnitRTL, LoopControlRTL])
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',

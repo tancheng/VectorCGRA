@@ -39,6 +39,7 @@ class LoopControlRTL(Fu):
 
     PayloadType = DataType.get_field_type('payload')
     PredicateType = DataType.get_field_type('predicate')
+    FuInType = mk_bits(clog2(num_inports + 1))
     
     # Internal state for loop control
     s.current_index = Wire(PayloadType)
@@ -51,9 +52,27 @@ class LoopControlRTL(Fu):
     s.end_value = Wire(PayloadType)
     s.step_value = Wire(PayloadType)
     
+    # Configurable input operand indices
+    s.in0 = Wire(FuInType)  # parent_valid
+    s.in1 = Wire(FuInType)  # start
+    s.in2 = Wire(FuInType)  # end
+    s.in3 = Wire(FuInType)  # step
+    s.in0_idx = Wire(FuInType)
+    s.in1_idx = Wire(FuInType)
+    s.in2_idx = Wire(FuInType)
+    s.in3_idx = Wire(FuInType)
+    
     # For first iteration detection - use sequential state flag
     s.is_first_iter = Wire(b1)
     s.loop_initialized = Wire(b1)  # Tracks if loop has started
+    
+    # Compute actual indices from configurable operand indices
+    @update
+    def update_indices():
+      s.in0_idx @= s.in0
+      s.in1_idx @= s.in1
+      s.in2_idx @= s.in2
+      s.in3_idx @= s.in3
     
     # Sequential state for tracking current index and initialization
     @update_ff
@@ -63,8 +82,8 @@ class LoopControlRTL(Fu):
         s.loop_initialized <<= b1(0)
       else:
         if ( s.recv_opt.val and s.send_out[0].rdy
-             and s.recv_in[0].val and s.recv_in[1].val
-             and s.recv_in[2].val and s.recv_in[3].val ):
+             and s.recv_in[s.in0_idx].val and s.recv_in[s.in1_idx].val
+             and s.recv_in[s.in2_idx].val and s.recv_in[s.in3_idx].val ):
           if s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
             # Update current index after sending output
             s.current_index <<= s.next_index
@@ -102,26 +121,37 @@ class LoopControlRTL(Fu):
       s.end_value @= PayloadType(0)
       s.step_value @= PayloadType(1)
 
+      # Configure input operand indices from operation message
+      if s.recv_opt.val:
+        if s.recv_opt.msg.fu_in[0] != 0:
+          s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
+        if s.recv_opt.msg.fu_in[1] != 0:
+          s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
+        if s.recv_opt.msg.fu_in[2] != 0:
+          s.in2 @= zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
+        if s.recv_opt.msg.fu_in[3] != 0:
+          s.in3 @= zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
+
       # Only process when all required inputs are valid
       all_inputs_valid = (
         s.recv_opt.val and
         s.recv_opt.msg.operation == OPT_LOOP_CONTROL and
-        s.recv_in[0].val and
-        s.recv_in[1].val and
-        s.recv_in[2].val and
-        s.recv_in[3].val
+        s.recv_in[s.in0_idx].val and
+        s.recv_in[s.in1_idx].val and
+        s.recv_in[s.in2_idx].val and
+        s.recv_in[s.in3_idx].val
       )
 
       if all_inputs_valid:
         # Get inputs:
-        # recv_in[0]: parent_valid predicate
-        # recv_in[1]: start value
-        # recv_in[2]: end value  
-        # recv_in[3]: step value
-        parent_valid = s.recv_in[0].msg.predicate
-        s.start_value @= s.recv_in[1].msg.payload
-        s.end_value @= s.recv_in[2].msg.payload
-        s.step_value @= s.recv_in[3].msg.payload
+        # recv_in[in0]: parent_valid predicate
+        # recv_in[in1]: start value
+        # recv_in[in2]: end value  
+        # recv_in[in3]: step value
+        parent_valid = s.recv_in[s.in0_idx].msg.predicate
+        s.start_value @= s.recv_in[s.in1_idx].msg.payload
+        s.end_value @= s.recv_in[s.in2_idx].msg.payload
+        s.step_value @= s.recv_in[s.in3_idx].msg.payload
 
         # Detect first iteration: loop not yet initialized
         # This correctly handles start_value=0 and loop reinvocation
@@ -165,8 +195,10 @@ class LoopControlRTL(Fu):
           s.send_out[1].val @= b1(1)
         
         # Set ready signals for inputs when all inputs are consumed
-        for i in range(4):
-          s.recv_in[i].rdy @= b1(1)
+        s.recv_in[s.in0_idx].rdy @= b1(1)
+        s.recv_in[s.in1_idx].rdy @= b1(1)
+        s.recv_in[s.in2_idx].rdy @= b1(1)
+        s.recv_in[s.in3_idx].rdy @= b1(1)
         s.recv_opt.rdy @= b1(1)
 
   def line_trace(s):

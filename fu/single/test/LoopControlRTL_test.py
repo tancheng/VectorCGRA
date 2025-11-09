@@ -12,8 +12,8 @@ from pymtl3 import *
 from ..LoopControlRTL import LoopControlRTL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
-from ....lib.messages import DataType, CtrlType
-from ....lib.opt_type import OptType, OPT_ADD, OPT_SUB, OPT_MUL, OPT_DIV  # Replace with actual used names
+from ....lib.messages import *
+from ....lib.opt_type import *
 
 #-------------------------------------------------------------------------
 # Test harness
