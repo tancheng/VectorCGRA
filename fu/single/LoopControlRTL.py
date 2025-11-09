@@ -14,7 +14,7 @@ Author : Shiran Guo
 
 from pymtl3 import *
 from ..basic.Fu import Fu
-from ...lib.opt_type import *
+from ...lib.opt_type import OPT_LOOP_CONTROL, OPT_SYMBOL_DICT
 
 class LoopControlRTL(Fu):
 
