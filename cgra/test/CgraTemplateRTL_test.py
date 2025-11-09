@@ -185,7 +185,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 6
+  ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 8
   width = paramCGRA.rows if paramCGRA != None else 2
   height = paramCGRA.columns if paramCGRA != None else 2
   data_mem_size_global = 512

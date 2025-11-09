@@ -37,8 +37,8 @@ class CtrlMemDynamicRTL(Component):
     # assert( ctrl_mem_size <= total_ctrl_steps )
 
     # Constants.
-    CtrlAddrType = mk_bits(clog2(max(ctrl_mem_size, ctrl_count_per_iter)))
-    PCType = mk_bits(clog2(ctrl_mem_size + 1))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     TimeType = mk_bits(clog2(MAX_CTRL_COUNT + 1))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
     TileInPortType = mk_bits(clog2(num_tile_inports))
@@ -68,9 +68,9 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
-    s.ctrl_count_per_iter_val = Wire(CtrlAddrType)
-    s.ctrl_count_lower_bound = Wire(CtrlAddrType)
-    s.ctrl_count_upper_bound = Wire(CtrlAddrType)
+    s.ctrl_count_per_iter_val = Wire(PCType)
+    s.ctrl_count_lower_bound = Wire(PCType)
+    s.ctrl_count_upper_bound = Wire(PCType)
     s.total_ctrl_steps_val = Wire(TimeType)
 
     s.prologue_count_reg_fu = [Wire(PrologueCountType) for _ in range(ctrl_mem_size)]
@@ -244,8 +244,8 @@ class CtrlMemDynamicRTL(Component):
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy & s.send_ctrl.val:
-            if s.reg_file.raddr[0] == s.ctrl_count_upper_bound - 1:
-              s.reg_file.raddr[0] <<= s.ctrl_count_lower_bound
+            if s.reg_file.raddr[0] == zext(s.ctrl_count_upper_bound - 1, CtrlAddrType):
+              s.reg_file.raddr[0] <<= zext(s.ctrl_count_lower_bound, CtrlAddrType)
             else:
               s.reg_file.raddr[0] <<= s.reg_file.raddr[0] + CtrlAddrType(1)
             if s.prologue_count_reg_fu[s.reg_file.raddr[0]] > 0:
@@ -283,16 +283,16 @@ class CtrlMemDynamicRTL(Component):
     @update_ff
     def update_ctrl_count_per_iter():
       if s.reset:
-        s.ctrl_count_per_iter_val <<= CtrlAddrType(ctrl_count_per_iter)
+        s.ctrl_count_per_iter_val <<= PCType(ctrl_count_per_iter)
       elif s.recv_pkt_from_controller_queue.send.val & (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER):
-        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, CtrlAddrType)
+        s.ctrl_count_per_iter_val <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PCType)
 
     @update_ff
     def update_lower_bound():
       if s.reset:
-        s.ctrl_count_lower_bound <<= CtrlAddrType(0)
+        s.ctrl_count_lower_bound <<= PCType(0)
       elif s.recv_pkt_from_controller_queue.send.val & (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND):
-        s.ctrl_count_lower_bound <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, CtrlAddrType)
+        s.ctrl_count_lower_bound <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PCType)
 
     @update
     def update_upper_bound():
