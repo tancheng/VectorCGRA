@@ -403,7 +403,38 @@ class TileSignals:
             if _type(dst_operand) == 'REG':
                 pkts.append(self.makePrologueFUCrossbarPackets(instruction))
         return pkts
+    
+    def makePhiConstProloguePackets(self, instruction):
+        print(f"Making phi const prologue packets for instruction {instruction}")
+        for operation in instruction['operations']:
+            if operation['opcode'] == 'PHI_CONST':
+                phi_const_operation = operation
+                break
+        if phi_const_operation is None:
+            raise ValueError("No PHI_CONST operation found")
+        try:
+            src_operands = phi_const_operation['src_operands']
+        except Exception as e:
+            src_operands = []
+            
+        pkts = []
         
+        for src_operand in src_operands:
+            if _type(src_operand) == 'PORT':
+                if src_operand['operand'] == 'NORTH':
+                    routing_xbar_idx = 0
+                elif src_operand['operand'] == 'SOUTH':
+                    routing_xbar_idx = 1
+                elif src_operand['operand'] == 'WEST':
+                    routing_xbar_idx = 2
+                elif src_operand['operand'] == 'EAST':
+                    routing_xbar_idx = 3
+                pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
+                
+        print(f"Phi const prologue packets: {pkts}")
+        return pkts
+    
+    
     def makePrologueFUPackets(self, instruction):
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = instruction['timestep'] % self.ii,
@@ -428,6 +459,14 @@ class TileSignals:
         for instruction in self.instructions:
             if instruction['timestep'] >= self.ii:
                 prologue_signals.extend(self.makeProloguePackets(instruction))
+            
+            has_phi_const = False # cope with special PHI_CONST operation
+            for operation in instruction['operations']:
+                if operation['opcode'] == 'PHI_CONST':
+                    has_phi_const = True
+                    break
+            if has_phi_const:
+                prologue_signals.extend(self.makePhiConstProloguePackets(instruction))
             
             instruction_signals = InstructionSignals(
                 id_ = self.id_,
