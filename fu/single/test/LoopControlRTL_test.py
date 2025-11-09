@@ -12,7 +12,7 @@ from pymtl3 import *
 from ..LoopControlRTL import LoopControlRTL
 from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
-from ....lib.messages import *
+from ....lib.messages import DataType, CtrlType
 from ....lib.opt_type import *
 
 #-------------------------------------------------------------------------
