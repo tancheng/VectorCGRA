@@ -81,18 +81,20 @@ class LoopControlRTL(Fu):
         s.current_index <<= PayloadType(0)
         s.loop_initialized <<= b1(0)
       else:
-        if ( s.recv_opt.val and s.send_out[0].rdy
+        # Update state when we successfully process inputs
+        # Check if valid operation is present and inputs are available
+        if ( s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_CONTROL
              and s.recv_in[s.in0_idx].val and s.recv_in[s.in1_idx].val
-             and s.recv_in[s.in2_idx].val and s.recv_in[s.in3_idx].val ):
-          if s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
-            # Update current index after sending output
-            s.current_index <<= s.next_index
-            # Mark loop as initialized after first iteration
-            if s.is_first_iter:
-              s.loop_initialized <<= b1(1)
-            # Reset initialization when loop completes (valid becomes 0)
-            elif not s.loop_valid:
-              s.loop_initialized <<= b1(0)
+             and s.recv_in[s.in2_idx].val and s.recv_in[s.in3_idx].val
+             and s.send_out[0].rdy ):
+          # Update current index after sending output
+          s.current_index <<= s.next_index
+          # Mark loop as initialized after first iteration
+          if s.is_first_iter:
+            s.loop_initialized <<= b1(1)
+          # Reset initialization when loop completes (valid becomes 0)
+          elif not s.loop_valid:
+            s.loop_initialized <<= b1(0)
     
     @update
     def comb_logic():
@@ -122,24 +124,35 @@ class LoopControlRTL(Fu):
       s.step_value @= PayloadType(1)
 
       # Configure input operand indices from operation message
+      # Set default indices first
+      in0_idx_local = s.in0_idx
+      in1_idx_local = s.in1_idx
+      in2_idx_local = s.in2_idx
+      in3_idx_local = s.in3_idx
+      
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
+          in0_idx_local = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
         if s.recv_opt.msg.fu_in[1] != 0:
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
+          in1_idx_local = zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
         if s.recv_opt.msg.fu_in[2] != 0:
           s.in2 @= zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
+          in2_idx_local = zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
         if s.recv_opt.msg.fu_in[3] != 0:
           s.in3 @= zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
+          in3_idx_local = zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
 
-      # Only process when all required inputs are valid
+      # Only process when all required inputs are valid AND output is ready
       all_inputs_valid = (
         s.recv_opt.val and
         s.recv_opt.msg.operation == OPT_LOOP_CONTROL and
-        s.recv_in[s.in0_idx].val and
-        s.recv_in[s.in1_idx].val and
-        s.recv_in[s.in2_idx].val and
-        s.recv_in[s.in3_idx].val
+        s.recv_in[in0_idx_local].val and
+        s.recv_in[in1_idx_local].val and
+        s.recv_in[in2_idx_local].val and
+        s.recv_in[in3_idx_local].val and
+        s.send_out[0].rdy
       )
 
       if all_inputs_valid:
@@ -148,10 +161,10 @@ class LoopControlRTL(Fu):
         # recv_in[in1]: start value
         # recv_in[in2]: end value  
         # recv_in[in3]: step value
-        parent_valid = s.recv_in[s.in0_idx].msg.predicate
-        s.start_value @= s.recv_in[s.in1_idx].msg.payload
-        s.end_value @= s.recv_in[s.in2_idx].msg.payload
-        s.step_value @= s.recv_in[s.in3_idx].msg.payload
+        parent_valid = s.recv_in[in0_idx_local].msg.predicate
+        s.start_value @= s.recv_in[in1_idx_local].msg.payload
+        s.end_value @= s.recv_in[in2_idx_local].msg.payload
+        s.step_value @= s.recv_in[in3_idx_local].msg.payload
 
         # Detect first iteration: loop not yet initialized
         # This correctly handles start_value=0 and loop reinvocation
@@ -195,10 +208,10 @@ class LoopControlRTL(Fu):
           s.send_out[1].val @= b1(1)
         
         # Set ready signals for inputs when all inputs are consumed
-        s.recv_in[s.in0_idx].rdy @= b1(1)
-        s.recv_in[s.in1_idx].rdy @= b1(1)
-        s.recv_in[s.in2_idx].rdy @= b1(1)
-        s.recv_in[s.in3_idx].rdy @= b1(1)
+        s.recv_in[in0_idx_local].rdy @= b1(1)
+        s.recv_in[in1_idx_local].rdy @= b1(1)
+        s.recv_in[in2_idx_local].rdy @= b1(1)
+        s.recv_in[in3_idx_local].rdy @= b1(1)
         s.recv_opt.rdy @= b1(1)
 
   def line_trace(s):
