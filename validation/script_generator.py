@@ -3,13 +3,23 @@ import os
 import yaml
 
 # Add project root to path to allow imports from lib
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Get the absolute path of this file
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the project root (parent of validation directory)
+project_root = os.path.dirname(_script_dir)
+# Normalize the path to handle any symlinks or relative path issues
+project_root = os.path.normpath(os.path.abspath(project_root))
+
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from lib.opt_type import *
 
 # from ... import *  # TODO: import the correct file of the opCodes of VectorCGRA
+
+# Global configuration for register cluster size (number of registers per cluster).
+# This can be overridden by ScriptFactory initialization.
+REG_CLUSTER_SIZE = 8
 
 yaml_to_VectorCGRA_map = {
     "CONSTANT": None, # ?
@@ -78,14 +88,14 @@ def _is_take_up_fu_operation(operation):
 def _reg_cluster_no_of(operand): # start from 1
     impl = operand['operand']
     if impl[0] == "$":
-        return int(impl[1:]) // 8 + 1
+        return int(impl[1:]) // REG_CLUSTER_SIZE + 1
     else:
         raise ValueError("Operand is not a register")
 
 def _reg_cluster_intra_index_of(operand):
     impl = operand['operand']
     if impl[0] == "$":
-        return int(impl[1:]) % 8
+        return int(impl[1:]) % REG_CLUSTER_SIZE
     else:
         raise ValueError("Operand is not a register")
 
@@ -114,7 +124,9 @@ class InstructionSignals:
                  CtrlType,
                  FuInType,
                  B1Type,
-                 B2Type):
+                 B2Type,
+                 RegIdxType,
+                 CtrlAddrType):
         # types
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
@@ -125,6 +137,8 @@ class InstructionSignals:
         self.FuInType = FuInType
         self.B1Type = B1Type
         self.B2Type = B2Type
+        self.RegIdxType = RegIdxType
+        self.CtrlAddrType = CtrlAddrType
         
         # inputs
         self.id_ = id_
@@ -218,10 +232,24 @@ class InstructionSignals:
                             port_in_xbar_idx = 3
                         elif src_operand['operand'] == 'EAST':
                             port_in_xbar_idx = 4
-                        if self.TileInParams[index + 4] != -1:
+                            
+                        # find an available lane
+                        lane = -1
+                        for i in range(4):
+                            if self.read_from_reg[i] == -1: # if not set the selection, then it could be available
+                                lane = i
+                                break
+                        if lane == -1:
+                            raise ValueError(f"No available lane found when reading from port {src_operand} in TileInParams, when translate the operation {operation} to VectorCGRA")
+                        if self.TileInParams[lane + 4] != -1:
                             raise ValueError(f"Collision in reading from port in TileInParams, when translate the operation {operation} to VectorCGRA")
-                        self.TileInParams[index + 4] = port_in_xbar_idx
-                        self.read_from_reg[index] = OPR_FROM_PORT
+                        self.TileInParams[lane + 4] = port_in_xbar_idx
+                        self.read_from_reg[lane] = OPR_FROM_PORT
+                        # shuffle to the given fu input index
+                        if self.shuffle_fu_operand_input_index[index] != -1:
+                            raise ValueError(f"Collision when reading from port in shuffle_fu_operand_input_index, when translate the operation {operation} to VectorCGRA")
+                        self.shuffle_fu_operand_input_index[index] = lane + 1
+                        
                     if _type(src_operand) == 'IMM':
                         raise NotImplementedError("IMM src operand is not supported yet")
                     
@@ -279,12 +307,12 @@ class InstructionSignals:
         for idx, write_to_reg in enumerate(self.write_to_reg):
             if write_to_reg == -1:
                 self.write_to_reg[idx] = FROM_NOWHERE
-        write_reg_from_made = [self.B1Type(x) for x in self.write_to_reg]
+        write_reg_from_made = [self.B2Type(x) for x in self.write_to_reg]
         
         for idx, write_to_reg_idx in enumerate(self.write_to_reg_idx):
             if write_to_reg_idx == -1:
                 self.write_to_reg_idx[idx] = 0
-        write_reg_idx_made = [self.B2Type(x) for x in self.write_to_reg_idx]
+        write_reg_idx_made = [self.RegIdxType(x) for x in self.write_to_reg_idx]
         
         # make read reg from code
         for idx, read_from_reg in enumerate(self.read_from_reg):
@@ -296,19 +324,24 @@ class InstructionSignals:
         for idx, read_from_reg_idx in enumerate(self.read_from_reg_idx):
             if read_from_reg_idx == -1:
                 self.read_from_reg_idx[idx] = 0
-        read_reg_idx_made = [self.B2Type(x) for x in self.read_from_reg_idx]
+        read_reg_idx_made = [self.RegIdxType(x) for x in self.read_from_reg_idx]
         
         # make FuOut
+        # CtrlType requires: operation, fu_in, routing_xbar_outport, fu_xbar_outport,
+        #                    vector_factor_power, is_last_ctrl, write_reg_from, write_reg_idx,
+        #                    read_reg_from, read_reg_idx
+        # Use keyword arguments for optional fields to avoid parameter order issues
         pkt = self.IntraCgraPktType(0, self.id_, 
-                                    payload = self.CgraPayloadType(self.CMD_CONFIG_, self.ctrl_addr, 
+                                    payload = self.CgraPayloadType(self.CMD_CONFIG_, 
+                                                                    ctrl_addr = self.CtrlAddrType(self.ctrl_addr), 
                                                                     ctrl = self.CtrlType(self.opCode,
                                                                                         fu_in_code_made,
                                                                                         TileIn_made,
                                                                                         FuOut_made,
-                                                                                        write_reg_from_made,
-                                                                                        write_reg_idx_made,
-                                                                                        read_reg_from_made,
-                                                                                        read_reg_idx_made,
+                                                                                        write_reg_from = write_reg_from_made,
+                                                                                        write_reg_idx = write_reg_idx_made,
+                                                                                        read_reg_from = read_reg_from_made,
+                                                                                        read_reg_idx = read_reg_idx_made,
                                                                                         )))
         return pkt
 
@@ -334,7 +367,10 @@ class TileSignals:
                 CMD_LAUNCH_input,
                 DataType,
                 B1Type,
-                B2Type):
+                B2Type,
+                RegIdxType,
+                CtrlAddrType,
+                DataAddrType):
         self.CtrlType = CtrlType
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
@@ -348,7 +384,10 @@ class TileSignals:
         self.ii = ii
         self.B1Type = B1Type
         self.B2Type = B2Type
+        self.RegIdxType = RegIdxType
         self.DataType = DataType
+        self.CtrlAddrType = CtrlAddrType
+        self.DataAddrType = DataAddrType
         # constants
         self.CMD_CONST_ = CMD_CONST_input
         self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
@@ -437,16 +476,16 @@ class TileSignals:
     
     def makePrologueFUPackets(self, instruction):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = instruction['timestep'] % self.ii,
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
                                                                      data = self.DataType(1, 1)))
     def makePrologueRoutingCrossbarPackets(self, instruction, routing_xbar_idx):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = instruction['timestep'] % self.ii,
-                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * 7),
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
+                                                                     ctrl = self.CtrlType(routing_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * 7),
                                                                      data = self.DataType(1, 1)))
     def makePrologueFUCrossbarPackets(self, instruction):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = instruction['timestep'] % self.ii,
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
                                                                      ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
                                                                      data = self.DataType(1, 1)))
     def makeTileSignals(self):
@@ -454,6 +493,7 @@ class TileSignals:
         all_signals = []
         all_instruction_signals = []
         prologue_signals = []
+        has_addrs = []
         
         # build all the instruction signals and get all the const
         for instruction in self.instructions:
@@ -467,12 +507,14 @@ class TileSignals:
                     break
             if has_phi_const:
                 prologue_signals.extend(self.makePhiConstProloguePackets(instruction))
+                
+            has_addrs.append(instruction['timestep'] % self.ii)
             
             instruction_signals = InstructionSignals(
                 id_ = self.id_,
                 operations = instruction['operations'],
                 opcode_in_EIR = instruction['operations'][0]['opcode'], # transient TODO: make it general
-                ctrl_addr = instruction['timestep'],
+                ctrl_addr = instruction['timestep'] % self.ii,
                 IntraCgraPktType = self.IntraCgraPktType,
                 CgraPayloadType = self.CgraPayloadType,
                 TileInType = self.TileInType,
@@ -481,7 +523,9 @@ class TileSignals:
                 CtrlType = self.CtrlType,
                 FuInType = self.FuInType,
                 B1Type = self.B1Type,
-                B2Type = self.B2Type)
+                B2Type = self.B2Type,
+                RegIdxType = self.RegIdxType,
+                CtrlAddrType = self.CtrlAddrType)
             all_instruction_signals.append(instruction_signals)
             
             const = instruction_signals.buildCtrlPkt()
@@ -505,10 +549,33 @@ class TileSignals:
                                                                               data = self.DataType(self.loop_times, 1)))
         all_signals.append(loop_times_pkt)
         
+        
+        main_signals = []
         # make the main packets
         for instruction_signals in all_instruction_signals:
             pkt = instruction_signals.makeCtrlPkt()
-            all_signals.append(pkt)
+            main_signals.append(pkt)
+        
+          
+        # fill the non-existent timesteps with NAH packets
+
+        filled_main_signals = []
+        idx = 0
+        for timestep in range(self.ii):
+            if timestep not in has_addrs:
+                NAH_SIGNAL = self.IntraCgraPktType(0, self.id_,
+                            payload = self.CgraPayloadType(self.CMD_CONFIG_, ctrl_addr = self.CtrlAddrType(timestep),
+                                                      ctrl = self.CtrlType(OPT_NAH,
+                                                                      [self.FuInType(i) for i in range(1, 5)],
+                                                                      [self.TileInType(0)] * 8,
+                                                                      [self.FuOutType(0)] * 8)))  
+                filled_main_signals.append(NAH_SIGNAL)
+            else:
+                filled_main_signals.append(main_signals[idx]) # WARN: generated signals must be in order
+                idx += 1
+        
+        
+        all_signals.extend(filled_main_signals)
             
         # make prologue packets
         # re-order the prologue packets 
@@ -557,7 +624,15 @@ class ScriptFactory:
                  CMD_LAUNCH_input,
                  DataType,
                  B1Type,
-                 B2Type):
+                 B2Type,
+                 RegIdxType,
+                 CtrlAddrType,
+                 DataAddrType,
+                 num_registers_per_reg_bank=None):
+        # Allow overriding the default register cluster size.
+        global REG_CLUSTER_SIZE
+        if num_registers_per_reg_bank is not None:
+            REG_CLUSTER_SIZE = int(num_registers_per_reg_bank)
         self.yaml_struct = yaml.load(open(path, 'r'), Loader=yaml.FullLoader)
         self.path = path
         self.CtrlType = CtrlType
@@ -579,6 +654,9 @@ class ScriptFactory:
         self.DataType = DataType
         self.B1Type = B1Type
         self.B2Type = B2Type
+        self.RegIdxType = RegIdxType
+        self.CtrlAddrType = CtrlAddrType
+        self.DataAddrType = DataAddrType
     
     def makeVectorCGRAPkts(self):
         
@@ -614,6 +692,9 @@ class ScriptFactory:
                 DataType = self.DataType,
                 B1Type = self.B1Type,
                 B2Type = self.B2Type,
+                RegIdxType = self.RegIdxType,
+                CtrlAddrType = self.CtrlAddrType,
+                DataAddrType = self.DataAddrType,
                 )
             tile_signals = tile_signals.makeTileSignals()
             pkts[(x, y)] = tile_signals
@@ -646,6 +727,9 @@ if __name__ == "__main__":
         DataType = DataTypeDummy,
         B1Type = B1TypeDummy,
         B2Type = B2TypeDummy,
+        RegIdxType = RegIdxTypeDummy,
+        CtrlAddrType = CtrlAddrTypeDummy,
+        DataAddrType = DataAddrTypeDummy,
     )
     
     pkts = script_factory.makeVectorCGRAPkts()
