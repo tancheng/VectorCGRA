@@ -169,10 +169,10 @@ class LoopControlRTL(Fu):
             s.send_out[1].val @= b1(1)
           
           # Ready signals - all inputs consumed together
-          s.recv_in[0].rdy @= s.send_out[0].rdy
-          s.recv_in[1].rdy @= s.send_out[0].rdy
-          s.recv_in[2].rdy @= s.send_out[0].rdy
-          s.recv_in[3].rdy @= s.send_out[0].rdy
+          s.recv_in[0].rdy @= s.recv_in[0].val & s.send_out[0].rdy
+          s.recv_in[1].rdy @= s.recv_in[1].val & s.send_out[0].rdy
+          s.recv_in[2].rdy @= s.recv_in[2].val & s.send_out[0].rdy
+          s.recv_in[3].rdy @= s.recv_in[3].val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.send_out[0].rdy
 
   def line_trace(self):
