@@ -16,7 +16,6 @@ from ..lib.messages import *
 from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-# from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ..noc.PyOCN.pymtl3_net.xbar.XbarRTL import XbarRTL
 
 from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
@@ -103,7 +102,6 @@ class ControllerRTL(Component):
     s.addr2controller_lut = [Wire(CgraIdType) for _ in range(len(controller2addr_map))]
     # Assumes the address range is contiguous within one CGRA's SPMs.
     addr2controller_vector = [-1 for _ in range(len(controller2addr_map))]
-    # s.addr_base_items = len(controller2addr_map)
     for src_cgra_id, address_range in controller2addr_map.items():
       begin_addr, end_addr = address_range[0], address_range[1]
       address_length = end_addr - begin_addr + 1
@@ -357,7 +355,6 @@ class ControllerRTL(Component):
       # addr_dst_id = 0
       if (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_LOAD_REQUEST) | \
          (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_STORE_REQUEST):
-        # addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
         s.send_to_inter_cgra_noc.msg.dst @= s.addr_dst_id
         s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[s.addr_dst_id]
         s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[s.addr_dst_id]
