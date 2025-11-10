@@ -80,6 +80,9 @@ class LoopControlRTL(Fu):
       s.in3_idx @= s.in3
     
     # Sequential state for tracking current index and initialization
+    # Need to define the actual recv_in index bitwidth type
+    RecvInIdxType = mk_bits(clog2(num_inports))
+    
     @update_ff
     def update_index():
       if s.reset:
@@ -87,21 +90,21 @@ class LoopControlRTL(Fu):
         s.loop_initialized_reg <<= b1(0)
       else:
         # Compute indices locally for sequential logic to avoid using stale wire values
-        in0_idx_ff = s.in0
-        in1_idx_ff = s.in1
-        in2_idx_ff = s.in2
-        in3_idx_ff = s.in3
+        in0_idx_ff = trunc(s.in0, RecvInIdxType)
+        in1_idx_ff = trunc(s.in1, RecvInIdxType)
+        in2_idx_ff = trunc(s.in2, RecvInIdxType)
+        in3_idx_ff = trunc(s.in3, RecvInIdxType)
         
         # Update from recv_opt if valid
         if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL):
           if s.recv_opt.msg.fu_in[0] != 0:
-            in0_idx_ff = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
+            in0_idx_ff = trunc(zext(s.recv_opt.msg.fu_in[0] - 1, FuInType), RecvInIdxType)
           if s.recv_opt.msg.fu_in[1] != 0:
-            in1_idx_ff = zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
+            in1_idx_ff = trunc(zext(s.recv_opt.msg.fu_in[1] - 1, FuInType), RecvInIdxType)
           if s.recv_opt.msg.fu_in[2] != 0:
-            in2_idx_ff = zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
+            in2_idx_ff = trunc(zext(s.recv_opt.msg.fu_in[2] - 1, FuInType), RecvInIdxType)
           if s.recv_opt.msg.fu_in[3] != 0:
-            in3_idx_ff = zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
+            in3_idx_ff = trunc(zext(s.recv_opt.msg.fu_in[3] - 1, FuInType), RecvInIdxType)
         
         # Update state when we successfully process inputs
         # Check if valid operation is present and inputs are available
@@ -144,25 +147,25 @@ class LoopControlRTL(Fu):
       s.step_value @= PayloadType(1)
 
       # Configure input operand indices from operation message
-      # Set default indices first
-      in0_idx_local = s.in0_idx
-      in1_idx_local = s.in1_idx
-      in2_idx_local = s.in2_idx
-      in3_idx_local = s.in3_idx
+      # Set default indices first, truncated to actual recv_in array size
+      in0_idx_local = trunc(s.in0_idx, RecvInIdxType)
+      in1_idx_local = trunc(s.in1_idx, RecvInIdxType)
+      in2_idx_local = trunc(s.in2_idx, RecvInIdxType)
+      in3_idx_local = trunc(s.in3_idx, RecvInIdxType)
       
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
           s.in0 @= zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
-          in0_idx_local = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
+          in0_idx_local = trunc(zext(s.recv_opt.msg.fu_in[0] - 1, FuInType), RecvInIdxType)
         if s.recv_opt.msg.fu_in[1] != 0:
           s.in1 @= zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
-          in1_idx_local = zext(s.recv_opt.msg.fu_in[1] - 1, FuInType)
+          in1_idx_local = trunc(zext(s.recv_opt.msg.fu_in[1] - 1, FuInType), RecvInIdxType)
         if s.recv_opt.msg.fu_in[2] != 0:
           s.in2 @= zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
-          in2_idx_local = zext(s.recv_opt.msg.fu_in[2] - 1, FuInType)
+          in2_idx_local = trunc(zext(s.recv_opt.msg.fu_in[2] - 1, FuInType), RecvInIdxType)
         if s.recv_opt.msg.fu_in[3] != 0:
           s.in3 @= zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
-          in3_idx_local = zext(s.recv_opt.msg.fu_in[3] - 1, FuInType)
+          in3_idx_local = trunc(zext(s.recv_opt.msg.fu_in[3] - 1, FuInType), RecvInIdxType)
 
       # Only process when all required inputs are valid AND output is ready
       all_inputs_valid = (
