@@ -25,7 +25,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
+  def construct(s, FunctionUnit, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src_const, ctrl_msgs, sink_msgs):
 
@@ -35,7 +35,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, PredicateType, ConfigType, num_inports,
+    s.dut = FunctionUnit(DataType, ConfigType, num_inports,
                          num_outports, data_mem_size)
 
     s.src_in0.send //= s.dut.recv_in[0]
@@ -90,7 +90,7 @@ def test_add_sub():
   src_opt =   [ConfigType(OPT_ADD_CONST, pickRegister),
                ConfigType(OPT_SUB,       pickRegister),
                ConfigType(OPT_ADD_CONST, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType, num_inports,
+  th = TestHarness(FU, DataType, ConfigType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out)
   run_sim(th)
@@ -113,7 +113,7 @@ def test_logic():
                    ConfigType(OPT_AND, pickRegister),
                    ConfigType(OPT_BIT_NOT, pickRegister),
                    ConfigType(OPT_XOR, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -136,7 +136,7 @@ def test_shifter():
   src_opt =   [ConfigType(OPT_LLS, pickRegister),
                ConfigType(OPT_LLS, pickRegister),
                ConfigType(OPT_LRS, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -159,7 +159,7 @@ def test_mul():
   src_opt =   [ConfigType(OPT_MUL, pickRegister),
                ConfigType(OPT_MUL, pickRegister),
                ConfigType(OPT_MUL, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)

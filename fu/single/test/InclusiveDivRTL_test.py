@@ -29,7 +29,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, ConfigType,
+  def construct(s, FunctionUnit, DataType, ConfigType,
                 data_bitwidth,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const, ctrl_msgs,
@@ -42,7 +42,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, PredicateType, ConfigType,
+    s.dut = FunctionUnit(DataType, ConfigType,
                          num_inports, num_outports, data_mem_size,
                          latency=4, data_bitwidth = data_bitwidth)
 
@@ -81,7 +81,7 @@ def test_mul():
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register),
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register),
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    data_bitwidth,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,

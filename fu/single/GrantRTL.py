@@ -14,12 +14,12 @@ from ...lib.opt_type import *
 
 class GrantRTL(Fu):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
 
-    super(GrantRTL, s).construct(DataType, PredicateType, CtrlType,
+    super(GrantRTL, s).construct(DataType, CtrlType,
                                   num_inports, num_outports,
                                   data_mem_size, ctrl_mem_size,
                                   1, vector_factor_power,
@@ -122,7 +122,7 @@ class GrantRTL(Fu):
 
     @update_ff
     def record_grt_once():
-      if s.reset:
+      if s.reset | s.clear:
         s.already_grt_once <<= 0
       else:
         if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & (s.recv_opt.msg.operation == OPT_GRT_ONCE):

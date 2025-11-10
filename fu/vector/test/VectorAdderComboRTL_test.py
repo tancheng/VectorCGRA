@@ -21,7 +21,7 @@ from ....lib.messages import *
 
 class TestHarness( Component ):
 
-  def construct(s, FunctionUnit, DataType, data_bw, PredicateType,
+  def construct(s, FunctionUnit, DataType,
                 CtrlType, num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const_msgs, ctrl_msgs,
                 sink_msgs0):
@@ -32,9 +32,9 @@ class TestHarness( Component ):
     s.src_opt   = TestSrcRTL (CtrlType, ctrl_msgs     )
     s.sink_out0 = TestSinkRTL(DataType, sink_msgs0    )
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
                          num_outports, data_mem_size,
-                         num_lanes = 4, data_bitwidth = data_bw)
+                         num_lanes = 4)
 
     # s.dut.initial_carry_in //= 0
 
@@ -96,7 +96,7 @@ def test_vector_adder_combo():
                    CtrlType(OPT_VEC_SUB_CONST,          pickRegister),
                    CtrlType(OPT_VEC_SUB_CONST_COMBINED, pickRegister)]
 
-  th = TestHarness(FU, DataType, data_bw, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out0)

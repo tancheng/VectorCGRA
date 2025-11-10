@@ -32,19 +32,26 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
+from ..lib.util.data_struct_attr import *
 
 
 class TileRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType,
-                data_bitwidth,
+  def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports, num_tile_inports,
-                num_tile_outports, num_cgras, num_tiles,
+                total_steps, num_fu_inports, num_fu_outports, 
+                num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
                 FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+
+    # Derives types from IntraCgraPktType.
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
+    CtrlPktType = IntraCgraPktType
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
 
     # Constants.
     num_routing_xbar_inports = num_tile_inports
@@ -74,14 +81,12 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, PredicateType, CtrlSignalType,
-                              data_bitwidth,
+    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, ctrl_mem_size,
                               num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
-                                     PredicateType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,
                                      num_routing_xbar_outports,
@@ -90,7 +95,6 @@ class TileRTL(Component):
                                      ctrl_mem_size,
                                      num_tile_outports)
     s.fu_crossbar = CrossbarRTL(DataType,
-                                PredicateType,
                                 CtrlSignalType,
                                 num_fu_xbar_inports,
                                 num_fu_xbar_outports,
@@ -102,9 +106,6 @@ class TileRTL(Component):
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
-                                   CgraPayloadType,
-                                   DataType,
-                                   CtrlSignalType,
                                    ctrl_mem_size,
                                    num_fu_inports,
                                    num_fu_outports,
@@ -224,6 +225,13 @@ class TileRTL(Component):
       s.register_cluster.send_data_to_fu[i] //= \
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
+
+    # Clear ports are only useful during context switching.
+    # We connect to 0 to make sure they have drivers.
+    for i in range(len(FuList)):
+      s.element.clear[i] //= 0
+    s.fu_crossbar.clear //= 0
+    s.routing_crossbar.clear //= 0
 
     @update
     def feed_pkt():

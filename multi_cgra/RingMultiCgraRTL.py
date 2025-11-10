@@ -16,10 +16,11 @@ from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 
 
+from ..lib.util.data_struct_attr import *
+from ..lib.messages import *
+
 class RingMultiCgraRTL(Component):
-  def construct(s, CgraDataType, PredicateType, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, NocPktType,
-                data_nbits, cgra_rows, cgra_columns, tile_rows, tile_columns,
+  def construct(s, CgraPayloadType, cgra_rows, cgra_columns, tile_rows, tile_columns,
                 ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 num_ctrl, total_steps,
@@ -27,6 +28,22 @@ class RingMultiCgraRTL(Component):
                 FunctionUnit, FuList,
                 controller2addr_map):
 
+    # Derives all types from CgraPayloadType.
+    CgraDataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = CgraDataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_nbits = CgraDataType.get_field_type(kAttrPayload).nbits
+    
+    # Reconstructs packet types.
+    num_tiles = tile_rows * tile_columns
+    num_rd_tiles = tile_rows + tile_columns - 1
+    
+    CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
+                                    num_tiles, CgraPayloadType)
+    
+    NocPktType = mk_inter_cgra_pkt(cgra_columns, cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
     # Constant
     idTo2d_map = {}
     s.num_cgras = cgra_rows * cgra_columns
@@ -46,10 +63,7 @@ class RingMultiCgraRTL(Component):
     for cgra_id in range(s.num_cgras):
         idTo2d_map[cgra_id] = (cgra_id, 0)
 
-    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, NocPktType,
-                      ControllerIdType,
-                      data_nbits,
+    s.cgra = [CgraRTL(CgraPayloadType,
                       # Constructs the topology as 1d.
                       1, s.num_cgras,
                       tile_columns, tile_rows,

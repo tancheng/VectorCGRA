@@ -34,6 +34,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 
 #-------------------------------------------------------------------------
@@ -42,9 +43,9 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, data_nbits, cgra_id, width, height,
+  def construct(s, DUT, FunctionUnit, FuList,
+                CtrlPktType,
+                cgra_id, width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -54,14 +55,14 @@ class TestHarness(Component):
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
+    CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = width * height
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
     s.src_query_pkt = TestSrcRTL(CtrlPktType, src_query_pkt)
 
-    s.dut = DUT(DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, ControllerIdType,
-                data_nbits,
+    s.dut = DUT(CgraPayloadType,
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 multi_cgra_rows, multi_cgra_columns,
@@ -144,10 +145,10 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                x_tiles = 2, y_tiles = 2, data_bitwidth = 32,
                test_name = 'default', total_execute_ctrl_count = 1):
   tile_ports = 4
-  assert(topology == "Mesh" or topology == "KingMesh")
-  if topology == "Mesh":
+  assert(topology == MESH or topology == KING_MESH)
+  if topology == MESH:
     tile_ports = 4
-  elif topology == "KingMesh":
+  elif topology == KING_MESH:
     tile_ports = 8
   num_tile_inports  = tile_ports
   num_tile_outports = tile_ports
@@ -578,9 +579,9 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
       complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
 
   mem_access_is_combinational = True
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                   ControllerIdType, data_bitwidth, cgra_id, x_tiles, y_tiles,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   cgra_id, x_tiles, y_tiles,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,

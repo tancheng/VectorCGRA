@@ -25,7 +25,7 @@ CtrlType      = mk_ctrl(num_inports, num_outports)
 data_mem_size = 8
 
 def test_elaborate():
-  dut = CompRTL(DataType, PredicateType, CtrlType,
+  dut = CompRTL(DataType, CtrlType,
                 num_inports, num_outports, data_mem_size)
   dut.apply(DefaultPassGroup(linetrace=True))
   dut.sim_reset()
@@ -34,7 +34,7 @@ def test_elaborate():
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate(cmdline_opts):
-  dut = CompRTL(DataType, PredicateType, CtrlType,
+  dut = CompRTL(DataType, CtrlType,
                 num_inports, num_outports, data_mem_size)
   dut.set_metadata(VerilogTranslationPass.explicit_module_name,
                    f'CompRTL')

@@ -23,17 +23,16 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, DataType, InterCgraPktType, ControllerXbarPktType,
+  def construct(s, InterCgraPktType,
                 input_count, input_data, expected_output):
 
+    ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
     s.src_count = TestSrcRTL(InterCgraPktType, input_count)
     s.src_data = TestSrcRTL(InterCgraPktType, input_data)
 
     s.sink = TestSinkRTL(ControllerXbarPktType, expected_output)
 
-    s.dut = GlobalReduceUnitRTL(DataType,
-                                InterCgraPktType,
-                                ControllerXbarPktType)
+    s.dut = GlobalReduceUnitRTL(InterCgraPktType)
 
     # Connections
     s.dut.recv_count //= s.src_count.send
@@ -168,9 +167,7 @@ def test_simple(cmdline_opts):
     ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(2, 0, 2, 0, 0, 0, 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
   ]
 
-  th = TestHarness(DataType,
-                   InterCgraPktType,
-                   ControllerXbarPktType,
+  th = TestHarness(InterCgraPktType,
                    input_count,
                    input_data,
                    expected_output)

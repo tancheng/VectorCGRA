@@ -21,6 +21,7 @@ OpCodeType = mk_bits(clog2(NUM_OPTS))
 OPT_START                        = OpCodeType( 0  )
 OPT_NAH                          = OpCodeType( 1  )
 OPT_PAS                          = OpCodeType( 31 )
+OPT_CONST                        = OpCodeType( 80 )
 OPT_ADD                          = OpCodeType( 2  )
 OPT_ADD_CONST                    = OpCodeType( 25 )
 OPT_INC                          = OpCodeType( 3  )
@@ -61,6 +62,8 @@ OPT_MUL_LRS                      = OpCodeType( 21 )
 OPT_MUL_ADD_LLS                  = OpCodeType( 22 )
 OPT_MUL_SUB_LLS                  = OpCodeType( 23 )
 OPT_MUL_SUB_LRS                  = OpCodeType( 24 )
+OPT_ADD_CONST_LD                 = OpCodeType( 81 )
+OPT_INC_NE_CONST_NOT_GRT         = OpCodeType( 82 )
 
 OPT_FADD                         = OpCodeType( 37 )
 OPT_FSUB                         = OpCodeType( 38 )
@@ -104,6 +107,7 @@ OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
   OPT_NAH                        : "(NAH)",
   OPT_PAS                        : "(->)",
+  OPT_CONST                      : "(const)",
   OPT_ADD                        : "(+)",
   OPT_ADD_CONST                  : "(+')",
   OPT_INC                        : "(++)",
@@ -149,6 +153,8 @@ OPT_SYMBOL_DICT = {
   OPT_FSUB                       : "(f-)",
   OPT_FMUL                       : "(f*)",
   OPT_FMUL_CONST                 : "(f*')",
+  OPT_ADD_CONST_LD               : "(+'ld)",
+  OPT_INC_NE_CONST_NOT_GRT       : "(inc,ne',!=,grt)",
 
   OPT_VEC_INC                    : "(v1++)",
   OPT_VEC_ADD                    : "(v1+)",

@@ -16,7 +16,7 @@ from ...lib.opt_type import *
 
 class SelRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size = 4, ctrl_mem_size = 4,
                 vector_factor_power = 0, data_bitwidth = 32):
@@ -50,6 +50,9 @@ class SelRTL(Component):
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr = SendIfcRTL(AddrType)
     s.to_mem_wdata = SendIfcRTL(DataType)
+
+    # Redundant interface, only used by PhiRTL.
+    s.clear = InPort(b1)
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)

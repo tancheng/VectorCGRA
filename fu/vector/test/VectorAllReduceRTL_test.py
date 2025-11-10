@@ -21,8 +21,8 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
-                num_inports, num_outports, data_mem_size, data_width,
+  def construct(s, FunctionUnit, DataType, CtrlType,
+                num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, ctrl_msgs, sink_msgs0):
 
     s.src_in0       = TestSrcRTL (DataType, src0_msgs )
@@ -30,9 +30,9 @@ class TestHarness(Component):
     s.src_opt       = TestSrcRTL (CtrlType, ctrl_msgs )
     s.sink_out0     = TestSinkRTL(DataType, sink_msgs0)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+    s.dut = FunctionUnit(DataType, CtrlType,
                          num_inports, num_outports, data_mem_size,
-                         data_bitwidth = data_width)
+                         )
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
     connect(s.src_in1.send,    s.dut.recv_in[1])
@@ -86,8 +86,8 @@ def test_vector_all_reduce():
               CtrlType(OPT_VEC_REDUCE_MUL, pickRegister),
               CtrlType(OPT_VEC_REDUCE_MUL, pickRegister)]
 
-  th = TestHarness(FU, DataType, PredType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports,
-                   data_mem_size, data_width,
+                   data_mem_size,
                    src_in0, src_in1, src_opt, sink_out)
   run_sim(th)

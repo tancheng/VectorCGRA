@@ -16,12 +16,14 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 from ...noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ...noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
+from ...lib.util.data_struct_attr import *
 
 class RingMultiCtrlMemDynamicRTL(Component):
-  def construct(s, CtrlPktType, CgraPayloadType, DataType, CtrlSignalType,
+  def construct(s, CtrlPktType, CgraPayloadType,
                 width, height, ctrl_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports, num_tile_outports,
                 ctrl_count_per_iter = 4, total_ctrl_steps = 4):
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
     # Constant
     num_tiles = width * height
     s.num_tiles = width * height
@@ -34,8 +36,8 @@ class RingMultiCtrlMemDynamicRTL(Component):
 
     # Components
     s.ctrl_memories = [
-        CtrlMemDynamicRTL(CtrlPktType, CgraPayloadType, DataType,
-                          CtrlSignalType, ctrl_mem_size, num_fu_inports,
+        CtrlMemDynamicRTL(CtrlPktType,
+                          ctrl_mem_size, num_fu_inports,
                           num_fu_outports, num_tile_inports,
                           num_tile_outports, 1, num_tiles, ctrl_count_per_iter,
                           total_ctrl_steps) for terminal_id in range(s.num_tiles)]
@@ -45,6 +47,8 @@ class RingMultiCtrlMemDynamicRTL(Component):
     for i in range(s.num_tiles):
       s.ctrl_memories[i].cgra_id //= 0
       s.ctrl_memories[i].tile_id //= i
+      s.ctrl_memories[i].recv_from_element.val //= 1
+      s.ctrl_memories[i].recv_from_element.msg //= CgraPayloadType()
 
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.ctrl_memories[i].recv_pkt_from_controller

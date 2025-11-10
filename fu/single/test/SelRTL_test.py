@@ -22,7 +22,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 src_data1, src_data2, src_ref0, src_opt,
                 sink_msgs):
@@ -33,7 +33,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL( DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType,
+    s.dut = FunctionUnit(DataType, CtrlType,
                          num_inports, num_outports, data_mem_size)
 
     s.src_data1.send //= s.dut.recv_in[1]
@@ -88,7 +88,7 @@ def test_Select():
                CtrlType(OPT_SEL, pickRegister),
                CtrlType(OPT_SEL, pickRegister)]
   sink_out =  [DataType(9, 1), DataType(7, 1), DataType(4, 1)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_data1, src_data2, src_ref0, src_opt,
                    sink_out)

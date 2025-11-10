@@ -34,7 +34,7 @@ def test_elaborate( cmdline_opts ):
   src_opt       = [ConfigType(OPT_ADD_CONST, pick_register),
                    ConfigType(OPT_SUB,       pick_register),
                    ConfigType(OPT_ADD_CONST, pick_register)]
-  dut = AluGenMacRTL(DataType, PredType, ConfigType, num_inports,
+  dut = AluGenMacRTL(DataType, ConfigType, num_inports,
                      num_outports, data_mem_size)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
@@ -44,7 +44,7 @@ def test_elaborate( cmdline_opts ):
 
 class TestHarness( Component ):
 
-  def construct(s, FunctionUnit, DataType, PredType, ConfigType,
+  def construct(s, FunctionUnit, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src2_msgs, src_const,
                 ctrl_msgs, sink_msgs):
@@ -56,7 +56,7 @@ class TestHarness( Component ):
     s.sink_out = TestSinkRTL(DataType,  sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, PredType, ConfigType,
+    s.dut = FunctionUnit(DataType, ConfigType,
                          num_inports, num_outports, data_mem_size)
 
     connect(s.src_in0.send,    s.dut.recv_in[0]        )
@@ -98,7 +98,7 @@ def test_add_basic(cmdline_opts):
                    ConfigType(OPT_GTE,     pick_register),
                    ConfigType(OPT_MUL,     pick_register),
                    ConfigType(OPT_MUL_ADD, pick_register)]
-  th = TestHarness(FU, DataType, PredType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                   num_inports, num_outports, data_mem_size,
                   src_in0, src_in1, src_in2, src_const, src_opt,
                   sink_out)

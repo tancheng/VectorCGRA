@@ -14,21 +14,37 @@ from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
+from ..lib.messages import *
+from ..lib.util.data_struct_attr import *
 
 class MeshMultiCgraRTL(Component):
 
-  def construct(s, CgraDataType, PredicateType, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, NocPktType,
-                data_nbits, cgra_rows, cgra_columns,
+  def construct(s, CgraPayloadType, cgra_rows, cgra_columns,
                 tile_rows, tile_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 num_ctrl, total_steps, 
                 mem_access_is_combinational,
-                FunctionUnit, FuList,
+                FunctionUnit, FuList, per_cgra_topology,
                 controller2addr_map):
 
+    # Derives all types from CgraPayloadType.
+    CgraDataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = CgraDataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_nbits = CgraDataType.get_field_type(kAttrPayload).nbits
+    
+    # Reconstructs packet types.
+    num_tiles = tile_rows * tile_columns
+    num_rd_tiles = tile_rows + tile_columns - 1
+    
+    CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
+                                    num_tiles, CgraPayloadType)
+    
+    NocPktType = mk_inter_cgra_pkt(cgra_columns, cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
     # Constant
     s.num_cgras = cgra_rows * cgra_columns
     idTo2d_map = {}
@@ -50,16 +66,14 @@ class MeshMultiCgraRTL(Component):
       for cgra_col in range(cgra_columns):
         idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
 
-    s.cgra = [CgraRTL(CgraDataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType, NocPktType,
-                      ControllerIdType, data_nbits, cgra_rows, cgra_columns,
+    s.cgra = [CgraRTL(CgraPayloadType, cgra_rows, cgra_columns,
                       tile_columns, tile_rows,
                       ctrl_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
                       num_registers_per_reg_bank,
                       num_ctrl, total_steps,
                       mem_access_is_combinational,
-                      FunctionUnit, FuList, "Mesh",
+                      FunctionUnit, FuList, per_cgra_topology,
                       controller2addr_map, idTo2d_map)
               for cgra_id in range(s.num_cgras)]
 

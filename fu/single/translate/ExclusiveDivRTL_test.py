@@ -29,14 +29,14 @@ data_mem_size = 8
 latency       = 4
 
 def test_elaborate(cmdline_opts):
-  dut = ExclusiveDivRTL( DataType, PredicateType, ConfigType,
+  dut = ExclusiveDivRTL( DataType, ConfigType,
                  num_inports, num_outports, data_mem_size,
                  latency = latency, data_bitwidth = data_bitwidth)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
-  dut = ExclusiveDivRTL( DataType, PredicateType, ConfigType,
+  dut = ExclusiveDivRTL( DataType, ConfigType,
                  num_inports, num_outports, data_mem_size,
                  latency = latency, data_bitwidth = data_bitwidth)
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,

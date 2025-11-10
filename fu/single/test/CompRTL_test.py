@@ -21,7 +21,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src_data,
                 src_ref, src_opt, sink_msgs):
 
@@ -30,7 +30,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
                          num_outports, data_mem_size)
 
     s.src_data.send //= s.dut.recv_in[0]
@@ -81,7 +81,7 @@ def test_Comp():
               CtrlType(OPT_LT, pickRegister),
               CtrlType(OPT_EQ, pickRegister)]
   sink_out = [DataType(1, 1), DataType(1, 1), DataType(0, 1)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_inports,
+  th = TestHarness(FU, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_data, src_ref,
                    src_opt, sink_out)
   run_sim(th)

@@ -29,8 +29,8 @@ from ....lib.messages import *
 
 class TestHarness( Component ):
 
-  def construct(s, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlType, data_bitwidth,
+  def construct(s, FunctionUnit, FuList, DataType,
+                CtrlType,
                 data_mem_size, num_inports, num_outports,
                 src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs):
 
@@ -40,7 +40,7 @@ class TestHarness( Component ):
     s.src_opt = TestSrcRTL(CtrlType, ctrl_msgs)
     s.sink_out0 = TestSinkRTL(DataType, sink0_msgs)
 
-    s.dut = FunctionUnit(DataType, PredicateType, CtrlType, data_bitwidth,
+    s.dut = FunctionUnit(DataType, CtrlType,
                          num_inports, num_outports, data_mem_size,
                          4, 1, FuList)
 
@@ -61,6 +61,7 @@ class TestHarness( Component ):
       s.from_mem_rdata[i].send //= s.dut.from_mem_rdata[i]
       s.to_mem_waddr[i].recv //= s.dut.to_mem_waddr[i]
       s.to_mem_wdata[i].recv //= s.dut.to_mem_wdata[i]
+      s.dut.clear[i] //= 0
 
   def done(s):
     return s.src_in0.done() and s.src_in1.done()   and \
@@ -108,8 +109,7 @@ def test_flexible_alu():
   src_opt =   [CtrlType(OPT_ADD, pickRegister),
                CtrlType(OPT_ADD, pickRegister),
                CtrlType(OPT_SUB, pickRegister)]
-  th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
-                   data_bitwidth,
+  th = TestHarness(FU, FuList, DataType, CtrlType,
                    data_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
@@ -132,8 +132,7 @@ def test_flexible_mul():
   src_opt       = [CtrlType(OPT_MUL, pickRegister),
                    CtrlType(OPT_MUL, pickRegister),
                    CtrlType(OPT_MUL, pickRegister)]
-  th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
-                   data_bitwidth,
+  th = TestHarness(FU, FuList, DataType, CtrlType,
                    data_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim( th )
@@ -156,8 +155,7 @@ def test_flexible_universal():
   src_opt       = [CtrlType(OPT_EQ ,      pickRegister),
                    CtrlType(OPT_GRT_PRED, pickRegister),
                    CtrlType(OPT_PHI,      pickRegister)]
-  th = TestHarness(FU, FuList, DataType, PredicateType, CtrlType,
-                   data_bitwidth,
+  th = TestHarness(FU, FuList, DataType, CtrlType,
                    data_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
