@@ -23,13 +23,18 @@ class LoopControlRTL(Fu):
                 vector_factor_power = 0,
                 data_bitwidth = 32):
 
-    # LoopControl needs at least 4 inputs:
-    # recv_in[0]: parent_valid (predicate from parent loop, always 1 for outermost)
-    # recv_in[1]: start value
-    # recv_in[2]: end value  
-    # recv_in[3]: step value
+    # LoopControl needs at least 4 inputs and 2 outputs:
+    # Inputs:
+    #   recv_in[0]: parent_valid (predicate from parent loop, always 1 for outermost)
+    #   recv_in[1]: start value
+    #   recv_in[2]: end value  
+    #   recv_in[3]: step value
+    # Outputs:
+    #   send_out[0]: current loop index with predicate
+    #   send_out[1]: loop_valid boolean (whether loop should continue)
     # OR use recv_const for configuration parameters
     assert num_inports >= 4, "LoopControlRTL requires at least 4 input ports"
+    assert num_outports >= 2, "LoopControlRTL requires at least 2 output ports"
 
     super(LoopControlRTL, s).construct(DataType, CtrlType,
                                        num_inports, num_outports,
@@ -88,7 +93,7 @@ class LoopControlRTL(Fu):
         in3_idx_ff = s.in3
         
         # Update from recv_opt if valid
-        if (s.recv_opt.val) & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL):
+        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL):
           if s.recv_opt.msg.fu_in[0] != 0:
             in0_idx_ff = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
           if s.recv_opt.msg.fu_in[1] != 0:
@@ -100,10 +105,10 @@ class LoopControlRTL(Fu):
         
         # Update state when we successfully process inputs
         # Check if valid operation is present and inputs are available
-        if ( (s.recv_opt.val) & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL)
-             & (s.recv_in[in0_idx_ff].val) & (s.recv_in[in1_idx_ff].val)
-             & (s.recv_in[in2_idx_ff].val) & (s.recv_in[in3_idx_ff].val)
-             & (s.send_out[0].rdy) ):
+        if ( s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL)
+             & s.recv_in[in0_idx_ff].val & s.recv_in[in1_idx_ff].val
+             & s.recv_in[in2_idx_ff].val & s.recv_in[in3_idx_ff].val
+             & s.send_out[0].rdy ):
           # Update current index after sending output
           s.current_index <<= s.next_index
           # Mark loop as initialized after first iteration
@@ -161,19 +166,17 @@ class LoopControlRTL(Fu):
 
       # Only process when all required inputs are valid AND output is ready
       all_inputs_valid = (
-        (s.recv_opt.val) &
+        s.recv_opt.val &
         (s.recv_opt.msg.operation == OPT_LOOP_CONTROL) &
-        (s.recv_in[in0_idx_local].val) &
-        (s.recv_in[in1_idx_local].val) &
-        (s.recv_in[in2_idx_local].val) &
-        (s.recv_in[in3_idx_local].val) &
-        (s.send_out[0].rdy)
+        s.recv_in[in0_idx_local].val &
+        s.recv_in[in1_idx_local].val &
+        s.recv_in[in2_idx_local].val &
+        s.recv_in[in3_idx_local].val &
+        s.send_out[0].rdy
       )
       
       # Check if all output ports are ready (for recv_opt.rdy)
-      all_outputs_ready = s.send_out[0].rdy
-      if num_outports > 1:
-        all_outputs_ready = all_outputs_ready & s.send_out[1].rdy
+      all_outputs_ready = s.send_out[0].rdy & s.send_out[1].rdy
 
       if all_inputs_valid:
         # Get inputs:
@@ -222,10 +225,9 @@ class LoopControlRTL(Fu):
         s.send_out[0].val @= b1(1)
         
         # Output 1: loop_valid (boolean predicate indicating if loop should continue)
-        if num_outports > 1:
-          s.send_out[1].msg.payload @= zext(s.loop_valid, PayloadType)
-          s.send_out[1].msg.predicate @= s.reached_vector_factor
-          s.send_out[1].val @= b1(1)
+        s.send_out[1].msg.payload @= zext(s.loop_valid, PayloadType)
+        s.send_out[1].msg.predicate @= s.reached_vector_factor
+        s.send_out[1].val @= b1(1)
         
         # Set ready signals for inputs when all inputs are consumed
         s.recv_in[in0_idx_local].rdy @= b1(1)
