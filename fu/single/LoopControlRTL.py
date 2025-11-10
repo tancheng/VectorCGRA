@@ -105,10 +105,10 @@ class LoopControlRTL(Fu):
         
         # Update state when we successfully process inputs
         # Check if valid operation is present and inputs are available
-        if ( s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL)
+        if (s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL)
              & s.recv_in[in0_idx_ff].val & s.recv_in[in1_idx_ff].val
              & s.recv_in[in2_idx_ff].val & s.recv_in[in3_idx_ff].val
-             & s.send_out[0].rdy ):
+             & s.send_out[0].rdy):
           # Update current index after sending output
           s.current_index <<= s.next_index
           # Mark loop as initialized after first iteration
