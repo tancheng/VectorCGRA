@@ -64,7 +64,7 @@ class LoopControlRTL(Fu):
     
     # For first iteration detection - use sequential state flag
     s.is_first_iter = Wire(b1)
-    s.loop_initialized = Wire(b1)  # Tracks if loop has started
+    s.loop_initialized_reg = Wire(b1)  # Reg: Tracks if loop has started
     
     # Compute actual indices from configurable operand indices
     @update
@@ -79,7 +79,7 @@ class LoopControlRTL(Fu):
     def update_index():
       if s.reset:
         s.current_index <<= PayloadType(0)
-        s.loop_initialized <<= b1(0)
+        s.loop_initialized_reg <<= b1(0)
       else:
         # Compute indices locally for sequential logic to avoid using stale wire values
         in0_idx_ff = s.in0
@@ -88,7 +88,7 @@ class LoopControlRTL(Fu):
         in3_idx_ff = s.in3
         
         # Update from recv_opt if valid
-        if s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_CONTROL:
+        if (s.recv_opt.val) & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL):
           if s.recv_opt.msg.fu_in[0] != 0:
             in0_idx_ff = zext(s.recv_opt.msg.fu_in[0] - 1, FuInType)
           if s.recv_opt.msg.fu_in[1] != 0:
@@ -100,18 +100,16 @@ class LoopControlRTL(Fu):
         
         # Update state when we successfully process inputs
         # Check if valid operation is present and inputs are available
-        if ( s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_CONTROL
-             and s.recv_in[in0_idx_ff].val and s.recv_in[in1_idx_ff].val
-             and s.recv_in[in2_idx_ff].val and s.recv_in[in3_idx_ff].val
-             and s.send_out[0].rdy ):
+        if ( (s.recv_opt.val) & (s.recv_opt.msg.operation == OPT_LOOP_CONTROL)
+             & (s.recv_in[in0_idx_ff].val) & (s.recv_in[in1_idx_ff].val)
+             & (s.recv_in[in2_idx_ff].val) & (s.recv_in[in3_idx_ff].val)
+             & (s.send_out[0].rdy) ):
           # Update current index after sending output
           s.current_index <<= s.next_index
           # Mark loop as initialized after first iteration
-          if s.is_first_iter:
-            s.loop_initialized <<= b1(1)
-          # Reset initialization when loop completes (valid becomes 0)
-          elif not s.loop_valid:
-            s.loop_initialized <<= b1(0)
+          # Use combinational signal check before state update
+          if ~s.loop_initialized_reg:
+            s.loop_initialized_reg <<= b1(1)
     
     @update
     def comb_logic():
@@ -163,14 +161,19 @@ class LoopControlRTL(Fu):
 
       # Only process when all required inputs are valid AND output is ready
       all_inputs_valid = (
-        s.recv_opt.val and
-        s.recv_opt.msg.operation == OPT_LOOP_CONTROL and
-        s.recv_in[in0_idx_local].val and
-        s.recv_in[in1_idx_local].val and
-        s.recv_in[in2_idx_local].val and
-        s.recv_in[in3_idx_local].val and
-        s.send_out[0].rdy
+        (s.recv_opt.val) &
+        (s.recv_opt.msg.operation == OPT_LOOP_CONTROL) &
+        (s.recv_in[in0_idx_local].val) &
+        (s.recv_in[in1_idx_local].val) &
+        (s.recv_in[in2_idx_local].val) &
+        (s.recv_in[in3_idx_local].val) &
+        (s.send_out[0].rdy)
       )
+      
+      # Check if all output ports are ready (for recv_opt.rdy)
+      all_outputs_ready = s.send_out[0].rdy
+      if num_outports > 1:
+        all_outputs_ready = all_outputs_ready & s.send_out[1].rdy
 
       if all_inputs_valid:
         # Get inputs:
@@ -185,7 +188,7 @@ class LoopControlRTL(Fu):
 
         # Detect first iteration: loop not yet initialized
         # This correctly handles start_value=0 and loop reinvocation
-        s.is_first_iter @= ~s.loop_initialized
+        s.is_first_iter @= ~s.loop_initialized_reg
 
         # Compute next index and validity
         current_idx = s.current_index
@@ -229,7 +232,10 @@ class LoopControlRTL(Fu):
         s.recv_in[in1_idx_local].rdy @= b1(1)
         s.recv_in[in2_idx_local].rdy @= b1(1)
         s.recv_in[in3_idx_local].rdy @= b1(1)
-        s.recv_opt.rdy @= b1(1)
+        
+        # recv_opt.rdy depends on all outputs being ready
+        # If send_out is not ready to consume results, we can't proceed to next opt
+        s.recv_opt.rdy @= all_outputs_ready
 
   def line_trace(s):
     opt_str = " #"
