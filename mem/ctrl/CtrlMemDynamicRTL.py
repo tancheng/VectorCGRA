@@ -140,7 +140,7 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
-         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RECORD_INIT_PHI_ADDR) | \
+         (s.recv_pkt_queue.send.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
          (s.recv_pkt_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE):
         s.recv_pkt_queue.send.rdy @= 1

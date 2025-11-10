@@ -176,7 +176,7 @@ def test_tile_alu(cmdline_opts):
       # PHI_CONST should firstly output the constant 0 to indicate the iteration 0.
       IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 1))),
       # Sets the ctrl signal address of the initail PHI node to 0, as we only have one ctrl signal.
-      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_RECORD_INIT_PHI_ADDR, ctrl_addr = CtrlAddrType(0))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_RECORD_PHI_ADDR, ctrl_addr = CtrlAddrType(0))),
       # Launches the execution.
       IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH)),
       # Clock cycle 1, executes normally, we use CMD_CONST to simulate this normal execution.

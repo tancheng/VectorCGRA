@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 22
+NUM_CMDS = 23
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -32,12 +32,14 @@ CMD_STORE_REQUEST                    = 12
 CMD_CONST                            = 13
 CMD_COMPLETE                         = 14
 CMD_RESUME                           = 15
-CMD_RECORD_INIT_PHI_ADDR             = 16
+CMD_RECORD_PHI_ADDR                  = 16
 CMD_GLOBAL_REDUCE_COUNT              = 17
 CMD_GLOBAL_REDUCE_ADD                = 18
 CMD_GLOBAL_REDUCE_MUL                = 19
 CMD_GLOBAL_REDUCE_ADD_RESPONSE       = 20
 CMD_GLOBAL_REDUCE_MUL_RESPONSE       = 21
+CMD_PRESERVE                         = 22
+CMD_CLEAR                            = 23
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -56,11 +58,13 @@ CMD_SYMBOL_DICT = {
   CMD_CONST:                            "(CONST_DATA)",
   CMD_COMPLETE:                         "(COMPLETE_EXECUTION)",
   CMD_RESUME:                           "(RESUME_EXECUTION)",
-  CMD_RECORD_INIT_PHI_ADDR:             "(RECORD_INIT_PHI_ADDR)",
+  CMD_RECORD_PHI_ADDR:                  "(RECORD_TARGET_PHI_CONST_CTRL_MEM_ADDR)",
   CMD_GLOBAL_REDUCE_COUNT:              "(GLOBAL_REDUCE_COUNT)",
   CMD_GLOBAL_REDUCE_ADD:                "(GLOBAL_REDUCE_ADD)",
   CMD_GLOBAL_REDUCE_MUL:                "(GLOBAL_REDUCE_MUL)",
   CMD_GLOBAL_REDUCE_ADD_RESPONSE:       "(GLOBAL_REDUCE_ADD_RESPONSE)",
-  CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)"
+  CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)",
+  CMD_PRESERVE:                         "(PRESERVE_SUM_VALUE)",
+  CMD_CLEAR:                            "(CLEAR_CHANNELS)"
 }
 
