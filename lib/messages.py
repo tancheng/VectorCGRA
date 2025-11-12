@@ -313,14 +313,14 @@ def mk_inter_cgra_pkt(num_cgra_columns,
 
   Example:
     >>> DataType = mk_data(32, 1)
-    >>> CtrlType = mk_ctrl()
-    >>> PayloadType = mk_cgra_payload(DataType, mk_bits(8), CtrlType, mk_bits(4))
-    >>> PktType = mk_inter_cgra_pkt(2, 1, 4, 3, PayloadType)
+    >>> CtrlType = mk_ctrl(2,2,4,4,16)
+    >>> PayloadType = mk_cgra_payload(DataType, mk_bits(4), CtrlType, mk_bits(4))
+    >>> PktType = mk_inter_cgra_pkt(4, 1, 4, 3, PayloadType)
     >>> print(PktType)
-    <class 'types.InterCgraPacket_2_2x1_4_8_4_CgraPayload'>
-    >>> pkt = PktType(0, 1, 0, 0, 1, 0, 0, 0, 0, 0, payload=PayloadType())
+    <class 'types.InterCgraPacket_4_4x1_4_8_4_CgraPayload'>
+    >>> pkt = PktType(0, 1, 0, 0, 1, 0, 2, 4, payload=PayloadType(CMD_GLOBAL_REDUCE_ADD, data = DataType(4, 1, 0, 0)))
     >>> print(pkt)
-    InterCgraPkt: 0->1 || (0,0)->(1,0) || tileid:0->0 || remote_src_port:0 || 00:0 || payload:MultiCgraNocPayload: cmd:00|data:00000000.0.0.0|data_addr:00|ctrl:(opt)00|(fu_in)0-0-0-0|(routing_xbar_out)0-0-0-0-0-0-0-0-0|(fu_xbar_out)0-0-0-0-0-0-0-0-0|(vector_factor_power)0|(is_last_ctrl)0|(read_reg_from)0-0-0-0|(write_reg_from)0-0-0-0|(write_reg_idx)0-0-0-0|(read_reg_idx)0-0-0-0|ctrl_addr:0
+    InterCgraPkt: 0->1 || (0,0)->(1,0) || tileid:2->4 || remote_src_port:0 || 00:0 || payload:MultiCgraNocPayload: cmd:12|data:00000004.1.0.0|data_addr:0|ctrl:(opt)00|(fu_in)0-0|(routing_xbar_out)0-0-0-0-0-0|(fu_xbar_out)0-0-0-0-0-0|(vector_factor_power)0|(is_last_ctrl)0|(read_reg_from)0-0|(write_reg_from)0-0|(write_reg_idx)0-0|(read_reg_idx)0-0|ctrl_addr:0
   """
 
   CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1))

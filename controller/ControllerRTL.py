@@ -315,8 +315,8 @@ class ControllerRTL(Component):
 
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL):
-          dst_tile_id = int(s.recv_from_inter_cgra_noc.msg.dst_tile_id)
-          src_tile_id = int(s.recv_from_inter_cgra_noc.msg.src_tile_id)
+          dst_tile_id = s.recv_from_inter_cgra_noc.msg.dst_tile_id
+          src_tile_id = s.recv_from_inter_cgra_noc.msg.src_tile_id
           reduce_idx = 0
           if num_global_reduce_units > 1:
             if dst_tile_id < num_global_reduce_units:
@@ -331,8 +331,8 @@ class ControllerRTL(Component):
           reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_COUNT:
-          dst_tile_id = int(s.recv_from_inter_cgra_noc.msg.dst_tile_id)
-          src_tile_id = int(s.recv_from_inter_cgra_noc.msg.src_tile_id)
+          dst_tile_id = s.recv_from_inter_cgra_noc.msg.dst_tile_id
+          src_tile_id = s.recv_from_inter_cgra_noc.msg.src_tile_id
           reduce_idx = 0
           if num_global_reduce_units > 1:
             if dst_tile_id < num_global_reduce_units:
