@@ -204,11 +204,10 @@ class ControllerRTL(Component):
       for i in range(num_global_reduce_units):
         s.global_reduce_units[i].send.rdy @= 0
       for i in range(num_global_reduce_units):
-        reduce_unit = s.global_reduce_units[i]
-        if (~selected_unit) & reduce_unit.send.val:
+        if (~selected_unit) & s.global_reduce_units[i].send.val:
           s.crossbar.recv[kFromReduceUnitIdx].val @= 1
-          s.crossbar.recv[kFromReduceUnitIdx].msg @= reduce_unit.send.msg
-          reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
+          s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_units[i].send.msg
+          s.global_reduce_units[i].send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
           selected_unit = b1(1)
 
       # For the ctrl and data preloading.
@@ -325,10 +324,9 @@ class ControllerRTL(Component):
               reduce_idx = src_tile_id
             else:
               reduce_idx = dst_tile_id % num_global_reduce_units
-          reduce_unit = s.global_reduce_units[reduce_idx]
-          s.recv_from_inter_cgra_noc.rdy @= reduce_unit.recv_data.rdy
-          reduce_unit.recv_data.val @= 1
-          reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_units[reduce_idx].recv_data.rdy
+          s.global_reduce_units[reduce_idx].recv_data.val @= 1
+          s.global_reduce_units[reduce_idx].recv_data.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_COUNT:
           dst_tile_id = s.recv_from_inter_cgra_noc.msg.dst_tile_id
@@ -341,10 +339,9 @@ class ControllerRTL(Component):
               reduce_idx = src_tile_id
             else:
               reduce_idx = dst_tile_id % num_global_reduce_units
-          reduce_unit = s.global_reduce_units[reduce_idx]
-          s.recv_from_inter_cgra_noc.rdy @= reduce_unit.recv_count.rdy
-          reduce_unit.recv_count.val @= 1
-          reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_units[reduce_idx].recv_count.rdy
+          s.global_reduce_units[reduce_idx].recv_count.val @= 1
+          s.global_reduce_units[reduce_idx].recv_count.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
