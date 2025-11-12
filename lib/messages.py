@@ -21,6 +21,26 @@ from .util.data_struct_attr import *
 
 def mk_data(payload_nbits=16, predicate_nbits=1, bypass_nbits=1,
             prefix="CgraData"):
+  """
+  Build a CGRA data bitstruct with payload, predicate, bypass, and delay fields.
+
+  Args:
+    payload_nbits   (int): Width of the arithmetic payload.
+    predicate_nbits (int): Width of the predicate/valid flag.
+    bypass_nbits    (int): Width of the bypass metadata.
+    prefix         (str):  Prefix used in the generated type name.
+
+  Returns:
+    type: PyMTL bitstruct class (e.g., ``<class 'CgraData_32_1_1_1'>``).
+
+  Example:
+    >>> DataType = mk_data(32, 1)
+    >>> print(DataType)
+    <class 'types.CgraData_32_1_1_1'>
+    >>> sample = DataType(payload=5, predicate=1, bypass=0, delay=0)
+    >>> print(sample)
+    00000005.1.0.0
+  """
 
   PayloadType   = mk_bits( payload_nbits   )
   PredicateType = mk_bits( predicate_nbits )
@@ -72,6 +92,31 @@ def mk_ctrl(num_fu_inports = 4,
             num_tile_outports = 5,
             num_registers_per_reg_bank = 16,
             prefix = "CGRAConfig"):
+  """
+  Build a CGRA control bitstruct that describes FU routing/config information.
+
+  Args:
+    num_fu_inports (int): Number of FU input ports per tile.
+    num_fu_outports (int): Number of FU output ports per tile.
+    num_tile_inports (int): Number of tile-to-tile input ports.
+    num_tile_outports (int): Number of tile-to-tile output ports.
+    num_registers_per_reg_bank (int): Register count per bank.
+    prefix (str): Prefix used in the generated type name.
+
+  Returns:
+    type: PyMTL bitstruct class encoding a CGRA control word.
+
+  Example:
+    >>> CtrlType = mk_ctrl(num_fu_inports=2, num_fu_outports=2)
+    >>> print(CtrlType)
+    <class 'types.CGRAConfig_7_2_2_5_5_3'>
+    >>> ctrl = CtrlType(operation=0, fu_in=[0, 1], fu_xbar_outport=[0]*4,
+    ...                 routing_xbar_outport=[0]*4, vector_factor_power=0,
+    ...                 is_last_ctrl=0, write_reg_from=[0, 0], write_reg_idx=[0, 0],
+    ...                 read_reg_from=[0, 0], read_reg_idx=[0, 0])
+    >>> print(ctrl.operation)
+    00
+  """
 
   operation_nbits = clog2(NUM_OPTS)
   OperationType = mk_bits(operation_nbits)
@@ -199,6 +244,31 @@ def mk_cgra_payload(DataType,
                     CtrlType,
                     CtrlAddrType,
                     prefix="MultiCgraPayload"):
+  """
+  Build the payload bitstruct used inside inter/intra-CGRA network packets.
+
+  Args:
+    DataType: Bitstruct type representing the data value.
+    DataAddrType: Bit type for global/local data addresses.
+    CtrlType: Bitstruct type for CGRA control/config commands.
+    CtrlAddrType: Bit width for control memory addresses.
+    prefix (str): Prefix used in the generated type name.
+
+  Returns:
+    type: PyMTL bitstruct class containing cmd/data/addr/ctrl fields.
+
+  Example:
+    >>> DataType = mk_data(32, 1)
+    >>> DataAddrType = mk_bits(8)
+    >>> CtrlType = mk_ctrl()
+    >>> CtrlAddrType = mk_bits(4)
+    >>> PayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+    >>> print(PayloadType)
+    <class 'types.MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr'>
+    >>> payload = PayloadType(cmd=0, data=DataType(), data_addr=0, ctrl=CtrlType(), ctrl_addr=0)
+    >>> print(payload)
+    MultiCgraNocPayload: cmd:00|data:00000000.0.0.0|data_addr:00|ctrl:(opt)00|(fu_in)0-0-0-0|(routing_xbar_out)0-0-0-0-0-0-0-0-0|(fu_xbar_out)0-0-0-0-0-0-0-0-0|(vector_factor_power)0|(is_last_ctrl)0|(read_reg_from)0-0-0-0|(write_reg_from)0-0-0-0|(write_reg_idx)0-0-0-0|(read_reg_idx)0-0-0-0|ctrl_addr:0
+  """
 
   new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr"
 
@@ -227,6 +297,31 @@ def mk_inter_cgra_pkt(num_cgra_columns,
                       num_rd_tiles,
                       CgraPayloadType,
                       prefix="InterCgraPacket"):
+  """
+  Build the inter-CGRA network packet bitstruct that wraps a payload.
+
+  Args:
+    num_cgra_columns (int): Number of CGRA columns in the mesh/ring.
+    num_cgra_rows (int): Number of CGRA rows.
+    num_tiles (int): Number of tiles per CGRA (plus CPU marker).
+    num_rd_tiles (int): Number of tiles able to issue remote loads.
+    CgraPayloadType: Payload bitstruct type (from mk_cgra_payload).
+    prefix (str): Prefix for the generated packet type.
+
+  Returns:
+    type: PyMTL bitstruct class for inter-CGRA packets carrying the payload.
+
+  Example:
+    >>> DataType = mk_data(32, 1)
+    >>> CtrlType = mk_ctrl()
+    >>> PayloadType = mk_cgra_payload(DataType, mk_bits(8), CtrlType, mk_bits(4))
+    >>> PktType = mk_inter_cgra_pkt(2, 1, 4, 3, PayloadType)
+    >>> print(PktType)
+    <class 'types.InterCgraPacket_2_2x1_4_8_4_CgraPayload'>
+    >>> pkt = PktType(0, 1, 0, 0, 1, 0, 0, 0, 0, 0, payload=PayloadType())
+    >>> print(pkt)
+    InterCgraPkt: 0->1 || (0,0)->(1,0) || tileid:0->0 || remote_src_port:0 || 00:0 || payload:MultiCgraNocPayload: cmd:00|data:00000000.0.0.0|data_addr:00|ctrl:(opt)00|(fu_in)0-0-0-0|(routing_xbar_out)0-0-0-0-0-0-0-0-0|(fu_xbar_out)0-0-0-0-0-0-0-0-0|(vector_factor_power)0|(is_last_ctrl)0|(read_reg_from)0-0-0-0|(write_reg_from)0-0-0-0|(write_reg_idx)0-0-0-0|(read_reg_idx)0-0-0-0|ctrl_addr:0
+  """
 
   CgraIdType = mk_bits(max(clog2(num_cgra_columns * num_cgra_rows), 1))
   CgraXType = mk_bits(max(clog2(num_cgra_columns), 1))
@@ -409,6 +504,28 @@ def mk_mem_access_pkt(DataType,
 
 def mk_controller_noc_xbar_pkt(InterCgraPktType,
                                prefix="ControllerNocXbarPacket"):
+  """
+  Build the packet wrapper used by the controller crossbar before sending to NoC.
+
+  Args:
+    InterCgraPktType: Bitstruct class for the underlying inter-CGRA packet.
+    prefix (str): Prefix for the generated crossbar packet type.
+
+  Returns:
+    type: PyMTL bitstruct class tagging a destination outport plus the packet.
+
+  Example:
+    >>> DataType = mk_data(16, 1)
+    >>> CtrlType = mk_ctrl()
+    >>> PayloadType = mk_cgra_payload(DataType, mk_bits(8), CtrlType, mk_bits(4))
+    >>> PktType = mk_inter_cgra_pkt(2, 1, 4, 3, PayloadType)
+    >>> XbarPktType = mk_controller_noc_xbar_pkt(PktType)
+    >>> print(XbarPktType)
+    <class 'types.ControllerNocXbarPacket_InterCgraPktType'>
+    >>> xbar_pkt = XbarPktType(dst=0, inter_cgra_pkt=PktType())
+    >>> print(xbar_pkt)
+    ->0:(inter_cgra_pkt)InterCgraPkt: 0->0 || (0,0)->(0,0) || tileid:0->0 || remote_src_port:0 || 00:0 || payload:MultiCgraNocPayload: cmd:00|data:0000.0.0.0|data_addr:00|ctrl:(opt)00|(fu_in)0-0-0-0|(routing_xbar_out)0-0-0-0-0-0-0-0-0|(fu_xbar_out)0-0-0-0-0-0-0-0-0|(vector_factor_power)0|(is_last_ctrl)0|(read_reg_from)0-0-0-0|(write_reg_from)0-0-0-0|(write_reg_idx)0-0-0-0|(read_reg_idx)0-0-0-0|ctrl_addr:0
+  """
 
   DstType = mk_bits(1) # clog2(number_outports))
 
