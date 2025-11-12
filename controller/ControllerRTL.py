@@ -101,20 +101,6 @@ class ControllerRTL(Component):
     s.global_reduce_units = [GlobalReduceUnitRTL(InterCgraPktType)
                              for _ in range(num_global_reduce_units)]
 
-    def _determine_reduce_unit_idx(pkt):
-      if num_global_reduce_units == 1:
-        return 0
-
-      dst_tile_id = int(pkt.dst_tile_id)
-      if dst_tile_id < num_global_reduce_units:
-        return dst_tile_id
-
-      src_tile_id = int(pkt.src_tile_id)
-      if src_tile_id < num_global_reduce_units:
-        return src_tile_id
-
-      return dst_tile_id % num_global_reduce_units
-
     # LUT for global data address mapping.
     addr_offset_nbits = 0
     s.addr2controller_lut = [Wire(CgraIdType) for _ in range(len(controller2addr_map))]
@@ -329,14 +315,32 @@ class ControllerRTL(Component):
 
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL):
-          reduce_idx = _determine_reduce_unit_idx(s.recv_from_inter_cgra_noc.msg)
+          dst_tile_id = int(s.recv_from_inter_cgra_noc.msg.dst_tile_id)
+          src_tile_id = int(s.recv_from_inter_cgra_noc.msg.src_tile_id)
+          reduce_idx = 0
+          if num_global_reduce_units > 1:
+            if dst_tile_id < num_global_reduce_units:
+              reduce_idx = dst_tile_id
+            elif src_tile_id < num_global_reduce_units:
+              reduce_idx = src_tile_id
+            else:
+              reduce_idx = dst_tile_id % num_global_reduce_units
           reduce_unit = s.global_reduce_units[reduce_idx]
           s.recv_from_inter_cgra_noc.rdy @= reduce_unit.recv_data.rdy
           reduce_unit.recv_data.val @= 1
           reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_COUNT:
-          reduce_idx = _determine_reduce_unit_idx(s.recv_from_inter_cgra_noc.msg)
+          dst_tile_id = int(s.recv_from_inter_cgra_noc.msg.dst_tile_id)
+          src_tile_id = int(s.recv_from_inter_cgra_noc.msg.src_tile_id)
+          reduce_idx = 0
+          if num_global_reduce_units > 1:
+            if dst_tile_id < num_global_reduce_units:
+              reduce_idx = dst_tile_id
+            elif src_tile_id < num_global_reduce_units:
+              reduce_idx = src_tile_id
+            else:
+              reduce_idx = dst_tile_id % num_global_reduce_units
           reduce_unit = s.global_reduce_units[reduce_idx]
           s.recv_from_inter_cgra_noc.rdy @= reduce_unit.recv_count.rdy
           reduce_unit.recv_count.val @= 1
