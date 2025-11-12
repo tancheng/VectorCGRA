@@ -215,9 +215,9 @@ class ControllerRTL(Component):
 
       # For the reduced result coming back from the global reduce units.
       selected_unit = False
-      for i in range(len(s.global_reduce_units)):
+      for i in range(num_global_reduce_units):
         s.global_reduce_units[i].send.rdy @= 0
-      for i in range(len(s.global_reduce_units)):
+      for i in range(num_global_reduce_units):
         if (not selected_unit) and s.global_reduce_units[i].send.val:
           s.crossbar.recv[kFromReduceUnitIdx].val @= 1
           s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_units[i].send.msg
@@ -261,7 +261,7 @@ class ControllerRTL(Component):
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      for i in range(len(s.global_reduce_units)):
+      for i in range(num_global_reduce_units):
         s.global_reduce_units[i].recv_count.val @= 0
         s.global_reduce_units[i].recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         s.global_reduce_units[i].recv_data.val @= 0
