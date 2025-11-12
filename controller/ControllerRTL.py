@@ -215,13 +215,13 @@ class ControllerRTL(Component):
 
       # For the reduced result coming back from the global reduce units.
       selected_unit = False
-      for reduce_unit in s.global_reduce_units:
-        reduce_unit.send.rdy @= 0
-      for reduce_unit in s.global_reduce_units:
-        if (not selected_unit) and reduce_unit.send.val:
+      for i in range(len(s.global_reduce_units)):
+        s.global_reduce_units[i].send.rdy @= 0
+      for i in range(len(s.global_reduce_units)):
+        if (not selected_unit) and s.global_reduce_units[i].send.val:
           s.crossbar.recv[kFromReduceUnitIdx].val @= 1
-          s.crossbar.recv[kFromReduceUnitIdx].msg @= reduce_unit.send.msg
-          reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
+          s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_units[i].send.msg
+          s.global_reduce_units[i].send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
           selected_unit = True
 
       # For the ctrl and data preloading.
@@ -261,11 +261,11 @@ class ControllerRTL(Component):
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      for reduce_unit in s.global_reduce_units:
-        reduce_unit.recv_count.val @= 0
-        reduce_unit.recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        reduce_unit.recv_data.val @= 0
-        reduce_unit.recv_data.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      for i in range(len(s.global_reduce_units)):
+        s.global_reduce_units[i].recv_count.val @= 0
+        s.global_reduce_units[i].recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.global_reduce_units[i].recv_data.val @= 0
+        s.global_reduce_units[i].recv_data.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
