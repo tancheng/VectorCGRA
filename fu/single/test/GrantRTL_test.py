@@ -21,7 +21,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src_value,
                 src_predicate, src_opt, sink_out):
 
@@ -88,7 +88,7 @@ def test_grant():
                    ConfigType(OPT_GRT_ALWAYS, pickRegister),
                    ConfigType(OPT_GRT_ONCE,   pickRegister),
                    ConfigType(OPT_GRT_ONCE,   pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_value, src_condition, src_opt, sink_out)
   run_sim(th)

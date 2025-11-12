@@ -103,7 +103,6 @@ class TileWithContextSwitchRTL(Component):
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
                            num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
-                                   CgraPayloadType,
                                    ctrl_mem_size,
                                    num_fu_inports,
                                    num_fu_outports,

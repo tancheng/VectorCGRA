@@ -22,7 +22,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src2_msgs, src3_msgs, src_const, ctrl_msgs,
                 sink0_msgs, sink1_msgs):
@@ -98,7 +98,7 @@ def test_four():
   sink_out1     = [DataType(5, 0), DataType(5, 1)]
   src_opt       = [CtrlType(OPT_INC_NE_CONST_NOT_GRT, pickRegister),
                    CtrlType(OPT_INC_NE_CONST_NOT_GRT, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_in2, src_in3, src_const,
                    src_opt, sink_out0, sink_out1)

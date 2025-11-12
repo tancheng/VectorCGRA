@@ -22,7 +22,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, PredicateType, CtrlType,
+  def construct(s, FunctionUnit, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src2_msgs,
                 ctrl_msgs, sink_msgs):
@@ -87,7 +87,7 @@ def test_mul_alu():
   src_opt       = [CtrlType(OPT_MUL_ADD),
                    CtrlType(OPT_MUL_ADD),
                    CtrlType(OPT_MUL_SUB)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_in2, src_opt,
                    sink_out)
@@ -111,7 +111,7 @@ def test_mul_shifter():
   src_opt       = [CtrlType(OPT_MUL_LLS, pickRegister),
                    CtrlType(OPT_MUL_LLS, pickRegister),
                    CtrlType(OPT_MUL_LRS, pickRegister)]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType,
+  th = TestHarness(FU, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_in2, src_opt,
                    sink_out)

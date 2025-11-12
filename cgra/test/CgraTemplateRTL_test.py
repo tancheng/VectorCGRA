@@ -53,9 +53,9 @@ fuType2RTL["Grant"] = GrantRTL
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                CtrlPktType, CgraPayloadType, CtrlSignalType, NocPktType,
-                ControllerIdType, data_nbits, cgra_id, ctrl_mem_size,
+  def construct(s, DUT, FunctionUnit, FuList,
+                CtrlPktType,
+                cgra_id, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
@@ -64,6 +64,7 @@ class TestHarness(Component):
                 controller2addr_map, idTo2d_map,
                 complete_signal_sink_out):
 
+    CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     s.num_tiles = len(TileList)
     s.src_ctrl_pkt = TestSrcRTL(CtrlPktType, src_ctrl_pkt)
@@ -184,7 +185,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 6
+  ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 8
   width = paramCGRA.rows if paramCGRA != None else 2
   height = paramCGRA.columns if paramCGRA != None else 2
   data_mem_size_global = 512
@@ -469,9 +470,9 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType, InterCgraPktType,
-                   ControllerIdType, data_nbits, cgra_id,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   cgra_id,
                    ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,

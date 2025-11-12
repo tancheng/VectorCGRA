@@ -25,7 +25,7 @@ from ....mem.data.DataMemRTL import DataMemRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataUnit, DataType, PredicateType,
+  def construct(s, FunctionUnit, DataUnit, DataType,
                 ConfigType, num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const_msgs, ctrl_msgs,
                 sink_msgs):
@@ -98,7 +98,7 @@ def test_Mem():
                ConfigType(OPT_STR, pickRegister),
                ConfigType(OPT_LD,  pickRegister),
                ConfigType(OPT_LD,  pickRegister)]
-  th = TestHarness(FU, DataUnit, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataUnit, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -124,7 +124,7 @@ def test_PseudoMem():
                ConfigType(OPT_LD_CONST, pickRegister),
                ConfigType(OPT_LD,       pickRegister),
                ConfigType(OPT_LD_CONST, pickRegister)]
-  th = TestHarness(FU, DataUnit, DataType, PredicateType, ConfigType,
+  th = TestHarness(FU, DataUnit, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size, src_in0,
                    src_in1, src_const, src_opt, sink_out)
   run_sim(th)
