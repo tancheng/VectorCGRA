@@ -214,15 +214,16 @@ class ControllerRTL(Component):
                                 s.recv_from_tile_load_response_pkt_queue.send.msg)
 
       # For the reduced result coming back from the global reduce units.
-      selected_unit = False
+      selected_unit = b1(0)
       for i in range(num_global_reduce_units):
         s.global_reduce_units[i].send.rdy @= 0
       for i in range(num_global_reduce_units):
-        if (not selected_unit) and s.global_reduce_units[i].send.val:
+        reduce_unit = s.global_reduce_units[i]
+        if (~selected_unit) & reduce_unit.send.val:
           s.crossbar.recv[kFromReduceUnitIdx].val @= 1
-          s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_units[i].send.msg
-          s.global_reduce_units[i].send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
-          selected_unit = True
+          s.crossbar.recv[kFromReduceUnitIdx].msg @= reduce_unit.send.msg
+          reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
+          selected_unit = b1(1)
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
