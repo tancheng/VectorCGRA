@@ -143,28 +143,28 @@ def test_simple(cmdline_opts):
 
   input_data = [
                    # src dst src_x src_y dst_x dst_y src_tile_id dst_tile_id
-    InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(2, 1, 0, 0))),
-    InterCgraPktType(0, 1, *(0, 0), *(1, 0), 2, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(4, 1, 0, 0))),
-    InterCgraPktType(0, 2, *(0, 0), *(2, 0), 3, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(6, 1, 0, 0))),
-    InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(3, 1, 0, 0))),
-    InterCgraPktType(0, 1, *(0, 0), *(1, 0), 2, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(5, 1, 0, 0))),
-    InterCgraPktType(0, 2, *(0, 0), *(2, 0), 3, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(7, 1, 0, 0))),
-    InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(3, 1, 0, 0))),
-    InterCgraPktType(0, 1, *(0, 0), *(1, 0), 2, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(5, 1, 0, 0))),
-    InterCgraPktType(0, 2, *(0, 0), *(2, 0), 3, 4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(7, 1, 0, 0))),
+    InterCgraPktType(0,  0,  *(0,  0), *(0,    0),   1,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(2, 1, 0, 0))),
+    InterCgraPktType(1,  0,  *(1,  0), *(0,    0),   1,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(4, 1, 0, 0))),
+    InterCgraPktType(2,  0,  *(2,  0), *(0,    0),   1,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(6, 1, 0, 0))),
+    InterCgraPktType(0,  0,  *(0,  0), *(0,    0),   2,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(3, 1, 0, 0))),
+    InterCgraPktType(1,  0,  *(1,  0), *(0,    0),   2,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(5, 1, 0, 0))),
+    InterCgraPktType(2,  0,  *(2,  0), *(0,    0),   2,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,   data = DataType(7, 1, 0, 0))),
+    InterCgraPktType(0,  0,  *(0,  0), *(0,    0),   3,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(3, 1, 0, 0))),
+    InterCgraPktType(1,  0,  *(1,  0), *(0,    0),   3,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(5, 1, 0, 0))),
+    InterCgraPktType(2,  0,  *(2,  0), *(0,    0),   3,          4, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(7, 1, 0, 0))),
   ]
 
   expected_output = [
                                                           # Reversed src/dst.
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(1, 0, *(1, 0), *(0, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(2, 0, *(2, 0), *(0, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(1, 0, *(1, 0), *(0, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(2, 0, *(2, 0), *(0, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 0, 0, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(1, 0, *(1, 0), *(0, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
-    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(2, 0, *(2, 0), *(0, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 4, 1, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 1, *(0, 0), *(1, 0), 4, 1, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 2, *(0, 0), *(2, 0), 4, 1, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(12,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 1, *(0, 0), *(1, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 2, *(0, 0), *(2, 0), 4, 2, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(15,  1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 0, *(0, 0), *(0, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 1, *(0, 0), *(1, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
+    ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(0, 2, *(0, 0), *(2, 0), 4, 3, payload = CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(105, 1, 0, 0)))),
   ]
 
   th = TestHarness(InterCgraPktType,
