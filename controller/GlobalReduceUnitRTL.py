@@ -20,6 +20,32 @@ from ..lib.messages import mk_controller_noc_xbar_pkt
 from ..lib.util.data_struct_attr import *
 
 class GlobalReduceUnitRTL(Component):
+  """
+  Diagram::
+
+      recv_count        recv_data
+       (val/rdy)        (val/rdy)
+          │                 │
+          ▼                 ▼
+       ┌─────┐      ┌───────────────┐
+       │ Cnt │      │ NormalQueue   │
+       │ Reg │◄────►│ (val/rdy FIFO)│
+       └──┬──┘      └───────┬───────┘
+          │                 │
+          │           ┌─────▼──────┐
+          │           │ accumulate │
+          │           │   add/mul  │
+          │           └─────┬──────┘
+          │                 │
+          │           ┌─────▼──────┐
+          └──────────►│ update_send│──► send (val/rdy)
+                      └────────────┘
+
+  - ``Cnt Reg`` covers ``target_count``, ``receiving_count``, and ``sending_count``.
+  - ``NormalQueue`` buffers incoming packets until the target count is reached.
+  - ``accumulate`` combines payloads based on ADD/MUL commands.
+  - ``update_send`` dequeues packets, swaps src/dst, and emits responses.
+  """
 
   def construct(s, InterCgraPktType):
 

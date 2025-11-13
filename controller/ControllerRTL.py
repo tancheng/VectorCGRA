@@ -29,7 +29,8 @@ class ControllerRTL(Component):
                 multi_cgra_columns,
                 num_tiles,
                 controller2addr_map,
-                idTo2d_map):
+                idTo2d_map,
+                num_global_reduce_units = 1):
 
     # Derives types from InterCgraPktType.
     CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
@@ -92,10 +93,13 @@ class ControllerRTL(Component):
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
-    # Global reduce unit.
-    # TODO: We need multiple GlobalReduceUnitRTL to enable more than 1 reduction
-    # across the fabric: https://github.com/tancheng/VectorCGRA/issues/184.
-    s.global_reduce_unit = GlobalReduceUnitRTL(InterCgraPktType)
+    # Cap the number of parallel global reduce units to at least one.
+    assert num_global_reduce_units >= 1, "num_global_reduce_units must be >= 1"
+
+    # Global reduce units (can be more than one to serve different tiles).
+    # https://github.com/tancheng/VectorCGRA/issues/184.
+    s.global_reduce_units = [GlobalReduceUnitRTL(InterCgraPktType)
+                             for _ in range(num_global_reduce_units)]
 
     # LUT for global data address mapping.
     addr_offset_nbits = 0
@@ -195,11 +199,16 @@ class ControllerRTL(Component):
           ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
                                 s.recv_from_tile_load_response_pkt_queue.send.msg)
 
-      # For the load response (i.e., the data towards other) from local memory.
-      s.crossbar.recv[kFromReduceUnitIdx].val @= \
-          s.global_reduce_unit.send.val
-      s.global_reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
-      s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_unit.send.msg
+      # For the reduced result coming back from the global reduce units.
+      selected_unit = b1(0)
+      for i in range(num_global_reduce_units):
+        s.global_reduce_units[i].send.rdy @= 0
+      for i in range(num_global_reduce_units):
+        if (~selected_unit) & s.global_reduce_units[i].send.val:
+          s.crossbar.recv[kFromReduceUnitIdx].val @= 1
+          s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_units[i].send.msg
+          s.global_reduce_units[i].send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
+          selected_unit = b1(1)
 
       # For the ctrl and data preloading.
       s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
@@ -238,10 +247,11 @@ class ControllerRTL(Component):
       s.recv_from_inter_cgra_noc.rdy @= 0
       s.send_to_ctrl_ring_pkt.val @= 0
       s.send_to_ctrl_ring_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      s.global_reduce_unit.recv_count.val @= 0
-      s.global_reduce_unit.recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-      s.global_reduce_unit.recv_data.val @= 0
-      s.global_reduce_unit.recv_data.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+      for i in range(num_global_reduce_units):
+        s.global_reduce_units[i].recv_count.val @= 0
+        s.global_reduce_units[i].recv_count.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        s.global_reduce_units[i].recv_data.val @= 0
+        s.global_reduce_units[i].recv_data.msg @= InterCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
@@ -302,15 +312,36 @@ class ControllerRTL(Component):
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
 
-        elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD:
-          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_data.rdy
-          s.global_reduce_unit.recv_data.val @= 1
-          s.global_reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
+        elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL):
+          dst_tile_id = s.recv_from_inter_cgra_noc.msg.dst_tile_id
+          src_tile_id = s.recv_from_inter_cgra_noc.msg.src_tile_id
+          reduce_idx = 0
+          if num_global_reduce_units > 1:
+            if dst_tile_id < num_global_reduce_units:
+              reduce_idx = dst_tile_id
+            elif src_tile_id < num_global_reduce_units:
+              reduce_idx = src_tile_id
+            else:
+              reduce_idx = dst_tile_id % num_global_reduce_units
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_units[reduce_idx].recv_data.rdy
+          s.global_reduce_units[reduce_idx].recv_data.val @= 1
+          s.global_reduce_units[reduce_idx].recv_data.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_COUNT:
-          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_count.rdy
-          s.global_reduce_unit.recv_count.val @= 1
-          s.global_reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
+          dst_tile_id = s.recv_from_inter_cgra_noc.msg.dst_tile_id
+          src_tile_id = s.recv_from_inter_cgra_noc.msg.src_tile_id
+          reduce_idx = 0
+          if num_global_reduce_units > 1:
+            if dst_tile_id < num_global_reduce_units:
+              reduce_idx = dst_tile_id
+            elif src_tile_id < num_global_reduce_units:
+              reduce_idx = src_tile_id
+            else:
+              reduce_idx = dst_tile_id % num_global_reduce_units
+          s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_units[reduce_idx].recv_count.rdy
+          s.global_reduce_units[reduce_idx].recv_count.val @= 1
+          s.global_reduce_units[reduce_idx].recv_count.msg @= s.recv_from_inter_cgra_noc.msg
 
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \

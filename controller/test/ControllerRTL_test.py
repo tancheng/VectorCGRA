@@ -39,7 +39,8 @@ class TestHarness(Component):
                 num_rd_tiles,
                 num_cgra_columns,
                 num_cgra_rows,
-                num_tiles):
+                num_tiles,
+                num_global_reduce_units = 1):
 
     num_cgras = num_cgra_columns * num_cgra_rows
     PktType = mk_inter_cgra_pkt(num_cgra_columns,
@@ -70,7 +71,8 @@ class TestHarness(Component):
                           num_cgras,
                           num_tiles,
                           controller2addr_map,
-                          idTo2d_map)
+                          idTo2d_map,
+                          num_global_reduce_units)
 
     # Connections
     s.dut.cgra_id //= cgra_id
@@ -283,3 +285,51 @@ def test_simple(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+
+def test_multiple_global_reduce_units(cmdline_opts):
+  from_tile_load_request_pkts = []
+  from_tile_load_response_pkts = []
+  from_tile_store_request_pkts = []
+
+  expected_to_mem_load_request_msgs = []
+  expected_to_mem_load_response = []
+  expected_to_mem_store_request_msgs = []
+                                          # src  dst   src_x src_y    dst_x dst_y  src_tile dst_tile opq vc                 cmd
+  reduce_count_pkt_tile0 = InterCgraPktType(0,   0,  *(0,    0),    *(0,    0),    0,       0,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT, data = DataType(1, 0, 0, 0)))
+  reduce_count_pkt_tile1 = InterCgraPktType(0,   0,  *(0,    0),    *(0,    0),    1,       1,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT, data = DataType(1, 0, 0, 0)))
+  reduce_data_pkt_tile0  = InterCgraPktType(0,   2,  *(0,    0),    *(2,    0),    0,       0,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_ADD, data = DataType(5, 1, 0, 0)))
+  reduce_data_pkt_tile1  = InterCgraPktType(1,   3,  *(1,    0),    *(3,    0),    1,       1,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_ADD, data = DataType(7, 1, 0, 0)))
+
+  from_noc_pkts = [
+      reduce_count_pkt_tile0,
+      reduce_count_pkt_tile1,
+      reduce_data_pkt_tile0,
+      reduce_data_pkt_tile1,
+  ]
+
+  expected_to_noc_pkts = [
+                     # src  dst   src_x src_y    dst_x dst_y  src_tile dst_tile opq vc                 cmd
+      InterCgraPktType(2,   0,  *(2,    0),    *(0,    0),    0,       0,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(5, 1, 0, 0))),
+      InterCgraPktType(3,   1,  *(3,    0),    *(1,    0),    1,       1,    0, 0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_ADD_RESPONSE, data = DataType(7, 1, 0, 0))),
+  ]
+
+  th = TestHarness(CgraPayloadType,
+                   cgra_id,
+                   from_tile_load_request_pkts,
+                   from_tile_load_response_pkts,
+                   from_tile_store_request_pkts,
+                   expected_to_mem_load_request_msgs,
+                   expected_to_mem_load_response,
+                   expected_to_mem_store_request_msgs,
+                   from_noc_pkts,
+                   expected_to_noc_pkts,
+                   controller2addr_map,
+                   idTo2d_map,
+                   num_rd_tiles,
+                   num_cgra_columns,
+                   num_cgra_rows,
+                   num_tiles,
+                   num_global_reduce_units = 4)
+  th.elaborate()
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
