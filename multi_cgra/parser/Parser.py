@@ -36,51 +36,35 @@ class Parser:
         per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
         tiles = self.parse_tiles()
 
-        # get the links of 2x2 tiles
-        links = get_links_2x2(tiles)
-        # 2x2 cgras
-        id2validLinks = {
-            0: links,
-            1: links,
-            2: links,
-            3: links,
-        }
+        # Gets the links.
+        links = get_links(tiles)
         # flatten tiles.
         tiles_0 = [t for row in tiles for t in row]
-        tiles_1 = copy.deepcopy(tiles_0)
-        tiles_2 = copy.deepcopy(tiles_0)
-        tiles_3 = copy.deepcopy(tiles_0)
 
+        # cgra id to valid links.
+        id2validLinks = {}
         # cgra id to valid tiles.
-        id2validTiles = {
-            0: tiles_0,
-            1: tiles_1,
-            2: tiles_2,
-            3: tiles_3,
-        }
+        id2validTiles = {}
+
+        for id in range(num_cgra_rows * num_cgra_columns):
+            id2validLinks[id] = copy.deepcopy(links)
+            id2validTiles[id] = copy.deepcopy(tiles_0)
+
         # Iterates id2validTiles to enable boundary ports
         for cgra_id, tiles_flat in id2validTiles.items():
             keep_port_valid_on_boundary(
                 cgra_id, tiles_flat, num_cgra_rows, num_cgra_columns, per_cgra_rows, per_cgra_columns)
 
-
         dataSPM = self.parse_dataSPM()
-        id2dataSPM = {
-            0: dataSPM,
-            1: dataSPM,
-            2: dataSPM,
-            3: dataSPM
-        }
+        id2dataSPM = {}
+        id2ctrlMemSize_map = {}
         # Is ctrlMemSize in architecture.yaml?
-        id2ctrlMemSize_map = {
-            0: 16,
-            1: 16,
-            2: 16,
-            3: 16
-        }
-        per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
-        per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
-        
+        ctrlMemSize = 16
+
+        for id in range(num_cgra_rows * num_cgra_columns):
+            id2dataSPM[id] = dataSPM
+            id2ctrlMemSize_map[id] = ctrlMemSize
+
         cgras = []
         for cgraRow in range(num_cgra_rows):
             cgras.append([])

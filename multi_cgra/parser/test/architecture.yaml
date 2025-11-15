@@ -4,8 +4,8 @@ architecture:
 
 multi_cgra_defaults:
   base_topology: "mesh"
-  rows: 2
-  columns: 2
+  rows: 4
+  columns: 4
   memory:
     capacity: 2048
 
