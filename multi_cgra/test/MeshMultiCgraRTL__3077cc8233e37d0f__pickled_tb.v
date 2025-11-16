@@ -2,6 +2,8 @@
 
 `include "header.sv"
 
+// vcs -sverilog -full64 -timescale=1ns/1ps /home/ronjok01/Downloads/MeshMultiCgraRTL__3077cc8233e37d0f__pickled.v /home/ronjok01/Downloads/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v -debug_access+all
+
 module cgra_test
 (
 );
@@ -729,7 +731,7 @@ typedef struct packed {
         .dst(5'd5),
         .cmd(5'd3),
         .operation(7'd1),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
+        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
@@ -774,7 +776,7 @@ typedef struct packed {
         .cmd(5'd3),
         .operation(7'd11),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd1, 3'd0}),
+        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
         .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}),
@@ -1333,20 +1335,28 @@ typedef struct packed {
                                                       //MultiCGRA.cgra__0.tile__1.ctrl_mem.recv_pkt_queue__send__msg.data);
     $display("!!!!!!!!!!!! %d", recv_from_cpu_pkt__msg.payload.ctrl.fu_in[1]);
     $display("!!!!!!!!!!!! %d %d %d %d", send_to_cpu_pkt__val, send_to_cpu_pkt__msg.src, send_to_cpu_pkt__msg.dst, send_to_cpu_pkt__msg.payload.data.payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[0], MultiCGRA.cgra__0.tile__1.send_data__msg[0].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[0], MultiCGRA.cgra__0.tile__5.send_data__msg[0].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[1], MultiCGRA.cgra__0.tile__1.send_data__msg[1].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[1], MultiCGRA.cgra__0.tile__5.send_data__msg[1].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[2], MultiCGRA.cgra__0.tile__1.send_data__msg[2].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[2], MultiCGRA.cgra__0.tile__5.send_data__msg[2].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[3], MultiCGRA.cgra__0.tile__1.send_data__msg[3].payload);
-    $display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[3], MultiCGRA.cgra__0.tile__5.send_data__msg[3].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[0], MultiCGRA.cgra__0.tile__1.send_data__msg[0].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[0], MultiCGRA.cgra__0.tile__5.send_data__msg[0].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[1], MultiCGRA.cgra__0.tile__1.send_data__msg[1].payload);
+    $display("!!!!!!!!!!!. %d %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[1], MultiCGRA.cgra__0.tile__5.send_data__msg[1].payload, MultiCGRA.cgra__0.tile__5.send_data__msg[1].predicate);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[2], MultiCGRA.cgra__0.tile__1.send_data__msg[2].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[2], MultiCGRA.cgra__0.tile__5.send_data__msg[2].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[3], MultiCGRA.cgra__0.tile__1.send_data__msg[3].payload);
+    //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[3], MultiCGRA.cgra__0.tile__5.send_data__msg[3].payload);
   end
 
-  initial
+  /*initial
   begin  
     $dumpfile("./output.vcd");
     $dumpvars (0, cgra_test);
+  end*/
+  initial
+  begin
+    $fsdbDumpfile("./output.fsdb");
+    //$fsdbDumpvars (0, "cgra_test.MultiCGRA.cgra__0.tile__5.send_data__msg");
+    $fsdbDumpvars ("+all", "cgra_test");
+    $fsdbDumpMDA;
+    $fsdbDumpSVA;
   end
 
 
