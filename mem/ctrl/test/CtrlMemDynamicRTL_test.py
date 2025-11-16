@@ -20,30 +20,32 @@ from ....lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 class TestHarness(Component):
-  def construct(s, MemUnit, DataType, PredicateType, CtrlPktType,
-                CgraPayloadType, CtrlSignalType, ctrl_mem_size,
+  def construct(s, MemUnit, CtrlPktType,
+                ctrl_mem_size,
                 data_mem_size, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, src0_msgs,
                 src1_msgs, ctrl_pkts, sink_msgs, num_tiles,
                 complete_signal_sink_out, ctrl_count_per_iter,
                 total_ctrl_steps_val, FuType):
 
+    CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
     s.src_data0 = TestSrcRTL(DataType, src0_msgs)
     s.src_data1 = TestSrcRTL(DataType, src1_msgs)
     s.src_pkt = TestSrcRTL(CtrlPktType, ctrl_pkts)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out)
 
-    s.fu = FuType(DataType, PredicateType, CtrlSignalType, 2, 2,
+    s.fu = FuType(DataType, CtrlSignalType, 2, 2,
                   data_mem_size, ctrl_mem_size)
-    s.ctrl_mem = MemUnit(CtrlPktType, CgraPayloadType, DataType, CtrlSignalType,
+    s.ctrl_mem = MemUnit(CtrlPktType,
                          ctrl_mem_size, num_fu_inports, num_fu_outports,
                          num_tile_inports, num_tile_outports, 1, num_tiles,
                          ctrl_count_per_iter, total_ctrl_steps_val)
 
     # Connections.
-    if isinstance(s.fu, RetRTL):
-      s.fu.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
+    s.fu.send_to_ctrl_mem //= s.ctrl_mem.recv_from_element
     s.fu.recv_opt //= s.ctrl_mem.send_ctrl
     s.src_pkt.send //= s.ctrl_mem.recv_pkt_from_controller
     s.complete_signal_sink_out.recv //= s.ctrl_mem.send_pkt_to_controller
@@ -137,11 +139,7 @@ def test_ctrl():
   total_ctrl_steps_val = len(src_ctrl_pkt) - 1
 
   th = TestHarness(MemUnit,
-                   DataType,
-                   PredicateType,
                    IntraCgraPktType,
-                   CgraPayloadType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,
@@ -163,7 +161,6 @@ def test_ctrl_bound():
   MemUnit = CtrlMemDynamicRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
-  PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
   num_fu_inports = 2
   num_fu_outports = 2
@@ -229,11 +226,7 @@ def test_ctrl_bound():
       IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE))]
   
   th = TestHarness(MemUnit,
-                   DataType,
-                   PredicateType,
                    IntraCgraPktType,
-                   CgraPayloadType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,
@@ -255,7 +248,6 @@ def test_return():
   MemUnit = CtrlMemDynamicRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
-  PredicateType = mk_predicate(1, 1)
   ctrl_mem_size = 16
   num_fu_inports = 2
   num_fu_outports = 2
@@ -324,11 +316,7 @@ def test_return():
       IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0), ctrl = CtrlType(OPT_RET, pick_register)))]
 
   th = TestHarness(MemUnit,
-                   DataType,
-                   PredicateType,
                    IntraCgraPktType,
-                   CgraPayloadType,
-                   CtrlType,
                    ctrl_mem_size,
                    data_mem_size_global,
                    num_fu_inports,

@@ -16,24 +16,35 @@ from ..lib.messages import *
 from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-from ..noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
+from ..noc.PyOCN.pymtl3_net.xbar.XbarRTL import XbarRTL
 
 from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
+from ..lib.util.data_struct_attr import *
 
 class ControllerRTL(Component):
 
   def construct(s,
-                CgraIdType,
-                IntraCgraPktType,
                 InterCgraPktType,
-                DataType,
-                DataAddrType,
                 multi_cgra_rows,
                 multi_cgra_columns,
                 num_tiles,
                 controller2addr_map,
                 idTo2d_map):
 
+    # Derives types from InterCgraPktType.
+    CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
+    
+    # Derives CgraIdType from grid dimensions.
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
+    
+    # Reconstructs IntraCgraPktType.
+    IntraCgraPktType = mk_intra_cgra_pkt(multi_cgra_columns,
+                                         multi_cgra_rows,
+                                         num_tiles,
+                                         CgraPayloadType)
+    
     assert(multi_cgra_columns >= multi_cgra_rows)
 
     # Used for calculating the x/y position.
@@ -77,21 +88,20 @@ class ControllerRTL(Component):
     # memory, load response from local memory, ctrl&data packet from cpu,
     # and command signal from inter-tile, i.e., intra-cgra, ring) and 1 
     # outport (only allow one request be sent out per cycle).
-    s.crossbar = XbarBypassQueueRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
+    s.crossbar = XbarRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
     # Global reduce unit.
     # TODO: We need multiple GlobalReduceUnitRTL to enable more than 1 reduction
     # across the fabric: https://github.com/tancheng/VectorCGRA/issues/184.
-    s.global_reduce_unit = GlobalReduceUnitRTL(DataType, InterCgraPktType, ControllerXbarPktType)
+    s.global_reduce_unit = GlobalReduceUnitRTL(InterCgraPktType)
 
     # LUT for global data address mapping.
     addr_offset_nbits = 0
     s.addr2controller_lut = [Wire(CgraIdType) for _ in range(len(controller2addr_map))]
     # Assumes the address range is contiguous within one CGRA's SPMs.
     addr2controller_vector = [-1 for _ in range(len(controller2addr_map))]
-    # s.addr_base_items = len(controller2addr_map)
     for src_cgra_id, address_range in controller2addr_map.items():
       begin_addr, end_addr = address_range[0], address_range[1]
       address_length = end_addr - begin_addr + 1
@@ -308,9 +318,15 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONST) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PAUSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PRESERVE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RESUME) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_TERMINATE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
@@ -339,7 +355,6 @@ class ControllerRTL(Component):
       # addr_dst_id = 0
       if (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_LOAD_REQUEST) | \
          (s.crossbar.send[0].msg.inter_cgra_pkt.payload.cmd == CMD_STORE_REQUEST):
-        # addr_dst_id = s.addr2controller_lut[trunc(s.crossbar.send[0].msg.inter_cgra_pkt.payload.data_addr >> addr_offset_nbits, CgraIdType)]
         s.send_to_inter_cgra_noc.msg.dst @= s.addr_dst_id
         s.send_to_inter_cgra_noc.msg.dst_x @= s.idTo2d_x_lut[s.addr_dst_id]
         s.send_to_inter_cgra_noc.msg.dst_y @= s.idTo2d_y_lut[s.addr_dst_id]

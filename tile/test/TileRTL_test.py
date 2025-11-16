@@ -42,14 +42,15 @@ from ...lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, DUT, FunctionUnit, FuList, DataType, PredicateType,
-                IntraCgraPktType, CgraPayloadType, CtrlType,
-                data_nbits,
+  def construct(s, DUT, FunctionUnit, FuList,
+                IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
                 src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out):
 
+    CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
+    DataType = CgraPayloadType.get_field_type(kAttrData)
     s.num_tile_inports = num_tile_inports
     s.num_tile_outports = num_tile_outports
 
@@ -60,8 +61,7 @@ class TestHarness(Component):
                   for i in range(num_tile_outports)]
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(DataType, PredicateType, IntraCgraPktType, CgraPayloadType,
-                CtrlType, data_nbits, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
+    s.dut = DUT(IntraCgraPktType, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,
@@ -206,9 +206,9 @@ def test_tile_alu(cmdline_opts):
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0,   0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType,
-                   data_nbits, ctrl_mem_size,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   ctrl_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -321,9 +321,9 @@ def test_tile_multicycle_exclusive(cmdline_opts):
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType,
-                   data_nbits, ctrl_mem_size,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   ctrl_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -434,9 +434,9 @@ def test_tile_multicycle_inclusive(cmdline_opts):
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
 
-  th = TestHarness(DUT, FunctionUnit, FuList, DataType, PredicateType,
-                   IntraCgraPktType, CgraPayloadType, CtrlType,
-                   data_nbits, ctrl_mem_size,
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   ctrl_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,

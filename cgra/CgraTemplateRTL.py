@@ -11,18 +11,21 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
+from ..lib.util.common import *
 from ..mem.data.DataMemControllerRTL import DataMemControllerRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_ring_pos
 from ..noc.PyOCN.pymtl3_net.ringnet.RingNetworkRTL import RingNetworkRTL
 from ..tile.TileRTL import TileRTL
+from ..lib.util.data_struct_attr import *
+from ..lib.messages import *
 
 
 class CgraTemplateRTL(Component):
 
-  def construct(s, DataType, PredicateType, CtrlPktType, CgraPayloadType,
-                CtrlSignalType, NocPktType, CgraIdType, data_bitwidth,
+  def construct(s, CgraPayloadType,
                 multi_cgra_rows,
                 multi_cgra_columns,
+                per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
@@ -30,6 +33,25 @@ class CgraTemplateRTL(Component):
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 is_multi_cgra = True):
+
+    DataType = CgraPayloadType.get_field_type(kAttrData)
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
+
+    CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
+
+    # Reconstructs packet types.
+    num_tiles = len(TileList)
+    # Calculates num_rd_tiles from TileList (number of tiles with read ports).
+    num_rd_tiles = dataSPM.getNumOfValidReadPorts()
+
+    CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                    num_tiles, CgraPayloadType)
+
+    NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
+                                   num_tiles, num_rd_tiles,
+                                   CgraPayloadType)
 
     s.num_mesh_ports = 8
     s.num_tiles = len(TileList)
@@ -47,23 +69,18 @@ class CgraTemplateRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
-    # FIXME: Think about how to handle the boundary for the case of
-    # multi-cgra modeling.
-    # # Interfaces on the boundary of the CGRA.
-    # s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(width )]
-    # s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(width )]
-    # s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(width )]
-
-    # s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(height)]
-    # s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(height)]
-    # s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(height)]
+    if is_multi_cgra:
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
 
     # Components
-    s.tile = [TileRTL(DataType, PredicateType, CtrlPktType,
-                      CgraPayloadType, CtrlSignalType,
-                      data_bitwidth,
+    s.tile = [TileRTL(CtrlPktType,
                       ctrl_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
@@ -73,8 +90,6 @@ class CgraTemplateRTL(Component):
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
-                                      CgraPayloadType,
-                                      DataType,
                                       data_mem_size_global,
                                       data_mem_size_per_bank,
                                       num_banks_per_cgra,
@@ -85,8 +100,7 @@ class CgraTemplateRTL(Component):
                                       s.num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
-    s.controller = ControllerRTL(CgraIdType, CtrlPktType,
-                                 NocPktType, DataType, DataAddrType,
+    s.controller = ControllerRTL(NocPktType,
                                  multi_cgra_rows, multi_cgra_columns,
                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
@@ -160,6 +174,35 @@ class CgraTemplateRTL(Component):
         srcTileIndex = link.srcTile.getIndex(TileList)
         dstTileIndex = link.dstTile.getIndex(TileList)
         s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+
+    if is_multi_cgra:
+      for row in range(per_cgra_rows):
+        for col in range(per_cgra_columns):
+          tile_id = row * per_cgra_columns + col
+          # Only connects if the port is valid
+          if row == per_cgra_rows - 1:
+            if PORT_NORTH not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[col]
+            if PORT_NORTH not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[col]
+
+          if row == 0:
+            if PORT_SOUTH not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[col]
+            if PORT_SOUTH not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
+
+          if col == 0:
+            if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
+            if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
+
+          if col == per_cgra_columns - 1:
+            if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_EAST] //= s.send_data_on_boundary_east[row]
+            if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
 
     for i in range(s.num_tiles):
 

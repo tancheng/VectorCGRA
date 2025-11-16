@@ -24,11 +24,7 @@ from ...lib.opt_type import *
 class TestHarness(Component):
 
   def construct(s,
-                ControllerIdType,
-                CpuPktType,
-                MsgType,
-                AddrType,
-                PktType,
+                CgraPayloadType,
                 cgra_id,
                 from_tile_load_request_pkt_msgs,
                 from_tile_load_response_pkt_msgs,
@@ -40,8 +36,22 @@ class TestHarness(Component):
                 expected_to_noc_pkts,
                 controller2addr_map,
                 idTo2d_map,
-                num_cgras,
+                num_rd_tiles,
+                num_cgra_columns,
+                num_cgra_rows,
                 num_tiles):
+
+    num_cgras = num_cgra_columns * num_cgra_rows
+    PktType = mk_inter_cgra_pkt(num_cgra_columns,
+                                num_cgra_rows,
+                                num_tiles,
+                                num_rd_tiles,
+                                CgraPayloadType)
+
+    CpuPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                   num_cgra_rows,
+                                   num_tiles,
+                                   CgraPayloadType)
 
     s.src_from_tile_load_request_pkt = TestSrcRTL(PktType, from_tile_load_request_pkt_msgs)
     s.src_from_tile_load_response_pkt = TestSrcRTL(PktType, from_tile_load_response_pkt_msgs)
@@ -55,11 +65,7 @@ class TestHarness(Component):
     s.src_from_noc = TestSrcRTL(PktType, from_noc_pkts)
     s.sink_to_noc = TestSinkRTL(PktType, expected_to_noc_pkts)
 
-    s.dut = ControllerRTL(ControllerIdType,
-                          CpuPktType,
-                          PktType,
-                          MsgType,
-                          AddrType,
+    s.dut = ControllerRTL(PktType,
                           1, # Number of controllers globally (x/y dimension).
                           num_cgras,
                           num_tiles,
@@ -257,11 +263,7 @@ expected_to_noc_pkts = [
 
 def test_simple(cmdline_opts):
   print("[LOG] controller2addr_map: ", controller2addr_map)
-  th = TestHarness(ControllerIdType,
-                   IntraCgraPktType,
-                   DataType,
-                   DataAddrType,
-                   InterCgraPktType,
+  th = TestHarness(CgraPayloadType,
                    cgra_id,
                    from_tile_load_request_pkts,
                    from_tile_load_response_pkts,
@@ -273,7 +275,9 @@ def test_simple(cmdline_opts):
                    expected_to_noc_pkts,
                    controller2addr_map,
                    idTo2d_map,
-                   num_cgras,
+                   num_rd_tiles,
+                   num_cgra_columns,
+                   num_cgra_rows,
                    num_tiles)
   th.elaborate()
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])

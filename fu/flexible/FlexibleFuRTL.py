@@ -23,9 +23,7 @@ from ...lib.util.common import *
 class FlexibleFuRTL(Component):
   def construct(s,
                 DataType,
-                PredicateType,
                 CtrlType,
-                data_bitwidth,
                 num_inports,
                 num_outports,
                 data_mem_size,
@@ -34,6 +32,8 @@ class FlexibleFuRTL(Component):
                 FuList,
                 exec_lantency = {}):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
+    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     # Constants.
     num_entries = 2
     if NahRTL not in FuList:
@@ -62,15 +62,16 @@ class FlexibleFuRTL(Component):
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
     s.to_mem_waddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.to_mem_wdata = [SendIfcRTL(DataType) for _ in range(s.fu_list_size)]
+    s.clear = [InPort(b1) for _ in range(s.fu_list_size)]
 
     s.prologue_count_inport = InPort(PrologueCountType)
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    s.fu = [FuList[i](DataType, PredicateType, CtrlType,
+    s.fu = [FuList[i](DataType, CtrlType,
                       num_inports, num_outports,
                       data_mem_size, ctrl_mem_size,
-                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, PredicateType, CtrlType, num_inports, num_outports,
+                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, CtrlType, num_inports, num_outports,
                       data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
@@ -84,7 +85,8 @@ class FlexibleFuRTL(Component):
       s.from_mem_rdata[i] //= s.fu[i].from_mem_rdata
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
-
+      s.clear[i] //= s.fu[i].clear
+    
     @update
     def connect_to_controller():
       for i in range(s.fu_list_size):

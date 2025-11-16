@@ -14,12 +14,12 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
+from ..lib.util.data_struct_attr import *
 
 class CrossbarRTL(Component):
 
   def construct(s,
                 DataType,
-                PredicateType,
                 CtrlType,
                 num_inports = 5,
                 num_outports = 5,
@@ -28,6 +28,7 @@ class CrossbarRTL(Component):
                 ctrl_mem_size = 6,
                 outport_towards_local_base_id = 4):
 
+    PredicateType = DataType.get_field_type(kAttrPredicate)
     InType = mk_bits(clog2(num_inports + 1))
     num_index = num_inports if num_inports != 1 else 2
     NumInportType = mk_bits(clog2(num_index))
@@ -59,6 +60,8 @@ class CrossbarRTL(Component):
     s.compute_done = InPort(b1)
 
     s.ctrl_addr_inport = InPort(CtrlAddrType)
+
+    s.clear = InPort(b1)
 
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
@@ -104,7 +107,7 @@ class CrossbarRTL(Component):
 
     @update_ff
     def update_prologue_counter():
-      if s.reset:
+      if s.reset | s.clear:
         for addr in range(ctrl_mem_size):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= 0

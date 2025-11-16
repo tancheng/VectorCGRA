@@ -22,7 +22,7 @@ from ...lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, CrossbarUnit, DataType, PredicateType, CtrlType,
+  def construct(s, CrossbarUnit, DataType, CtrlType,
                 num_inports, num_outports, src_data, src_routing,
                 sink_out):
 
@@ -37,7 +37,7 @@ class TestHarness(Component):
     s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_outports)]
 
-    s.dut = CrossbarUnit(DataType, PredicateType, CtrlType, num_inports,
+    s.dut = CrossbarUnit(DataType, CtrlType, num_inports,
                          num_outports, num_tiles, ctrl_mem_size)
 
     for i in range(num_inports):
@@ -112,7 +112,7 @@ def test_crossbar():
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
   src_data = [[DataType(3, 1)], [DataType(2, 1)], [DataType(9, 1)]]
   sink_out = [[DataType(2, 1)], [DataType(9, 1)], [DataType(3, 1)]]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_tile_inports,
+  th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 
@@ -129,7 +129,7 @@ def test_multi_cast():
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
   src_data      = [[DataType(3, 1)], [DataType(2, 1)], [DataType(9, 1)]]
   sink_out      = [[DataType(2, 1)], [DataType(3, 1)], [DataType(3, 1), DataType(9, 1)]]
-  th = TestHarness(FU, DataType, PredicateType, CtrlType, num_tile_inports,
+  th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 

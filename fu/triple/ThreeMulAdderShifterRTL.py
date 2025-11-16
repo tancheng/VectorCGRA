@@ -17,12 +17,12 @@ from ..single.ShifterRTL   import ShifterRTL
 
 class ThreeMulAdderShifterRTL(ThreeCombo):
 
-  def construct(s, DataType, PredicateType, CtrlType,
+  def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size, ctrl_mem_size = 4,
                 data_bitwidth = 32):
 
-    super(ThreeMulAdderShifterRTL, s).construct(DataType, PredicateType,
+    super(ThreeMulAdderShifterRTL, s).construct(DataType,
                                                 CtrlType, MulRTL,
                                                 AdderRTL, ShifterRTL,
                                                 num_inports, num_outports,
@@ -51,9 +51,11 @@ class ThreeMulAdderShifterRTL(ThreeCombo):
         s.Fu0.recv_opt.msg.operation @= OPT_MUL
         s.Fu1.recv_opt.msg.operation @= OPT_SUB
         s.Fu2.recv_opt.msg.operation @= OPT_LRS
-      # else:
-      #   for j in range(num_outports):
-      #     s.send_out[j].val @= b1(0)
+      else:
+        # Indicates no computation should happen no this fused FU.
+        s.Fu0.recv_opt.msg.operation @= OPT_START
+        s.Fu1.recv_opt.msg.operation @= OPT_START
+        s.Fu2.recv_opt.msg.operation @= OPT_START
 
       # TODO: need to handle the other cases
 
