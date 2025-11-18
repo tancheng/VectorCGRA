@@ -32,6 +32,12 @@ class Parser:
     def parse_cgras(self):
         num_cgra_rows = self.yaml_data['multi_cgra_defaults']['rows']
         num_cgra_columns = self.yaml_data['multi_cgra_defaults']['columns']
+        # Restricted by ControllerRTL.
+        assert num_cgra_rows <= num_cgra_columns, "multi_cgra_rows must be less than or equal to multi_cgra_columns."
+        num_cgras = num_cgra_rows * num_cgra_columns
+        # Restricted by data_mem_size_global(the power of 2).
+        assert (num_cgras & (num_cgras - 1)
+                ) == 0, "num_cgras must be the power of 2."
         per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
         per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
         tiles = self.parse_tiles()
