@@ -1,5 +1,7 @@
 from .helper import get_links, keep_port_valid_on_boundary
 from .Tile import Tile
+from .DataSPM import DataSPM
+from .ParamCGRA import ParamCGRA
 import copy
 
 
