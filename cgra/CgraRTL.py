@@ -64,6 +64,7 @@ class CgraRTL(Component):
     elif cgra_topology == KING_MESH:
       s.num_mesh_ports = 8
 
+    s.has_ctrl_ring = has_ctrl_ring
     s.num_tiles = width * height
     # The left and bottom tiles are connected to the data memory.
     data_mem_num_rd_tiles = height + width - 1
@@ -261,7 +262,9 @@ class CgraRTL(Component):
   def line_trace(s):
     res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
-    res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
+    if has_ctrl_ring:
+      res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
+
 
