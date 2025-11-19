@@ -5,4 +5,7 @@ class MultiCgraParam:
         self.cgras = cgras
 
     def __repr__(self):
-        return f'{self.rows}x{self.cols} cgras'
+        return (
+            f"Size of MultiCGRAs: {self.rows}x{self.cols}\n"
+            + f"Size of CGRA(Tiles): {self.cgras[0][0].rows}x{self.cgras[0][0].columns}"
+        )

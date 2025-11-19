@@ -4,14 +4,14 @@ architecture:
 
 multi_cgra_defaults:
   base_topology: "mesh"
-  rows: 4
-  columns: 8
+  rows: 2
+  columns: 4
   memory:
     capacity: 2048
 
 cgra_defaults:
-  rows: 2
-  columns: 2
+  rows: 4
+  columns: 4
   ctrl_mem_items: 20
   base_topology: "mesh"
   memory:
