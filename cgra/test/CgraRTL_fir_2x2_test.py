@@ -51,7 +51,9 @@ class TestHarness(Component):
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
-                mem_access_is_combinational, controller2addr_map,
+                mem_access_is_combinational,
+                has_ctrl_ring,
+                controller2addr_map,
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt):
 
@@ -73,7 +75,10 @@ class TestHarness(Component):
                 mem_access_is_combinational,
                 FunctionUnit, FuList, "KingMesh",
                 controller2addr_map, idTo2d_map,
-                is_multi_cgra = False)
+                is_multi_cgra = False,
+                has_ctrl_ring = has_ctrl_ring)
+
+    s.has_ctrl_ring = has_ctrl_ring
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
@@ -135,6 +140,8 @@ class TestHarness(Component):
       s.dut.recv_data_on_boundary_east[tile_row].msg //= DataType()
 
   def done(s):
+    if not s.has_ctrl_ring:
+      return True
     return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
             and s.complete_signal_sink_out.done())
 
@@ -329,7 +336,7 @@ for (int i = 2; i < ?; ++i) {
 // expected sum = 2212 + 3 = 2215 (0x8a7)
 '''
 
-def sim_fir_return(cmdline_opts, mem_access_is_combinational):
+def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
   src_ctrl_pkt = []
   complete_signal_sink_out = []
   src_query_pkt = []
@@ -721,6 +728,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
                    mem_access_is_combinational,
+                   has_ctrl_ring,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
                    num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
@@ -733,7 +741,10 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   run_sim(th)
 
 def test_homogeneous_2x2_fir_combinational_mem_access_return(cmdline_opts):
-  sim_fir_return(cmdline_opts, mem_access_is_combinational = True)
+  sim_fir_return(cmdline_opts, mem_access_is_combinational = True, has_ctrl_ring = True)
 
 def test_homogeneous_2x2_fir_non_combinational_mem_access_return(cmdline_opts):
-  sim_fir_return(cmdline_opts, mem_access_is_combinational = False)
+  sim_fir_return(cmdline_opts, mem_access_is_combinational = False, has_ctrl_ring = True)
+
+def test_homogeneous_2x2_fir_non_combinational_mem_access_no_ctrl_ring(cmdline_opts):
+  sim_fir_return(cmdline_opts, mem_access_is_combinational = False, has_ctrl_ring = False)

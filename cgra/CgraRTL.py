@@ -33,7 +33,8 @@ class CgraRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, cgra_topology,
                 controller2addr_map, idTo2d_map,
-                is_multi_cgra = True):
+                is_multi_cgra = True,
+                has_ctrl_ring = True):
 
     # Derives all types from CgraPayloadType.
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -118,7 +119,8 @@ class CgraRTL(Component):
                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    if has_ctrl_ring:
+      s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
     s.cgra_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
@@ -159,14 +161,13 @@ class CgraRTL(Component):
       s.tile[i].tile_id //= i
       s.tile[i].cgra_id //= s.cgra_id
 
-    # Connects ring with each control memory.
-    for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
-
-    for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
-    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+    if has_ctrl_ring:
+      # Connects ring with each control memory.
+      for i in range(s.num_tiles):
+        s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+        s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+      s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+      s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
 

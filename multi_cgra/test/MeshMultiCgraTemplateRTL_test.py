@@ -57,6 +57,7 @@ class TestHarness(Component):
                 id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
+                has_ctrl_ring,
                 controller2addr_map, expected_sink_out_pkt,
                 cmp_func):
 
@@ -69,9 +70,6 @@ class TestHarness(Component):
 
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_func)
 
-    
- 
-
     s.dut = DUT(CgraPayloadType,
                 cgra_rows, cgra_columns, 
                 # per_cgra_rows, per_cgra_columns, 
@@ -81,8 +79,8 @@ class TestHarness(Component):
                 ctrl_steps_per_iter, ctrl_steps_total, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
-                mem_access_is_combinational
-                )
+                mem_access_is_combinational, has_ctrl_ring = has_ctrl_ring)
+    s.has_ctrl_ring = has_ctrl_ring
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
@@ -125,6 +123,8 @@ class TestHarness(Component):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
 
   def done(s):
+    if not s.has_ctrl_ring:
+      return True
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
            s.expected_sink_out.done()
 
@@ -338,6 +338,8 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   id2dataSPM = {}
   id2ctrlMemSize_map = {}
   id2cgraSize_map = {}
+
+  has_ctrl_ring = False
 
   if multiCgraParam != None:
     # iterate through all cgras in the multi cgra
@@ -596,6 +598,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                    id2ctrlMemSize_map, id2cgraSize_map, 
                    id2validTiles, id2validLinks, id2dataSPM,
                    mem_access_is_combinational,
+                   has_ctrl_ring,
                    controller2addr_map, expected_sink_out_pkt, cmp_func)
 
   th.elaborate()
