@@ -20,7 +20,8 @@ class MeshMultiCgraTemplateRTL(Component):
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
-                is_multi_cgra = True):
+                is_multi_cgra = True,
+                has_ctrl_ring = True):
 
         # Derives all types from CgraPayloadType.
         CgraDataType = CgraPayloadType.get_field_type(kAttrData)
@@ -71,8 +72,8 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  is_multi_cgra
-                                  )
+                                  is_multi_cgra,
+                                  has_ctrl_ring)
                   for cgra_id in range(s.num_cgras)]
         
         # Latency is 1.

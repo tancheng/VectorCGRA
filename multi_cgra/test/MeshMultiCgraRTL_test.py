@@ -72,7 +72,8 @@ class TestHarness(Component):
                 num_registers_per_reg_bank,
                 ctrl_steps_per_iter, ctrl_steps_total,
                 mem_access_is_combinational,
-                FunctionUnit, FuList, "Mesh", controller2addr_map)
+                FunctionUnit, FuList, "Mesh", controller2addr_map,
+                has_ctrl_ring = True)
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
