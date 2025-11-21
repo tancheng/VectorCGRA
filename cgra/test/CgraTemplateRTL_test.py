@@ -186,7 +186,7 @@ class Link:
       s.dstTile.fromMem = True
 
 
-def test_cgra_universal(cmdline_opts, paramCGRA = None):
+def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, paramCGRA = None):
   num_tile_inports  = 8
   num_tile_outports = 8
   num_fu_inports = 4
@@ -210,7 +210,6 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  # FuList = [MemUnitRTL, AdderRTL]
   FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
@@ -478,6 +477,10 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
+  if simplified_modeling_for_synthesis:
+    has_ctrl_ring = False
+    FuList = [MemUnitRTL, AdderRTL]
+
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id,

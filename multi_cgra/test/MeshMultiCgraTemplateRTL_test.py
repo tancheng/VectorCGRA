@@ -151,7 +151,7 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
+def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, multiCgraParam = None):
   print(f"multiCgraParam: {multiCgraParam}")
   singleCgraParam = multiCgraParam.cgras[0][0] if multiCgraParam else None
   num_cgra_rows = multiCgraParam.rows if multiCgraParam else 2
@@ -338,8 +338,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   id2dataSPM = {}
   id2ctrlMemSize_map = {}
   id2cgraSize_map = {}
-
-  has_ctrl_ring = False
 
   if multiCgraParam != None:
     # iterate through all cgras in the multi cgra
@@ -589,7 +587,11 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                   num_cgra_rows, num_cgra_columns,
                                   per_cgra_rows, per_cgra_columns)
 
-  th = TestHarness(DUT, FunctionUnit, FuList,IntraCgraPktType,
+  if simplified_modeling_for_synthesis:
+    has_ctrl_ring = False
+    FuList = [MemUnitRTL, AdderRTL]
+
+  th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
                    per_cgra_rows, per_cgra_columns, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
