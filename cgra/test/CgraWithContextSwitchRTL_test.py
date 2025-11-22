@@ -342,18 +342,20 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
   kSumInitValue = 3
   kLoopLowerBound = 2
   kLoopIncrement = 1
-  kLoopUpperBound = 10
+  kLoopUpperBound_Task1 = 10
+  kLoopUpperBound_Task2 = 9
   kCtrlCountPerIter_Task1 = 4
   kCtrlCountPerIter_Task2 = 3
   # Though kTotalCtrlSteps is way more than required loop iteration count,
   # the stored result should still be correct thanks to the grant predicate.
   kTotalCtrlSteps_Task1 = kCtrlCountPerIter_Task1 * \
-                    (kLoopUpperBound - kLoopLowerBound) + \
-                    100
+                          (kLoopUpperBound_Task1 - kLoopLowerBound) + \
+                          100
   kTotalCtrlSteps_Task2 = kCtrlCountPerIter_Task2 * \
-                    (kLoopUpperBound - kLoopLowerBound) + \
-                    100
-  kExpectedOutput = 2215
+                          (kLoopUpperBound_Task2 - kLoopLowerBound) + \
+                          100
+  kExpectedOutput_Task1 = 2215
+  kExpectedOutput_Task2 = 1816
   src_opt_pkt = [
       # -------------------------------- Loads all configs of two tasks to respective tiles --------------------------------------    
       # tile 0
@@ -420,9 +422,6 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 4,
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
-                                                                     # [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
-                                                                     #  TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                     #  TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
@@ -963,7 +962,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
       # tile 5
       [
           # Const for CMP.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound_Task1, 1))),
 
           # Pre-configure per-tile config count per iter.
           IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter_Task1, 1))),
@@ -1205,7 +1204,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
 
           # Const for CMP.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound_Task2, 1))),
 
           # Sets ctrl mem raddr to Task 2.
           IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(4, 1))),
@@ -1284,10 +1283,8 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
                                                      data = DataType(1, 1))),
 
-          # Prepares the context switch.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_RECORD_PHI_ADDR, ctrl_addr = CtrlAddrType(1))),
-
-          # Launch the tile.
+          # For tile which is mapped with PHI operation, Launch the tile using CMD_RESUME instead of CMD_LAUNCH.
+          # CMD_RESUME not only triggers the config issuing, but also resume the progress for phi operations.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_RESUME))
       ],
 
@@ -1355,7 +1352,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
       # tile 5
       [
           # Const for CMP.
-          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+          IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound_Task1, 1))),
 
           # Sets ctrl mem raddr to Task 1.
           IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
@@ -1395,10 +1392,8 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
-          # Prepares the context switch.
-          IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_RECORD_PHI_ADDR, ctrl_addr = CtrlAddrType(0))),
-
-          # Launch the tile.
+          # For tile which is mapped with PHI operation, Launch the tile using CMD_RESUME instead of CMD_LAUNCH.
+          # CMD_RESUME not only triggers the config issuing, but also resume the progress for phi operations.
           IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_RESUME))
       ],
 
@@ -1428,8 +1423,10 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
 
   expected_complete_sink_out_pkg = \
       [
-          # Results for Task 2 and Task 1
-          IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0))) for _ in range(2)
+          # Results for Task 2.
+          IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput_Task2, 1, 0, 0))),
+          # Results for Task 1.
+          IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput_Task1, 1, 0, 0)))
       ]
   expected_mem_sink_out_pkt = \
       [
@@ -1463,11 +1460,8 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-def test_sim_fir_return_two_tasks(cmdline_opts):
+def test_sim_fir_combinational_mem_access_return_two_tasks(cmdline_opts):
   sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational = True)
 
-#def test_homogeneous_4x4_fir_combinational_mem_access_return(cmdline_opts):
-#  sim_fir_return(cmdline_opts, mem_access_is_combinational = True)
-
-#def test_homogeneous_4x4_fir_multi_cycle_mem_access_return(cmdline_opts):
-#  sim_fir_return(cmdline_opts, mem_access_is_combinational = False)
+def test_sim_fir_multi_cycle_mem_access_return_two_tasks(cmdline_opts):
+  sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational = False)

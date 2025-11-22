@@ -43,7 +43,7 @@ class NahRTL(Fu):
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
 
-      if s.recv_opt.msg.operation == OPT_NAH:
+      if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_NAH):
         s.recv_opt.rdy @= 1
       else:
         for j in range(num_outports):
