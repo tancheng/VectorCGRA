@@ -54,6 +54,7 @@ jobs:
         pip install hypothesis
         pip install pytest
         pip install py-markdown-table
+        pip install PyYAML
         pip list
         
     - name: Install dependencies for sv2v
