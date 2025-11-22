@@ -15,6 +15,7 @@ from ..fu.single.CompRTL import CompRTL
 from ..fu.single.MemUnitRTL import MemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..fu.single.PhiRTL import PhiRTL
+from ..fu.single.RetRTL import RetRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.cmd_type import *
@@ -195,7 +196,7 @@ class TileWithContextSwitchRTL(Component):
     
     # Feed clear signal to PhiRTL and CrossbarRTL to correctly resume the progress.
     for i in range(len(FuList)):
-      if FuList[i] == PhiRTL:
+      if (FuList[i] == PhiRTL) | (FuList[i] == RetRTL):
         s.element.clear[i] //= s.clear
       else:
         s.element.clear[i] //= 0
