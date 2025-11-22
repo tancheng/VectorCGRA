@@ -9,7 +9,7 @@ def get_links(tiles):
     per_cgra_col = len(tiles[0])
     links = []
 
-    # Memory Connections (West Side)
+    # --- 1. Memory Connections (West Side) ---
     # Creates bidirectional links between memory and each tile in the first column (col 0).
     # The memPort index is assumed to match the row index.
     for r in range(per_cgra_row):
@@ -84,10 +84,20 @@ def get_links(tiles):
 
 
 def keep_port_valid(tile, port):
+    """
+    Removes the given port from the sets of invalid out and in ports of the tile.
+
+    Parameters:
+    - tile: A tile object.
+    - port: An integer representing the port to be made valid.
+    """
+    # Get the sets of invalid out and in ports of the tile.
     tile_out_port_set = tile.invalidOutPorts
     tile_in_port_set = tile.invalidInPorts
+    
     if port in tile_out_port_set:
         tile_out_port_set.remove(port)
+    
     if port in tile_in_port_set:
         tile_in_port_set.remove(port)
 
