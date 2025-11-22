@@ -40,6 +40,7 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 import copy
+from ..parser.MultiCgraParam import MultiCgraParam
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -249,10 +250,12 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   Creates test performing load -> inc -> store on cgra 2. Specifically,
   cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
   cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
-  cgra 2 tile 2 waits for the data from tile 0, and performs stores (0xff) to memory address 3.
+  cgra 2 tile `per_cgra_columns` waits for the data from tile 0, and performs stores (0xff) to memory address 3.
   Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
   therefore, all the memory addresses from cgra 2 are remote.
   '''
+  # tile `per_cgra_columns` can access the memory, as it is on the first column.
+  target_tile = per_cgra_columns
   src_ctrl_pkt = \
           [
            # Preloads data.                                            address 34 belongs to cgra 1 (not cgra 0)
@@ -288,12 +291,12 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                                                       read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
                                                                       read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
 
-           # Tile 2. Note that tile 0 and tile 2 can access the memory, as they are on
+           # Tile `target_tile`. Note that tile 0 and tile `target_tile` can access the memory, as they are on
            # the first column.
            # Indicates the store address of 3.
-           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
                           # src dst src_cgra dst_cgra
-           IntraCgraPktType(0,  2,  0,       2,       0, 0, 0, 1,
+           IntraCgraPktType(0,  target_tile,  0,       2,       0, 0, 0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                       ctrl = CtrlType(OPT_STR_CONST,
                                                                       [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
@@ -307,11 +310,11 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
            # Only execute one operation (i.e., store) is enough for this tile.
            # If this is set more than 1, no `COMPLETE` signal would be set back
            # to CPU/test_harness.
-           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
 
            # For launching the two tiles.
            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
-           IntraCgraPktType(0, 2, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
           ]
 
   src_query_pkt = \
@@ -324,7 +327,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
           [
                           # src  dst        src/dst cgra x/y
            IntraCgraPktType(0,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
-           IntraCgraPktType(2,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+           IntraCgraPktType(target_tile,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
                                                                                                                          # Expected updated value.
            IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 3)),
            IntraCgraPktType(0,   num_tiles, 1, 0, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
@@ -604,6 +607,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
 
 class Tile:
   def __init__(s, dimX, dimY):
