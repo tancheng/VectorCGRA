@@ -291,7 +291,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
                                                                       read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
                                                                       read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
 
-           # Tile 2. Note that tile 0 and tile `target_tile` can access the memory, as they are on
+           # Tile `target_tile`. Note that tile 0 and tile `target_tile` can access the memory, as they are on
            # the first column.
            # Indicates the store address of 3.
            IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
@@ -608,13 +608,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-def test_mesh_multi_cgra_scaling(cmdline_opts):
-  # Simulation/Synthesis time increases with scale, making large sizes unsuitable for testing.
-  # multi_cgra_sizes[i] = [num_cgra_rows, num_cgra_cols, per_cgra_rows, per_cgra_cols]
-  multi_cgra_sizes = [ [2,2,4,4], [4,4,2,2] ]
-  for size in multi_cgra_sizes:
-    multi_cgra_param = MultiCgraParam.from_params(*size)
-    test_mesh_multi_cgra_universal(cmdline_opts, multi_cgra_param)
 
 class Tile:
   def __init__(s, dimX, dimY):

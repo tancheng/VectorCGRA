@@ -14,7 +14,7 @@ class MultiCgraParam:
     @classmethod
     def from_params(
         cls, num_cgra_rows, num_cgra_cols, per_cgra_rows, per_cgra_cols
-    ) -> None:
+    ):
         """
         The constructor for customizing the MultiCgraParam.
         """
@@ -88,6 +88,6 @@ class MultiCgraParam:
 
     def __repr__(self):
         return (
-            f"Size of MultiCGRAs: {self.rows}x{self.cols}\n"
+            f"\nSize of MultiCGRAs: {self.rows}x{self.cols}\n"
             + f"Size of CGRA(Tiles): {self.cgras[0][0].rows}x{self.cgras[0][0].columns}"
         )
