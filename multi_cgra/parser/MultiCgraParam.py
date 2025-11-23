@@ -1,6 +1,6 @@
-from .helper import get_links, keep_port_valid_on_boundary
-from .Tile import Tile
-from .DataSPM import DataSPM
+from ...lib.cgra.cgra_helper import get_links, keep_port_valid_on_boundary
+from ...lib.cgra.Tile import Tile
+from ...lib.cgra.DataSPM import DataSPM
 from .ParamCGRA import ParamCGRA
 import copy
 

@@ -1,9 +1,9 @@
 import yaml
 from .MultiCgraParam import MultiCgraParam
-from .DataSPM import DataSPM
-from .Tile import Tile
+from ...lib.cgra.DataSPM import DataSPM
+from ...lib.cgra.Tile import Tile
 from .ParamCGRA import ParamCGRA
-from .helper import *
+from ...lib.cgra.cgra_helper import *
 import copy
 
 

@@ -1,5 +1,5 @@
 from .Link import Link
-from ...lib.util.common import *
+from ..util.common import *
 
 def get_links(tiles):
     """
