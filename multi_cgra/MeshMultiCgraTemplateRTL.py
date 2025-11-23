@@ -77,7 +77,6 @@ class MeshMultiCgraTemplateRTL(Component):
                                   is_multi_cgra,
                                   has_ctrl_ring)
                   for cgra_id in range(s.num_cgras)]
-        print("[cheng] has_ctrl_ring: ", has_ctrl_ring)
         if simplified_modeling_for_synthesis:
           for i in range(s.num_cgras):
             s.cgra[i].recv_from_inter_cgra_noc.val //= 0

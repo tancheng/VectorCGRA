@@ -56,7 +56,7 @@ class MeshMultiCgraRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
-    has_ctrl_ring = simplified_modeling_for_synthesis ? False : True
+    has_ctrl_ring = False if simplified_modeling_for_synthesis else True
 
     # Interface
     # Request from/to CPU.
