@@ -32,10 +32,9 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
-from ...lib.cgra.Tile import Tile
-from ...lib.cgra.Link import Link
-from ...lib.cgra.DataSPM import DataSPM
-from ...lib.cgra.cgra_helper import get_links
+from ...lib.util.cgra.Tile import Tile
+from ...lib.util.cgra.DataSPM import DataSPM
+from ...lib.util.cgra.cgra_helper import get_links
 
 fuType2RTL = {}
 fuType2RTL["Phi"  ] = PhiRTL
