@@ -39,10 +39,8 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
-import copy
-from ...lib.util.cgra.cgra_helper import get_links, keep_port_valid_on_boundary
-from ...lib.util.cgra.DataSPM import DataSPM
-from ...lib.util.cgra.Tile import Tile
+from ..parser.Parser import Parser
+import os
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -154,7 +152,10 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
+def test_mesh_multi_cgra_universal(cmdline_opts):
+  arch_file = os.path.join(os.path.dirname(__file__), "arch.yaml")
+  parser = Parser(arch_file)
+  multiCgraParam = parser.parse_multi_cgra_param()
   print(f"multiCgraParam: {multiCgraParam}")
   singleCgraParam = multiCgraParam.cgras[0][0] if multiCgraParam else None
   num_cgra_rows = multiCgraParam.rows if multiCgraParam else 2
@@ -344,85 +345,16 @@ def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   id2ctrlMemSize_map = {}
   id2cgraSize_map = {}
 
-  if multiCgraParam != None:
-    # iterate through all cgras in the multi cgra
-    for cgraRow in range(multiCgraParam.rows):
-      for cgraCol in range(multiCgraParam.cols):
-        paramCGRA = multiCgraParam.cgras[cgraRow][cgraCol]
-        id = cgraRow * multiCgraParam.cols + cgraCol
-        id2validTiles[id] = paramCGRA.getValidTiles()
-        id2validLinks[id] = paramCGRA.getValidLinks()
-        id2dataSPM[id] = paramCGRA.dataSPM
-        id2ctrlMemSize_map[id] = paramCGRA.configMemSize
-        id2cgraSize_map[id] = [paramCGRA.rows, paramCGRA.columns]
-  else:
-    dataSPM = None
-    tiles_0 = []
-    links = None
-
-    for r in range(per_cgra_rows):
-      tiles_0.append([])
-      for c in range(per_cgra_columns):
-        tiles_0[r].append(Tile(c, r))
-    # Assumes first column tiles are connected to memory.
-    dataSPM = DataSPM(per_cgra_columns, per_cgra_columns)
-
-    links = get_links(tiles_0)
-
-    def handleReshape( t_tiles ):
-      tiles = []
-      for row in t_tiles:
-        for t in row:
-          tiles.append(t)
-      return tiles
-
-    tiles_1 = copy.deepcopy(tiles_0)
-    tiles_2 = copy.deepcopy(tiles_0)
-    tiles_3 = copy.deepcopy(tiles_0)
-
-    tiles_0 = handleReshape(tiles_0)
-    tiles_1 = handleReshape(tiles_1)
-    tiles_2 = handleReshape(tiles_2)
-    tiles_3 = handleReshape(tiles_3)
-
-    id2validTiles = {
-      0: tiles_0,
-      1: tiles_1,
-      2: tiles_2,
-      3: tiles_3
-    }
-    id2validLinks = {
-      0: links,
-      1: links,
-      2: links,
-      3: links
-    }
-    id2dataSPM = {
-      0: dataSPM,
-      1: dataSPM,
-      2: dataSPM,
-      3: dataSPM
-    }
-
-    id2ctrlMemSize_map = {
-      0: 16,
-      1: 16,
-      2: 16,
-      3: 16
-    }
-    id2cgraSize_map = {
-      0: [2, 2],
-      1: [2, 2],
-      2: [2, 2],
-      3: [2, 2]
-    }
-
-    # Iterates id2validTiles to enable boundary ports
-    for cgra_id, tiles_flat in id2validTiles.items():
-      keep_port_valid_on_boundary(cgra_id, 
-                                  tiles_flat,
-                                  num_cgra_rows, num_cgra_columns,
-                                  per_cgra_rows, per_cgra_columns)
+  # iterate through all cgras in the multi cgra
+  for cgraRow in range(multiCgraParam.rows):
+    for cgraCol in range(multiCgraParam.cols):
+      paramCGRA = multiCgraParam.cgras[cgraRow][cgraCol]
+      id = cgraRow * multiCgraParam.cols + cgraCol
+      id2validTiles[id] = paramCGRA.getValidTiles()
+      id2validLinks[id] = paramCGRA.getValidLinks()
+      id2dataSPM[id] = paramCGRA.dataSPM
+      id2ctrlMemSize_map[id] = paramCGRA.configMemSize
+      id2cgraSize_map[id] = [paramCGRA.rows, paramCGRA.columns]
 
   th = TestHarness(DUT, FunctionUnit, FuList,IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,

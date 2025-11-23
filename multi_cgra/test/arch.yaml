@@ -1,0 +1,7 @@
+multi_cgra_defaults:
+  rows: 2
+  columns: 2
+
+cgra_defaults:
+  rows: 2
+  columns: 2

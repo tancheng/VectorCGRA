@@ -1,4 +1,4 @@
-from ..util.common import PORT_DIRECTION_COUNTS
+from ..common import PORT_DIRECTION_COUNTS
 class Tile:
   def __init__(s, dimX, dimY):
     s.disabled = False
