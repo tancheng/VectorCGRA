@@ -32,6 +32,10 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
+from ...lib.cgra.Tile import Tile
+from ...lib.cgra.Link import Link
+from ...lib.cgra.DataSPM import DataSPM
+from ...lib.cgra.cgra_helper import get_links
 
 fuType2RTL = {}
 fuType2RTL["Phi"  ] = PhiRTL
@@ -98,86 +102,6 @@ class TestHarness(Component):
 
   def line_trace(s):
     return s.dut.line_trace()
-
-class Tile:
-  def __init__(s, dimX, dimY):
-    s.disabled = False
-    s.dimX = dimX
-    s.dimY = dimY
-    s.toMem = False
-    s.fromMem = False
-    s.invalidOutPorts = set()
-    s.invalidInPorts = set()
-    for i in range(PORT_DIRECTION_COUNTS):
-      s.invalidOutPorts.add(i)
-      s.invalidInPorts.add(i)
-
-  def getInvalidInPorts(s):
-    return s.invalidInPorts
-
-  def getInvalidOutPorts(s):
-    return s.invalidOutPorts
-
-  def hasToMem(s):
-    return s.toMem
-
-  def hasFromMem(s):
-    return s.fromMem
-
-  def getIndex(s, TileList):
-    if s.disabled:
-      return -1
-    index = 0
-    for tile in TileList:
-      if tile.dimY < s.dimY and not tile.disabled:
-        index += 1
-      elif tile.dimY == s.dimY and tile.dimX < s.dimX and not tile.disabled:
-        index += 1
-    return index
-
-class DataSPM:
-  def __init__(s, numOfReadPorts, numOfWritePorts):
-    s.numOfReadPorts = numOfReadPorts
-    s.numOfWritePorts = numOfWritePorts
-
-  def getNumOfValidReadPorts(s):
-    return s.numOfReadPorts
-
-  def getNumOfValidWritePorts(s):
-    return s.numOfWritePorts
-
-class Link:
-  def __init__(s, srcTile, dstTile, srcPort, dstPort):
-    s.srcTile = srcTile
-    s.dstTile = dstTile
-    s.srcPort = srcPort
-    s.dstPort = dstPort
-    s.disabled = False
-    s.toMem = False
-    s.fromMem = False
-    s.memPort = -1
-
-  def getMemReadPort(s):
-      return s.memPort
-
-  def getMemWritePort(s):
-      return s.memPort
-
-  def isToMem(s):
-    return s.toMem
-
-  def isFromMem(s):
-    return s.fromMem
-
-  def validatePorts(s):
-    if not s.toMem and not s.fromMem:
-      s.srcTile.invalidOutPorts.remove(s.srcPort)
-      s.dstTile.invalidInPorts.remove(s.dstPort)
-    if s.toMem:
-      s.srcTile.toMem = True
-    if s.fromMem:
-      s.dstTile.fromMem = True
-
 
 def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tile_inports  = 8
@@ -353,111 +277,7 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
     # Assumes first column tiles are connected to memory.
     dataSPM = DataSPM(width, width)
 
-    links = [Link(None, None, 0, 0) for _ in range(16)]
-
-    links[0].srcTile = None
-    links[0].dstTile = tiles[0][0]
-    links[0].srcPort = 0
-    links[0].dstPort = PORT_WEST
-    links[0].fromMem = True
-    links[0].memPort = 0
-    links[0].validatePorts()
-
-    links[1].srcTile = tiles[0][0]
-    links[1].dstTile = None
-    links[1].srcPort = PORT_WEST
-    links[1].dstPort = 0
-    links[1].toMem = True
-    links[1].memPort = 0
-    links[1].validatePorts()
-
-    links[2].srcTile = None
-    links[2].dstTile = tiles[1][0]
-    links[2].srcPort = 1
-    links[2].dstPort = PORT_WEST
-    links[2].fromMem = True
-    links[2].memPort = 1
-    links[2].validatePorts()
-
-    links[3].srcTile = tiles[1][0]
-    links[3].dstTile = None
-    links[3].srcPort = PORT_WEST
-    links[3].dstPort = 1
-    links[3].toMem = True
-    links[3].memPort = 1
-    links[3].validatePorts()
-
-    links[4].srcTile = tiles[0][0]
-    links[4].dstTile = tiles[0][1]
-    links[4].srcPort = PORT_EAST
-    links[4].dstPort = PORT_WEST
-    links[4].validatePorts()
-
-    links[5].srcTile = tiles[0][1]
-    links[5].dstTile = tiles[0][0]
-    links[5].srcPort = PORT_WEST
-    links[5].dstPort = PORT_EAST
-    links[5].validatePorts()
-
-    links[6].srcTile = tiles[1][0]
-    links[6].dstTile = tiles[1][1]
-    links[6].srcPort = PORT_EAST
-    links[6].dstPort = PORT_WEST
-    links[6].validatePorts()
-
-    links[7].srcTile = tiles[1][1]
-    links[7].dstTile = tiles[1][0]
-    links[7].srcPort = PORT_WEST
-    links[7].dstPort = PORT_EAST
-    links[7].validatePorts()
-
-    links[8].srcTile = tiles[0][0]
-    links[8].dstTile = tiles[1][0]
-    links[8].srcPort = PORT_NORTH
-    links[8].dstPort = PORT_SOUTH
-    links[8].validatePorts()
-
-    links[9].srcTile = tiles[1][0]
-    links[9].dstTile = tiles[0][0]
-    links[9].srcPort = PORT_SOUTH
-    links[9].dstPort = PORT_NORTH
-    links[9].validatePorts()
-
-    links[10].srcTile = tiles[0][1]
-    links[10].dstTile = tiles[1][1]
-    links[10].srcPort = PORT_NORTH
-    links[10].dstPort = PORT_SOUTH
-    links[10].validatePorts()
-
-    links[11].srcTile = tiles[1][1]
-    links[11].dstTile = tiles[0][1]
-    links[11].srcPort = PORT_SOUTH
-    links[11].dstPort = PORT_NORTH
-    links[11].validatePorts()
-
-    links[12].srcTile = tiles[0][0]
-    links[12].dstTile = tiles[1][1]
-    links[12].srcPort = PORT_NORTHEAST
-    links[12].dstPort = PORT_SOUTHWEST
-    links[12].validatePorts()
-
-    links[13].srcTile = tiles[1][1]
-    links[13].dstTile = tiles[0][0]
-    links[13].srcPort = PORT_SOUTHWEST
-    links[13].dstPort = PORT_NORTHEAST
-    links[13].validatePorts()
-
-    links[14].srcTile = tiles[0][1]
-    links[14].dstTile = tiles[1][0]
-    links[14].srcPort = PORT_NORTHWEST
-    links[14].dstPort = PORT_SOUTHEAST
-    links[14].validatePorts()
-
-    links[15].srcTile = tiles[1][0]
-    links[15].dstTile = tiles[0][1]
-    links[15].srcPort = PORT_SOUTHEAST
-    links[15].dstPort = PORT_NORTHWEST
-    links[15].validatePorts()
+    links = get_links(tiles)
 
     def handleReshape( t_tiles ):
       tiles = []
