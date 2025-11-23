@@ -12,6 +12,7 @@ multi_cgra_defaults:
 cgra_defaults:
   rows: 4
   columns: 4
+  configMemSize: 16
   ctrl_mem_items: 20
   base_topology: "mesh"
   memory:

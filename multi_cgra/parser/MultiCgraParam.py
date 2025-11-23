@@ -31,7 +31,7 @@ class MultiCgraParam:
         for r in range(per_cgra_rows):
             tiles.append([])
             for c in range(per_cgra_cols):
-                tiles[r].append(Tile(c, r))
+                tiles[r].append(Tile(c, r, 128, []))
 
         # Gets the links.
         links = get_links(tiles)

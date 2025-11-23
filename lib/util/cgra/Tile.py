@@ -1,9 +1,12 @@
 from ..common import PORT_DIRECTION_COUNTS
 class Tile:
-  def __init__(s, dimX, dimY):
+  def __init__(s, dimX, dimY, num_registers, operations):
     s.disabled = False
     s.dimX = dimX
     s.dimY = dimY
+    s.num_registers = num_registers
+    s.operations = operations
+    s.isDefaultFus_ = True
     s.toMem = False
     s.fromMem = False
     s.invalidOutPorts = set()
@@ -34,3 +37,13 @@ class Tile:
       elif tile.dimY == s.dimY and tile.dimX < s.dimX and not tile.disabled:
         index += 1
     return index
+
+  def isDefaultFus(s):
+    return s.isDefaultFus_
+
+  def getAllValidFuTypes(s):
+    return s.operations
+  
+  def override(s):
+    # TODO @benkangpeng
+    raise NotImplementedError

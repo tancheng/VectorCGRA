@@ -1,11 +1,11 @@
 multi_cgra_defaults:
-  rows: 2
-  columns: 2
+  rows: 1
+  columns: 1
 
 cgra_defaults:
-  rows: 2
-  columns: 2
-  configMemSize: 16
+  rows: 4
+  columns: 4
+  configMemSize: 8
 
 tile_defaults:
   num_registers: 128

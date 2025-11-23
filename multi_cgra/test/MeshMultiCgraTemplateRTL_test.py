@@ -152,16 +152,18 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts):
-  arch_file = os.path.join(os.path.dirname(__file__), "arch.yaml")
-  parser = Parser(arch_file)
-  multiCgraParam = parser.parse_multi_cgra_param()
+def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
+  if multiCgraParam is None:
+    arch_file = os.path.join(os.path.dirname(__file__), "arch.yaml")
+    parser = Parser(arch_file)
+    multiCgraParam = parser.parse_multi_cgra_param()
+  
   print(f"multiCgraParam: {multiCgraParam}")
-  singleCgraParam = multiCgraParam.cgras[0][0] if multiCgraParam else None
-  num_cgra_rows = multiCgraParam.rows if multiCgraParam else 2
-  num_cgra_columns = multiCgraParam.cols if multiCgraParam else 2
-  per_cgra_rows = singleCgraParam.rows if singleCgraParam else 2
-  per_cgra_columns = singleCgraParam.columns if singleCgraParam else 2
+  singleCgraParam = multiCgraParam.cgras[0][0]
+  num_cgra_rows = multiCgraParam.rows
+  num_cgra_columns = multiCgraParam.cols
+  per_cgra_rows = singleCgraParam.rows
+  per_cgra_columns = singleCgraParam.columns
   num_banks_per_cgra = 2
   data_mem_size_per_bank = 32
   mem_access_is_combinational = True

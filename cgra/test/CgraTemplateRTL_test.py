@@ -35,6 +35,8 @@ from ...lib.util.common import *
 from ...lib.util.cgra.Tile import Tile
 from ...lib.util.cgra.DataSPM import DataSPM
 from ...lib.util.cgra.cgra_helper import get_links
+from ...multi_cgra.parser.Parser import Parser
+import os
 
 fuType2RTL = {}
 fuType2RTL["Phi"  ] = PhiRTL
@@ -103,14 +105,22 @@ class TestHarness(Component):
     return s.dut.line_trace()
 
 def test_cgra_universal(cmdline_opts, paramCGRA = None):
+  if paramCGRA is None:
+    arch_file = os.path.join(os.path.dirname(__file__), "arch.yaml")
+    parser = Parser(arch_file)
+    cgras = parser.parse_cgras()
+    assert len(cgras) == 1 and len(cgras[0]) == 1, f"Expected a single CGRA with from arch.yaml, but got {len(cgras)} rows with {len(cgras[0])} columns"
+    paramCGRA = cgras[0][0]
+  
+  print(f"paramCGRA: {paramCGRA}")
   num_tile_inports  = 8
   num_tile_outports = 8
   num_fu_inports = 4
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
-  ctrl_mem_size = paramCGRA.configMemSize if paramCGRA != None else 8
-  width = paramCGRA.rows if paramCGRA != None else 2
-  height = paramCGRA.columns if paramCGRA != None else 2
+  ctrl_mem_size = paramCGRA.configMemSize
+  width = paramCGRA.rows
+  height = paramCGRA.columns
   data_mem_size_global = 512
   data_mem_size_per_bank = 32
   num_banks_per_cgra = 2
@@ -261,31 +271,9 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   for opt_per_tile in src_opt_per_tile:
     src_ctrl_pkt.extend(opt_per_tile)
 
-  dataSPM = None
-  tiles = []
-  links = None
-  if paramCGRA != None:
-    tiles = paramCGRA.getValidTiles()
-    links = paramCGRA.getValidLinks()
-    dataSPM = paramCGRA.dataSPM
-  else:
-    for r in range(height):
-      tiles.append([])
-      for c in range(width):
-        tiles[r].append(Tile(c, r))
-    # Assumes first column tiles are connected to memory.
-    dataSPM = DataSPM(width, width)
-
-    links = get_links(tiles)
-
-    def handleReshape( t_tiles ):
-      tiles = []
-      for row in t_tiles:
-        for t in row:
-          tiles.append(t)
-      return tiles
-
-    tiles = handleReshape(tiles)
+  tiles = paramCGRA.getValidTiles()
+  links = paramCGRA.getValidLinks()
+  dataSPM = paramCGRA.dataSPM
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
@@ -307,13 +295,12 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                        'ALWCOMBORDER', 'CMPCONST'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
-  if paramCGRA != None:
-    for tile in tiles:
-        if not tile.isDefaultFus():
-            targetFuList = []
-            for fuType in tile.getAllValidFuTypes():
-                targetFuList.append(fuType2RTL[fuType])
-            targetTile = "top.dut.tile[" + str(tile.getIndex(tiles)) + "].construct"
-            th.set_param(targetTile, FuList=targetFuList)
+  for tile in tiles:
+      if not tile.isDefaultFus():
+          targetFuList = []
+          for fuType in tile.getAllValidFuTypes():
+              targetFuList.append(fuType2RTL[fuType])
+          targetTile = "top.dut.tile[" + str(tile.getIndex(tiles)) + "].construct"
+          th.set_param(targetTile, FuList=targetFuList)
 
   run_sim(th)
