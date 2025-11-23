@@ -57,7 +57,7 @@ class TestHarness(Component):
                 id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
-                has_ctrl_ring,
+                simplified_modeling_for_synthesis,
                 controller2addr_map, expected_sink_out_pkt,
                 cmp_func):
 
@@ -79,8 +79,10 @@ class TestHarness(Component):
                 ctrl_steps_per_iter, ctrl_steps_total, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
-                mem_access_is_combinational, has_ctrl_ring = has_ctrl_ring)
-    s.has_ctrl_ring = has_ctrl_ring
+                mem_access_is_combinational,
+                is_multi_cgra = True,
+                simplified_modeling_for_synthesis = simplified_modeling_for_synthesis)
+    s.simplified_modeling_for_synthesis = simplified_modeling_for_synthesis
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
@@ -123,7 +125,7 @@ class TestHarness(Component):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
 
   def done(s):
-    if not s.has_ctrl_ring:
+    if s.simplified_modeling_for_synthesis:
       return True
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
            s.expected_sink_out.done()
@@ -588,7 +590,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
                                   per_cgra_rows, per_cgra_columns)
 
   if simplified_modeling_for_synthesis:
-    has_ctrl_ring = False
     FuList = [MemUnitRTL, AdderRTL]
 
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
@@ -600,7 +601,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
                    id2ctrlMemSize_map, id2cgraSize_map, 
                    id2validTiles, id2validLinks, id2dataSPM,
                    mem_access_is_combinational,
-                   has_ctrl_ring,
+                   simplified_modeling_for_synthesis,
                    controller2addr_map, expected_sink_out_pkt, cmp_func)
 
   th.elaborate()

@@ -28,7 +28,7 @@ class MeshMultiCgraRTL(Component):
                 mem_access_is_combinational,
                 FunctionUnit, FuList, per_cgra_topology,
                 controller2addr_map,
-                has_ctrl_ring = True):
+                simplified_modeling_for_synthesis = False):
 
     # Derives all types from CgraPayloadType.
     CgraDataType = CgraPayloadType.get_field_type(kAttrData)
@@ -56,6 +56,7 @@ class MeshMultiCgraRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
+    has_ctrl_ring = simplified_modeling_for_synthesis ? False : True
 
     # Interface
     # Request from/to CPU.

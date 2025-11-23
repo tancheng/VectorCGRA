@@ -73,7 +73,7 @@ class TestHarness(Component):
                 ctrl_steps_per_iter, ctrl_steps_total,
                 mem_access_is_combinational,
                 FunctionUnit, FuList, "Mesh", controller2addr_map,
-                has_ctrl_ring = True)
+                simplified_modeling_for_synthesis = False)
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
