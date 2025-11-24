@@ -90,7 +90,7 @@ class RetRTL(Fu):
 
     @update_ff
     def update_already_done():
-      if s.reset:
+      if s.reset | s.clear:
         s.already_done <<= 0
       else:
         if s.recv_opt.val & \
