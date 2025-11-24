@@ -152,11 +152,11 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
-  if multiCgraParam is None:
-    arch_file = os.path.join(os.path.dirname(__file__), "arch.yaml")
-    parser = Parser(arch_file)
-    multiCgraParam = parser.parse_multi_cgra_param()
+def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
+  arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
+  print(f"Use the architecture file: {arch_file}")
+  parser = Parser(arch_file)
+  multiCgraParam = parser.parse_multi_cgra_param()
   
   print(f"multiCgraParam: {multiCgraParam}")
   singleCgraParam = multiCgraParam.cgras[0][0]
