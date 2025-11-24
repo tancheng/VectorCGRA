@@ -60,6 +60,7 @@ class TestHarness(Component):
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
                 mem_access_is_combinational,
+                has_ctrl_ring,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
                 complete_signal_sink_out):
@@ -82,7 +83,11 @@ class TestHarness(Component):
                 mem_access_is_combinational,
                 FunctionUnit, FuList,
                 TileList, LinkList, dataSPM, controller2addr_map,
-                idTo2d_map, is_multi_cgra = False)
+                idTo2d_map,
+                is_multi_cgra = False,
+                has_ctrl_ring = has_ctrl_ring)
+
+    s.has_ctrl_ring = has_ctrl_ring
 
     # Connections
     s.dut.cgra_id //= cgra_id
@@ -94,6 +99,8 @@ class TestHarness(Component):
     s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
   def done(s):
+    if not s.has_ctrl_ring:
+      return True
     return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
@@ -179,7 +186,7 @@ class Link:
       s.dstTile.fromMem = True
 
 
-def test_cgra_universal(cmdline_opts, paramCGRA = None):
+def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, paramCGRA = None):
   num_tile_inports  = 8
   num_tile_outports = 8
   num_fu_inports = 4
@@ -203,11 +210,11 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  # FuList = [MemUnitRTL, AdderRTL]
   FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
+  has_ctrl_ring = False
 
   DataAddrType = mk_bits(addr_nbits)
   ControllerIdType = mk_bits(clog2(num_cgras))
@@ -470,6 +477,10 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
+  if simplified_modeling_for_synthesis:
+    has_ctrl_ring = False
+    FuList = [MemUnitRTL, AdderRTL]
+
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id,
@@ -477,7 +488,9 @@ def test_cgra_universal(cmdline_opts, paramCGRA = None):
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size,
-                   mem_access_is_combinational, tiles, links, dataSPM,
+                   mem_access_is_combinational,
+                   has_ctrl_ring,
+                   tiles, links, dataSPM,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
   th.elaborate()
