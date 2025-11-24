@@ -13,4 +13,6 @@ class ParamCGRA:
     def getValidLinks(self):
         return self.links
     
+    def __repr__(self) -> str:
+        return f"ParamCGRA(rows={self.rows}, columns={self.columns})"
     
