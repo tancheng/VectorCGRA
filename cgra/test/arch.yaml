@@ -3,8 +3,8 @@ multi_cgra_defaults:
   columns: 1
 
 cgra_defaults:
-  rows: 4
-  columns: 4
+  rows: 2
+  columns: 2
   configMemSize: 8
 
 tile_defaults:
