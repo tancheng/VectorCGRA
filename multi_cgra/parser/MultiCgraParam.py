@@ -1,6 +1,6 @@
-from .helper import get_links, keep_port_valid_on_boundary
-from .Tile import Tile
-from .DataSPM import DataSPM
+from ...lib.util.cgra.cgra_helper import get_links, keep_port_valid_on_boundary
+from ...lib.util.cgra.Tile import Tile
+from ...lib.util.cgra.DataSPM import DataSPM
 from .ParamCGRA import ParamCGRA
 import copy
 
@@ -31,7 +31,7 @@ class MultiCgraParam:
         for r in range(per_cgra_rows):
             tiles.append([])
             for c in range(per_cgra_cols):
-                tiles[r].append(Tile(c, r))
+                tiles[r].append(Tile(c, r, 128, []))
 
         # Gets the links.
         links = get_links(tiles)

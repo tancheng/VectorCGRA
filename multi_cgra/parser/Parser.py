@@ -1,9 +1,9 @@
 import yaml
 from .MultiCgraParam import MultiCgraParam
-from .DataSPM import DataSPM
-from .Tile import Tile
+from ...lib.util.cgra.DataSPM import DataSPM
+from ...lib.util.cgra.Tile import Tile
 from .ParamCGRA import ParamCGRA
-from .helper import *
+from ...lib.util.cgra.cgra_helper import *
 import copy
 
 
@@ -23,10 +23,12 @@ class Parser:
         tiles = []
         per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
         per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
+        num_registers = self.yaml_data['tile_defaults']['num_registers']
+        operations = self.yaml_data['tile_defaults']['operations']
         for r in range(per_cgra_rows):
             tiles.append([])
             for c in range(per_cgra_columns):
-                tiles[r].append(Tile(c, r))
+                tiles[r].append(Tile(c, r, num_registers, operations))
         return tiles
 
     def parse_cgras(self):
@@ -64,8 +66,7 @@ class Parser:
         dataSPM = self.parse_dataSPM()
         id2dataSPM = {}
         id2ctrlMemSize_map = {}
-        # Is ctrlMemSize in architecture.yaml?
-        ctrlMemSize = 16
+        ctrlMemSize = self.yaml_data['cgra_defaults']['configMemSize']
 
         for id in range(num_cgra_rows * num_cgra_columns):
             id2dataSPM[id] = dataSPM

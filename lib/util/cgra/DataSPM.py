@@ -1,4 +1,3 @@
-
 class DataSPM:
     def __init__(s, numOfReadPorts, numOfWritePorts):
         s.numOfReadPorts = numOfReadPorts
