@@ -1469,9 +1469,6 @@ def initialize_test_harness(cmdline_opts,
         # Const for ADD_CONST_LD.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
 
-        # Const for PHI_CONST.
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
-
         # Resets ctrl mem raddr.
         IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_CTRL_LOWER_BOUND, data = DataType(0, 1))),
 
@@ -1644,9 +1641,6 @@ def initialize_test_harness(cmdline_opts,
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
-        # Const for PHI_CONST.
-        IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
-
         # Const for CMP.
         IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
 
