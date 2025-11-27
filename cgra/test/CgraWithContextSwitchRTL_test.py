@@ -368,10 +368,12 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       # North -> FU
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # Sends to east tile: tile 1; and self reg.
+                                                                                                                 # FU -> East
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # FU -> FU
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code,
                                                                       # Reads from the second reg cluster, which is written by the
@@ -388,6 +390,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                     # FU -> FU
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       # Sends to self reg. Needs to be another register cluster to
                                                                       # avoid conflict with previous OPT_ADD.
@@ -424,7 +427,9 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # East -> FU
                                                                       TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                                                                # FU -> East
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -435,7 +440,9 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # NorthEast -> FU
                                                                       TileInType(6), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      # FU -> North
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -474,10 +481,11 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       # West -> FU,  North -> FU
                                                                        TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
-                                                                      # Sends to self first reg cluster.
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # FU -> FU
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
           # NAH.
@@ -512,9 +520,11 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                                     # North -> FU
                                                                       TileInType(0), TileInType(1), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                    # FU -> FU
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
@@ -527,10 +537,12 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # NorthWest -> FU, West -> FU
                                                                       TileInType(5), TileInType(3), TileInType(0), TileInType(0)],
-                                                                     # Sends to west and self first reg cluster.
+                                                                                                  # FU -> West
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      # FU -> FU
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
           # RET.
@@ -573,10 +585,12 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       # North -> FU
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # Sends to self reg.
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # FU -> FU
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
           # LD.
@@ -591,6 +605,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       # avoid conflict with ADD_CONST.
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                     # FU -> FU
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
                                                                       read_reg_from = read_reg_from_code))),
@@ -616,8 +631,10 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                                     # South -> FU
                                                                       TileInType(0), TileInType(2), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
+                                                                                                  # FU -> SouthEast
                                                                       FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
@@ -628,9 +645,11 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # East -> FU
                                                                       TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      # FU -> FU
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
           # NAH.
@@ -680,10 +699,13 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       # North -> FU
                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # Sends result to north tile9, and self first register cluster.
+                                                                       # FU -> North
                                                                       [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # FU -> FU
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
 
@@ -695,7 +717,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # Sends result to south.
+                                                                                     # FU -> South
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -714,8 +736,11 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                                                  # FU -> West
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), 
+                                                                                                                # FU -> SouthWest
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                      # FU -> FU
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
                                                                      read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
@@ -728,9 +753,10 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     # Sends two outputs to south and self reg, respectively.
+                                                                                    # FU -> South
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                    # FU -> FU
                                                                       FuOutType(0), FuOutType(2), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
@@ -759,9 +785,12 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       # East -> FU
                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                                     # FU -> South               # FU -> East
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # FU -> FU
                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = write_reg_from_code))),
 
@@ -773,9 +802,9 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # Sends to self reg.
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                     # FU -> FU
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
@@ -792,6 +821,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile: tile 4.
+                                                                                    # FU -> South
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -832,9 +862,10 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
-                                                                      # Sends to south tile5 and self reg (cluster 1).
+                                                                                     # FU -> South
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                                     # FU -> FU
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],))),
@@ -858,8 +889,9 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      # South -> FU
                                                                       TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     # Sends result to west tile8.
+                                                                                                  # FU -> West
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1020,20 +1052,20 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
 
       # ------------------------------------------------------Pausing Task 1------------------------------------------------------------
       # Let all tiles free running for 12 cycles.
-      # We send useless data to unused tile 15 to simulate the free-running.
-      [ IntraCgraPktType(0, 15, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
+      # We repeately write the first data to addr 0 of memory bank to simulate the free-running.
+      [ IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(10, 1), data_addr = 0)) for _ in range(12) ],
 
       # Sends preserving command to tile 0 to record accumulation results.
       [ IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_PRESERVE)) ],
       
       # Free running another 12 cycles to make sure tile 0 has already captured one accumulation result.
-      [ IntraCgraPktType(0, 14, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
+      [ IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(10, 1), data_addr = 0)) for _ in range(12) ],
 
       # Sends pausing command to tile 8 to record iteration results.
       [ IntraCgraPktType(0, 8, payload = CgraPayloadType(CMD_PAUSE)) ],
       
       # Free running another 12 cycles to make sure all data has been drained.
-      [ IntraCgraPktType(0, 13, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 0))) for _ in range(12) ],
+      [ IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(10, 1), data_addr = 0)) for _ in range(12) ],
       # Terminates all tiles after saving iteration and accumulation results.
       # Terminating refers to stop issuing configs from tile's config mem,
       # and clear all necessary values in various registers left by Task 1.
