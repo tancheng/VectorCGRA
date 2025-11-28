@@ -331,6 +331,8 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
            IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 3)),
            IntraCgraPktType(0,   num_tiles, 1, 0, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
           ]
+  if simplified_modeling_for_synthesis:
+    expected_sink_out_pkt = []
 
   ctrl_steps_per_iter = 2
   ctrl_steps_total = 2

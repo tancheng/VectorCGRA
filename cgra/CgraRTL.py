@@ -115,9 +115,10 @@ class CgraRTL(Component):
                                       s.num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
-    s.controller = ControllerRTL(NocPktType,
-                                 multi_cgra_rows, multi_cgra_columns,
-                                 s.num_tiles, controller2addr_map, idTo2d_map)
+    if has_ctrl_ring:
+      s.controller = ControllerRTL(NocPktType,
+                                   multi_cgra_rows, multi_cgra_columns,
+                                   s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     if has_ctrl_ring:
@@ -130,32 +131,43 @@ class CgraRTL(Component):
 
     # Connections
     # Connects the controller id.
-    s.controller.cgra_id //= s.cgra_id
+    if has_ctrl_ring:
+      s.controller.cgra_id //= s.cgra_id
     s.data_mem.cgra_id //= s.cgra_id
 
     # Connects the address lower and upper bound.
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
-    # Connects data memory with controller.
-    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
-    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
-    s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
-    s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
-    s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
-    s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
-
-    if is_multi_cgra:
-      s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
-      s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+    if has_ctrl_ring:
+      # Connects data memory with controller.
+      s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
+      s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
+      s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
+      s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
+      s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
+      s.data_mem.send_to_noc_store_pkt //= s.controller.recv_from_tile_store_request_pkt
     else:
-      s.bypass_queue = BypassQueueRTL(NocPktType, 1)
-      s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
-      s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
+      # Connects data memory with controller.
+      s.data_mem.recv_from_noc_load_request //= NocPktType()
+      s.data_mem.recv_from_noc_store_request //= NocPktType()
+      s.data_mem.recv_from_noc_load_response_pkt //= NocPktType()
+      s.data_mem.send_to_noc_load_request_pkt //= NocPktType()
+      s.data_mem.send_to_noc_load_response_pkt //= NocPktType()
+      s.data_mem.send_to_noc_store_pkt //= NocPktType()
 
-    # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
-    s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+    if has_ctrl_ring:
+      if is_multi_cgra:
+        s.recv_from_inter_cgra_noc //= s.controller.recv_from_inter_cgra_noc
+        s.send_to_inter_cgra_noc //= s.controller.send_to_inter_cgra_noc
+      else:
+        s.bypass_queue = BypassQueueRTL(NocPktType, 1)
+        s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
+        s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
+
+      # Connects the ctrl interface between CPU and controller.
+      s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+      s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
 
     # Assigns tile id.
     for i in range(s.num_tiles):
