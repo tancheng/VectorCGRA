@@ -57,7 +57,6 @@ class TestHarness(Component):
                 id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
-                simplified_modeling_for_synthesis,
                 controller2addr_map, expected_sink_out_pkt,
                 cmp_func):
 
@@ -80,9 +79,7 @@ class TestHarness(Component):
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
-                is_multi_cgra = True,
-                simplified_modeling_for_synthesis = simplified_modeling_for_synthesis)
-    s.simplified_modeling_for_synthesis = simplified_modeling_for_synthesis
+                is_multi_cgra = True)
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
@@ -125,8 +122,6 @@ class TestHarness(Component):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
 
   def done(s):
-    if s.simplified_modeling_for_synthesis:
-      return True
     return s.src_ctrl_pkt.done() and s.src_query_pkt.done() and \
            s.expected_sink_out.done()
 
@@ -153,7 +148,7 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, multiCgraParam = None):
+def test_mesh_multi_cgra_universal(cmdline_opts, multiCgraParam = None):
   print(f"multiCgraParam: {multiCgraParam}")
   singleCgraParam = multiCgraParam.cgras[0][0] if multiCgraParam else None
   num_cgra_rows = multiCgraParam.rows if multiCgraParam else 2
@@ -331,8 +326,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
            IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 3)),
            IntraCgraPktType(0,   num_tiles, 1, 0, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
           ]
-  if simplified_modeling_for_synthesis:
-    expected_sink_out_pkt = []
 
   ctrl_steps_per_iter = 2
   ctrl_steps_total = 2
@@ -591,8 +584,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
                                   num_cgra_rows, num_cgra_columns,
                                   per_cgra_rows, per_cgra_columns)
 
-  if simplified_modeling_for_synthesis:
-    FuList = [MemUnitRTL, AdderRTL]
 
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
@@ -603,7 +594,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, simplified_modeling_for_synthes
                    id2ctrlMemSize_map, id2cgraSize_map, 
                    id2validTiles, id2validLinks, id2dataSPM,
                    mem_access_is_combinational,
-                   simplified_modeling_for_synthesis,
                    controller2addr_map, expected_sink_out_pkt, cmp_func)
 
   th.elaborate()

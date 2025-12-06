@@ -20,8 +20,7 @@ class MeshMultiCgraTemplateRTL(Component):
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
                 mem_access_is_combinational,
-                is_multi_cgra = True,
-                simplified_modeling_for_synthesis = False):
+                is_multi_cgra = True):
 
         # Derives all types from CgraPayloadType.
         CgraDataType = CgraPayloadType.get_field_type(kAttrData)
@@ -39,8 +38,6 @@ class MeshMultiCgraTemplateRTL(Component):
         # Constant
         s.num_cgras = cgra_rows * cgra_columns
         idTo2d_map = {}
-        s.simplified_modeling_for_synthesis = simplified_modeling_for_synthesis
-        has_ctrl_ring = False if simplified_modeling_for_synthesis else True
 
         # Mesh position takes column as argument first.
         MeshPos = mk_mesh_pos(cgra_columns, cgra_rows)
@@ -75,21 +72,15 @@ class MeshMultiCgraTemplateRTL(Component):
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
                                   is_multi_cgra,
-                                  has_ctrl_ring)
+                                  has_ctrl_ring = True)
                   for cgra_id in range(s.num_cgras)]
-        if simplified_modeling_for_synthesis:
-          for i in range(s.num_cgras):
-            s.cgra[i].recv_from_inter_cgra_noc.val //= 0
-            s.cgra[i].recv_from_inter_cgra_noc.msg //= NocPktType()
-            s.cgra[i].send_to_inter_cgra_noc.rdy //= 0
-        else:
-          # Latency is 1.
-          s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
+        # Latency is 1.
+        s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
-          # Connections
-          for i in range(s.num_cgras):
-            s.mesh.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
-            s.mesh.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
+        # Connections
+        for i in range(s.num_cgras):
+          s.mesh.send[i] //= s.cgra[i].recv_from_inter_cgra_noc
+          s.mesh.recv[i] //= s.cgra[i].send_to_inter_cgra_noc
 
         # Connects controller id.
         for cgra_id in range(s.num_cgras):
@@ -166,6 +157,5 @@ class MeshMultiCgraTemplateRTL(Component):
     def line_trace(s):
       res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())
                       for (i,x) in enumerate(s.cgra)])
-      if not s.simplified_modeling_for_synthesis:
-        res += " ## mesh: " + s.mesh.line_trace()
+      res += " ## mesh: " + s.mesh.line_trace()
       return res

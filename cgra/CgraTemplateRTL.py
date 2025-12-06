@@ -101,6 +101,7 @@ class CgraTemplateRTL(Component):
                                       s.num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
+    s.cgra_id = InPort(CgraIdType)
     if has_ctrl_ring:
       s.controller = ControllerRTL(NocPktType,
                                    multi_cgra_rows, multi_cgra_columns,
@@ -111,7 +112,6 @@ class CgraTemplateRTL(Component):
       # The last argument of 1 is for the latency per hop.
       s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
-    s.cgra_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)

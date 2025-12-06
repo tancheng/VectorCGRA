@@ -27,8 +27,7 @@ class MeshMultiCgraRTL(Component):
                 num_ctrl, total_steps, 
                 mem_access_is_combinational,
                 FunctionUnit, FuList, per_cgra_topology,
-                controller2addr_map,
-                simplified_modeling_for_synthesis = False):
+                controller2addr_map):
 
     # Derives all types from CgraPayloadType.
     CgraDataType = CgraPayloadType.get_field_type(kAttrData)
@@ -56,7 +55,6 @@ class MeshMultiCgraRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     ControllerIdType = mk_bits(max(1, clog2(s.num_cgras)))
-    has_ctrl_ring = False if simplified_modeling_for_synthesis else True
 
     # Interface
     # Request from/to CPU.
@@ -77,7 +75,7 @@ class MeshMultiCgraRTL(Component):
                       mem_access_is_combinational,
                       FunctionUnit, FuList, per_cgra_topology,
                       controller2addr_map, idTo2d_map,
-                      has_ctrl_ring = has_ctrl_ring)
+                      has_ctrl_ring = True)
               for cgra_id in range(s.num_cgras)]
 
     # Latency is 1.
