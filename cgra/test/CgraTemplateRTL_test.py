@@ -111,7 +111,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, arch_yaml_path = "arch.yaml"):
+def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False, arch_yaml_path = "arch.yaml"):
   arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
   parser = Parser(arch_file)
   cgras = parser.parse_cgras()
@@ -317,3 +317,6 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, 
           th.set_param(targetTile, FuList=targetFuList)
 
   run_sim(th)
+
+def test_cgra_universal_for_layout(cmdline_opts, arch_yaml_path = "arch.yaml"):
+  test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, arch_yaml_path = arch_yaml_path)
