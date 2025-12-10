@@ -13,6 +13,11 @@ class ParamCGRA:
     def getValidLinks(self):
         return self.links
     
+    def overrideTiles(self, tile_x, tile_y, operations, existence):
+        row = tile_y
+        col = tile_x
+        self.tiles[row * self.columns + col].override(operations, existence)
+    
     def __repr__(self) -> str:
         return f"ParamCGRA(rows={self.rows}, columns={self.columns})"
     

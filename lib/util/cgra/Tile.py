@@ -44,6 +44,7 @@ class Tile:
   def getAllValidFuTypes(s):
     return s.operations
   
-  def override(s):
-    # TODO @benkangpeng
-    raise NotImplementedError
+  def override(s, operations, existence):
+    s.operations = operations
+    s.disabled = not existence
+    s.isDefaultFus_ = False
