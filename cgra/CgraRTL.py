@@ -33,7 +33,8 @@ class CgraRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, cgra_topology,
                 controller2addr_map, idTo2d_map,
-                is_multi_cgra = True):
+                is_multi_cgra = True,
+                has_ctrl_ring = True):
 
     # Derives all types from CgraPayloadType.
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -63,6 +64,7 @@ class CgraRTL(Component):
     elif cgra_topology == KING_MESH:
       s.num_mesh_ports = 8
 
+    s.has_ctrl_ring = has_ctrl_ring
     s.num_tiles = width * height
     # The left and bottom tiles are connected to the data memory.
     data_mem_num_rd_tiles = height + width - 1
@@ -114,11 +116,12 @@ class CgraRTL(Component):
                                       mem_access_is_combinational,
                                       idTo2d_map)
     s.controller = ControllerRTL(NocPktType,
-                                 multi_cgra_rows, multi_cgra_columns,
-                                 s.num_tiles, controller2addr_map, idTo2d_map)
+                                  multi_cgra_rows, multi_cgra_columns,
+                                  s.num_tiles, controller2addr_map, idTo2d_map)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    if has_ctrl_ring:
+      s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
     s.cgra_id = InPort(CgraIdType)
 
     # Address lower and upper bound.
@@ -159,14 +162,13 @@ class CgraRTL(Component):
       s.tile[i].tile_id //= i
       s.tile[i].cgra_id //= s.cgra_id
 
-    # Connects ring with each control memory.
-    for i in range(s.num_tiles):
-      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
-
-    for i in range(s.num_tiles):
-      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
-    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+    if has_ctrl_ring:
+      # Connects ring with each control memory.
+      for i in range(s.num_tiles):
+        s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+        s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+      s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+      s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for i in range(s.num_tiles):
 
@@ -260,7 +262,10 @@ class CgraRTL(Component):
   def line_trace(s):
     res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
-    res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
+    if s.has_ctrl_ring:
+      res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
+
+
 

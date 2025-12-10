@@ -88,7 +88,8 @@ class MeshMultiCgraRTL(Component):
                         num_ctrl, total_steps,
                         mem_access_is_combinational,
                         FunctionUnit, FuList, per_cgra_topology,
-                        controller2addr_map, idTo2d_map)
+                        controller2addr_map, idTo2d_map,
+                        has_ctrl_ring = True)
                 for cgra_id in range(s.num_cgras)]
 
     # Latency is 1.

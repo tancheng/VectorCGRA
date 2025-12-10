@@ -70,9 +70,6 @@ class TestHarness(Component):
 
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_func)
 
-    
- 
-
     s.dut = DUT(CgraPayloadType,
                 cgra_rows, cgra_columns, 
                 # per_cgra_rows, per_cgra_columns, 
@@ -82,8 +79,8 @@ class TestHarness(Component):
                 ctrl_steps_per_iter, ctrl_steps_total, FunctionUnit, FuList,
                 controller2addr_map, id2ctrlMemSize_map, id2cgraSize_map, 
                 id2validTiles, id2validLinks, id2dataSPM,
-                mem_access_is_combinational
-                )
+                mem_access_is_combinational,
+                is_multi_cgra = True)
 
     # Connections
     s.expected_sink_out.recv //= s.dut.send_to_cpu_pkt
@@ -358,7 +355,8 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
       id2ctrlMemSize_map[id] = paramCGRA.configMemSize
       id2cgraSize_map[id] = [paramCGRA.rows, paramCGRA.columns]
 
-  th = TestHarness(DUT, FunctionUnit, FuList,IntraCgraPktType,
+
+  th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
                    per_cgra_rows, per_cgra_columns, ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
