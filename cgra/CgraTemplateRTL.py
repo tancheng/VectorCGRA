@@ -19,6 +19,36 @@ from ..tile.TileRTL import TileRTL
 from ..lib.util.data_struct_attr import *
 from ..lib.messages import *
 
+from ..fu.single.PhiRTL import PhiRTL
+from ..fu.single.AdderRTL import AdderRTL
+from ..fu.single.ShifterRTL import ShifterRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..fu.single.SelRTL import SelRTL
+from ..fu.single.CompRTL import CompRTL
+from ..fu.double.SeqMulAdderRTL import SeqMulAdderRTL
+from ..fu.single.RetRTL import RetRTL
+from ..fu.single.MulRTL import MulRTL
+from ..fu.single.LogicRTL import LogicRTL
+from ..fu.single.GrantRTL import GrantRTL
+
+fu_map = {
+  "Phi": PhiRTL,
+  "Add": AdderRTL,
+  "Shift": ShifterRTL,
+  "Ld": MemUnitRTL,
+  "Sel": SelRTL,
+  "Cmp": CompRTL,
+  "MAC": SeqMulAdderRTL,
+  "St": MemUnitRTL,
+  "Ret": RetRTL,
+  "Mul": MulRTL,
+  "Logic": LogicRTL,
+  "Br": GrantRTL
+}
+
+def map_fu2rtl(fu_type: list[str]):
+  return list({fu_map[fu] for fu in fu_type})
+
 
 class CgraTemplateRTL(Component):
 
@@ -87,7 +117,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList)
+                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes()))
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
