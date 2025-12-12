@@ -28,7 +28,7 @@ class ParamCGRA:
             if (link.srcTile.dimX == src_tile_x and link.srcTile.dimY == src_tile_y and
                     link.dstTile.dimX == dst_tile_x and link.dstTile.dimY == dst_tile_y):
                 link.disabled = not existence
-                # If disabled, you might need to handle port invalidation logic here or in Link.py
+                link.validatePorts()
                 break
 
     def __repr__(self) -> str:
