@@ -28,6 +28,15 @@ class Parser:
         for r in range(per_cgra_rows):
             tiles.append([])
             for c in range(per_cgra_columns):
+                """
+                Mapping way of tiles in a single CGRA (Cartesian coordinate system):
+                  ^
+                  |   y (row) increases upward: 0 at the bottom, up to `per_cgra_rows-1` at the top
+                  |
+                  |   (row, col): (y, x)
+                  +------------------------>
+                  0                        x (column) increases to the right: 0 at the left, up to `per_cgra_columns-1` at the right
+                """
                 tiles[r].append(Tile(c, r, num_registers, operations))
         return tiles
 
@@ -80,6 +89,22 @@ class Parser:
                 cgras[cgraRow].append(ParamCGRA(
                     per_cgra_rows, per_cgra_columns, id2validTiles[id], id2validLinks[id], id2dataSPM[id], id2ctrlMemSize_map[id]))
 
+        # Overrides the tiles.
+        if 'tile_overrides' in self.yaml_data:
+            data = self.yaml_data['tile_overrides']
+            for override in data:
+                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], override['operations'], override['existence'])
+
+        # Overrides the links.
+        if 'link_overrides' in self.yaml_data:
+            data = self.yaml_data['link_overrides']
+            for override in data:
+                 if override['src_cgra_x'] == override['dst_cgra_x'] and override['src_cgra_y'] == override['dst_cgra_y']:
+                     cgras[override['src_cgra_x']][override['src_cgra_y']].overrideLinks(
+                         override['src_tile_x'], override['src_tile_y'],
+                         override['dst_tile_x'], override['dst_tile_y'],
+                         override['existence']
+                     )
         return cgras
 
     def parse_multi_cgra_param(self):
