@@ -204,7 +204,12 @@ class CgraTemplateRTL(Component):
       else:
         srcTileIndex = link.srcTile.getIndex(TileList)
         dstTileIndex = link.dstTile.getIndex(TileList)
-        s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+        if not link.disabled:
+          s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+        else:
+          s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
+          s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+          s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
 
     if is_multi_cgra:
       for row in range(per_cgra_rows):

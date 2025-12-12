@@ -94,6 +94,17 @@ class Parser:
             data = self.yaml_data['tile_overrides']
             for override in data:
                 cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], override['operations'], override['existence'])
+
+        # Overrides the links.
+        if 'link_overrides' in self.yaml_data:
+            data = self.yaml_data['link_overrides']
+            for override in data:
+                 if override['src_cgra_x'] == override['dst_cgra_x'] and override['src_cgra_y'] == override['dst_cgra_y']:
+                     cgras[override['src_cgra_x']][override['src_cgra_y']].overrideLinks(
+                         override['src_tile_x'], override['src_tile_y'],
+                         override['dst_tile_x'], override['dst_tile_y'],
+                         override['existence']
+                     )
         return cgras
 
     def parse_multi_cgra_param(self):
