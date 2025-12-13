@@ -117,7 +117,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes()))
+                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes())) # Fix(@benkang) consider the flag `simplified_modeling_for_synthesis`
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
@@ -195,11 +195,20 @@ class CgraTemplateRTL(Component):
         s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
         s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
+        # Grounds the generic routing port since it is unused for memory links.
+        if not link.disabled:
+            s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
+            s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+
       elif link.isToMem():
         memPort = link.getMemWritePort()
         srcTileIndex = link.srcTile.getIndex(TileList)
         s.tile[srcTileIndex].to_mem_waddr //= s.data_mem.recv_waddr[memPort]
         s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
+
+        # Grounds the generic routing port ready signal.
+        if not link.disabled:
+            s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
 
       else:
         srcTileIndex = link.srcTile.getIndex(TileList)
