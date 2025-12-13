@@ -310,13 +310,6 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
                        'ALWCOMBORDER', 'CMPCONST'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
-  for tile in tiles:
-      if not tile.isDefaultFus():
-          targetFuList = []
-          for fuType in tile.getAllValidFuTypes():
-              targetFuList.append(fuType2RTL[fuType])
-          targetTile = "top.dut.tile[" + str(tile.getIndex(tiles)) + "].construct"
-          th.set_param(targetTile, FuList=targetFuList)
 
   run_sim(th)
 
