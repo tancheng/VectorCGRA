@@ -70,7 +70,8 @@ class TestHarness(Component):
                 has_ctrl_ring,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
-                complete_signal_sink_out):
+                complete_signal_sink_out,
+                simplified_modeling_for_synthesis):
 
     CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -92,7 +93,8 @@ class TestHarness(Component):
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map,
                 is_multi_cgra = False,
-                has_ctrl_ring = has_ctrl_ring)
+                has_ctrl_ring = has_ctrl_ring,
+                simplified_modeling_for_synthesis = simplified_modeling_for_synthesis)
 
     s.has_ctrl_ring = has_ctrl_ring
 
@@ -300,7 +302,8 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
                    mem_access_is_combinational,
                    has_ctrl_ring,
                    tiles, links, dataSPM,
-                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out,
+                   simplified_modeling_for_synthesis)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
