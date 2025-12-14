@@ -10,6 +10,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
 );
 
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
+  integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
@@ -44,6 +45,75 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   pkt.payload.ctrl.read_reg_from       = '{default: 1'd0};
   pkt.payload.ctrl.read_reg_idx        = '{default: 4'd0};
 
+/*
+111103b7 lui x7
+0013e393 ORI x7
+01039393 slli x7, x7, 16
+01039393 slli x7, x7, 16
+addi x31 x0 x0
+lui 31
+ori 31
+OR 7 7 31
+0070b023 sd x7, 0(x1)
+
+22220437 lui x8
+ori x8
+01041413 slli x8, x8, 16
+01041413 slli x8, x8, 16
+addi x31 x0 x0
+lui 31
+ori 31
+OR 8 8 31
+0080b423 sd x8, 8(x1)
+
+33330537 lui x10
+ORI x10
+01051513 slli x10, x10, 16
+01051513 slli x10, x10, 16
+addi x31 x0 x0
+lui 31
+ori 31
+OR 10 10 31
+00a0b823 sd x10, 16(x1)
+
+01808093 Advance x1 += 24 (h1018)
+*/
+
+  file_handle = $fopen("output.txt", "a");
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
+  $fdisplay( file_handle, "%h3b7",   logic_pkt(pkt)[63:44] );
+  $fdisplay( file_handle, "%h3e393", logic_pkt(pkt)[43:32] );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "01f3e3b3" );
+  $fdisplay( file_handle, "0070b023" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
+  $fdisplay( file_handle, "%h437",   logic_pkt(pkt)[127:108] );
+  $fdisplay( file_handle, "%h46413", logic_pkt(pkt)[107:96] );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "01f46433" );
+  $fdisplay( file_handle, "0080b423" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
+  $fdisplay( file_handle, "%h537",   { {7{1'b0}}, logic_pkt(pkt)[184:172] } );
+  $fdisplay( file_handle, "%h56513", logic_pkt(pkt)[171:160] );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "01f56533" );
+  $fdisplay( file_handle, "00a0b823" );
+  // Advance x1 += 24 (h1018)
+  $fdisplay( file_handle, "01808093" );
+  $fclose(file_handle);
+
   return pkt;
 endfunction
 
@@ -64,6 +134,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
 );
 
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
+  integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
@@ -92,6 +163,41 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   pkt.payload.ctrl.read_reg_from       = read_reg_from;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
 
+  file_handle = $fopen("output.txt", "a");
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
+  $fdisplay( file_handle, "%h3b7",   logic_pkt(pkt)[63:44] );
+  $fdisplay( file_handle, "%h3e393", logic_pkt(pkt)[43:32] );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "01f3e3b3" );
+  $fdisplay( file_handle, "0070b023" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
+  $fdisplay( file_handle, "%h437",   logic_pkt(pkt)[127:108] );
+  $fdisplay( file_handle, "%h46413", logic_pkt(pkt)[107:96] );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "01f46433" );
+  $fdisplay( file_handle, "0080b423" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
+  $fdisplay( file_handle, "%h537",   { {7{1'b0}}, logic_pkt(pkt)[184:172] } );
+  $fdisplay( file_handle, "%h56513", logic_pkt(pkt)[171:160] );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "01f56533" );
+  $fdisplay( file_handle, "00a0b823" );
+  // Advance x1 += 24 (h1018)
+  $fdisplay( file_handle, "01808093" );
+  $fclose(file_handle);
+
   return pkt;
 endfunction
 
@@ -115,6 +221,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
 );
 
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
+  integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
@@ -147,6 +254,75 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   pkt.payload.data.bypass    = 1'b0;
   pkt.payload.data.delay     = 1'b0;
 
+  file_handle = $fopen("output.txt", "a");
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
+  $fdisplay( file_handle, "%h3b7",   logic_pkt(pkt)[63:44] );
+  $fdisplay( file_handle, "%h3e393", logic_pkt(pkt)[43:32] );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "01039393" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "01f3e3b3" );
+  $fdisplay( file_handle, "0070b023" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
+  $fdisplay( file_handle, "%h437",   logic_pkt(pkt)[127:108] );
+  $fdisplay( file_handle, "%h46413", logic_pkt(pkt)[107:96] );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "01041413" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "01f46433" );
+  $fdisplay( file_handle, "0080b423" );
+  //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
+  $fdisplay( file_handle, "%h537",   { {7{1'b0}}, logic_pkt(pkt)[184:172] } );
+  $fdisplay( file_handle, "%h56513", logic_pkt(pkt)[171:160] );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "01051513" );
+  $fdisplay( file_handle, "00000f93" );
+  $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
+  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "01f56533" );
+  $fdisplay( file_handle, "00a0b823" );
+  // Advance x1 += 24 (h1018)
+  $fdisplay( file_handle, "01808093" );
+  $fclose(file_handle);
+
   return pkt;
+endfunction
+
+function automatic logic [185-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed p);
+logic_pkt = {
+// Header (MSB->LSB order)
+p.src,
+p.dst,
+p.src_cgra_id,
+p.dst_cgra_id,
+p.src_cgra_x,
+p.src_cgra_y,
+p.dst_cgra_x,
+p.dst_cgra_y,
+p.opaque,
+p.vc_id,
+// Payload
+p.payload.cmd,
+p.payload.data.payload,
+p.payload.data.predicate,
+p.payload.data.bypass,
+p.payload.data.delay,
+p.payload.data_addr,
+p.payload.ctrl.operation,
+p.payload.ctrl.fu_in,
+p.payload.ctrl.routing_xbar_outport,
+p.payload.ctrl.fu_xbar_outport,
+p.payload.ctrl.vector_factor_power,
+p.payload.ctrl.is_last_ctrl,
+p.payload.ctrl.write_reg_from,
+p.payload.ctrl.write_reg_idx,
+p.payload.ctrl.read_reg_from,
+p.payload.ctrl.read_reg_idx,
+p.payload.ctrl_addr
+};
 endfunction
 
