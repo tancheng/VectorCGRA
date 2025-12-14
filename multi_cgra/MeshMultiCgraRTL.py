@@ -9,6 +9,7 @@ Author : Cheng Tan
 """
 
 from ..cgra.CgraRTL import CgraRTL
+from ..cgra.CgraWithContextSwitchRTL import CgraWithContextSwitchRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
@@ -27,7 +28,8 @@ class MeshMultiCgraRTL(Component):
                 num_ctrl, total_steps, 
                 mem_access_is_combinational,
                 FunctionUnit, FuList, per_cgra_topology,
-                controller2addr_map):
+                controller2addr_map,
+                support_task_switching = False):
 
     # Derives all types from CgraPayloadType.
     CgraDataType = CgraPayloadType.get_field_type(kAttrData)
@@ -65,17 +67,30 @@ class MeshMultiCgraRTL(Component):
     for cgra_row in range(cgra_rows):
       for cgra_col in range(cgra_columns):
         idTo2d_map[cgra_row * cgra_columns + cgra_col] = (cgra_col, cgra_row)
-
-    s.cgra = [CgraRTL(CgraPayloadType, cgra_rows, cgra_columns,
-                      tile_columns, tile_rows,
-                      ctrl_mem_size, data_mem_size_global,
-                      data_mem_size_per_bank, num_banks_per_cgra,
-                      num_registers_per_reg_bank,
-                      num_ctrl, total_steps,
-                      mem_access_is_combinational,
-                      FunctionUnit, FuList, per_cgra_topology,
-                      controller2addr_map, idTo2d_map)
-              for cgra_id in range(s.num_cgras)]
+    
+    if support_task_switching:
+      s.cgra = [CgraWithContextSwitchRTL(CgraPayloadType, cgra_rows, cgra_columns,
+                                         tile_columns, tile_rows,
+                                         ctrl_mem_size, data_mem_size_global,
+                                         data_mem_size_per_bank, num_banks_per_cgra,
+                                         num_registers_per_reg_bank,
+                                         num_ctrl, total_steps,
+                                         mem_access_is_combinational,
+                                         FunctionUnit, FuList, per_cgra_topology,
+                                         controller2addr_map, idTo2d_map)
+                for cgra_id in range(s.num_cgras)]
+    else:
+      s.cgra = [CgraRTL(CgraPayloadType, cgra_rows, cgra_columns,
+                        tile_columns, tile_rows,
+                        ctrl_mem_size, data_mem_size_global,
+                        data_mem_size_per_bank, num_banks_per_cgra,
+                        num_registers_per_reg_bank,
+                        num_ctrl, total_steps,
+                        mem_access_is_combinational,
+                        FunctionUnit, FuList, per_cgra_topology,
+                        controller2addr_map, idTo2d_map,
+                        has_ctrl_ring = True)
+                for cgra_id in range(s.num_cgras)]
 
     # Latency is 1.
     s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)

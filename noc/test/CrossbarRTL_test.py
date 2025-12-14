@@ -42,12 +42,12 @@ class TestHarness(Component):
 
     for i in range(num_inports):
       s.src_data[i].send //= s.dut.recv_data[i]
-      s.dut.send_data[i] //= s.sink_out[i].recv
       for addr in range(ctrl_mem_size):
         s.dut.prologue_count_inport[addr][i] //= 0
     s.src_opt.send //= s.dut.recv_opt
 
     for i in range(num_outports):
+      s.dut.send_data[i] //= s.sink_out[i].recv
       s.dut.crossbar_outport[i] //= s.src_opt.send.msg.routing_xbar_outport[i]
 
   def done(s):
