@@ -30,6 +30,8 @@ from ..fu.single.RetRTL import RetRTL
 from ..fu.single.MulRTL import MulRTL
 from ..fu.single.LogicRTL import LogicRTL
 from ..fu.single.GrantRTL import GrantRTL
+from ..fu.single.LoopControlRTL import LoopControlRTL
+from ..fu.single.ConstRTL import ConstRTL
 
 fu_map = {
   "Phi": PhiRTL,
@@ -43,7 +45,10 @@ fu_map = {
   "Ret": RetRTL,
   "Mul": MulRTL,
   "Logic": LogicRTL,
-  "Br": GrantRTL
+  "Grant": GrantRTL, # Br is deprecated, using Grant instead.
+  # To add: Add below 2 Fus to GUI.TODO @benkang
+  "Loop_Control": LoopControlRTL,
+  "Constant": ConstRTL
 }
 
 def map_fu2rtl(fu_type: list[str]):
@@ -63,7 +68,8 @@ class CgraTemplateRTL(Component):
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 is_multi_cgra = True,
-                has_ctrl_ring = True):
+                has_ctrl_ring = True,
+                simplified_modeling_for_synthesis = False):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -117,7 +123,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes())) # Fix(@benkang) consider the flag `simplified_modeling_for_synthesis`
+                      FuList = FuList if simplified_modeling_for_synthesis else map_fu2rtl(TileList[i].getAllValidFuTypes())) # Fix(@benkang) consider the flag `simplified_modeling_for_synthesis`
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
@@ -195,8 +201,8 @@ class CgraTemplateRTL(Component):
         s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
         s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
-        # Grounds the generic routing port since it is unused for memory links.
-        if not link.disabled:
+        # Grounds the generic routing port since it is unused for memory links when in single-CGRA mode.
+        if not link.disabled and not is_multi_cgra:
             s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
             s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
 
@@ -206,8 +212,8 @@ class CgraTemplateRTL(Component):
         s.tile[srcTileIndex].to_mem_waddr //= s.data_mem.recv_waddr[memPort]
         s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
 
-        # Grounds the generic routing port ready signal.
-        if not link.disabled:
+        # Grounds the generic routing port ready signal when in single-CGRA mode.
+        if not link.disabled and not is_multi_cgra:
             s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
 
       else:
