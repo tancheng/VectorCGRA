@@ -87,7 +87,7 @@ OR 10 10 31
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f3e3b3" );
   $fdisplay( file_handle, "0070b023" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
@@ -97,7 +97,7 @@ OR 10 10 31
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f46433" );
   $fdisplay( file_handle, "0080b423" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
@@ -107,7 +107,7 @@ OR 10 10 31
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f56533" );
   $fdisplay( file_handle, "00a0b823" );
   // Advance x1 += 24 (h1018)
@@ -171,7 +171,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f3e3b3" );
   $fdisplay( file_handle, "0070b023" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
@@ -181,7 +181,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f46433" );
   $fdisplay( file_handle, "0080b423" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
@@ -191,7 +191,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f56533" );
   $fdisplay( file_handle, "00a0b823" );
   // Advance x1 += 24 (h1018)
@@ -262,7 +262,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[31:12] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[11:0] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f3e3b3" );
   $fdisplay( file_handle, "0070b023" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[127:64] );
@@ -272,7 +272,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[95:76] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[75:64] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f46433" );
   $fdisplay( file_handle, "0080b423" );
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[184:128] );
@@ -282,7 +282,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   logic_pkt(pkt)[159:140] );
-  $fdisplay( file_handle, "%h06f93", logic_pkt(pkt)[139:128] );
+  $fdisplay( file_handle, "%hfef93", logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f56533" );
   $fdisplay( file_handle, "00a0b823" );
   // Advance x1 += 24 (h1018)
