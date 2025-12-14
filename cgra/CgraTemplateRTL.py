@@ -123,7 +123,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList if simplified_modeling_for_synthesis else map_fu2rtl(TileList[i].getAllValidFuTypes())) # Fix(@benkang) consider the flag `simplified_modeling_for_synthesis`
+                      FuList = FuList if simplified_modeling_for_synthesis else map_fu2rtl(TileList[i].getAllValidFuTypes()))
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
