@@ -50,7 +50,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
 00138393 ADDI x7
 01039393 slli x7, x7, 16
 01039393 slli x7, x7, 16
-addi x31 x0 0
 lui 31
 addi 31
 ADD 7 7 31
@@ -60,7 +59,6 @@ ADD 7 7 31
 addi x8
 01041413 slli x8, x8, 16
 01041413 slli x8, x8, 16
-addi x31 x0 0
 lui 31
 addi 31
 ADD 8 8 31
@@ -70,7 +68,6 @@ ADD 8 8 31
 ADDI x10
 01051513 slli x10, x10, 16
 01051513 slli x10, x10, 16
-addi x31 x0 0
 lui 31
 addi 31
 ADD 10 10 31
@@ -85,7 +82,6 @@ ADD 10 10 31
   $fdisplay( file_handle, "%h38393", (logic_pkt(pkt)[43:32] + logic_pkt(pkt)[31]) );
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "01039393" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[31:12] + logic_pkt(pkt)[11]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f383b3" );
@@ -95,7 +91,6 @@ ADD 10 10 31
   $fdisplay( file_handle, "%h40413", (logic_pkt(pkt)[107:96]  + logic_pkt(pkt)[95]) );
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "01041413" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[95:76] + logic_pkt(pkt)[75]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f40433" );
@@ -105,7 +100,6 @@ ADD 10 10 31
   $fdisplay( file_handle, "%h50513", (             logic_pkt(pkt)[171:160]   + logic_pkt(pkt)[159]) );
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "01051513" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[159:140] + logic_pkt(pkt)[139]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f50533" );
@@ -169,7 +163,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h38393", (logic_pkt(pkt)[43:32] + logic_pkt(pkt)[31]) );
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "01039393" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[31:12] + logic_pkt(pkt)[11]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f383b3" );
@@ -179,7 +172,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h40413", (logic_pkt(pkt)[107:96]  + logic_pkt(pkt)[95]) );
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "01041413" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[95:76] + logic_pkt(pkt)[75]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f40433" );
@@ -189,7 +181,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h50513", (             logic_pkt(pkt)[171:160]   + logic_pkt(pkt)[159]) );
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "01051513" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[159:140] + logic_pkt(pkt)[139]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f50533" );
@@ -260,7 +251,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h38393", (logic_pkt(pkt)[43:32] + logic_pkt(pkt)[31]) );
   $fdisplay( file_handle, "01039393" );
   $fdisplay( file_handle, "01039393" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[31:12] + logic_pkt(pkt)[11]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[11:0] );
   $fdisplay( file_handle, "01f383b3" );
@@ -270,7 +260,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h40413", (logic_pkt(pkt)[107:96]  + logic_pkt(pkt)[95]) );
   $fdisplay( file_handle, "01041413" );
   $fdisplay( file_handle, "01041413" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[95:76] + logic_pkt(pkt)[75]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[75:64] );
   $fdisplay( file_handle, "01f40433" );
@@ -280,7 +269,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   $fdisplay( file_handle, "%h50513", (             logic_pkt(pkt)[171:160]   + logic_pkt(pkt)[159]) );
   $fdisplay( file_handle, "01051513" );
   $fdisplay( file_handle, "01051513" );
-  $fdisplay( file_handle, "00000f93" );
   $fdisplay( file_handle, "%hfb7",   (logic_pkt(pkt)[159:140] + logic_pkt(pkt)[139]) );
   $fdisplay( file_handle, "%hf8f93",  logic_pkt(pkt)[139:128] );
   $fdisplay( file_handle, "01f50533" );
