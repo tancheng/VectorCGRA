@@ -1,0 +1,459 @@
+$date
+  Thu Dec 18 12:10:50 2025
+$end
+$version
+  PyMTL 3 (Mamba)
+$end
+$timescale
+ 10ps
+$end
+
+$scope module top $end
+  $var reg 1 # reset $end
+  $var reg 1 ! clk $end
+  $scope module mem_wr_request $end
+    $var reg 1 # reset $end
+    $var reg 1 7 send.val $end
+    $var reg 1 2 send.rdy $end
+    $var reg 47 3 send.msg $end
+    $var reg 1 ! clk $end
+  $upscope $end
+  $scope module mem_response $end
+    $var reg 1 9 recv.val $end
+    $var reg 1 ! clk $end
+    $var reg 1 # reset $end
+    $var reg 1 " recv.rdy $end
+    $var reg 47 8 recv.msg $end
+  $upscope $end
+  $scope module data_mem_wrapper $end
+    $var reg 47 3 recv_wr.msg $end
+    $var reg 1 ! clk $end
+    $var reg 1 ' recv_rd.val $end
+    $var reg 47 8 send.msg $end
+    $var reg 1 7 recv_wr.val $end
+    $var reg 1 9 send.val $end
+    $var reg 1 ( recv_rd.rdy $end
+    $var reg 5 : streaming_addr $end
+    $var reg 1 2 recv_wr.rdy $end
+    $var reg 1 ; streaming_status $end
+    $var reg 1 # reset $end
+    $var reg 1 " send.rdy $end
+    $var reg 47 < streaming_read_reqeust $end
+    $var reg 47 % recv_rd.msg $end
+    $scope module channel_rd $end
+      $var reg 1 ( recv.rdy $end
+      $var reg 1 + send.rdy $end
+      $var reg 1 ! clk $end
+      $var reg 47 % recv.msg $end
+      $var reg 1 # reset $end
+      $var reg 47 ) send.msg $end
+      $var reg 1 ' recv.val $end
+      $var reg 1 * send.val $end
+      $scope module queues(0) $end
+        $var reg 1 ( recv.rdy $end
+        $var reg 1 + send.rdy $end
+        $var reg 2 1 count $end
+        $var reg 47 % recv.msg $end
+        $var reg 47 ) send.msg $end
+        $var reg 1 ! clk $end
+        $var reg 1 ' recv.val $end
+        $var reg 1 * send.val $end
+        $var reg 1 # reset $end
+        $scope module dpath $end
+          $var reg 1 . raddr $end
+          $var reg 47 ) send_msg $end
+          $var reg 1 # reset $end
+          $var reg 1 - waddr $end
+          $var reg 1 ! clk $end
+          $var reg 47 % recv_msg $end
+          $var reg 1 & wen $end
+          $scope module rf $end
+            $var reg 47 = regs(0) $end
+            $var reg 1 - waddr(0) $end
+            $var reg 47 % wdata(0) $end
+            $var reg 1 . raddr(0) $end
+            $var reg 47 ) rdata(0) $end
+            $var reg 1 & wen(0) $end
+            $var reg 47 > regs(1) $end
+            $var reg 1 # reset $end
+            $var reg 1 ! clk $end
+          $upscope $end
+        $upscope $end
+        $scope module ctrl $end
+          $var reg 1 & recv_xfer $end
+          $var reg 1 + send_rdy $end
+          $var reg 1 . raddr $end
+          $var reg 1 ? send_xfer $end
+          $var reg 2 1 count $end
+          $var reg 1 ' recv_val $end
+          $var reg 1 . head $end
+          $var reg 1 ! clk $end
+          $var reg 1 ( recv_rdy $end
+          $var reg 1 & wen $end
+          $var reg 1 * send_val $end
+          $var reg 1 - tail $end
+          $var reg 1 # reset $end
+          $var reg 1 - waddr $end
+        $upscope $end
+      $upscope $end
+    $upscope $end
+    $scope module channel_wr $end
+      $var reg 1 ! clk $end
+      $var reg 1 6 send.val $end
+      $var reg 47 , send.msg $end
+      $var reg 1 2 recv.rdy $end
+      $var reg 1 7 recv.val $end
+      $var reg 47 3 recv.msg $end
+      $var reg 1 # reset $end
+      $var reg 1 5 send.rdy $end
+      $scope module queues(0) $end
+        $var reg 1 6 send.val $end
+        $var reg 1 # reset $end
+        $var reg 1 7 recv.val $end
+        $var reg 1 ! clk $end
+        $var reg 47 , send.msg $end
+        $var reg 47 3 recv.msg $end
+        $var reg 2 4 count $end
+        $var reg 1 5 send.rdy $end
+        $var reg 1 2 recv.rdy $end
+        $scope module dpath $end
+          $var reg 1 # reset $end
+          $var reg 1 / waddr $end
+          $var reg 1 ! clk $end
+          $var reg 47 3 recv_msg $end
+          $var reg 1 $ wen $end
+          $var reg 1 0 raddr $end
+          $var reg 47 , send_msg $end
+          $scope module rf $end
+            $var reg 47 @ regs(0) $end
+            $var reg 47 3 wdata(0) $end
+            $var reg 47 , rdata(0) $end
+            $var reg 1 # reset $end
+            $var reg 47 A regs(1) $end
+            $var reg 1 $ wen(0) $end
+            $var reg 1 ! clk $end
+            $var reg 1 / waddr(0) $end
+            $var reg 1 0 raddr(0) $end
+          $upscope $end
+        $upscope $end
+        $scope module ctrl $end
+          $var reg 1 / waddr $end
+          $var reg 1 6 send_val $end
+          $var reg 1 / tail $end
+          $var reg 1 # reset $end
+          $var reg 1 $ wen $end
+          $var reg 1 ! clk $end
+          $var reg 1 2 recv_rdy $end
+          $var reg 1 0 head $end
+          $var reg 2 4 count $end
+          $var reg 1 B send_xfer $end
+          $var reg 1 7 recv_val $end
+          $var reg 1 0 raddr $end
+          $var reg 1 5 send_rdy $end
+          $var reg 1 $ recv_xfer $end
+        $upscope $end
+      $upscope $end
+    $upscope $end
+    $scope module memory $end
+      $var reg 19 C regs(0) $end
+      $var reg 19 D rdata(0) $end
+      $var reg 19 E regs(5) $end
+      $var reg 1 ! clk $end
+      $var reg 19 F regs(2) $end
+      $var reg 3 G waddr(0) $end
+      $var reg 19 H regs(7) $end
+      $var reg 19 I regs(4) $end
+      $var reg 1 J wen(0) $end
+      $var reg 19 K regs(1) $end
+      $var reg 1 # reset $end
+      $var reg 3 L raddr(0) $end
+      $var reg 19 M regs(6) $end
+      $var reg 19 N wdata(0) $end
+      $var reg 19 O regs(3) $end
+    $upscope $end
+  $upscope $end
+  $scope module mem_rd_request $end
+    $var reg 1 # reset $end
+    $var reg 1 ' send.val $end
+    $var reg 1 ( send.rdy $end
+    $var reg 1 ! clk $end
+    $var reg 47 % send.msg $end
+  $upscope $end
+$upscope $end
+$enddefinitions $end
+
+b0b0 !
+b0b0 "
+b0b0 #
+b0b0 $
+b0b00000000000000000000000000000000000000000000000 %
+b0b0 &
+b0b0 '
+b0b0 (
+b0b00000000000000000000000000000000000000000000000 )
+b0b0 *
+b0b0 +
+b0b00000000000000000000000000000000000000000000000 ,
+b0b0 -
+b0b0 .
+b0b0 /
+b0b0 0
+b0b00 1
+b0b0 2
+b0b00000000000000000000000000000000000000000000000 3
+b0b00 4
+b0b0 5
+b0b0 6
+b0b0 7
+b0b00000000000000000000000000000000000000000000000 8
+b0b0 9
+b0b00000 :
+b0b0 ;
+b0b00000000000000000000000000000000000000000000000 <
+b0b00000000000000000000000000000000000000000000000 =
+b0b00000000000000000000000000000000000000000000000 >
+b0b0 ?
+b0b00000000000000000000000000000000000000000000000 @
+b0b00000000000000000000000000000000000000000000000 A
+b0b0 B
+b0b0000000000000000000 C
+b0b0000000000000000000 D
+b0b0000000000000000000 E
+b0b0000000000000000000 F
+b0b000 G
+b0b0000000000000000000 H
+b0b0000000000000000000 I
+b0b0 J
+b0b0000000000000000000 K
+b0b000 L
+b0b0000000000000000000 M
+b0b0000000000000000000 N
+b0b0000000000000000000 O
+
+#0
+b0b1 !
+
+b0b1 #
+b0b00000000000000000000000000000000000000000000000 %
+b0b0 &
+b0b1 (
+b0b00000000000000000000000000000000000000000000000 )
+b0b0 *
+b0b00000000000000000000000000000000000000000000000 ,
+b0b0 -
+b0b00 1
+b0b1 2
+b0b00000000000000000000000000000000000000000000000 3
+b0b00 4
+b0b1 5
+b0b00000000000000000000000000000000000000000000000 8
+b0b0 9
+b0b00000 :
+b0b0 ;
+b0b00000000000000000000000000000000000000000000000 <
+b0b0 ?
+b0b00000000000000000000000000000000000000000000000 @
+b0b0 B
+b0b0000000000000000000 C
+b0b000 G
+b0b0000000000000000000 H
+b0b0 J
+b0b0000000000000000000 K
+b0b000 L
+b0b0000000000000000000 M
+
+#50
+b0b0 !
+#100
+b0b1 !
+
+b0b1 "
+b0b1 +
+
+#150
+b0b0 !
+#200
+b0b1 !
+
+
+#250
+b0b0 !
+#300
+b0b1 !
+
+b0b0 #
+
+#350
+b0b0 !
+#400
+b0b1 !
+
+b0b1 $
+b0b00010011000000000000000000000000000000000000000 %
+b0b1 &
+b0b1 '
+b0b00000001000000000000011001000000000000000000000 3
+b0b1 7
+
+#450
+b0b0 !
+#500
+b0b1 !
+
+b0b00100011000000000000000000000000000000000000000 %
+b0b00010011000000000000000000000000000000000000000 )
+b0b1 *
+b0b00000001000000000000011001000000000000000000000 ,
+b0b1 -
+b0b1 /
+b0b01 1
+b0b00000010000000000000010111000000000000000000000 3
+b0b01 4
+b0b1 6
+b0b01000011000000000000000000000000000000000000000 8
+b0b1 9
+b0b00010011000000000000000000000000000000000000000 =
+b0b1 ?
+b0b00000001000000000000011001000000000000000000000 @
+b0b1 B
+b0b010 G
+b0b1 J
+b0b110 L
+b0b0000000000001100100 N
+
+#550
+b0b0 !
+#600
+b0b1 !
+
+b0b00110011000000000000000000000000000000000000000 %
+b0b00100011000000000000000000000000000000000000000 )
+b0b00000010000000000000010111000000000000000000000 ,
+b0b0 -
+b0b1 .
+b0b0 /
+b0b1 0
+b0b00000011000000000000010101000000000000000000000 3
+b0b10000011000000000000000000000000000000000000000 8
+b0b00100011000000000000000000000000000000000000000 >
+b0b00000010000000000000010111000000000000000000000 A
+b0b0000000000001100100 F
+b0b100 G
+b0b0000000000001011100 N
+
+#650
+b0b0 !
+#700
+b0b1 !
+
+b0b0 $
+b0b00010001000000000000000000000000000010001000110 %
+b0b00110011000000000000000000000000000000000000000 )
+b0b00000011000000000000010101000000000000000000000 ,
+b0b1 -
+b0b0 .
+b0b1 /
+b0b0 0
+b0b0 7
+b0b11000011000000000000000000000000000000000000000 8
+b0b00110011000000000000000000000000000000000000000 =
+b0b00000011000000000000010101000000000000000000000 @
+b0b110 G
+b0b0000000000001011100 I
+b0b0000000000001010100 N
+
+#750
+b0b0 !
+#800
+b0b1 !
+
+b0b0 &
+b0b0 '
+b0b00010001000000000000000000000000000010001000110 )
+b0b00000010000000000000010111000000000000000000000 ,
+b0b0 -
+b0b1 .
+b0b1 0
+b0b00 4
+b0b0 6
+b0b01000001000000000000011001000000000000000000000 8
+b0b00010001000000000000000000000000000010001000110 >
+b0b0 B
+b0b0000000000001100100 D
+b0b000 G
+b0b0 J
+b0b010 L
+b0b0000000000001010100 M
+b0b0000000000000000000 N
+
+#850
+b0b0 !
+#900
+b0b1 !
+
+b0b00110011000000000000000000000000000000000000000 )
+b0b0 *
+b0b0 +
+b0b0 .
+b0b00 1
+b0b01000010000000000000010111000000000000000000000 8
+b0b00100 :
+b0b1 ;
+b0b00010001000000000000000000000000000010001000110 <
+b0b0 ?
+b0b0000000000001011100 D
+b0b100 L
+
+#950
+b0b0 !
+#1000
+b0b1 !
+
+b0b01000011000000000000010101000000000000000000000 8
+b0b00110 :
+b0b0000000000001010100 D
+b0b110 L
+
+#1050
+b0b0 !
+#1100
+b0b1 !
+
+b0b0 "
+b0b00000000000000000000000000000000000000000000000 8
+b0b0 9
+b0b00000 :
+b0b0 ;
+b0b00000000000000000000000000000000000000000000000 <
+b0b0000000000000000000 D
+b0b000 L
+
+#1150
+b0b0 !
+#1200
+b0b1 !
+
+
+#1250
+b0b0 !
+#1300
+b0b1 !
+
+
+#1350
+b0b0 !
+#1400
+b0b1 !
+
+
+#1450
+b0b0 !
+#1500
+b0b1 !
+
+
+#1550
+b0b0 !
+#1600
+b0b1 !
+

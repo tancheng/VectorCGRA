@@ -51,22 +51,49 @@ class DataMemWrapperRTL(Component):
     s.channel_rd = ChannelRTL(MemReadType, latency = latency)
     s.channel_wr = ChannelRTL(MemWriteType, latency = latency)
 
+    # Regsiters for streaming read.
+    s.streaming_status = Wire(b1)
+    s.streaming_addr = Wire(GlobalAddrType)
+    s.streaming_read_reqeust = Wire(MemReadType)
+
     # Connection.
     s.recv_rd //= s.channel_rd.recv
     s.recv_wr //= s.channel_wr.recv
+
+    @update_ff
+    def update_streaming_regs():
+      if s.channel_rd.send.val & s.channel_rd.send.msg.streaming:
+        s.streaming_status <<= 1
+        # Streaming request itself has already read out a data, so streaming_addr at next cycle should be start+stride.
+        s.streaming_addr <<= s.channel_rd.send.msg.addr + s.channel_rd.send.msg.streaming_stride
+        s.streaming_read_reqeust <<= s.channel_rd.send.msg
+      elif s.streaming_addr == s.streaming_read_reqeust.streaming_end_addr:
+        s.streaming_status <<= 0
+        s.streaming_addr <<= GlobalAddrType(0)
+        s.streaming_read_reqeust <<= MemReadType()
+      else:
+        s.streaming_addr <<= s.streaming_addr + s.streaming_read_reqeust.streaming_stride
 
     @update
     def compose_send_msg():
       s.send.msg @= MemResponseType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
       # TODO: change to pipe's out's wen.
       if s.channel_rd.send.val:
-        s.send.msg.src             @= s.channel_rd.send.msg.dst
-        s.send.msg.dst             @= s.channel_rd.send.msg.src
-        s.send.msg.addr            @= s.channel_rd.send.msg.addr
-        s.send.msg.data            @= s.memory.rdata[0]
-        s.send.msg.src_cgra        @= s.channel_rd.send.msg.src_cgra
-        s.send.msg.src_tile        @= s.channel_rd.send.msg.src_tile
-        s.send.msg.remote_src_port @= s.channel_rd.send.msg.remote_src_port
+        s.send.msg.src                @= s.channel_rd.send.msg.dst
+        s.send.msg.dst                @= s.channel_rd.send.msg.src
+        s.send.msg.addr               @= s.channel_rd.send.msg.addr
+        s.send.msg.data               @= s.memory.rdata[0]
+        s.send.msg.src_cgra           @= s.channel_rd.send.msg.src_cgra
+        s.send.msg.src_tile           @= s.channel_rd.send.msg.src_tile
+        s.send.msg.remote_src_port    @= s.channel_rd.send.msg.remote_src_port
+      elif s.streaming_status:
+        s.send.msg.src                @= s.streaming_read_reqeust.dst
+        s.send.msg.dst                @= s.streaming_read_reqeust.src
+        s.send.msg.addr               @= s.streaming_addr
+        s.send.msg.data               @= s.memory.rdata[0]
+        s.send.msg.src_cgra           @= s.streaming_read_reqeust.src_cgra
+        s.send.msg.src_tile           @= s.streaming_read_reqeust.src_tile
+        s.send.msg.remote_src_port    @= s.streaming_read_reqeust.remote_src_port
 
     @update
     def request_memory():
@@ -76,6 +103,9 @@ class DataMemWrapperRTL(Component):
       s.memory.waddr[0] @= PerBankAddrType(0)
       s.memory.wdata[0] @= DataType(0, 0, 0, 0)
 
+      if s.streaming_status:
+        s.memory.raddr[0] @= \
+          trunc(s.streaming_addr % per_bank_data_mem_size, PerBankAddrType)
       if s.channel_rd.send.val:
         s.memory.raddr[0] @= \
           trunc(s.channel_rd.send.msg.addr % per_bank_data_mem_size, PerBankAddrType)
@@ -89,14 +119,22 @@ class DataMemWrapperRTL(Component):
     def notify_channel_rdy():
       # TODO: change to SRAM's rdy when replacing register file
       # with SRAM.
-      s.channel_rd.send.rdy @= s.send.rdy
+      if s.streaming_status:
+        # Issue one streaming request at one time.
+        s.channel_rd.send.rdy @= 0
+      else:
+        s.channel_rd.send.rdy @= s.send.rdy
       s.channel_wr.send.rdy @= 1
 
     @update
     def notify_send_val():
       # TODO: change to SRAM's valid when replacing register file
       # with SRAM.
-      s.send.val @= s.channel_rd.send.val
+      if s.streaming_status:
+        # Keep sending read data during streaming status.
+        s.send.val @= 1
+      else:
+        s.send.val @= s.channel_rd.send.val
 
   def line_trace(s):
     recv_rd_str = "recv_rd_msg: " + str(s.recv_rd.msg)
