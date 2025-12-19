@@ -159,10 +159,10 @@ class DataMemControllerRTL(Component):
     @update
     def assemble_xbar_pkt():
       for i in range(num_xbar_in_rd_ports):
-        s.rd_pkt[i] @= MemReadPktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i)
+        s.rd_pkt[i] @= MemReadPktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i, 0, 0, 0)
 
       for i in range(num_xbar_in_wr_ports):
-        s.wr_pkt[i] @= MemWritePktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i)
+        s.wr_pkt[i] @= MemWritePktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i, 0, 0, 0)
 
       for i in range(num_rd_tiles):
         recv_raddr = s.recv_raddr[i].msg
@@ -178,7 +178,10 @@ class DataMemControllerRTL(Component):
                                       DataType(0, 0, 0, 0),    # data
                                       s.cgra_id,               # src_cgra
                                       0,                       # src_tile
-                                      i)                       # remote_src_port
+                                      i,                       # remote_src_port
+                                      0,                       # streaming_rd
+                                      0,                       # streaming_rd_stride
+                                      0)                       # streaming_rd_end_addr
 
       recv_raddr_from_noc = s.recv_from_noc_load_request.msg.payload.data_addr
       # Calculates the target bank index.
@@ -192,7 +195,11 @@ class DataMemControllerRTL(Component):
                                                DataType(0, 0, 0, 0),                             # data
                                                s.recv_from_noc_load_request.msg.src,             # src_cgra
                                                s.recv_from_noc_load_request.msg.src_tile_id,     # src_tile
-                                               s.recv_from_noc_load_request.msg.remote_src_port) # remote_src_port
+                                               s.recv_from_noc_load_request.msg.remote_src_port, # remote_src_port
+                                               0,                                                # streaming_rd
+                                               0,                                                # streaming_rd_stride
+                                               0)                                                # streaming_rd_end_addr
+   
 
       for i in range(num_wr_tiles):
         recv_waddr = s.recv_waddr[i].msg
@@ -207,7 +214,11 @@ class DataMemControllerRTL(Component):
                                        s.recv_wdata[i].msg,     # data
                                        0,                       # src_cgra
                                        0,                       # src_tile
-                                       i)                       # remote_src_port
+                                       i,                       # remote_src_port
+                                       0,                       # streaming_rd
+                                       0,                       # streaming_rd_stride
+                                       0)                       # streaming_rd_end_addr
+
 
       recv_waddr_from_noc = s.recv_from_noc_store_request.msg.payload.data_addr
       recv_wdata_from_noc = s.recv_from_noc_store_request.msg.payload.data
@@ -221,7 +232,11 @@ class DataMemControllerRTL(Component):
                                                 recv_wdata_from_noc,        # data
                                                 0,                          # src_cgra
                                                 0,                          # src_tile
-                                                num_wr_tiles)               # remote_src_port
+                                                num_wr_tiles,               # remote_src_port
+                                                0,                       # streaming_rd
+                                                0,                       # streaming_rd_stride
+                                                0)                       # streaming_rd_end_addr
+
 
     # Connects xbar with the memory wrapper.
     @update
@@ -278,13 +293,13 @@ class DataMemControllerRTL(Component):
 
       for i in range(num_xbar_in_rd_ports):
         s.read_crossbar.recv[i].val @= 0
-        s.read_crossbar.recv[i].msg @= MemReadPktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
+        s.read_crossbar.recv[i].msg @= MemReadPktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0, 0, 0, 0)
 
       s.recv_from_noc_load_response_pkt.rdy @= 0
 
       for i in range(num_xbar_in_wr_ports):
         s.write_crossbar.recv[i].val @= 0
-        s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
+        s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0, 0, 0, 0)
 
       s.send_to_noc_load_request_pkt.msg @= \
           NocPktType(0, # src
@@ -383,7 +398,11 @@ class DataMemControllerRTL(Component):
                              s.recv_from_noc_load_response_pkt.msg.payload.data,
                              s.recv_from_noc_load_response_pkt.msg.src,
                              s.recv_from_noc_load_response_pkt.msg.src_tile_id,
-                             0)
+                             0,
+                             0,                       # streaming_rd
+                             0,                       # streaming_rd_stride
+                             0)                       # streaming_rd_end_addr
+
       # Allows other load request towards NoC when the previous one is not responded. There
       # could be out-of-order load response, i.e., potential consistency issue.
       s.read_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_load_request_pkt.rdy
