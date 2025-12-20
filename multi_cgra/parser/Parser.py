@@ -24,7 +24,7 @@ class Parser:
         per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
         per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
         num_registers = self.yaml_data['tile_defaults']['num_registers']
-        operations = self.yaml_data['tile_defaults']['operations']
+        fu_types = self.yaml_data['tile_defaults']['fu_types']
         for r in range(per_cgra_rows):
             tiles.append([])
             for c in range(per_cgra_columns):
@@ -37,7 +37,7 @@ class Parser:
                   +------------------------>
                   0                        x (column) increases to the right: 0 at the left, up to `per_cgra_columns-1` at the right
                 """
-                tiles[r].append(Tile(c, r, num_registers, operations))
+                tiles[r].append(Tile(c, r, num_registers, fu_types))
         return tiles
 
     def parse_cgras(self):
@@ -93,7 +93,7 @@ class Parser:
         if 'tile_overrides' in self.yaml_data:
             data = self.yaml_data['tile_overrides']
             for override in data:
-                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], override['operations'], override['existence'])
+                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], override['fu_types'], override['existence'])
 
         # Overrides the links.
         if 'link_overrides' in self.yaml_data:

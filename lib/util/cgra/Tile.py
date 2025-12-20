@@ -1,53 +1,22 @@
 from ..common import PORT_DIRECTION_COUNTS
 
 
-operation2FuType = {
-    # Phi Unit
-    "phi": "Phi",
-    # Add/Sub Unit
-    "add": "Add", "sub": "Add", "fadd": "Add", "fsub": "Add", "fadd_fadd": "Add",
-    # Shift Unit
-    "shl": "Shift",
-    # Load Unit
-    "load": "Ld",
-    # Select Unit
-    "sel": "Sel",
-    # Compare Unit
-    "icmp": "Cmp", "fcmp": "Cmp",
-    # MAC Unit
-    "fmul_fadd": "MAC",
-    # Store Unit
-    "store": "St",
-    # Return Unit
-    "ret": "Ret",
-    # Multiply/Divide/Remainder Unit
-    "mul": "Mul", "fmul": "Mul", "vfmul": "Mul", "div": "Mul", "rem": "Mul", "fdiv": "Mul",
-    # Logic/Conversion/Data Movement Unit
-    "or": "Logic", "not": "Logic", "cast": "Logic", "sext": "Logic", "zext": "Logic", 
-    "data_mov": "Logic", "ctrl_mov": "Logic",
-    # Grant Unit
-    "grant_predicate": "Grant", "grant_once": "Grant", "grant_always": "Grant",
-    # Loop Control Unit
-    "loop_control": "Loop_Control",
-    # Constant Unit
-    "constant": "Constant",
-}
 
 class Tile:
     """
     Represents a single tile in the CGRA array configuration.
     This class holds the static configuration parameters for a tile, including its location,
-    functional units (operations), and connectivity status (memory access, valid ports).
+    functional units, and connectivity status (memory access, valid ports).
     It is used during the parameterization phase to configure the RTL generation.
     """
 
-    def __init__(self, dimX, dimY, num_registers, operations):
+    def __init__(self, dimX, dimY, num_registers, fu_types):
         self.disabled = False
         self.dimX = dimX  # Column index (X coordinate) in the CGRA mesh
         self.dimY = dimY  # Row index (Y coordinate) in the CGRA mesh
         # Number of registers in the tile's register file
         self.num_registers = num_registers
-        self.operations = operations
+        self.fu_types = fu_types
         self.isDefaultFus_ = True  # Flag indicating if the tile uses the default set of FUs
 
         # toMem: Indicates if this tile has a dedicated link TO the data memory (for Store operations).
@@ -116,25 +85,16 @@ class Tile:
         return self.isDefaultFus_
 
     def getAllValidFuTypes(self):
-        required_fu_set = set()
-        for op in self.operations:
-            try:
-                fu_type = operation2FuType[op]
-                required_fu_set.add(fu_type)
-            except KeyError:
-                # Handle cases where an operation is not defined in the map
-                print(f"Warning: Operation '{op}' is not defined in operation2FuType map.")
-        
-        return list(required_fu_set)
+        return self.fu_types
 
-    def override(self, operations, existence):
+    def override(self, fu_types, existence):
         """
         Overrides the default configuration for this tile.
 
         Args:
-            operations: New list of supported operations.
+            fu_types: New list of supported fu_types.
             existence: Boolean, if False, marks the tile as disabled (not physically present/active).
         """
-        self.operations = operations
+        self.fu_types = fu_types
         self.disabled = not existence
         self.isDefaultFus_ = False

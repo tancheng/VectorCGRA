@@ -20,7 +20,7 @@ cgra_defaults:
 
 tile_defaults:
   num_registers: 16
-  operations: ["add", "mul", "sub", "div", "rem", "fadd", "fmul", "fsub", "fdiv", "or", "not", "icmp", "fcmp", "sel", "cast", "sext", "zext", "shl", "vfmul", "fadd_fadd", "fmul_fadd", "data_mov", "ctrl_mov", "reserve", "grant_predicate", "grant_once", "grant_always", "loop_control", "phi", "constant"]  # comprehensive operation set
+  fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
 
 link_defaults:
   latency: 1
@@ -56,7 +56,7 @@ tile_overrides:
     cgra_y: 0
     tile_x: 0
     tile_y: 0
-    operations: ["load"]
+    fu_types: ["mem", "mem_indexed"]
     num_registers: 32
     existence: true
 
@@ -64,7 +64,7 @@ tile_overrides:
     cgra_y: 0
     tile_x: 3
     tile_y: 0
-    operations: ["store"]
+    fu_types: ["mem", "mem_indexed"]
     num_registers: 32
     existence: true
 

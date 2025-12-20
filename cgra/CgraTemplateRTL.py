@@ -6,6 +6,7 @@ CgraTemplateRTL.py
 Author : Cheng Tan
   Date : Dec 30, 2024
 """
+from ast import Add
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
@@ -28,31 +29,43 @@ from ..fu.single.CompRTL import CompRTL
 from ..fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ..fu.single.RetRTL import RetRTL
 from ..fu.single.MulRTL import MulRTL
+from ..fu.single.DivRTL import DivRTL
 from ..fu.single.LogicRTL import LogicRTL
 from ..fu.single.GrantRTL import GrantRTL
 from ..fu.single.LoopControlRTL import LoopControlRTL
 from ..fu.single.ConstRTL import ConstRTL
+from ..fu.float.FpAddRTL import FpAddRTL
+from ..fu.float.FpMulRTL import FpMulRTL
 
 fu_map = {
-  "Phi": PhiRTL,
-  "Add": AdderRTL,
-  "Shift": ShifterRTL,
-  "Ld": MemUnitRTL,
-  "Sel": SelRTL,
-  "Cmp": CompRTL,
-  "MAC": SeqMulAdderRTL,
-  "St": MemUnitRTL,
-  "Ret": RetRTL,
-  "Mul": MulRTL,
-  "Logic": LogicRTL,
-  "Grant": GrantRTL, # Br is deprecated, using Grant instead.
-  # To add: Add below 2 Fus to GUI.TODO @benkang
-  "Loop_Control": LoopControlRTL,
-  "Constant": ConstRTL
+  "add": AdderRTL,
+  "mul": MulRTL,
+  "div": DivRTL,
+  "fadd": FpAddRTL,
+  "fmul": FpMulRTL,
+  "fdiv": None,
+  "logic": LogicRTL,
+  "cmp": CompRTL,
+  "sel": SelRTL,
+  "type_conv": None,
+  "vfmul": None,
+  "fadd_fadd": None,
+  "fmul_fadd": None,
+  "grant": GrantRTL,
+  "loop_control": LoopControlRTL,
+  "phi": PhiRTL,
+  "constant": ConstRTL,
+  "mem": MemUnitRTL,
+  "return": RetRTL,
+  "mem_indexed": MemUnitRTL,
+  "alloca": None,
+  "shift": ShifterRTL,
 }
 
 def map_fu2rtl(fu_type: list[str]):
-  return list({fu_map[fu] for fu in fu_type})
+  fuRTL = list({fu_map[fu] for fu in fu_type})
+  fuRTL_new = [fu for fu in fuRTL if fu is not None]
+  return fuRTL_new
 
 
 class CgraTemplateRTL(Component):
