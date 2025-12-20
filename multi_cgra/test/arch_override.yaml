@@ -1,0 +1,30 @@
+# This is an example of overriding the tiles/links.
+multi_cgra_defaults:
+  rows: 2
+  columns: 2
+
+cgra_defaults:
+  rows: 2
+  columns: 2
+  configMemSize: 16
+
+tile_defaults:
+  num_registers: 16
+  fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
+link_overrides:
+- src_cgra_x: 0
+  src_cgra_y: 0
+  dst_cgra_x: 0
+  dst_cgra_y: 0
+  src_tile_x: 1
+  src_tile_y: 1
+  dst_tile_x: 0
+  dst_tile_y: 0
+  existence: false
+tile_overrides:
+- cgra_x: 0
+  cgra_y: 0
+  tile_x: 0
+  tile_y: 1
+  fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
+  existence: true
