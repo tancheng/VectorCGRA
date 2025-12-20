@@ -93,7 +93,8 @@ class Parser:
         if 'tile_overrides' in self.yaml_data:
             data = self.yaml_data['tile_overrides']
             for override in data:
-                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], override['fu_types'], override['existence'])
+                fu_types = [] if not override['existence'] else override['fu_types']
+                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], fu_types, override['existence'])
 
         # Overrides the links.
         if 'link_overrides' in self.yaml_data:

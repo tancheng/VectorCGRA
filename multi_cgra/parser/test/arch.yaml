@@ -1,95 +1,30 @@
-architecture:
-  name: "NeuraMultiCgra"
-  version: "1.0"
-
+# This is an example of overriding the tiles/links.
 multi_cgra_defaults:
-  base_topology: "mesh"
   rows: 2
-  columns: 4
-  memory:
-    capacity: 2048
+  columns: 2
 
 cgra_defaults:
-  rows: 4
-  columns: 4
+  rows: 2
+  columns: 2
   configMemSize: 16
-  ctrl_mem_items: 20
-  base_topology: "mesh"
-  memory:
-    banks: 4
 
 tile_defaults:
   num_registers: 16
   fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
-
-link_defaults:
-  latency: 1
-  bandwidth: 32
-
 link_overrides:
-  - src_cgra_x: 0
-    src_cgra_y: 0
-    dst_cgra_x: 0
-    dst_cgra_y: 0
-    src_tile_x: 0
-    src_tile_y: 0
-    dst_tile_x: 1
-    dst_tile_y: 1
-    latency: 2
-    bandwidth: 32
-    existence: true
-
-  - src_cgra_x: 1
-    src_cgra_y: 0
-    dst_cgra_x: 1
-    dst_cgra_y: 0
-    src_tile_x: 1
-    src_tile_y: 1
-    dst_tile_x: 0
-    dst_tile_y: 0
-    latency: 2
-    bandwidth: 32
-    existence: true
-
+- src_cgra_x: 0
+  src_cgra_y: 0
+  dst_cgra_x: 0
+  dst_cgra_y: 0
+  src_tile_x: 1
+  src_tile_y: 1
+  dst_tile_x: 0
+  dst_tile_y: 0
+  existence: false
 tile_overrides:
-  - cgra_x: 0
-    cgra_y: 0
-    tile_x: 0
-    tile_y: 0
-    fu_types: ["mem", "mem_indexed"]
-    num_registers: 32
-    existence: true
-
-  - cgra_x: 1
-    cgra_y: 0
-    tile_x: 3
-    tile_y: 0
-    fu_types: ["mem", "mem_indexed"]
-    num_registers: 32
-    existence: true
-
-  - cgra_x: 1
-    cgra_y: 0
-    tile_x: 1
-    tile_y: 1
-    num_registers: 32
-    existence: false
-
-extensions:
-  placeholder: false
-
-simulator:
-  execution_model: "serial"
-
-  logging:
-    enabled: true
-    file: "output.log"
-
-  driver:
-    name: "Driver"
-    frequency: "1GHz"
-
-  device:
-    name: "Device"
-    frequency: "1GHz"
-    bind_to_architecture: true
+- cgra_x: 0
+  cgra_y: 0
+  tile_x: 0
+  tile_y: 1
+  fu_types: ["add", "mem", "mem_indexed"]
+  existence: true

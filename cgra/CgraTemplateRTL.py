@@ -6,7 +6,6 @@ CgraTemplateRTL.py
 Author : Cheng Tan
   Date : Dec 30, 2024
 """
-from ast import Add
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
