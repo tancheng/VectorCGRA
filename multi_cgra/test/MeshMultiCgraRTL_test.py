@@ -3205,6 +3205,8 @@ def test_multi_CGRA_fir_scalar(cmdline_opts):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit__pickled.v")
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
