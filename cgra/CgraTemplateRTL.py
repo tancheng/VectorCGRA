@@ -28,7 +28,7 @@ from ..fu.single.CompRTL import CompRTL
 from ..fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ..fu.single.RetRTL import RetRTL
 from ..fu.single.MulRTL import MulRTL
-from ..fu.single.DivRTL import DivRTL
+from ..fu.single.ExclusiveDivRTL import ExclusiveDivRTL
 from ..fu.single.LogicRTL import LogicRTL
 from ..fu.single.GrantRTL import GrantRTL
 from ..fu.single.LoopControlRTL import LoopControlRTL
@@ -39,7 +39,7 @@ from ..fu.float.FpMulRTL import FpMulRTL
 fu_map = {
   "add": AdderRTL,
   "mul": MulRTL,
-  "div": DivRTL,
+  "div": ExclusiveDivRTL,
   "fadd": FpAddRTL,
   "fmul": FpMulRTL,
   "fdiv": None,
