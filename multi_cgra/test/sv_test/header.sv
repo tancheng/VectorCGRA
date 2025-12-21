@@ -8,7 +8,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [6:0] data_addr,
   input logic [6:0] ctrl_operation
 );
-
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
@@ -126,7 +125,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr
 );
-
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
@@ -210,7 +208,6 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [0:0] pred,
   input logic [6:0] data_addr
 );
-
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
@@ -281,36 +278,36 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
 endfunction
 
 function automatic logic [185-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed p);
-logic_pkt = {
-// Header (MSB->LSB order)
-p.src,
-p.dst,
-p.src_cgra_id,
-p.dst_cgra_id,
-p.src_cgra_x,
-p.src_cgra_y,
-p.dst_cgra_x,
-p.dst_cgra_y,
-p.opaque,
-p.vc_id,
-// Payload
-p.payload.cmd,
-p.payload.data.payload,
-p.payload.data.predicate,
-p.payload.data.bypass,
-p.payload.data.delay,
-p.payload.data_addr,
-p.payload.ctrl.operation,
-p.payload.ctrl.fu_in,
-p.payload.ctrl.routing_xbar_outport,
-p.payload.ctrl.fu_xbar_outport,
-p.payload.ctrl.vector_factor_power,
-p.payload.ctrl.is_last_ctrl,
-p.payload.ctrl.write_reg_from,
-p.payload.ctrl.write_reg_idx,
-p.payload.ctrl.read_reg_from,
-p.payload.ctrl.read_reg_idx,
-p.payload.ctrl_addr
-};
+  logic_pkt = {
+    // Header (MSB->LSB order)
+    p.src,
+    p.dst,
+    p.src_cgra_id,
+    p.dst_cgra_id,
+    p.src_cgra_x,
+    p.src_cgra_y,
+    p.dst_cgra_x,
+    p.dst_cgra_y,
+    p.opaque,
+    p.vc_id,
+    // Payload
+    p.payload.cmd,
+    p.payload.data.payload,
+    p.payload.data.predicate,
+    p.payload.data.bypass,
+    p.payload.data.delay,
+    p.payload.data_addr,
+    p.payload.ctrl.operation,
+    p.payload.ctrl.fu_in,
+    p.payload.ctrl.routing_xbar_outport,
+    p.payload.ctrl.fu_xbar_outport,
+    p.payload.ctrl.vector_factor_power,
+    p.payload.ctrl.is_last_ctrl,
+    p.payload.ctrl.write_reg_from,
+    p.payload.ctrl.write_reg_idx,
+    p.payload.ctrl.read_reg_from,
+    p.payload.ctrl.read_reg_idx,
+    p.payload.ctrl_addr
+  };
 endfunction
 
