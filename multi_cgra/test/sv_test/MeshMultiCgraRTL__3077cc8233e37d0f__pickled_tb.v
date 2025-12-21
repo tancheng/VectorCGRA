@@ -2,7 +2,7 @@
 
 `include "header.sv"
 
-// vcs -sverilog -full64 -timescale=1ns/1ps MeshMultiCgraRTL__3077cc8233e37d0f__pickled.v MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v -debug_access+all
+// vcs -sverilog -full64 -timescale=1ns/1ps ../MeshMultiCgraRTL__3077cc8233e37d0f__pickled.v MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v -debug_access+all
 
 module cgra_test
 (
