@@ -18,8 +18,9 @@ from ..CgraTemplateRTL import CgraTemplateRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
+from ...fu.single.ExclusiveDivRTL import ExclusiveDivRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
@@ -51,6 +52,7 @@ fuType2RTL["Ret"  ] = RetRTL
 fuType2RTL["Mul"  ] = MulRTL
 fuType2RTL["Logic"] = LogicRTL
 fuType2RTL["Grant"] = GrantRTL
+fuType2RTL["Div"  ] = ExclusiveDivRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -143,7 +145,7 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL]
+  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL, ExclusiveDivRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
