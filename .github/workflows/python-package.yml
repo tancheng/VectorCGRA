@@ -111,9 +111,6 @@ jobs:
         pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Test pure SV tb.
-        verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
-        ./obj_dir/Vtb
 
     - name: Test synthesis for CGRA template
       run: |
@@ -136,3 +133,15 @@ jobs:
           echo "ERROR: Synthesis step took longer than 15 minutes!"
           exit 1
         fi
+
+    - name: Use setup-verilator action
+      uses: veryl-lang/setup-verilator@v1 # Check the marketplace for the latest tag/version
+      with:
+        verilator-version: 'v5.026' # Specify the desired version
+
+    - name: Test pure SV tb.
+      run: |
+        verilator --version
+        verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
+        ./obj_dir/Vtb
+
