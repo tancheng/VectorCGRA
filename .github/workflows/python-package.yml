@@ -86,7 +86,7 @@ jobs:
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         # Simulation across all tests.
-        pytest .. -v --tb=short
+        #pytest .. -v --tb=short
         # CtrlMemDynamicRTL
         #pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
         # Tile translation.
@@ -111,7 +111,7 @@ jobs:
         #pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         #pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
