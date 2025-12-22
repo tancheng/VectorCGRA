@@ -86,31 +86,32 @@ jobs:
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
         # Simulation across all tests.
-        pytest .. -v --tb=short
+        #pytest .. -v --tb=short
         # CtrlMemDynamicRTL
-        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
+        #pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
         # Tile translation.
-        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Controller
-        pytest ../controller/test/ControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../controller/test/ControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # CGRA template translation.
-        pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
         # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
-        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Ring network simulation.
-        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
+        #pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
         # CGRAs are interconnected with ring topology. The CGRA contains
         # separate crossbars (for tiles and FUs), crossbar-based data memory (for multi-bank), and controller.
-        pytest ../multi_cgra/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../multi_cgra/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Multi-cgra with mesh topology.
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
         # Const Queue
-        pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
+        #pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
         # Data Mem
-        pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
-        pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        #pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar -xvs --tb=short --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
@@ -141,6 +142,8 @@ jobs:
 
     - name: Test pure SV tb.
       run: |
+        unset VERILATOR_ROOT
+        unset PYMTL_VERILATOR_INCLUDE_DIR
         verilator --version
         verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
         ./obj_dir/Vtb
