@@ -1200,7 +1200,7 @@ typedef struct packed {
 
     #3000
 
-    if (PASS) $display("TEST PASSED.");
+    if ('d1 == PASS) $display("TEST PASSED.");
     else $display("TEST FAILED.");
 
     $display("#########cgra 0 tile 0 cnst mem#################");
