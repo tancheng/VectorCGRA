@@ -149,6 +149,6 @@ jobs:
         mkdir -p build && cd build
         verilator --version
         #verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
-        verilator --binary -j 0 -Wno-UNOPTFLAT --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
         ./obj_dir/Vtb
 
