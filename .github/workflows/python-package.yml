@@ -57,15 +57,15 @@ jobs:
         pip install PyYAML
         pip list
         
-    - name: Install dependencies for sv2v
-      run: stack upgrade
-    - name: Build for sv2v
-      run: |
-        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
-        git clone https://github.com/zachjs/sv2v.git
-        cd sv2v
-        git checkout 9bab0448e32504cef764692018914f0f2f314911
-        make
+    #- name: Install dependencies for sv2v
+    #  run: stack upgrade
+    #- name: Build for sv2v
+    #  run: |
+    #    mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+    #    git clone https://github.com/zachjs/sv2v.git
+    #    cd sv2v
+    #    git checkout 9bab0448e32504cef764692018914f0f2f314911
+    #    make
 
     #- name: Install dependencies for mflowgen
     #  run: |
