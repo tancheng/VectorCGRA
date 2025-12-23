@@ -2,7 +2,9 @@
 ==========================================================================
 PhiRTL.py
 ==========================================================================
-Functional unit Phi for CGRA tile.
+Functional unit Phi for CGRA tile. Note that only one phi_const or
+phi_start can be mapped onto the same tile, as we only have one 'first'
+bit to record whether it is the first execution.
 
 Author : Cheng Tan
   Date : November 30, 2019
@@ -86,6 +88,26 @@ class PhiRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+        elif s.recv_opt.msg.operation == OPT_PHI_START:
+          if s.first:
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          elif s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          elif s.recv_in[s.in1_idx].msg.predicate == Bits1(1):
+            s.send_out[0].msg.payload @= s.recv_in[s.in1_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          else: # No predecessor is active.
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= 0
+          s.recv_all_val @= ((s.first & s.recv_in[s.in0_idx].val) | \
+                             (~s.first & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= ~s.first & s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:
           if s.first:
@@ -120,7 +142,7 @@ class PhiRTL(Fu):
     def br_start_once():
       if s.reset | s.clear:
         s.first <<= b1(1)
-      if (s.recv_opt.msg.operation == OPT_PHI_CONST) & s.reached_vector_factor:
+      if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace(s):

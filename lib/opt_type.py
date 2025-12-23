@@ -49,6 +49,7 @@ OPT_GRT_PRED                     = OpCodeType( 16 )
 OPT_GRT_ALWAYS                   = OpCodeType( 34 )
 OPT_GRT_ONCE                     = OpCodeType( 47 )
 OPT_PHI                          = OpCodeType( 17 )
+OPT_PHI_START                    = OpCodeType( 84 )
 OPT_PHI_CONST                    = OpCodeType( 32 )
 OPT_SEL                          = OpCodeType( 27 )
 OPT_LD_CONST                     = OpCodeType( 28 )
@@ -135,6 +136,7 @@ OPT_SYMBOL_DICT = {
   OPT_GRT_ONCE                   : "(grant_once)",
   OPT_RET                        : "(ret)",
   OPT_PHI                        : "(ph)",
+  OPT_PHI_START                  : "(ph*)",
   OPT_PHI_CONST                  : "(ph')",
   OPT_SEL                        : "(sel)",
   OPT_LD_CONST                   : "(ldcst)",
