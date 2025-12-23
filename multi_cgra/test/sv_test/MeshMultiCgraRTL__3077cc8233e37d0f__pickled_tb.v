@@ -21,6 +21,8 @@ module cgra_test
 
   MeshMultiCgraRTL__explicit MultiCGRA (.*);
 
+  int PASS;
+
   initial
   begin
     $display("\nTEST begin\n");
@@ -1198,6 +1200,9 @@ typedef struct packed {
 
     #3000
 
+    if (PASS) $display("TEST PASSED.");
+    else $display("TEST FAILED.");
+
     $display("#########cgra 0 tile 0 cnst mem#################");
     for (int i = 0; i < 512; i++)
     begin
@@ -1323,41 +1328,45 @@ typedef struct packed {
     $display("%t: cgra0datamem wdata3 ready %d val %d", $time, MultiCGRA.cgra__0.data_mem.recv_wdata__rdy[3], MultiCGRA.cgra__0.data_mem.recv_wdata__val[3]);
     */
     //$display("%t: init_mem_done %d", $time, MultiCGRA.cgra__0.data_mem.init_mem_done);
-    $display("%t: cgra0datamem waddr0 ready %d val %d", $time, MultiCGRA.cgra__0.data_mem.recv_waddr__rdy[0], MultiCGRA.cgra__0.data_mem.recv_waddr__val[0]);
-    $display("%t: cgra0datamem wdata0 ready %d val %d", $time, MultiCGRA.cgra__0.data_mem.recv_wdata__rdy[0], MultiCGRA.cgra__0.data_mem.recv_wdata__val[0]);
+    //$display("%t: cgra0datamem waddr0 ready %d val %d", $time, MultiCGRA.cgra__0.data_mem.recv_waddr__rdy[0], MultiCGRA.cgra__0.data_mem.recv_waddr__val[0]);
+    ///$display("%t: cgra0datamem wdata0 ready %d val %d", $time, MultiCGRA.cgra__0.data_mem.recv_wdata__rdy[0], MultiCGRA.cgra__0.data_mem.recv_wdata__val[0]);
     //$display("%t: cgra0rf0 wen %d", $time, MultiCGRA.cgra__0.data_mem.reg_file__wen[0][0]);
     //$display("%t: cgra0rf1 wen %d", $time, MultiCGRA.cgra__0.data_mem.reg_file__wen[1][0]);
-    $display("%t: c0t1 ctrl mem 101 reg %d c0t1 ctrl mem 102 reg %d", $time, MultiCGRA.cgra__0.tile__1.ctrl_mem.ctrl_count_per_iter_val, MultiCGRA.cgra__0.tile__1.ctrl_mem.total_ctrl_steps_val);
+    ///$display("%t: c0t1 ctrl mem 101 reg %d c0t1 ctrl mem 102 reg %d", $time, MultiCGRA.cgra__0.tile__1.ctrl_mem.ctrl_count_per_iter_val, MultiCGRA.cgra__0.tile__1.ctrl_mem.total_ctrl_steps_val);
     //$display("%t: 102 val %d c_ac %d addr %d msg %d", $time,
                                                       //MultiCGRA.cgra__0.tile__1.ctrl_mem.recv_pkt_queue__send__val, 
                                                       //MultiCGRA.cgra__0.tile__1.ctrl_mem.recv_pkt_queue__send__msg.ctrl_action,
                                                       //MultiCGRA.cgra__0.tile__1.ctrl_mem.recv_pkt_queue__send__msg.addr,
                                                       //MultiCGRA.cgra__0.tile__1.ctrl_mem.recv_pkt_queue__send__msg.data);
-    $display("!!!!!!!!!!!! %d", recv_from_cpu_pkt__msg.payload.ctrl.fu_in[1]);
-    $display("!!!!!!!!!!!! %d %d %d %d", send_to_cpu_pkt__val, send_to_cpu_pkt__msg.src, send_to_cpu_pkt__msg.dst, send_to_cpu_pkt__msg.payload.data.payload);
+    ///$display("!!!!!!!!!!!! %d", recv_from_cpu_pkt__msg.payload.ctrl.fu_in[1]);
+    //$display("!!!!!!!!!!!! %d %d %d %d", send_to_cpu_pkt__val, send_to_cpu_pkt__msg.src, send_to_cpu_pkt__msg.dst, send_to_cpu_pkt__msg.payload.data.payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[0], MultiCGRA.cgra__0.tile__1.send_data__msg[0].payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[0], MultiCGRA.cgra__0.tile__5.send_data__msg[0].payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[1], MultiCGRA.cgra__0.tile__1.send_data__msg[1].payload);
-    $display("!!!!!!!!!!!. %d %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[1], MultiCGRA.cgra__0.tile__5.send_data__msg[1].payload, MultiCGRA.cgra__0.tile__5.send_data__msg[1].predicate);
+    //$display("!!!!!!!!!!!. %d %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[1], MultiCGRA.cgra__0.tile__5.send_data__msg[1].payload, MultiCGRA.cgra__0.tile__5.send_data__msg[1].predicate);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[2], MultiCGRA.cgra__0.tile__1.send_data__msg[2].payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[2], MultiCGRA.cgra__0.tile__5.send_data__msg[2].payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__1.send_data__val[3], MultiCGRA.cgra__0.tile__1.send_data__msg[3].payload);
     //$display("!!!!!!!!!!!. %d %d", MultiCGRA.cgra__0.tile__5.send_data__val[3], MultiCGRA.cgra__0.tile__5.send_data__msg[3].payload);
+    if ( send_to_cpu_pkt__val && ('d2215 == send_to_cpu_pkt__msg.payload.data.payload) )
+      PASS = 1;
   end
 
   /*initial
   begin  
     $dumpfile("./output.vcd");
     $dumpvars (0, cgra_test);
-  end
+  end*/
+  // Verilator fails on these $fsdb... functions - if pragmas do not work, add --bbox-sys to Verilator cmd.
+`ifndef VERILATOR
   initial
   begin
-    // Verilator fails on these $fsdb... functions.
     $fsdbDumpfile("./output.fsdb");
     $fsdbDumpvars ("+all", "cgra_test");
     $fsdbDumpMDA;
     $fsdbDumpSVA;
-  end*/
+  end
+`endif
 
 
 endmodule
