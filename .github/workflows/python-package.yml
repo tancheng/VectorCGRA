@@ -112,6 +112,7 @@ jobs:
         # MeshMultiCgraTemplateRTL Test
         #pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
+        pwd
 
     #- name: Test synthesis for CGRA template
     #  run: |
@@ -144,8 +145,10 @@ jobs:
       run: |
         unset VERILATOR_ROOT
         unset PYMTL_VERILATOR_INCLUDE_DIR
+        pwd
         mkdir -p build && cd build
         verilator --version
-        verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
+        #verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ../multi_cgra/test/MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
+        verilator --binary -j 0 -Wall --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL__3077cc8233e37d0f__pickled_tb.v --top cgra_test
         ./obj_dir/Vtb
 
