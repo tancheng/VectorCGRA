@@ -18,8 +18,9 @@ from ..CgraTemplateRTL import CgraTemplateRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
-from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
+from ...fu.single.ExclusiveDivRTL import ExclusiveDivRTL
+from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.LogicRTL import LogicRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.MulRTL import MulRTL
@@ -51,6 +52,7 @@ fuType2RTL["Ret"  ] = RetRTL
 fuType2RTL["Mul"  ] = MulRTL
 fuType2RTL["Logic"] = LogicRTL
 fuType2RTL["Grant"] = GrantRTL
+fuType2RTL["Div"  ] = ExclusiveDivRTL
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -68,7 +70,8 @@ class TestHarness(Component):
                 has_ctrl_ring,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
-                complete_signal_sink_out):
+                complete_signal_sink_out,
+                simplified_modeling_for_synthesis):
 
     CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -90,7 +93,8 @@ class TestHarness(Component):
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map,
                 is_multi_cgra = False,
-                has_ctrl_ring = has_ctrl_ring)
+                has_ctrl_ring = has_ctrl_ring,
+                simplified_modeling_for_synthesis = simplified_modeling_for_synthesis)
 
     s.has_ctrl_ring = has_ctrl_ring
 
@@ -143,7 +147,7 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
   num_tiles = width * height
   DUT = CgraTemplateRTL
   FunctionUnit = FlexibleFuRTL
-  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL]
+  FuList = [PhiRTL, AdderRTL, ShifterRTL, MemUnitRTL, SelRTL, CompRTL, SeqMulAdderRTL, RetRTL, MulRTL, LogicRTL, GrantRTL, ExclusiveDivRTL]
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
@@ -298,7 +302,8 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
                    mem_access_is_combinational,
                    has_ctrl_ring,
                    tiles, links, dataSPM,
-                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out,
+                   simplified_modeling_for_synthesis)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
@@ -308,13 +313,6 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
                        'ALWCOMBORDER', 'CMPCONST'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
 
-  for tile in tiles:
-      if not tile.isDefaultFus():
-          targetFuList = []
-          for fuType in tile.getAllValidFuTypes():
-              targetFuList.append(fuType2RTL[fuType])
-          targetTile = "top.dut.tile[" + str(tile.getIndex(tiles)) + "].construct"
-          th.set_param(targetTile, FuList=targetFuList)
 
   run_sim(th)
 
