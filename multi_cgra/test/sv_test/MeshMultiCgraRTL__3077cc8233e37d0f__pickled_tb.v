@@ -1349,15 +1349,15 @@ typedef struct packed {
   begin  
     $dumpfile("./output.vcd");
     $dumpvars (0, cgra_test);
-  end*/
+  end
   initial
   begin
+    // Verilator fails on these $fsdb... functions.
     $fsdbDumpfile("./output.fsdb");
-    //$fsdbDumpvars (0, "cgra_test.MultiCGRA.cgra__0.tile__5.send_data__msg");
     $fsdbDumpvars ("+all", "cgra_test");
     $fsdbDumpMDA;
     $fsdbDumpSVA;
-  end
+  end*/
 
 
 endmodule
