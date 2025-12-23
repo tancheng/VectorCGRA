@@ -3121,7 +3121,6 @@ def _enable_translate_recursively(m):
     _enable_translate_recursively( child )
 
 def translate_model(top, submodules_to_translate):
-  top.elaborate()
   top.apply(VerilogPlaceholderPass())
   if not submodules_to_translate:
     _enable_translate_recursively(top)
@@ -3140,6 +3139,7 @@ def test_verilog_homo_2x2_4x4(cmdline_opts):
                                num_banks_per_cgra = 8,
                                data_mem_size_per_bank = 256,
                                mem_access_is_combinational = False)
+  th.elaborate()
   translate_model(th, ['dut'])
 
 def test_tapeout_2x2_2x2(cmdline_opts):
@@ -3151,6 +3151,7 @@ def test_tapeout_2x2_2x2(cmdline_opts):
                                num_banks_per_cgra = 4,
                                data_mem_size_per_bank = 128,
                                mem_access_is_combinational = False)
+  th.elaborate()
   translate_model(th, ['dut'])
 
 def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
