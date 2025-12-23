@@ -3217,6 +3217,8 @@ def test_multi_CGRA_fir_scalar_translation(cmdline_opts):
                                num_banks_per_cgra = 2,
                                data_mem_size_per_bank = 16,
                                mem_access_is_combinational = True)
+
+  th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit")
   th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit__pickled.v")
   translate_model(th, ['dut'])
