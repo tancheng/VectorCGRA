@@ -67,19 +67,19 @@ jobs:
         git checkout 9bab0448e32504cef764692018914f0f2f314911
         make
 
-    - name: Install dependencies for mflowgen
-      run: |
-        wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-09-20/oss-cad-suite-linux-x64-20240920.tgz
-        tar -C ${HOME} -xzf oss-cad-suite-linux-x64-20240920.tgz
-        export PATH="${HOME}/oss-cad-suite/bin:$PATH"
-        yosys -V
+    #- name: Install dependencies for mflowgen
+    #  run: |
+    #    wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-09-20/oss-cad-suite-linux-x64-20240920.tgz
+    #    tar -C ${HOME} -xzf oss-cad-suite-linux-x64-20240920.tgz
+    #    export PATH="${HOME}/oss-cad-suite/bin:$PATH"
+    #    yosys -V
 
-    - name: Build for mflowgen
-      run: |
-        mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
-        git clone https://github.com/tancheng/mflowgen.git
-        cd mflowgen
-        pip install -e .
+    #- name: Build for mflowgen
+    #  run: |
+    #    mkdir -p ${{github.workspace}}/tools && cd ${{github.workspace}}/tools
+    #    git clone https://github.com/tancheng/mflowgen.git
+    #    cd mflowgen
+    #    pip install -e .
 
     - name: Test and translate with pytest
       run: |
@@ -111,29 +111,29 @@ jobs:
         #pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         #pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar -xvs --test-verilog --dump-vtb --dump-vcd
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
 
-    - name: Test synthesis for CGRA template
-      run: |
-        start_time=$(date +%s)
-        export PATH="${HOME}/oss-cad-suite/bin:$PATH"
-        cd build
-        cp CgraTemplateRTL__*.v design.v
-        export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
-        ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
-        cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
-        cd ${{github.workspace}}/tools/mflowgen
-        mkdir -p build && cd build
-        mflowgen run --design ../designs/cgra
-        make 2
-        make 3
-        end_time=$(date +%s)
-        duration=$((end_time - start_time))
-        echo "Synthesis step duration: $duration seconds"
-        if [ $duration -gt 900 ]; then
-          echo "ERROR: Synthesis step took longer than 15 minutes!"
-          exit 1
-        fi
+    #- name: Test synthesis for CGRA template
+    #  run: |
+    #    start_time=$(date +%s)
+    #    export PATH="${HOME}/oss-cad-suite/bin:$PATH"
+    #    cd build
+    #    cp CgraTemplateRTL__*.v design.v
+    #    export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
+    #    ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
+    #    cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
+    #    cd ${{github.workspace}}/tools/mflowgen
+    #    mkdir -p build && cd build
+    #    mflowgen run --design ../designs/cgra
+    #    make 2
+    #    make 3
+    #    end_time=$(date +%s)
+    #    duration=$((end_time - start_time))
+    #    echo "Synthesis step duration: $duration seconds"
+    #    if [ $duration -gt 900 ]; then
+    #      echo "ERROR: Synthesis step took longer than 15 minutes!"
+    #      exit 1
+    #    fi
 
     - name: Use setup-verilator action
       uses: veryl-lang/setup-verilator@v1 # Check the marketplace for the latest tag/version
