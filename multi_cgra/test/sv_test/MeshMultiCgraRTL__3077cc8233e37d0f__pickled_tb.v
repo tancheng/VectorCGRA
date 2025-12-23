@@ -1357,7 +1357,7 @@ typedef struct packed {
     $dumpfile("./output.vcd");
     $dumpvars (0, cgra_test);
   end*/
-  // Verilator fails on these $fsdb... functions - if pragmas do not work, add --bbox-sys to Verilator cmd.
+  // The Verilator test fails on these $fsdb* functions; if pragmas do not work, add --bbox-sys to Verilator cmd.
 `ifndef VERILATOR
   initial
   begin
