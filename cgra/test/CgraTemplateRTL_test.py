@@ -115,12 +115,15 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False, arch_yaml_path = "arch.yaml"):
-  arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
-  parser = Parser(arch_file)
-  cgras = parser.parse_cgras()
-  assert len(cgras) == 1 and len(cgras[0]) == 1, f"Expected a single CGRA with from arch.yaml, but got {len(cgras)} rows with {len(cgras[0])} columns"
-  paramCGRA = cgras[0][0]
+def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False, arch_yaml_path = "arch.yaml", cgra_param = None):
+  if cgra_param is None:
+    arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
+    parser = Parser(arch_file)
+    cgras = parser.parse_cgras()
+    assert len(cgras) == 1 and len(cgras[0]) == 1, f"Expected a single CGRA with from arch.yaml, but got {len(cgras)} rows with {len(cgras[0])} columns"
+    paramCGRA = cgras[0][0]
+  else:
+    paramCGRA = cgra_param
   
   print(f"paramCGRA: {paramCGRA}")
 
