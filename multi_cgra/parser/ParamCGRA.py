@@ -31,5 +31,9 @@ class ParamCGRA:
                 link.validatePorts()
                 break
 
+    def getFuNum(self):
+        """Returns the total number of valid functional units in the CGRA."""
+        return sum(tile.getFuNum() for tile in self.tiles if not tile.disabled)
+
     def __repr__(self) -> str:
         return f"ParamCGRA(rows={self.rows}, columns={self.columns})"

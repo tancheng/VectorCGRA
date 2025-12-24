@@ -87,6 +87,10 @@ class Tile:
     def getAllValidFuTypes(self):
         return self.fu_types
 
+    def getFuNum(self):
+        """Returns the number of valid functional units on this tile."""
+        return len(self.fu_types)
+
     def override(self, fu_types, existence):
         """
         Overrides the default configuration for this tile.
