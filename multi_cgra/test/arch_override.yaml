@@ -26,5 +26,5 @@ tile_overrides:
   cgra_y: 0
   tile_x: 0
   tile_y: 1
-  fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
+  fu_types: ["add", "mem"]
   existence: true

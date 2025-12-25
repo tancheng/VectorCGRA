@@ -40,6 +40,7 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 from ..parser.Parser import Parser
+from ...cgra.test import CgraTemplateRTL_test
 import os
 
 #-------------------------------------------------------------------------
@@ -373,3 +374,10 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_simplified_multi_cgra(cmdline_opts, arch_yaml_path = "arch_override.yaml"):
+  arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
+  print(f"Use the architecture file: {arch_file}")
+  parser = Parser(arch_file)
+  cgra_param = parser.get_simplest_cgra_param()
+  CgraTemplateRTL_test.test_cgra_universal(cmdline_opts, arch_file, cgra_param)

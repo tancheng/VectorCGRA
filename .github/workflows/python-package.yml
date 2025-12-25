@@ -119,7 +119,7 @@ jobs:
         start_time=$(date +%s)
         export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         cd build
-        cp CgraTemplateRTL__*.v design.v
+        cp CgraTemplateRTL__pickled.v design.v
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
         ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
         cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v

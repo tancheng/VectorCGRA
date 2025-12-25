@@ -79,9 +79,7 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True,
-                has_ctrl_ring = True,
-                simplified_modeling_for_synthesis = False):
+                is_multi_cgra = True):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -135,7 +133,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList if simplified_modeling_for_synthesis else map_fu2rtl(TileList[i].getAllValidFuTypes()))
+                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes()))
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
@@ -155,10 +153,9 @@ class CgraTemplateRTL(Component):
                                   s.num_tiles, controller2addr_map, idTo2d_map)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
-    if has_ctrl_ring:
-      # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-      # The last argument of 1 is for the latency per hop.
-      s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+    # The last argument of 1 is for the latency per hop.
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -196,14 +193,13 @@ class CgraTemplateRTL(Component):
       s.tile[i].cgra_id //= s.cgra_id
       s.tile[i].tile_id //= i
 
-    if has_ctrl_ring:
-      # Connects ring with each control memory.
-      for i in range(s.num_tiles):
-        s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-      for i in range(s.num_tiles):
-        s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
-      s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
-      s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
+    # Connects ring with each control memory.
+    for i in range(s.num_tiles):
+      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+    for i in range(s.num_tiles):
+      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for link in LinkList:
 

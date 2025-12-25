@@ -1,4 +1,4 @@
-from ...lib.util.cgra.cgra_helper import get_links, keep_port_valid_on_boundary
+from ...lib.util.cgra.cgra_helper import get_links, configure_boundary_ports
 from ...lib.util.cgra.Tile import Tile
 from ...lib.util.cgra.DataSPM import DataSPM
 from .ParamCGRA import ParamCGRA
@@ -49,7 +49,7 @@ class MultiCgraParam:
 
         # Iterates id2validTiles to enable boundary ports
         for cgra_id, tiles_flat in id2validTiles.items():
-            keep_port_valid_on_boundary(
+            configure_boundary_ports(
                 cgra_id,
                 tiles_flat,
                 num_cgra_rows,
