@@ -303,8 +303,10 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
                    controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
   th.elaborate()
+
+  module_name = 'CgraTemplateRTL_provided' if cgra_param is not None else 'CgraTemplateRTL'
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                      f'CgraTemplateRTL')
+                      module_name)
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER', 'CMPCONST'])

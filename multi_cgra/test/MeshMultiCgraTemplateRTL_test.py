@@ -40,7 +40,7 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
 from ..parser.Parser import Parser
-from ...cgra.test.CgraTemplateRTL_test import test_cgra_universal
+from ...cgra.test import CgraTemplateRTL_test
 import os
 
 #-------------------------------------------------------------------------
@@ -380,4 +380,4 @@ def test_simplified_multi_cgra(cmdline_opts, arch_yaml_path = "arch_override.yam
   print(f"Use the architecture file: {arch_file}")
   parser = Parser(arch_file)
   cgra_param = parser.get_simplest_cgra_param()
-  test_cgra_universal(cmdline_opts, False, arch_file, cgra_param)
+  CgraTemplateRTL_test.test_cgra_universal(cmdline_opts, arch_file, cgra_param)
