@@ -297,9 +297,11 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
 
   th.elaborate()
 
-  module_name = 'CgraTemplateRTL_provided' if cgra_param is not None else 'CgraTemplateRTL'
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                      module_name)
+                      f'CgraTemplateRTL')
+  if cgra_param is not None:
+    th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, 'CgraTemplateRTL__provided__pickled.v')
+  
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER', 'CMPCONST'])
