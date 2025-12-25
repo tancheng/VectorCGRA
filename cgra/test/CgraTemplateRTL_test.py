@@ -67,7 +67,6 @@ class TestHarness(Component):
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
                 mem_access_is_combinational,
-                has_ctrl_ring,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
                 complete_signal_sink_out):
@@ -91,10 +90,8 @@ class TestHarness(Component):
                 FunctionUnit, FuList,
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map,
-                is_multi_cgra = False,
-                has_ctrl_ring = has_ctrl_ring)
+                is_multi_cgra = False)
 
-    s.has_ctrl_ring = has_ctrl_ring
 
     # Connections
     s.dut.cgra_id //= cgra_id
@@ -106,8 +103,6 @@ class TestHarness(Component):
     s.dut.address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
   def done(s):
-    if not s.has_ctrl_ring:
-      return True
     return s.src_ctrl_pkt.done() and s.complete_signal_sink_out.done()
 
   def line_trace(s):
@@ -152,7 +147,6 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   data_nbits = 32
   DataType = mk_data(data_nbits, 1)
   PredicateType = mk_predicate(1, 1)
-  has_ctrl_ring = False
 
   DataAddrType = mk_bits(addr_nbits)
   ControllerIdType = mk_bits(clog2(num_cgras))
@@ -298,7 +292,6 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size,
                    mem_access_is_combinational,
-                   has_ctrl_ring,
                    tiles, links, dataSPM,
                    controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
