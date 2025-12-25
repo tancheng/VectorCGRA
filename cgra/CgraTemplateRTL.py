@@ -80,8 +80,7 @@ class CgraTemplateRTL(Component):
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 is_multi_cgra = True,
-                has_ctrl_ring = True,
-                simplified_modeling_for_synthesis = False):
+                has_ctrl_ring = True):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -135,7 +134,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList if simplified_modeling_for_synthesis else map_fu2rtl(TileList[i].getAllValidFuTypes()))
+                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes()))
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,

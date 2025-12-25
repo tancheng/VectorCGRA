@@ -80,11 +80,11 @@ class Parser:
             id2ctrlMemSize_map[id] = ctrlMemSize
 
         cgras = []
-        for cgraRow in range(self.cgra_rows):
+        for cgra_row in range(self.cgra_rows):
             cgras.append([])
-            for cgraCol in range(self.cgra_columns):
-                id = cgraRow * self.cgra_columns + cgraCol
-                cgras[cgraRow].append(ParamCGRA(
+            for cgra_col in range(self.cgra_columns):
+                id = cgra_row * self.cgra_columns + cgra_col
+                cgras[cgra_row].append(ParamCGRA(
                     self.per_cgra_rows, self.per_cgra_columns, id2validTiles[id], id2validLinks[id], id2dataSPM[id], id2ctrlMemSize_map[id]))
 
         # Overrides the tiles.

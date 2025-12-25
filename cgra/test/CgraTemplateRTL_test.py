@@ -70,8 +70,7 @@ class TestHarness(Component):
                 has_ctrl_ring,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
-                complete_signal_sink_out,
-                simplified_modeling_for_synthesis):
+                complete_signal_sink_out):
 
     CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -93,8 +92,7 @@ class TestHarness(Component):
                 TileList, LinkList, dataSPM, controller2addr_map,
                 idTo2d_map,
                 is_multi_cgra = False,
-                has_ctrl_ring = has_ctrl_ring,
-                simplified_modeling_for_synthesis = simplified_modeling_for_synthesis)
+                has_ctrl_ring = has_ctrl_ring)
 
     s.has_ctrl_ring = has_ctrl_ring
 
@@ -115,7 +113,7 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False, arch_yaml_path = "arch.yaml", cgra_param = None):
+def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param = None):
   if cgra_param is None:
     arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
     parser = Parser(arch_file)
@@ -291,9 +289,6 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
 
   # Non-combinational memory access to improve the timing and P&R.
   mem_access_is_combinational = False
-  if simplified_modeling_for_synthesis:
-    has_ctrl_ring = False
-    FuList = [MemUnitRTL, AdderRTL]
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
@@ -305,8 +300,7 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
                    mem_access_is_combinational,
                    has_ctrl_ring,
                    tiles, links, dataSPM,
-                   controller2addr_map, idTo2d_map, complete_signal_sink_out,
-                   simplified_modeling_for_synthesis)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
 
   th.elaborate()
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name,
@@ -319,5 +313,3 @@ def test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = False,
 
   run_sim(th)
 
-def test_cgra_universal_for_layout(cmdline_opts, arch_yaml_path = "arch.yaml"):
-  test_cgra_universal(cmdline_opts, simplified_modeling_for_synthesis = True, arch_yaml_path = arch_yaml_path)
