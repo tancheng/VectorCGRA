@@ -83,28 +83,30 @@ def get_links(tiles):
 
 
 
-def keep_port_valid(tile, port):
+def set_port_validity(tile, port, is_valid = True):
     """
-    Removes the given port from the sets of invalid out and in ports of the tile.
+    Modifies the validity of a port on a tile.
 
     Parameters:
     - tile: A tile object.
-    - port: An integer representing the port to be made valid.
+    - port: The port ID(PORT_EAST, PORT_WEST, PORT_SOUTH, PORT_NORTH).
+    - is_valid: If True, enables the port(removes from invalid sets), otherwise 
+      disables the port(adds to the invalid sets).
     """
     # Get the sets of invalid out and in ports of the tile.
-    tile_out_port_set = tile.invalidOutPorts
-    tile_in_port_set = tile.invalidInPorts
-    
-    if port in tile_out_port_set:
-        tile_out_port_set.remove(port)
-    
-    if port in tile_in_port_set:
-        tile_in_port_set.remove(port)
+    target_sets = [tile.invalidOutPorts, tile.invalidInPorts]
+
+    for port_set in target_sets:
+        if is_valid:
+            port_set.discard(port)
+        else:
+            port_set.add(port)
 
 
-def keep_port_valid_on_boundary(cgra_id, tiles_flat,
+def configure_boundary_ports(cgra_id, tiles_flat,
                                 num_cgra_rows, num_cgra_columns,
-                                per_cgra_rows, per_cgra_columns):
+                                per_cgra_rows, per_cgra_columns,
+                                is_valid = True):
     """
     Enable boundary ports for tiles on adjacent CGRAs.
 
@@ -115,6 +117,7 @@ def keep_port_valid_on_boundary(cgra_id, tiles_flat,
     - num_cgra_columns: Number of CGRA columns in the mesh
     - per_cgra_rows: Number of tile rows in each CGRA
     - per_cgra_columns: Number of tile columns in each CGRA
+    - is_valid: If true, enable ports, otherwise disable ports
 
     CGRA ID mapping (example for 2x2):
     CGRA 2: [row=0, col=0] CGRA 3: [row=0, col=1]  (top row, row=0)
@@ -134,7 +137,7 @@ def keep_port_valid_on_boundary(cgra_id, tiles_flat,
         # Top row of tiles in this CGRA should have NORTH ports enabled
         top_row_idx = per_cgra_rows - 1
         for tile_col in range(per_cgra_columns):
-            keep_port_valid(get_tile(top_row_idx, tile_col), PORT_NORTH)
+            set_port_validity(get_tile(top_row_idx, tile_col), PORT_NORTH, is_valid)
 
     # Enables SOUTH ports if there's a neighbor to the south
     if cgra_row < num_cgra_rows - 1:
@@ -142,18 +145,18 @@ def keep_port_valid_on_boundary(cgra_id, tiles_flat,
         # Bottom row of tiles in this CGRA should have SOUTH ports enabled
         bottom_row_idx = 0
         for tile_col in range(per_cgra_columns):
-            keep_port_valid(get_tile(bottom_row_idx, tile_col), PORT_SOUTH)
+            set_port_validity(get_tile(bottom_row_idx, tile_col), PORT_SOUTH, is_valid)
 
     # Enables EAST ports if there's a neighbor to the east
     if cgra_col < num_cgra_columns - 1:
         # Rightmost column of tiles in this CGRA should have EAST ports enabled
         east_col_idx = per_cgra_columns - 1
         for tile_row in range(per_cgra_rows):
-            keep_port_valid(get_tile(tile_row, east_col_idx), PORT_EAST)
+            set_port_validity(get_tile(tile_row, east_col_idx), PORT_EAST, is_valid)
 
     # Enables WEST ports if there's a neighbor to the west
     if cgra_col > 0:
         # Leftmost column of tiles in this CGRA should have WEST ports enabled
         west_col_idx = 0
         for tile_row in range(per_cgra_rows):
-            keep_port_valid(get_tile(tile_row, west_col_idx), PORT_WEST)
+            set_port_validity(get_tile(tile_row, west_col_idx), PORT_WEST, is_valid)

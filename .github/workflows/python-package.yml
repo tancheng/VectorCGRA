@@ -111,13 +111,15 @@ jobs:
         pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
         start_time=$(date +%s)
         export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         cd build
-        cp CgraTemplateRTL__*.v design.v
+        cp CgraTemplateRTL__pickled.v design.v
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
         ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
         cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
@@ -133,3 +135,18 @@ jobs:
           echo "ERROR: Synthesis step took longer than 15 minutes!"
           exit 1
         fi
+
+    - name: Use setup-verilator action
+      uses: veryl-lang/setup-verilator@v1 # Check the marketplace for the latest tag/version
+      with:
+        verilator-version: 'v5.026' # Specify the desired version
+
+    - name: Test pure SV tb.
+      run: |
+        unset VERILATOR_ROOT
+        unset PYMTL_VERILATOR_INCLUDE_DIR
+        mkdir -p build && cd build
+        verilator --version
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_scalar_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+

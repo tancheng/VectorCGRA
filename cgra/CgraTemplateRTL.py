@@ -19,6 +19,53 @@ from ..tile.TileRTL import TileRTL
 from ..lib.util.data_struct_attr import *
 from ..lib.messages import *
 
+from ..fu.single.PhiRTL import PhiRTL
+from ..fu.single.AdderRTL import AdderRTL
+from ..fu.single.ShifterRTL import ShifterRTL
+from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..fu.single.SelRTL import SelRTL
+from ..fu.single.CompRTL import CompRTL
+from ..fu.double.SeqMulAdderRTL import SeqMulAdderRTL
+from ..fu.single.RetRTL import RetRTL
+from ..fu.single.MulRTL import MulRTL
+from ..fu.single.ExclusiveDivRTL import ExclusiveDivRTL
+from ..fu.single.LogicRTL import LogicRTL
+from ..fu.single.GrantRTL import GrantRTL
+from ..fu.single.LoopControlRTL import LoopControlRTL
+from ..fu.single.ConstRTL import ConstRTL
+from ..fu.float.FpAddRTL import FpAddRTL
+from ..fu.float.FpMulRTL import FpMulRTL
+
+fu_map = {
+  "add": AdderRTL,
+  "mul": MulRTL,
+  "div": ExclusiveDivRTL,
+  "fadd": FpAddRTL,
+  "fmul": FpMulRTL,
+  "fdiv": None,
+  "logic": LogicRTL,
+  "cmp": CompRTL,
+  "sel": SelRTL,
+  "type_conv": None,
+  "vfmul": None,
+  "fadd_fadd": None,
+  "fmul_fadd": None,
+  "grant": GrantRTL,
+  "loop_control": LoopControlRTL,
+  "phi": PhiRTL,
+  "constant": ConstRTL,
+  "mem": MemUnitRTL,
+  "return": RetRTL,
+  "mem_indexed": MemUnitRTL,
+  "alloca": None,
+  "shift": ShifterRTL,
+}
+
+def map_fu2rtl(fu_type: list[str]):
+  fuRTL = list({fu_map[fu] for fu in fu_type})
+  fuRTL_new = [fu for fu in fuRTL if fu is not None]
+  return fuRTL_new
+
 
 class CgraTemplateRTL(Component):
 
@@ -32,8 +79,7 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True,
-                has_ctrl_ring = True):
+                is_multi_cgra = True):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -87,7 +133,7 @@ class CgraTemplateRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList)
+                      FuList = map_fu2rtl(TileList[i].getAllValidFuTypes()))
               for i in range(s.num_tiles)]
     # FIXME: Need to enrish data-SPM-related user-controlled parameters, e.g., number of banks.
     s.data_mem = DataMemControllerRTL(NocPktType,
@@ -107,10 +153,9 @@ class CgraTemplateRTL(Component):
                                   s.num_tiles, controller2addr_map, idTo2d_map)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
-    if has_ctrl_ring:
-      # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-      # The last argument of 1 is for the latency per hop.
-      s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
+    # The last argument of 1 is for the latency per hop.
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -148,14 +193,13 @@ class CgraTemplateRTL(Component):
       s.tile[i].cgra_id //= s.cgra_id
       s.tile[i].tile_id //= i
 
-    if has_ctrl_ring:
-      # Connects ring with each control memory.
-      for i in range(s.num_tiles):
-        s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-      for i in range(s.num_tiles):
-        s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
-      s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
-      s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
+    # Connects ring with each control memory.
+    for i in range(s.num_tiles):
+      s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
+    for i in range(s.num_tiles):
+      s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+    s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
+    s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
 
     for link in LinkList:
 
@@ -165,16 +209,30 @@ class CgraTemplateRTL(Component):
         s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
         s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
+        # Grounds the generic routing port since it is unused for memory links when in single-CGRA mode.
+        if not link.disabled and not is_multi_cgra:
+            s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
+            s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+
       elif link.isToMem():
         memPort = link.getMemWritePort()
         srcTileIndex = link.srcTile.getIndex(TileList)
         s.tile[srcTileIndex].to_mem_waddr //= s.data_mem.recv_waddr[memPort]
         s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
 
+        # Grounds the generic routing port ready signal when in single-CGRA mode.
+        if not link.disabled and not is_multi_cgra:
+            s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
+
       else:
         srcTileIndex = link.srcTile.getIndex(TileList)
         dstTileIndex = link.dstTile.getIndex(TileList)
-        s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+        if not link.disabled:
+          s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
+        else:
+          s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
+          s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+          s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
 
     if is_multi_cgra:
       for row in range(per_cgra_rows):
