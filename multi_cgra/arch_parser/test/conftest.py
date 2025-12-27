@@ -1,6 +1,6 @@
 import os
 """
-    Use `pytest Parser_test.py --arch_file /path/to/arch/file` to execute the test case of parser.
+    Use `pytest ArchParser_test.py --arch_file /path/to/arch/file` to execute the test case of ArchParser.
 """
 def pytest_addoption(parser):
     parser.addoption(

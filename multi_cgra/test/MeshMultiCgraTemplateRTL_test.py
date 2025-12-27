@@ -39,7 +39,7 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
-from ..parser.Parser import Parser
+from ..arch_parser.ArchParser import ArchParser
 from ...cgra.test import CgraTemplateRTL_test
 import os
 
@@ -153,8 +153,8 @@ def run_sim(test_harness, max_cycles = 200):
 def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
   arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
   print(f"Use the architecture file: {arch_file}")
-  parser = Parser(arch_file)
-  multiCgraParam = parser.parse_multi_cgra_param()
+  arch_parser = ArchParser(arch_file)
+  multiCgraParam = arch_parser.parse_multi_cgra_param()
   
   print(f"multiCgraParam: {multiCgraParam}")
   singleCgraParam = multiCgraParam.cgras[0][0]
@@ -378,6 +378,6 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
 def test_simplified_multi_cgra(cmdline_opts, arch_yaml_path = "arch_override.yaml"):
   arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
   print(f"Use the architecture file: {arch_file}")
-  parser = Parser(arch_file)
-  cgra_param = parser.get_simplest_cgra_param()
+  arch_parser = ArchParser(arch_file)
+  cgra_param = arch_parser.get_simplest_cgra_param()
   CgraTemplateRTL_test.test_cgra_universal(cmdline_opts, arch_file, cgra_param)
