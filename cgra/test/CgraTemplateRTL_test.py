@@ -36,7 +36,7 @@ from ...lib.util.common import *
 from ...lib.util.cgra.Tile import Tile
 from ...lib.util.cgra.DataSPM import DataSPM
 from ...lib.util.cgra.cgra_helper import get_links
-from ...multi_cgra.parser.Parser import Parser
+from ...multi_cgra.arch_parser.ArchParser import ArchParser
 import os
 
 fuType2RTL = {}
@@ -111,8 +111,8 @@ class TestHarness(Component):
 def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param = None):
   if cgra_param is None:
     arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
-    parser = Parser(arch_file)
-    cgras = parser.parse_cgras()
+    arch_parser = ArchParser(arch_file)
+    cgras = arch_parser.parse_cgras()
     assert len(cgras) == 1 and len(cgras[0]) == 1, f"Expected a single CGRA with from arch.yaml, but got {len(cgras)} rows with {len(cgras[0])} columns"
     paramCGRA = cgras[0][0]
   else:
