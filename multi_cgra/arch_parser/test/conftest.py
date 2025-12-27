@@ -6,6 +6,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--arch_file",
         action="store",
-        default=os.path.join(os.path.dirname(__file__),"arch.yaml"),
+        default=os.path.join(os.path.dirname(__file__), "arch.yaml"),
         help="Path to the architecture YAML file. Relative paths are resolved from the current terminal directory."
     )
