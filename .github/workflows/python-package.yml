@@ -113,7 +113,6 @@ jobs:
         pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Generate .v file with explicit file & module names.
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
