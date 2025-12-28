@@ -10,7 +10,7 @@ Parses YAML architecture specs to construct the Multi-CGRA.
 - Link.py – directional links among tiles.
 - DataSPM.py – scratchpad model shared by CGRAs.
 - helper.py – utilities to build mesh links and enable boundary ports.
-- test/ – test about the ArchParser, extracting the MultiCgraParam from architecture.yaml and construct a Multi-CGRA.
+- test/ – tests about the ArchParser, extracts the MultiCgraParam from `architecture.yaml`, constructs a Multi-CGRA, and generates corresponding Verilog.
 
 ## Test
 ```python
