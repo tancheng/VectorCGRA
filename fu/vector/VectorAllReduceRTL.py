@@ -70,26 +70,36 @@ class VectorAllReduceRTL(Component):
     s.reduce_add = SumUnit(TempDataType, num_lanes)
     for i in range(num_lanes):
       s.reduce_add.in_[i] //= lambda: (s.temp_result[i]
-          if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) or \
-             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) or \
-             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) or \
+          if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
+             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
+             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) else 0)
 
     s.reduce_mul = ReduceMulUnit(TempDataType, num_lanes)
     for i in range(num_lanes):
       s.reduce_mul.in_[i] //= lambda: (s.temp_result[i]
-          if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL) or \
-             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE) or \
-             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) or \
+          if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL) | \
+             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE) | \
+             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL) else 0)
+
+
+    for i in range( num_lanes ):
+      # Calculate the constant bounds for each specific connection
+      low  = i * sub_bw
+      high = (i + 1) * sub_bw
+      # s.connect() works with slice objects directly during elaboration.
+      connect( s.temp_result[i][0:sub_bw], s.recv_in[0].msg.payload[low:high] )
 
     @update
     def update_result():
       # Connection: splits data into vectorized wires.
       s.send_out[0].msg.payload @= 0
-      for i in range(num_lanes):
-        s.temp_result[i] @= TempDataType(0)
-        s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
+      #for i in range(num_lanes):
+      #  low  = i * sub_bw
+      #  high = (i + 1) * sub_bw
+      #  s.temp_result[i] @= TempDataType(0)
+      #  s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[low:high]
 
       if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out
