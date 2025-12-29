@@ -21,7 +21,8 @@ module cgra_test
 
   MeshMultiCgraRTL__explicit MultiCGRA (.*);
 
-  int PASS = 'd0;
+  int  PASS         = 'd0;
+  time pass_time_of = 'd0;
 
   initial
   begin
@@ -1200,8 +1201,8 @@ typedef struct packed {
 
     #3000
 
-    if ('d1 == PASS) $display("TEST PASSED.");
-    else $display("TEST FAILED.");
+    if ('d1 == PASS) $display("TEST PASSED at %0t.", pass_time_of);
+    else             $display("TEST FAILED at %0t.", $time);
 
     $display("#########cgra 0 tile 0 cnst mem#################");
     for (int i = 0; i < 512; i++)
@@ -1306,7 +1307,8 @@ typedef struct packed {
 
     if ( send_to_cpu_pkt__val && ('d2215 == send_to_cpu_pkt__msg.payload.data.payload) )
     begin
-      PASS = 1;
+      PASS         = 'd1;
+      pass_time_of = $time;
     end
   end
 
