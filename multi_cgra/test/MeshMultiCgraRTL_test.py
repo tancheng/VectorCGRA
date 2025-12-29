@@ -3273,6 +3273,6 @@ def test_multi_CGRA_fir_vector_global_reduce_translation(cmdline_opts):
                                test_name = 'test_fir_vector_global_reduce')
 
   th.elaborate()
-  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit_vecgr")
-  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_vecgr__pickled.v")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit_vector_global_reduce")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v")
   translate_model(th, ['dut'])

@@ -89,17 +89,12 @@ class VectorAllReduceRTL(Component):
       low  = i * sub_bw
       high = (i + 1) * sub_bw
       # s.connect() works with slice objects directly during elaboration.
-      connect( s.temp_result[i][0:sub_bw], s.recv_in[0].msg.payload[low:high] )
+      s.temp_result[i][0:sub_bw] //= s.recv_in[0].msg.payload[low:high]
 
     @update
     def update_result():
       # Connection: splits data into vectorized wires.
       s.send_out[0].msg.payload @= 0
-      #for i in range(num_lanes):
-      #  low  = i * sub_bw
-      #  high = (i + 1) * sub_bw
-      #  s.temp_result[i] @= TempDataType(0)
-      #  s.temp_result[i][0:sub_bw] @= s.recv_in[0].msg.payload[low:high]
 
       if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out
