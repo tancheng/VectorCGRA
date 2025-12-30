@@ -7,7 +7,7 @@ from ...lib.util.cgra.cgra_helper import *
 import copy
 
 
-class Parser:
+class ArchParser:
     def __init__(self, yaml_file: str):
         with open(yaml_file, 'r') as f:
             self.yaml_data = yaml.safe_load(f)
