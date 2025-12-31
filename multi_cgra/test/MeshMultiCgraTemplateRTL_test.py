@@ -150,7 +150,7 @@ def run_sim(test_harness, max_cycles = 200):
   test_harness.sim_tick()
 
 
-def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch_override.yaml"):
+def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
   arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
   print(f"Use the architecture file: {arch_file}")
   arch_parser = ArchParser(arch_file)

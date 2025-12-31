@@ -1,16 +1,17 @@
 # This is an example of overriding the tiles/links.
 multi_cgra_defaults:
-  rows: 2
-  columns: 2
+  rows: 1
+  columns: 1
 
 cgra_defaults:
   rows: 2
   columns: 2
-  configMemSize: 16
+  configMemSize: 8
 
 tile_defaults:
   num_registers: 16
   fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
+
 link_overrides:
 - src_cgra_x: 0
   src_cgra_y: 0
@@ -19,39 +20,39 @@ link_overrides:
   src_tile_x: 1
   src_tile_y: 1
   dst_tile_x: 0
-  dst_tile_y: 0
+  dst_tile_y: 1
   existence: false
 
-# disables the link from tile(0,0) to dataSPM in cgra(0,0).
+# overrides/disables the link from dataSPM to tile(0,0)
 - src_cgra_x: 0
   src_cgra_y: 0
   dst_cgra_x: 0
   dst_cgra_y: 0
-
-  src_tile_x: 0
-  src_tile_y: 0
-  dst_tile_x: -1
-  dst_tile_y: -1
-  existence: false
-
-# disables the link from dataSPM to tile(0,0) in cgra(1,1)
-- src_cgra_x: 1
-  src_cgra_y: 1
-  dst_cgra_x: 1
-  dst_cgra_y: 1
-
+  
   src_tile_x: -1
   src_tile_y: -1
   dst_tile_x: 0
   dst_tile_y: 0
   existence: false
 
-# disables the link from tile(0,1) to dataSPM in cgra(0,1)
+# overrides/disables the link from tile(0,0) to dataSPM.
 - src_cgra_x: 0
-  src_cgra_y: 1
+  src_cgra_y: 0
   dst_cgra_x: 0
-  dst_cgra_y: 1
+  dst_cgra_y: 0
+  
+  src_tile_x: 0
+  src_tile_y: 0
+  dst_tile_x: -1
+  dst_tile_y: -1
+  existence: false
 
+# overrides/disables the link from tile(0,1) to dataSPM.
+- src_cgra_x: 0
+  src_cgra_y: 0
+  dst_cgra_x: 0
+  dst_cgra_y: 0
+  
   src_tile_x: 0
   src_tile_y: 1
   dst_tile_x: -1
@@ -62,13 +63,6 @@ tile_overrides:
 - cgra_x: 0
   cgra_y: 0
   tile_x: 0
-  tile_y: 1
-  fu_types: ["add", "mem"]
-  existence: true
-
-- cgra_x: 1
-  cgra_y: 1
-  tile_x: 1
-  tile_y: 1
-  fu_types: ["add", "mem"]
+  tile_y: 0
+  fu_types: ["phi", "shift", "mem", "return", "add"]
   existence: true
