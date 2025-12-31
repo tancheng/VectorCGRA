@@ -21,12 +21,31 @@ class ParamCGRA:
     def overrideLinks(self, src_tile_x, src_tile_y, dst_tile_x, dst_tile_y, existence):
         # Finds the link and sets the disabled status.
         for link in self.links:
-            # TODO(@benkangpeng): Handle the links between dataSPM and tile.
-            if link.isFromMem() or link.isToMem():
-                continue
+            #  handles the link from dataSPM to the 1st column of tiles.
+            # `src_tile_x = src_tile_y = -1` indicates the source tile of the link is dataSPM.
+            if link.isFromMem():
+                if src_tile_x == -1 and src_tile_y == -1 and link.memPort == dst_tile_y:
+                    link.disabled = not existence
+                    link.validatePorts()
+                    print(f"✅✅✅ Disable the fromMem link,{link.dstTile},{link.dstTile.hasFromMem()}")
+                    break
+                else:
+                    continue
 
+            #  handles the link from the 1st column of tiles to dataSPM.
+            # `dst_tile_x = dst_tile_y = -1` indicates the destination tile of the link is dataSPM.
+            if link.isToMem():
+                if dst_tile_x == -1 and dst_tile_y == -1 and link.memPort == src_tile_y:
+                    link.disabled = not existence
+                    link.validatePorts()
+                    break
+                else:
+                    continue
+
+            # handles the link between tiles.
             if (link.srcTile.dimX == src_tile_x and link.srcTile.dimY == src_tile_y and
                     link.dstTile.dimX == dst_tile_x and link.dstTile.dimY == dst_tile_y):
+                print(f"✅✅✅Override links from tile({src_tile_x},{src_tile_y}) to tile({dst_tile_x},{dst_tile_y})")
                 link.disabled = not existence
                 link.validatePorts()
                 break

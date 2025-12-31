@@ -21,6 +21,39 @@ link_overrides:
   dst_tile_x: 0
   dst_tile_y: 0
   existence: false
+
+- src_cgra_x: 0
+  src_cgra_y: 0
+  dst_cgra_x: 0
+  dst_cgra_y: 0
+
+  src_tile_x: 0
+  src_tile_y: 0
+  dst_tile_x: -1
+  dst_tile_y: -1
+  existence: false
+
+- src_cgra_x: 1
+  src_cgra_y: 1
+  dst_cgra_x: 1
+  dst_cgra_y: 1
+
+  src_tile_x: -1
+  src_tile_y: -1
+  dst_tile_x: 0
+  dst_tile_y: 0
+  existence: false
+
+- src_cgra_x: 0
+  src_cgra_y: 1
+  dst_cgra_x: 0
+  dst_cgra_y: 1
+
+  src_tile_x: 0
+  src_tile_y: 1
+  dst_tile_x: -1
+  dst_tile_y: -1
+  existence: false
 tile_overrides:
 - cgra_x: 0
   cgra_y: 0

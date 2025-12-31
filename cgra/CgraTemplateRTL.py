@@ -79,7 +79,7 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True):
+                is_multi_cgra = True, cgra_id = 0):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -206,8 +206,9 @@ class CgraTemplateRTL(Component):
       if link.isFromMem():
         memPort = link.getMemReadPort()
         dstTileIndex = link.dstTile.getIndex(TileList)
-        s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
-        s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
+        if not link.disabled:
+          s.data_mem.recv_raddr[memPort] //= s.tile[dstTileIndex].to_mem_raddr
+          s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
         # Grounds the generic routing port since it is unused for memory links when in single-CGRA mode.
         if not link.disabled and not is_multi_cgra:
@@ -217,8 +218,9 @@ class CgraTemplateRTL(Component):
       elif link.isToMem():
         memPort = link.getMemWritePort()
         srcTileIndex = link.srcTile.getIndex(TileList)
-        s.tile[srcTileIndex].to_mem_waddr //= s.data_mem.recv_waddr[memPort]
-        s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
+        if not link.disabled:
+          s.tile[srcTileIndex].to_mem_waddr //= s.data_mem.recv_waddr[memPort]
+          s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
 
         # Grounds the generic routing port ready signal when in single-CGRA mode.
         if not link.disabled and not is_multi_cgra:
@@ -229,11 +231,12 @@ class CgraTemplateRTL(Component):
         dstTileIndex = link.dstTile.getIndex(TileList)
         if not link.disabled:
           s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
-        else:
-          s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
-          s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
-          s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
-
+        # else:
+        #   s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
+        #   s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+        #   s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
+    cgra_idx_x = cgra_id % multi_cgra_columns
+    cgra_idx_y = cgra_id // multi_cgra_rows
     if is_multi_cgra:
       for row in range(per_cgra_rows):
         for col in range(per_cgra_columns):
@@ -252,10 +255,15 @@ class CgraTemplateRTL(Component):
               s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
 
           if col == 0:
-            if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
+            # if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
+            if cgra_idx_x > 0:
               s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
-            if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
+            # if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
+            else:#cgra_idx_x = 0
+              s.tile[tile_id].send_data[PORT_WEST].rdy //= 0
+              s.tile[tile_id].recv_data[PORT_WEST].val //= 0
+              s.tile[tile_id].recv_data[PORT_WEST].msg //= DataType(0, 0)
 
           if col == per_cgra_columns - 1:
             if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
@@ -263,23 +271,29 @@ class CgraTemplateRTL(Component):
             if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
 
-    for i in range(s.num_tiles):
+    # for i in range(s.num_tiles):
+    for row in range(per_cgra_rows):
+      for col in range(per_cgra_columns):
+        i = row * per_cgra_columns + col
 
-      for invalidInPort in TileList[i].getInvalidInPorts():
-        s.tile[i].recv_data[invalidInPort].val //= 0
-        s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
+        for invalidInPort in TileList[i].getInvalidInPorts():
+          if not (is_multi_cgra and col == 0 and invalidInPort == PORT_WEST):
+          # is_multi_cgra and cgra_idx_x > 0 and col == 0
+            s.tile[i].recv_data[invalidInPort].val //= 0
+            s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
-      for invalidOutPort in TileList[i].getInvalidOutPorts():
-        s.tile[i].send_data[invalidOutPort].rdy //= 0
+        for invalidOutPort in TileList[i].getInvalidOutPorts():
+          if not (is_multi_cgra and col == 0 and invalidOutPort == PORT_WEST):
+            s.tile[i].send_data[invalidOutPort].rdy //= 0
 
-      if not TileList[i].hasFromMem():
-        s.tile[i].to_mem_raddr.rdy   //= 0
-        s.tile[i].from_mem_rdata.val //= 0
-        s.tile[i].from_mem_rdata.msg //= DataType(0, 0)
+        if not TileList[i].hasFromMem():
+          s.tile[i].to_mem_raddr.rdy   //= 0
+          s.tile[i].from_mem_rdata.val //= 0
+          s.tile[i].from_mem_rdata.msg //= DataType(0, 0)
 
-      if not TileList[i].hasToMem():
-        s.tile[i].to_mem_waddr.rdy //= 0
-        s.tile[i].to_mem_wdata.rdy //= 0
+        if not TileList[i].hasToMem():
+          s.tile[i].to_mem_waddr.rdy //= 0
+          s.tile[i].to_mem_wdata.rdy //= 0
 
   # Line trace
   def line_trace(s):
