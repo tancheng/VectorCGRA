@@ -69,7 +69,8 @@ class TestHarness(Component):
                 mem_access_is_combinational,
                 TileList, LinkList, dataSPM,
                 controller2addr_map, idTo2d_map,
-                complete_signal_sink_out):
+                complete_signal_sink_out,
+                width, height):
 
     CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -81,7 +82,7 @@ class TestHarness(Component):
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 1, 4,
-                None, None,
+                width, height,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -293,7 +294,8 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
                    src_ctrl_pkt, ctrl_mem_size,
                    mem_access_is_combinational,
                    tiles, links, dataSPM,
-                   controller2addr_map, idTo2d_map, complete_signal_sink_out)
+                   controller2addr_map, idTo2d_map, complete_signal_sink_out,
+                   width, height)
 
   th.elaborate()
 
