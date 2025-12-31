@@ -231,12 +231,19 @@ class CgraTemplateRTL(Component):
         dstTileIndex = link.dstTile.getIndex(TileList)
         if not link.disabled:
           s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
-        # else:
-        #   s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
-        #   s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
-        #   s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
+
+    # (cgra_idx_x, cgra_idx_y) is the coordinate of the current cgra in multi-cgra(Cartesian coordinate system).
     cgra_idx_x = cgra_id % multi_cgra_columns
     cgra_idx_y = cgra_id // multi_cgra_rows
+
+    """
+    row ^
+        | tile12  tile13 tile14   tile15
+        | tile8   tile9  tile10   tile11
+        | tile4   tile5  tile6    tile7
+        | tile0   tile1  tile2    tile3
+        |--------------------------> column
+    """
     if is_multi_cgra:
       for row in range(per_cgra_rows):
         for col in range(per_cgra_columns):
@@ -255,12 +262,13 @@ class CgraTemplateRTL(Component):
               s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
 
           if col == 0:
-            # if PORT_WEST not in TileList[tile_id].getInvalidOutPorts():
+            # Corner case: In multi-cgra, for each column of CGRAs except the first column,
+            # the west port of the first column tiles must be connected to the adjacent/west cgra
             if cgra_idx_x > 0:
               s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
-            # if PORT_WEST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
             else:#cgra_idx_x = 0
+              # In multi-cgra, for the first column CGRAs, the west ports of the first column tiles should be grounded.
               s.tile[tile_id].send_data[PORT_WEST].rdy //= 0
               s.tile[tile_id].recv_data[PORT_WEST].val //= 0
               s.tile[tile_id].recv_data[PORT_WEST].msg //= DataType(0, 0)
@@ -271,14 +279,14 @@ class CgraTemplateRTL(Component):
             if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
 
-    # for i in range(s.num_tiles):
     for row in range(per_cgra_rows):
       for col in range(per_cgra_columns):
         i = row * per_cgra_columns + col
 
         for invalidInPort in TileList[i].getInvalidInPorts():
+          # When the links between the dataSPM and the tiles are disabled, the PORT_WEST status becomes invalid.
+          # In this case, if the current CGRA needs to connect to the CGRA on its left, then the recv_data/send_data signals must not be tied to ground.
           if not (is_multi_cgra and col == 0 and invalidInPort == PORT_WEST):
-          # is_multi_cgra and cgra_idx_x > 0 and col == 0
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 

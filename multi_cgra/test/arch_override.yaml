@@ -22,6 +22,7 @@ link_overrides:
   dst_tile_y: 0
   existence: false
 
+# disables the link from tile(0,0) to dataSPM in cgra(0,0).
 - src_cgra_x: 0
   src_cgra_y: 0
   dst_cgra_x: 0
@@ -33,6 +34,7 @@ link_overrides:
   dst_tile_y: -1
   existence: false
 
+# disables the link from dataSPM to tile(0,0) in cgra(1,1)
 - src_cgra_x: 1
   src_cgra_y: 1
   dst_cgra_x: 1
@@ -44,6 +46,7 @@ link_overrides:
   dst_tile_y: 0
   existence: false
 
+# disables the link from tile(0,1) to dataSPM in cgra(0,1)
 - src_cgra_x: 0
   src_cgra_y: 1
   dst_cgra_x: 0
