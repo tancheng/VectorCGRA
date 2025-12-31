@@ -51,10 +51,6 @@ class ArchParser:
                 ) == 0, "num_cgras must be the power of 2."
         tiles = self.parse_tiles()
 
-        # Gets the links.
-        links = get_links(tiles)
-        # flatten tiles.
-        tiles_0 = [t for row in tiles for t in row]
 
         # cgra id to valid links.
         id2validLinks = {}
@@ -62,8 +58,12 @@ class ArchParser:
         id2validTiles = {}
 
         for id in range(num_cgras):
-            id2validLinks[id] = copy.deepcopy(links)
-            id2validTiles[id] = copy.deepcopy(tiles_0)
+            tiles0 = copy.deepcopy(tiles)
+            links0 = get_links(tiles0)
+            tiles0_flat = [t for row in tiles0 for t in row]
+
+            id2validLinks[id] = links0
+            id2validTiles[id] = tiles0_flat
 
         # Iterates id2validTiles to enable boundary ports
         for cgra_id, tiles_flat in id2validTiles.items():
