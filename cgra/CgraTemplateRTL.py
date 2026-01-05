@@ -267,7 +267,7 @@ class CgraTemplateRTL(Component):
             if cgra_idx_x > 0:
               s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
-            else:#cgra_idx_x = 0
+            else: #cgra_idx_x == 0
               # In multi-cgra, for the first column CGRAs, the west ports of the first column tiles should be grounded.
               s.tile[tile_id].send_data[PORT_WEST].rdy //= 0
               s.tile[tile_id].recv_data[PORT_WEST].val //= 0
