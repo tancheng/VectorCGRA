@@ -4,6 +4,14 @@ from ..common import *
 def get_links(tiles):
     """
     Get the links of tiles in one CGRA for a general RxC mesh.
+                
+    Mapping way of tiles in a single CGRA (Cartesian coordinate system):
+        ^
+        |   y (row) increases upward: 0 at the bottom, up to `per_cgra_rows-1` at the top
+        |
+        |   (row, col): (y, x)
+        +------------------------>
+        0                        x (column) increases to the right: 0 at the left, up to `per_cgra_columns-1` at the right  
     """
     per_cgra_row = len(tiles)
     per_cgra_col = len(tiles[0])
@@ -16,6 +24,7 @@ def get_links(tiles):
         # From memory to tile
         link_from_mem = Link(None, tiles[r][0], r, PORT_WEST)
         link_from_mem.fromMem = True
+        # The leftmost column of tiles connects to ports [0, per_cgra_row - 1] of dataSPM.
         link_from_mem.memPort = r
         link_from_mem.validatePorts()
         links.append(link_from_mem)
@@ -24,6 +33,24 @@ def get_links(tiles):
         link_to_mem = Link(tiles[r][0], None, PORT_WEST, r)
         link_to_mem.toMem = True
         link_to_mem.memPort = r
+        link_to_mem.validatePorts()
+        links.append(link_to_mem)
+
+    # --- Memory Connections (South Side) ---
+    # Creates bidirectional links between memory and each tile in the bottom row.
+    for c in range(1, per_cgra_col):
+        # From memory to tile.
+        link_from_mem = Link(None, tiles[0][c], per_cgra_row - 1 + c, PORT_SOUTH)
+        link_from_mem.fromMem = True
+        # The bottom row of tiles connects to ports [per_cgra_row, per_cgra_row + per_cgra_col - 2]
+        link_from_mem.memPort = per_cgra_row - 1 + c
+        link_from_mem.validatePorts()
+        links.append(link_from_mem)
+
+        # From tile to memory.
+        link_to_mem = Link(tiles[0][c], None, PORT_SOUTH, per_cgra_row - 1 + c)
+        link_to_mem.toMem = True
+        link_to_mem.memPort = per_cgra_row - 1 + c
         link_to_mem.validatePorts()
         links.append(link_to_mem)
 

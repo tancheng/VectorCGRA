@@ -256,14 +256,20 @@ class CgraTemplateRTL(Component):
               s.tile[tile_id].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[col]
 
           if row == 0:
-            if PORT_SOUTH not in TileList[tile_id].getInvalidOutPorts():
+            # Corner case: In multi-cgra, for each row of CGRAs except the bottom row,
+            # the south port of the bottom row tiles must be connected to the adjacent/south cgra.
+            if cgra_idx_y > 0:
               s.tile[tile_id].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[col]
-            if PORT_SOUTH not in TileList[tile_id].getInvalidInPorts():
               s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
+            else: #cgra_idx_y == 0
+              # In multi-cgra, for the bottom row CGRAs, the south ports of the bottom row tiles should be grounded.
+              s.tile[tile_id].send_data[PORT_SOUTH].rdy //= 0
+              s.tile[tile_id].recv_data[PORT_SOUTH].val //= 0
+              s.tile[tile_id].recv_data[PORT_SOUTH].msg //= DataType(0, 0)
 
           if col == 0:
             # Corner case: In multi-cgra, for each column of CGRAs except the first column,
-            # the west port of the first column tiles must be connected to the adjacent/west cgra
+            # the west port of the first column tiles must be connected to the adjacent/west cgra.
             if cgra_idx_x > 0:
               s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
               s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
@@ -284,14 +290,21 @@ class CgraTemplateRTL(Component):
         i = row * per_cgra_columns + col
 
         for invalidInPort in TileList[i].getInvalidInPorts():
-          # When the links between the dataSPM and the tiles are disabled, the PORT_WEST status becomes invalid.
-          # In this case, if the current CGRA needs to connect to the CGRA on its left, then the recv_data/send_data signals must not be tied to ground.
-          if not (is_multi_cgra and col == 0 and invalidInPort == PORT_WEST):
+          """
+            Corner case 1:
+              When the links between the dataSPM and the leftmost tiles are disabled, the PORT_WEST status becomes invalid.
+              In this case, if the current CGRA needs to connect to the CGRA on its left, then the recv_data/send_data signals must not be tied to ground.
+
+            Corner case 2:
+              When the links between the dataSPM and the bottom tiles are disabled, the PORT_SOUTH status becomes invalid.
+              In this case, if the current CGRA needs to connect to the CGRA below it, then the recv_data/send_data signals must not be tied to ground.
+          """
+          if not ((is_multi_cgra and col == 0 and invalidInPort == PORT_WEST) or (is_multi_cgra and row == 0 and invalidInPort == PORT_SOUTH)):
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
         for invalidOutPort in TileList[i].getInvalidOutPorts():
-          if not (is_multi_cgra and col == 0 and invalidOutPort == PORT_WEST):
+          if not ((is_multi_cgra and col == 0 and invalidOutPort == PORT_WEST) or (is_multi_cgra and row == 0 and invalidOutPort == PORT_SOUTH)):
             s.tile[i].send_data[invalidOutPort].rdy //= 0
 
         if not TileList[i].hasFromMem():

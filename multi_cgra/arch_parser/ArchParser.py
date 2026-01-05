@@ -20,7 +20,9 @@ class ArchParser:
         self.fu_types = self.yaml_data['tile_defaults']['fu_types']
 
     def parse_dataSPM(self):
-        return DataSPM(self.per_cgra_rows, self.per_cgra_rows)
+        data_mem_num_rd_tiles = self.per_cgra_rows + self.per_cgra_columns - 1 
+        data_mem_num_wr_tiles = self.per_cgra_rows + self.per_cgra_columns - 1 
+        return DataSPM(data_mem_num_rd_tiles, data_mem_num_wr_tiles)
 
     def parse_tiles(self):
         """
