@@ -70,7 +70,7 @@ def run_sim(test_harness, max_cycles = 20):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-def test_Ret():
+def test_Ret_Value():
   FU = RetRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
@@ -100,3 +100,41 @@ def test_Ret():
                    data_nbits, src_in, src_opt, sink)
   run_sim(th)
 
+def test_Ret_Void():
+  FU = RetRTL
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
+  num_inports = 2
+  num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  ctrl_mem_size = 4
+  data_mem_size = 16
+
+  DataAddrType = mk_bits(clog2(data_mem_size))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+
+  # Test inputs: first with predicate=0 (should be ignored),
+  # then with predicate=1 (should trigger counting)
+  src_in =  [DataType(1, 0), DataType(2, 1), DataType(3, 0)]
+  src_opt = [CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)])]
+
+  # Expected output: CMD_COMPLETE with void data (predicate=0) after 100 cycles
+  void_data = DataType()
+  sink = [CgraPayloadType(CMD_COMPLETE,
+                          data = void_data,
+                          ctrl = CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]))]
+
+  th = TestHarness(FU, DataType, CtrlType, CgraPayloadType,
+                   num_inports, num_outports, data_mem_size, ctrl_mem_size,
+                   data_nbits, src_in, src_opt, sink)
+
+  # Needs more cycles to account for the 100-cycle delay.
+  run_sim(th, max_cycles=110)

@@ -14,6 +14,7 @@ Author : Cheng Tan
 """
 
 from pymtl3 import *
+from pymtl3.stdlib.primitive import Reg
 from ..basic.Fu import Fu
 from ...lib.cmd_type import *
 from ...lib.messages import *
@@ -31,9 +32,9 @@ class RetRTL(Fu):
                                data_bitwidth = data_bitwidth)
 
     # Constants.
-    num_entries = 2
+    kDelayCycles = 100
+    CounterType = mk_bits(clog2(kDelayCycles + 1))
     FuInType = mk_bits(clog2(num_inports + 1))
-    CountType = mk_bits(clog2(num_entries + 1))
     idx_nbits = clog2(num_inports)
 
     # Components.
@@ -41,6 +42,8 @@ class RetRTL(Fu):
     s.in0_idx = Wire(idx_nbits)
     s.recv_all_val = Wire(1)
     s.already_done = Wire(1)
+    s.delay_counter = Wire(CounterType)
+    s.is_counting = Wire(1)
 
     # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
@@ -87,6 +90,29 @@ class RetRTL(Fu):
           else:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
+        elif s.recv_opt.msg.operation == OPT_RET_VOID:
+          s.recv_all_val @= s.recv_in[s.in0_idx].val
+          if s.already_done:
+            s.recv_in[s.in0_idx].rdy @= s.recv_all_val
+            s.recv_opt.rdy @= s.recv_all_val
+          elif s.is_counting:
+            # When counting, checks if we have reached the delay cycles.
+            if s.delay_counter == CounterType(kDelayCycles):
+              s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
+              # Returns the 0 signal to the controller.
+              s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, 0, 0, s.recv_opt.msg, 0)
+              s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
+              s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
+          elif s.recv_in[s.in0_idx].msg.predicate:
+            # Starts counting when predicate is true
+            s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
+            s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
+          else:
+            # Predicate is false, just consumes the input
+            s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
+            s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
+
+
 
     @update_ff
     def update_already_done():
@@ -100,8 +126,50 @@ class RetRTL(Fu):
             s.send_to_ctrl_mem.val & \
             s.send_to_ctrl_mem.rdy:
           s.already_done <<= 1
+        elif s.recv_opt.val & \
+             (s.recv_opt.msg.operation == OPT_RET_VOID) & \
+              ~s.already_done & \
+              s.is_counting & \
+              (s.delay_counter == CounterType(kDelayCycles)) & \
+              s.send_to_ctrl_mem.val & \
+              s.send_to_ctrl_mem.rdy:
+          s.already_done <<= 1
         else:
           s.already_done <<= s.already_done
+
+    @update_ff
+    def update_delay_counter():
+      if s.reset | s.clear:
+        s.delay_counter <<= CounterType(0)
+        s.is_counting <<= b1(0)
+      else:
+        if s.recv_opt.val & \
+           (s.recv_opt.msg.operation == OPT_RET_VOID) & \
+            ~s.already_done & \
+            ~s.is_counting & \
+            s.recv_all_val & \
+            s.recv_in[s.in0_idx].msg.predicate & \
+            s.recv_in[s.in0_idx].rdy & \
+            s.reached_vector_factor:
+          # Starts counting.
+          s.delay_counter <<= CounterType(1)
+          s.is_counting <<= b1(1)
+        elif s.is_counting:
+          if s.delay_counter == CounterType(kDelayCycles):
+            # Stops counting when CMD_COMPLETE is sent.
+            if s.send_to_ctrl_mem.val & s.send_to_ctrl_mem.rdy:
+              s.delay_counter <<= CounterType(0)
+              s.is_counting <<= b1(0)
+            else:
+              s.delay_counter <<= s.delay_counter
+              s.is_counting <<= s.is_counting
+          else:
+            # Continues counting.
+            s.delay_counter <<= s.delay_counter + CounterType(1)
+            s.is_counting <<= s.is_counting
+        else:
+          s.delay_counter <<= s.delay_counter
+          s.is_counting <<= s.is_counting
 
   def line_trace(s):
     opt_str = " #"
