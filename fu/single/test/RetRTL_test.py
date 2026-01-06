@@ -70,7 +70,7 @@ def run_sim(test_harness, max_cycles = 20):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-def test_Ret_Value():
+def test_Ret():
   FU = RetRTL
   data_nbits = 16
   DataType = mk_data(data_nbits, 1)
