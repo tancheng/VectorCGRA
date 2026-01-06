@@ -1,6 +1,6 @@
 `timescale 1ps/1ps
 
-`include "header.sv"
+`include "header_fir_vector_global_reduce.sv"
 
 // vcs -sverilog -full64 -timescale=1ns/1ps ../MeshMultiCgraRTL__explicit__pickled.v MeshMultiCgraRTL_2x2_fir_scalar_tb.v -debug_access+all
 
@@ -11,15 +11,15 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
-  MeshMultiCgraRTL__explicit MultiCGRA (.*);
+  MeshMultiCgraRTL__975ce70dc1a0740a MultiCGRA (.*);
 
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
@@ -85,1106 +85,263 @@ typedef struct packed {
 } CGRAConfig_7_4_2_4_4_3__49d22cda396bec88;
 */
 
-    // Preload data.
-    #10 // CMD_STORE_REQUEST/
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h0001000100010001, 1, 0, 0);
+    #10
     recv_from_cpu_pkt__val = 1'b1;
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000180002000200020003000000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h0001000100010001, 1, 1, 0);
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000180002000200020003008000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h000f000e000d000c, 1, 2, 0);
+    recv_from_cpu_pkt__msg = unpack_pkt('h000000018001e001c001a0019010000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h0013001200110010, 1, 3, 0);
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000180026002400220021018000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h00110010000f000e, 1, 4, 0);
+    recv_from_cpu_pkt__msg = unpack_pkt('h00000001800220020001e001d020000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h0015001400130012, 1, 5, 0);
+    recv_from_cpu_pkt__msg = unpack_pkt('h000000018002a002800260025028000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 12, 'h0001000100010001, 1, 6, 0);
-
-    // Tile 0. 
-    #10 // CMD_CONST.
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0, 13, 3, 1, 0, 0);
-    #10 // CMD_CONFIG_COUNT_PER_ITER.
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0,  8, 4, 1, 0, 0);
-    #10 // CMD_CONFIG_TOTAL_CTRL_COUNT
-    recv_from_cpu_pkt__msg = make_intra_cgra_pkt(0, 0,  7, 'd42, 1, 0, 0);
-    #10 // CMD_CONFIG - OPT_ADD.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt(0, 0, 3, 2,
-      '{3'd4, 3'd3, 3'd2, 3'd1},
-      '{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd1, 2'd1, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd2},
-      '{1'd0, 1'd0, 1'd1, 1'd0},
-      '{4'd0, 4'd0, 4'd0, 4'd0},
-      '{4'd0, 4'd0, 4'd0, 4'd0},
-      0);
-    #10 // CMD_CONFIG - OPT_PHI_CONST.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt(0, 0, 3, 32,
-      '{3'd4, 3'd3, 3'd2, 3'd1},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}, // routing_xbar_outport (TileInType list)
-      '{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}, // fu_xbar_outport (FuOutType list)
-      '{2'd0, 2'd0, 2'd2, 2'd0},  // write_reg_from (b2(0), b2(2), ...)
-      '{1'd0, 1'd0, 1'd0, 1'd1},           // read_reg_from
-      '{ default: 4'd0 },           // write_reg_idx (not specified, zeroed)
-      '{ default: 4'd0 },           // read_reg_idx  (not specified, zeroed)
-      1);                         // ctrl_addr = 1
-    #10 // CMD_CONFIG - OPT_NAH.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt(0, 0, 3, 1,
-      '{3'd4, 3'd3, 3'd2, 3'd1},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      2);
-    #10 // CMD_CONFIG - OPT_NAH.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt(0, 0, 3, 1,
-      '{3'd4, 3'd3, 3'd2, 3'd1},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      3);
-    #10 // CMD_CONFIG_PROLOGUE_FU.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 4, 0,
-      '{3'd0, 3'd0, 3'd0, 3'd0},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      0,
-      1,
-      1,
-      0);
-    //#10 // CMD_CONFIG_PROLOGUE_FU.
-    //recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 4, 0,
-    //  '{3'd0, 3'd0, 3'd0, 3'd0},
-    //  '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-    //  '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-    //  '{2'd0, 2'd0, 2'd0, 2'd0},
-    //  '{1'd0, 1'd0, 1'd0, 1'd0},
-    //  '{ default: 4'd0 },
-    //  '{ default: 4'd0 },
-    //  1,
-    //  1,
-    //  1,
-    //  0);
-    #10 // CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 6, 0,
-      '{3'd0, 3'd0, 3'd0, 3'd0},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      0,
-      1,
-      1,
-      0);
-    #10 // CMD_CONFIG_PROLOGUE_FU_CROSSBAR.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 5, 0,
-      '{3'd0, 3'd0, 3'd0, 3'd0},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      0,
-      1,
-      1,
-      0);
-    //#10 // CMD_CONFIG_PROLOGUE_FU_CROSSBAR.
-    //recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 5, 0,
-    //  '{3'd0, 3'd0, 3'd0, 3'd0},
-    //  '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-    //  '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-    //  '{2'd0, 2'd0, 2'd0, 2'd0},
-    //  '{1'd0, 1'd0, 1'd0, 1'd0},
-    //  '{ default: 4'd0 },
-    //  '{ default: 4'd0 },
-    //  1,
-    //  1,
-    //  1,
-    //  0);
-    #10 // CMD_LAUNCH.
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(0, 0, 0, 0,
-      '{3'd0, 3'd0, 3'd0, 3'd0},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
-      '{2'd0, 2'd0, 2'd0, 2'd0},
-      '{1'd0, 1'd0, 1'd0, 1'd0},
-      '{ default: 4'd0 },
-      '{ default: 4'd0 },
-      0,
-      0,
-      0,
-      0);
-
-    // Tile 1.
-    #10 //CMD_CONFIG_COUNT_PER_ITER
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-      .src(5'd0),
-      .dst(5'd1),
-      .cmd(5'd8),                 // CMD_CONFIG_COUNT_PER_ITER = 8
-      .operation(7'd0),
-      .fu_in_code('{default:3'd0}),
-      .routing_xbar_outport('{default:3'd0}),
-      .fu_xbar_outport('{default:2'd0}),
-      .write_reg_from('{default:2'd0}),
-      .read_reg_from('{default:1'd0}),
-      .write_reg_idx('{default:4'd0}),
-      .read_reg_idx('{default:4'd0}),
-      .ctrl_addr(4'd0),
-      .data(32'd4),               // kCtrlCountPerIter = 4
-      .pred(1'd1),                // predicate = 1
-      .data_addr(7'd0)
-    );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000180002000200020003030000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd7),             // CMD_CONFIG_TOTAL_CTRL_COUNT = 7
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd0),
-          .data(32'd42),         // kTotalCtrlSteps = 42
-          .pred(1'd1),
-          .data_addr(7'd0)
-    );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00000001a0000000000000007000000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd3),             // CMD_CONFIG = 3
-          .operation(7'd1),       // OPT_NAH 1
-          .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd0),
-          .data(32'd0),
-          .pred(1'd0),
-          .data_addr(7'd0)
-    );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000100000000000000009000000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd3),
-          .operation(7'd16),       // OPT_GRT_PRED = 16
-          .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-          .routing_xbar_outport('{3'd0, 3'd0, 3'd1, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
-          .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0}),
-          .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd1),
-          .data(32'd0),
-          .pred(1'd0),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00000000e000000000000004d000000000000000000000000000000);
     #10
-    // OPT_RET (OPT_RET = 35)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd3),
-          .operation(7'd35),
-          .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
-          .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
-          .write_reg_from('{2'd0,2'd0,2'd0,2'd0}),
-          .read_reg_from('{1'b0, 1'b0, 1'b0, 1'b1}),
-          .write_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
-          .read_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
-          .ctrl_addr(4'd2),
-          .data(32'd0),
-          .pred(1'd0),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000060000000000000000004e8d100100001400020000200000);
     #10
-    // NAH again (OPT_NAH = 1)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd3),
-          .operation(7'd1),
-          .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
-          .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
-          .write_reg_from('{2'd0,2'd0,2'd0,2'd0}),
-          .read_reg_from('{1'd0,1'd0,1'd0,1'd0}),
-          .write_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
-          .read_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
-          .ctrl_addr(4'd3),
-          .data(32'd0),
-          .pred(1'd0),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000000006000000000000000000208d100000004000080000100001);
     #10
-    // CONFIG_PROLOGUE_FU (ctrl_addr = 1)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd4),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd1),
-          .data(32'd1),
-          .pred(1'd1),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000000006000000000000000000018d100000000000000000000002);
     #10
-    // CONFIG_PROLOGUE_FU (ctrl_addr = 2)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd4),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd2),
-          .data(32'd1),
-          .pred(1'd1),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000000006000000000000000000018d100000000000000000000003);
     #10
-    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (all 0)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd6),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd1),
-          .data(32'd1),
-          .pred(1'd1),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000220000000000000005000000000000000000000000000000);
     #10
-    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (first routing = 2)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd6),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd2}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd1),
-          .data(32'd1),
-          .pred(1'd1),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000080000000000000003000000000000000000000000000000);
     #10
-    // CONFIG_PROLOGUE_FU_CROSSBAR (ctrl_addr = 1)
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd5),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd1),
-          .data(32'd1),
-          .pred(1'd1),
-          .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00000000c0000000000000003000000000000000000000000000000);
     #10
-    // CMD_LAUNCH
-    recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
-          .src(5'd0),
-          .dst(5'd1),
-          .cmd(5'd0),
-          .operation(7'd0),
-          .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{default:3'd0}),
-          .fu_xbar_outport('{default:2'd0}),
-          .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
-          .write_reg_idx('{default:4'd0}),
-          .read_reg_idx('{default:4'd0}),
-          .ctrl_addr(4'd0),
-          .data(32'd0),
-          .pred(1'd0),
-          .data_addr(7'd0)
-      );
-    ////////////
-    // Tile 4 //
-    ////////////
+    recv_from_cpu_pkt__msg = unpack_pkt('h00000000a0000000000000003000000000000000000000000000000);
     #10
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd13), // CMD_CONST
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}), // write_reg_from_code (do not reverse)
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_from_code (do not reverse)
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd2),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000000000000000000000000000000000000000000000000000000);
     #10
-    // CMD_CONFIG_COUNT_PER_ITER
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd8), // CMD_CONFIG_COUNT_PER_ITER
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd4),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008000100000000000000009000000000000000000000000000000);
     #10
-    // CMD_CONFIG_TOTAL_CTRL_COUNT
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd7), // CMD_CONFIG_TOTAL_CTRL_COUNT
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd42),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00080000e000000000000004d000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=0, OPT_NAH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
-        .operation(7'd1), // OPT_NAH
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        // reverse of [0,0,0,0,0,0,0,0] is itself
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        // reverse of [0,0,0,0,0,0,0,0] is itself
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}), // keep provided code
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // keep provided code
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000800006000000000000000000018d100000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=1, OPT_ADD_CONST
-    // routing: reverse of [0,0,0,0,1,0,0,0] -> [0,0,0,1,0,0,0,0]
-    // fu_xbar : reverse of [0,0,0,0,1,0,0,0] -> [0,0,0,1,0,0,0,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
-        .operation(7'd25), // OPT_ADD_CONST
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}), // write_reg_from_code (keep order)
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_from_code
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd1),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000800006000000000000000000108d100b00001000020000000001);
     #10
-    // CMD_CONFIG @ ctrl_addr=2, OPT_LD
-    // fu_xbar : reverse of [0,0,0,0,0,1,0,0] -> [0,0,1,0,0,0,0,0]
-    // write_reg_from inline [0,2,0,0] -> reverse -> [0,0,2,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
-        .operation(7'd12), // OPT_LD
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}), // read_reg_from_code
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd2),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000800006000000000000000000238d100000000000000000100002);
     #10
-    // CMD_CONFIG @ ctrl_addr=3, OPT_MUL
-    // routing: reverse of [0,0,0,0,1,0,0,0] -> [0,0,0,1,0,0,0,0]
-    // fu_xbar : reverse of [0,1,0,0,0,0,0,0] -> [0,0,0,0,0,0,1,0]
-    // read_reg_from inline [0,1,0,0] -> reverse -> [0,0,1,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
-        .operation(7'd7), // OPT_MUL
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd3),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h000800006000000000000000000018d100000000000000000000003);
     #10
-    // CMD_LAUNCH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd4),
-        .cmd(5'd0), // CMD_LAUNCH
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
-    ////////////
-    // Tile 5 //
-    ////////////
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008000080000000000000003000000000000000000000000000001);
     #10
-    // CMD_CONST (kLoopUpperBound, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd13),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd10),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008000080000000000000003000000000000000000000000000002);
     #10
-    // CMD_CONFIG_COUNT_PER_ITER (kCtrlCountPerIter, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd8),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd4),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00080000c0000000000000003000000000000000000000000000001);
     #10
-    // CMD_CONFIG_TOTAL_CTRL_COUNT (kTotalCtrlSteps, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd7),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd42),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00080000c0000000000000003000000000000200000000000000001);
     #10
-    // CMD_CONFIG @ ctrl_addr=0, OPT_NAH
-    // (explicit arrays reversed; provided *_code arrays kept as-is)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd3),
-        .operation(7'd1),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00080000a0000000000000003000000000000000000000000000001);
     #10
-    // CMD_CONFIG @ ctrl_addr=1, OPT_NAH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd3),
-        .operation(7'd1),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd1),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008000000000000000000000000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=2, OPT_NE_CONST (CMP)
-    // routing  [0,0,0,0,1,0,0,0] -> reversed -> [0,0,0,1,0,0,0,0]
-    // fu_xbar  [1,0,0,0,1,0,0,0] -> reversed -> [0,0,0,0,1,0,0,1]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd3),
-        .operation(7'd46),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd1}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd2),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00200001a0000000000000005000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=3, OPT_NOT
-    // routing  [0,1,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,1,0]
-    // fu_xbar  [0,1,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,1,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd3),
-        .operation(7'd11),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd3),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020000100000000000000009000000000000000000000000000000);
     #10
-    // CMD_LAUNCH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd5),
-        .cmd(5'd0),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
-    ////////////
-    // Tile 8 //
-    ////////////
+    recv_from_cpu_pkt__msg = unpack_pkt('h00200000e000000000000004d000000000000000000000000000000);
     #10
-    // CMD_CONST (kLoopLowerBound, pred=1) — for PHI_CONST
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd13),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd2),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h002000006000000000000000000018d100000000000000000000000);
     #10
-    // CMD_CONST (kInputBaseAddress, pred=1) — for ADD_CONST
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd13),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h002000006000000000000000000198d100100001000020000000001);
     #10
-    // CMD_CONFIG_COUNT_PER_ITER (kCtrlCountPerIter, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd8),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd4),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020000060000000000000000000c8d100000004000080000100002);
     #10
-    // CMD_CONFIG_TOTAL_CTRL_COUNT (kTotalCtrlSteps, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd7),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd42),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h002000006000000000000000000378d100100000040000000200003);
     #10
-    // CMD_CONFIG @ ctrl_addr=0, OPT_PHI_CONST
-    // routing  [0,0,0,0,4,0,0,0] -> reversed -> [0,0,0,4,0,0,0,0]
-    // fu_xbar  [0,1,0,1,1,0,0,0] -> reversed -> [0,0,0,1,1,0,1,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd3),
-        .operation(7'd32),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd4, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd1, 2'd0, 2'd1, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020000000000000000000000000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=1, OPT_ADD_CONST
-    // fu_xbar  [0,0,0,0,0,1,0,0] -> reversed -> [0,0,1,0,0,0,0,0]
-    // write_reg_from inline [0,2,0,0] -> reversed -> [0,0,2,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd3),
-        .operation(7'd25),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd1),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00280001a0000000000000009000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=2, OPT_LD
-    // fu_in_code inline [2,0,0,0] -> reversed -> [0,0,0,2]
-    // fu_xbar     [0,1,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,1,0]
-    // read_reg_from inline [0,1,0,0] -> reversed -> [0,0,1,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd3),
-        .operation(7'd12),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd2}), // Hand-coded.
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd2),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028000100000000000000009000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=3, OPT_NAH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd3),
-        .operation(7'd1),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd3),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00280000e000000000000004d000000000000000000000000000000);
     #10
-    // CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR @ ctrl_addr=0, data=1 (pred=1)
-    // routing [3,0,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,0,3]
-    // (unspecified args default to zeros)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd6),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd3}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd1),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h002800006000000000000000000018d100000000000000000000000);
     #10
-    // CMD_LAUNCH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd8),
-        .cmd(5'd0),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
-    ////////////
-    // Tile 9 //
-    ////////////
+    recv_from_cpu_pkt__msg = unpack_pkt('h002800006000000000000000000018d100000000000000000000001);
     #10
-    // CMD_CONST (kLoopIncrement, pred=1) — for ADD_CONST
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd13),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd1),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028000060000000000000000002e8d100100001010020000000002);
     #10
-    // CMD_CONFIG_COUNT_PER_ITER (kCtrlCountPerIter, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd8),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd4),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028000060000000000000000000b8d100000000040000000100003);
     #10
-    // CMD_CONFIG_TOTAL_CTRL_COUNT (kTotalCtrlSteps, pred=1)
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd7),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd42),
-        .pred(1'd1),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028000000000000000000000000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=0, OPT_NAH
-    // routing  [0,0,0,0,0,0,0,0] -> reversed -> same
-    // fu_xbar  [0,0,0,0,0,0,0,0] -> reversed -> same
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd3),
-        .operation(7'd1),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00400001a0000000000000005000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=1, OPT_ADD_CONST
-    // routing  [0,0,0,0,3,0,0,0] -> reversed -> [0,0,0,3,0,0,0,0]
-    // fu_xbar  [0,1,0,0,0,1,0,0] -> reversed -> [0,0,1,0,0,0,1,0]
-    // write_reg_from inline [0,2,0,0] -> reversed -> [0,0,2,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd3),
-        .operation(7'd25),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd1),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00400001a0000000000000001000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=2, OPT_NAH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd3),
-        .operation(7'd1),
-        .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd2),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040000100000000000000009000000000000000000000000000000);
     #10
-    // CMD_CONFIG @ ctrl_addr=3, OPT_GRT_PRED
-    // fu_in    [2,1,0,0]         . -> reversed -> [0,0,1,2]
-    // routing  [0,0,0,0,2,0,0,0]   -> reversed -> [0,0,0,2,0,0,0,0]
-    // fu_xbar  [0,0,1,0,0,0,0,0]   -> reversed -> [0,0,0,0,0,1,0,0]
-    // read_reg_from [0,1,0,0]      -> reversed -> [0,0,1,0]
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd3),
-        .operation(7'd16),
-        .fu_in_code('{3'd0, 3'd0, 3'd1, 3'd2}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd2, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd3),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
+    recv_from_cpu_pkt__msg = unpack_pkt('h00400000e000000000000004d000000000000000000000000000000);
     #10
-    // CMD_LAUNCH
-    recv_from_cpu_pkt__msg =
-      make_intra_cgra_config_pkt_w_data(
-        .src(5'd0),
-        .dst(5'd9),
-        .cmd(5'd0),
-        .operation(7'd0),
-        .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
-        .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
-        .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
-        .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
-        .ctrl_addr(4'd0),
-        .data(32'd0),
-        .pred(1'd0),
-        .data_addr(7'd0)
-      );
-
+    recv_from_cpu_pkt__msg = unpack_pkt('h004000006000000000000000000208d100400001440020000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004000006000000000000000000198d100000004000080000100001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040000060000000000000000000c00200000000040000000200002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004000006000000000000000000018d100000000000000000000003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00400000c0000000000000003000000000000300000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040000000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00480001a0000000000000003000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048000100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00480000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004800006000000000000000000018d100000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004800006000000000000000000198d100300004040080000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004800006000000000000000000018d100000000000000000000002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048000060000000000000000001000a00200000100000000200003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048000000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00009001a0000000000000007000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00009000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000900060000000000000000004e8d100100001400020000200000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000090006000000000000000000208d100000004000080000100001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000090006000000000000000000018d100000000000000000000002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000090006000000000000000000018d100000000000000000000003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000900080000000000000003000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00009000c0000000000000003000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00009000a0000000000000003000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0000900000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00089000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000108d100b00001000020000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000238d100000000000000000100002);
+    #10 // Might need to send this twice if CGRA is really not rdy.
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000003);
+    #10 // Second send.
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008900080000000000000003000000000000000000000000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008900080000000000000003000000000000000000000000000002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00089000c0000000000000003000000000000000000000000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00089000c0000000000000003000000000000200000000000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00089000a0000000000000003000000000000000000000000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0008900000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00209001a0000000000000005000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00209000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h002090006000000000000000000018d100000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h002090006000000000000000000198d100100001000020000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020900060000000000000000000c8d100000004000080000100002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h002090006000000000000000000378d100100000040000000200003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0020900000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00289001a0000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00289000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h002890006000000000000000000018d100000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h002890006000000000000000000018d100000000000000000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028900060000000000000000002e8d100100001010020000000002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028900060000000000000000000b8d100000000040000000100003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0028900000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00409001a0000000000000005000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00409001a0000000000000001000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00409000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004090006000000000000000000208d100400001440020000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004090006000000000000000000198d100000004000080000100001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040900060000000000000000000c00200000000040000000200002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004090006000000000000000000018d100000000000000000000003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00409000c0000000000000003000000000000300000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0040900000000000000000000000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00489001a0000000000000003000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048900100000000000000009000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h00489000e000000000000004d000000000000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004890006000000000000000000018d100000000000000000000000);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004890006000000000000000000198d100300004040080000000001);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h004890006000000000000000000018d100000000000000000000002);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048900060000000000000000001000a00200000100000000200003);
+    #10
+    recv_from_cpu_pkt__msg = unpack_pkt('h0048900000000000000000000000000000000000000000000000000);
 
     #10
     recv_from_cpu_pkt__val = 0;
 
-    #3000
+    #10000
 
     if ('d1 == PASS) $display("TEST PASSED at %0t.", pass_time_of);
     else             $display("TEST FAILED at %0t.", $time);
+
+    $display("%d", unpack_pkt('h01800001c000000000000229700238d100000000000000000100000).payload.data.payload);
 
     $display("#########cgra 0 tile 0 cnst mem#################");
     for (int i = 0; i < 512; i++)
@@ -1295,7 +452,7 @@ typedef struct packed {
   end
 
   /*initial
-  begin  
+  begin
     $dumpfile("./output.vcd");
     $dumpvars (0, cgra_test);
   end*/
