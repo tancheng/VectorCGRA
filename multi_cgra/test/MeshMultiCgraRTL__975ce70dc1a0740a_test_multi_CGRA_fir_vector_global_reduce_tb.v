@@ -27,7 +27,7 @@
     cycle_count += 1; \
     $fatal;
 
-`define CHECK2(lineno, out, ref, port_name) \
+`define CHECK(lineno, out, ref, port_name) \
   if ((|(out ^ out)) == 1'b0) ; \
   else begin \
     $display(""); \
@@ -36,13 +36,6 @@
     $display("all output ports of your DUT does not produce X's after reset."); \
     `VTB_TEST_FAIL(lineno, out, ref, port_name) \
   end \
-  if (out != ref) begin \
-    $display(""); \
-    $display("The test bench received an incorrect value!"); \
-    `VTB_TEST_FAIL(lineno, out, ref, port_name) \
-  end
-
-`define CHECK(lineno, out, ref, port_name) \
   if (out != ref) begin \
     $display(""); \
     $display("The test bench received an incorrect value!"); \
