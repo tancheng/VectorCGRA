@@ -2,7 +2,7 @@
 
 `include "header_fir_vector_global_reduce.sv"
 
-// vcs -sverilog -full64 -timescale=1ns/1ps ../MeshMultiCgraRTL__explicit__pickled.v MeshMultiCgraRTL_2x2_fir_scalar_tb.v -debug_access+all
+// vcs -sverilog -full64 -timescale=1ns/1ps ../../MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v ../MeshMultiCgraRTL_2x2_fir_vector_global_reduce_tb.v -debug_access+all +incdir+..
 
 module cgra_test
 (
@@ -19,7 +19,7 @@ module cgra_test
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
-  MeshMultiCgraRTL__975ce70dc1a0740a MultiCGRA (.*);
+  MeshMultiCgraRTL__explicit_vector_global_reduce MultiCGRA (.*);
 
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
