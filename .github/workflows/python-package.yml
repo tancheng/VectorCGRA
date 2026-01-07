@@ -111,8 +111,10 @@ jobs:
         pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Generate .v file with explicit file & module names.
+        # Generate FIR scalar .v file with explicit file & module names.
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate FIR vector global reduce .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_vector_global_reduce_translation -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
@@ -148,5 +150,7 @@ jobs:
         mkdir -p build && cd build
         verilator --version
         verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_scalar_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_vector_global_reduce_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
 
