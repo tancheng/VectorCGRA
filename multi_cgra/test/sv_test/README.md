@@ -5,7 +5,7 @@ They have two roles;
   1) Ensure that the generated SV code matches the functionality of the PyMTL code. (Highlighting issues such as missing DFF resets and complete initial assignments that can be overlooked by PyMTL.)
   2) Generate hex code that can serve as the contents of a RISC-V CPU's Imem, which, in turn, can program the co-located CGRA to execute operations dictated by these SV tbs' generated hex code.
 
-1) is accomplished by header*.sv's functions (make_intra_cgra_pkt, make_intra_cgra_config_pkt, make_intra_cgra_config_pkt_w_data, unpack_pkt) that create the same packets as implemented by the by the IntraCgraPktType data types in preload_data and src_opt_pkt in MeshMultiCgraRTL_test.py. 2) is also accomplished by the same functions; in their second part, they print the necessary RISC-V hex code into a file for the CPU to load the shared Dmem with the appropriate config packets.
+1) is accomplished by header*.sv's functions (make_intra_cgra_pkt, make_intra_cgra_config_pkt, make_intra_cgra_config_pkt_w_data, unpack_pkt) that create the same packets as implemented by the by the IntraCgraPktType data types in preload_data and src_opt_pkt in MeshMultiCgraRTL_test.py. 2) is also accomplished by the same functions; in their second part, they print the necessary RISC-V Imem hex code into a file for the CPU to load the shared Dmem with the appropriate config packets (Imem init: https://github.com/coredac/accelerator_soc/blob/ed4e6f05d0ad88b62e347557a188ffca0dac3343/src/imem_rom.sv#L10, integration tb: https://github.com/coredac/accelerator_soc/blob/ed4e6f05d0ad88b62e347557a188ffca0dac3343/verif/acc_soc_tb.sv#L12).
 
 Translated tbs so far:
 
