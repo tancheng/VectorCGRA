@@ -3,6 +3,7 @@
 `include "header.sv"
 
 // vcs -sverilog -full64 -timescale=1ns/1ps ../MeshMultiCgraRTL__explicit__pickled.v MeshMultiCgraRTL_2x2_fir_scalar_tb.v -debug_access+all
+// vcs -sverilog -full64 -timescale=1ns/1ps ../../../../../coredec_acc_soc/accelerator_soc/MeshMultiCgraRTL__explicit__pickled.v ../MeshMultiCgraRTL_2x2_fir_scalar_tb.v -debug_access+all +incdir+..
 
 module cgra_test
 (
