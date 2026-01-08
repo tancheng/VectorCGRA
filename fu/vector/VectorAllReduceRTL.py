@@ -91,6 +91,7 @@ class VectorAllReduceRTL(Component):
       high = (i + 1) * sub_bw
       # s.connect() works with slice objects directly during elaboration.
       s.temp_result[i][0:sub_bw] //= s.recv_in[0].msg.payload[low:high]
+      s.temp_result[i][sub_bw:data_bitwidth] //= 0
 
     @update
     def update_result():

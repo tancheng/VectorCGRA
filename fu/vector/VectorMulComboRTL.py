@@ -96,8 +96,8 @@ class VectorMulComboRTL(Component):
 
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)
-        s.Fu[i].recv_in[0].msg[0:sub_bw] @= FuDataType()
-        s.Fu[i].recv_in[1].msg[0:sub_bw] @= FuDataType()
+        s.Fu[i].recv_in[0].msg @= 0
+        s.Fu[i].recv_in[1].msg @= 0
 
       if s.recv_opt.msg.operation == OPT_VEC_MUL:
         # Connection: split into vectorized FUs
