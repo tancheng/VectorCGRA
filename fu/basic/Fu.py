@@ -28,6 +28,7 @@ class Fu(Component):
     num_entries = 2
     DataAddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
     CountType = mk_bits(clog2(num_entries + 1))
     FuInType = mk_bits(clog2(num_inports + 1))
     LatencyType = mk_bits(clog2(latency + 1))

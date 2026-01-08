@@ -37,6 +37,7 @@ class VectorMulComboRTL(Component):
     s.const_zero = DataType(0, 0)
     DataAddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
     CountType = mk_bits(clog2(num_entries + 1))
     s.CgraPayloadType = mk_cgra_payload(DataType,
                                         DataAddrType,
