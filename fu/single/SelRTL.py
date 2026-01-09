@@ -44,6 +44,7 @@ class SelRTL(Component):
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
 
     # Redundant interfaces for MemUnit
     s.to_mem_raddr = SendIfcRTL(AddrType)

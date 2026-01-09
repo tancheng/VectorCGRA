@@ -42,6 +42,7 @@ class FlexibleFuRTL(Component):
     CountType = mk_bits(clog2(num_entries + 1))
     AddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
 
     CgraPayloadType = mk_cgra_payload(DataType,
@@ -103,6 +104,7 @@ class FlexibleFuRTL(Component):
           s.send_to_ctrl_mem.msg @= s.fu[i].send_to_ctrl_mem.msg
           s.send_to_ctrl_mem.val @= s.fu[i].send_to_ctrl_mem.val
         s.fu[i].send_to_ctrl_mem.rdy @= s.send_to_ctrl_mem.rdy
+        s.fu[i].ctrl_addr_inport @= s.ctrl_addr_inport
 
     @update
     def comb_logic():

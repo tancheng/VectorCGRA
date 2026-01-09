@@ -30,7 +30,8 @@ class TestHarness(Component):
                 src_in,
                 src_opt,
                 sink):
-
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+   
     s.src_in = TestSrcRTL(DataType, src_in)
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink = TestSinkRTL(CgraPayloadType, sink)
@@ -42,6 +43,7 @@ class TestHarness(Component):
     s.src_in.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
     s.dut.send_to_ctrl_mem //= s.sink.recv
+    s.dut.ctrl_addr_inport //= CtrlAddrType(0)
 
   def done(s):
     return s.src_opt.done() and s.src_in.done() and s.sink.done()
@@ -100,3 +102,38 @@ def test_Ret():
                    data_nbits, src_in, src_opt, sink)
   run_sim(th)
 
+def test_Ret_Void():
+  FU = RetRTL
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
+  num_inports = 2
+  num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  ctrl_mem_size = 4
+  data_mem_size = 16
+
+  DataAddrType = mk_bits(clog2(data_mem_size))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+
+  # Test inputs: first with predicate=0 (should be ignored),
+  # then with predicate=1 (should trigger counting)
+  src_in =  [DataType(1, 0), DataType(2, 1), DataType(3, 1)]
+  src_opt = [CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)])]
+
+  # Expected output: CMD_COMPLETE with void data (i.e., 0) after.
+  sink = [CgraPayloadType(CMD_COMPLETE,
+                          data = 0,
+                          ctrl = CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]))]
+
+  th = TestHarness(FU, DataType, CtrlType, CgraPayloadType,
+                   num_inports, num_outports, data_mem_size, ctrl_mem_size,
+                   data_nbits, src_in, src_opt, sink)
+  run_sim(th)
