@@ -252,7 +252,7 @@ typedef struct packed {
     #10 // Might need to send this twice if CGRA is really not rdy.
     recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000003);
     #10 // Second send.
-    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000003);
+    recv_from_cpu_pkt__msg = unpack_pkt('h000890006000000000000000000018d100000000000000000000003, 0);
     #10
     recv_from_cpu_pkt__msg = unpack_pkt('h0008900080000000000000003000000000000000000000000000001);
     #10
@@ -342,7 +342,7 @@ typedef struct packed {
     if ('d1 == PASS) $display("TEST PASSED at %0t.", pass_time_of);
     else             $display("TEST FAILED at %0t.", $time);
 
-    $display("%d", unpack_pkt('h01800001c000000000000229700238d100000000000000000100000).payload.data.payload);
+    $display("%d", unpack_pkt('h01800001c000000000000229700238d100000000000000000100000, 0).payload.data.payload);
 
     $display("#########cgra 0 tile 0 cnst mem#################");
     for (int i = 0; i < 512; i++)

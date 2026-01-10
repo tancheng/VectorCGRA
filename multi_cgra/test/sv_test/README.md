@@ -9,7 +9,7 @@ Role 1. is accomplished by header*.sv's functions (make_intra_cgra_pkt, make_int
 
 Translated tbs so far:
 
-1. test_multi_CGRA_fir_scalar of MeshMultiCgraRTL_test.py (12/20/2025 version). The PyMTL test has the following  parameters:
+1. test_multi_CGRA_fir_scalar of MeshMultiCgraRTL_test.py (12/20/2025 version). The PyMTL test has the following parameters:
 
     - num_cgra_rows = 2,
     - num_cgra_columns = 2,
@@ -20,7 +20,7 @@ Translated tbs so far:
     - mem_access_is_combinational = True,
     - test_name = 'test_fir_scalar.'
 
-2. test_multi_CGRA_fir_vector_global_reduce of MeshMultiCgraRTL_test.py (01/06/2026 version). The PyMTL test has the following hardware parameters:
+2. test_multi_CGRA_fir_vector_global_reduce of MeshMultiCgraRTL_test.py (01/06/2026 version). The PyMTL test has the following parameters:
 
     - num_cgra_rows = 2,
     - num_cgra_columns = 2,
