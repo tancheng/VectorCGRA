@@ -45,6 +45,7 @@ OPT_EQ_CONST                     = OpCodeType( 33 )
 OPT_NE                           = OpCodeType( 45 )
 OPT_NE_CONST                     = OpCodeType( 46 )
 OPT_RET                          = OpCodeType( 35 )
+OPT_RET_VOID                     = OpCodeType( 64 )
 OPT_GRT_PRED                     = OpCodeType( 16 )
 OPT_GRT_ALWAYS                   = OpCodeType( 34 )
 OPT_GRT_ONCE                     = OpCodeType( 47 )
@@ -136,6 +137,7 @@ OPT_SYMBOL_DICT = {
   OPT_GRT_ALWAYS                 : "(grant_always)",
   OPT_GRT_ONCE                   : "(grant_once)",
   OPT_RET                        : "(ret)",
+  OPT_RET_VOID                   : "(ret_void)",
   OPT_PHI                        : "(ph)",
   OPT_PHI_START                  : "(ph*)",
   OPT_PHI_CONST                  : "(ph')",

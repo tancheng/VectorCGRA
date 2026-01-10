@@ -162,6 +162,7 @@ class TileRTL(Component):
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
     s.fu_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
+    s.element.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
 
     # Prologue port.
     s.element.prologue_count_inport //= s.ctrl_mem.prologue_count_outport_fu

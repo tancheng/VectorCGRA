@@ -37,6 +37,7 @@ class VectorAdderComboRTL(Component):
     CountType = mk_bits(clog2(num_entries + 1))
     DataAddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    s.ctrl_addr_inport = InPort(CtrlAddrType)
     s.CgraPayloadType = mk_cgra_payload(DataType,
                                         DataAddrType,
                                         CtrlType,
