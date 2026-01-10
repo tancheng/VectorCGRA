@@ -192,18 +192,19 @@ class TileWithContextSwitchRTL(Component):
         s.from_mem_rdata //= s.element.from_mem_rdata[i]
         s.to_mem_waddr //= s.element.to_mem_waddr[i]
         s.to_mem_wdata //= s.element.to_mem_wdata[i]
-        s.streaming_start_raddr //= s.element.streaming_start_raddr
-        s.streaming_stride //= s.element.streaming_stride
-        s.streaming_end_raddr //= s.element.streaming_end_raddr
-        s.fu_crossbar.streaming_done //= s.element.streaming_done
-        s.routing_crossbar.streaming_done //= s.element.streaming_done
       else:
         s.element.to_mem_raddr[i].rdy //= 0
         s.element.from_mem_rdata[i].val //= 0
         s.element.from_mem_rdata[i].msg //= DataType()
         s.element.to_mem_waddr[i].rdy //= 0
         s.element.to_mem_wdata[i].rdy //= 0
-    
+
+    s.streaming_start_raddr //= s.element.streaming_start_raddr
+    s.streaming_stride //= s.element.streaming_stride
+    s.streaming_end_raddr //= s.element.streaming_end_raddr
+    s.fu_crossbar.streaming_done //= s.element.streaming_done
+    s.routing_crossbar.streaming_done //= s.element.streaming_done
+
     # Feed clear signal to PhiRTL and CrossbarRTL to correctly resume the progress.
     for i in range(len(FuList)):
       if (FuList[i] == PhiRTL) | (FuList[i] == RetRTL):

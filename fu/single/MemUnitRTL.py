@@ -330,7 +330,7 @@ class MemUnitRTL(Component):
       elif s.streaming_done:
         # Stops streaming when address reach to the end.
         s.streaming_raddr <<= 0
-      elif s.from_mem_rdata.val:
+      elif s.from_mem_rdata.val & s.from_mem_rdata.rdy:
         # Moves to next address only when current read finishes.
         s.streaming_raddr <<= s.streaming_raddr + s.streaming_stride
       else:

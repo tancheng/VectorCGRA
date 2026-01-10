@@ -94,10 +94,10 @@ class FlexibleFuRTL(Component):
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
       s.clear[i] //= s.fu[i].clear
+      s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
+      s.streaming_stride //= s.fu[i].streaming_stride
+      s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
       if FuList[i] == MemUnitRTL:
-        s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
-        s.streaming_stride //= s.fu[i].streaming_stride
-        s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
         s.streaming_done //= s.fu[i].streaming_done
     
     @update

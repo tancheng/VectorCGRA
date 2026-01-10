@@ -1,9 +1,8 @@
 """
 ==========================================================================
-CgraRTL_fir_test.py
+CgraRTL_streaming_read_test.py
 ==========================================================================
-Test cases for CGRA with crossbar-based data memory and ring-based control
-memory of each tile.
+Test cases for CGRA with tiles that support streaming LD operation.
 
 Author : Cheng Tan
   Date : Aug 30, 2025
@@ -258,6 +257,9 @@ def sim_streaming_ld(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
   kCtrlCountPerIter = 3 
   kTotalCtrlSteps = 3
   src_ctrl_pkt = []
+  # This test is for validating functionality of streamig LD operation, especially whether tile will block itself 
+  # during streaming LD (This is achieved by inserting an arbitrary operation, e.g., OPT_ADD, after OPT_STREAM_LD).
+  # Only uses 1 tile for simplicity.
   src_opt_pkt = [
       # tile 0
       [
