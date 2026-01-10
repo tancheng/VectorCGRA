@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 23
+NUM_CMDS = 26
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -39,6 +39,9 @@ CMD_GLOBAL_REDUCE_MUL                = 19
 CMD_GLOBAL_REDUCE_ADD_RESPONSE       = 20
 CMD_GLOBAL_REDUCE_MUL_RESPONSE       = 21
 CMD_PRESERVE                         = 22
+CMD_CONFIG_STREAMING_LD_START_ADDR   = 23
+CMD_CONFIG_STREAMING_LD_STRIDE       = 24
+CMD_CONFIG_STREAMING_LD_END_ADDR     = 25
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -63,6 +66,9 @@ CMD_SYMBOL_DICT = {
   CMD_GLOBAL_REDUCE_MUL:                "(GLOBAL_REDUCE_MUL)",
   CMD_GLOBAL_REDUCE_ADD_RESPONSE:       "(GLOBAL_REDUCE_ADD_RESPONSE)",
   CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)",
-  CMD_PRESERVE:                         "(PRESERVE_ACCUMULATED_VALUE)"
+  CMD_PRESERVE:                         "(PRESERVE_ACCUMULATED_VALUE)",
+  CMD_CONFIG_STREAMING_LD_START_ADDR:   "(STREAMING_LD_START_ADDR)",
+  CMD_CONFIG_STREAMING_LD_STRIDE:       "(STREAMING_LD_STRIDE)",
+  CMD_CONFIG_STREAMING_LD_END_ADDR:     "(STREAMING_LD_END_ADDR)"
 }
 

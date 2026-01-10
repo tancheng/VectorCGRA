@@ -58,6 +58,9 @@ class CrossbarRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.crossbar_id = InPort(b1)
     s.compute_done = InPort(b1)
+    # This is for blocking fu_crossbar and routing_crossbar
+    # when performing streaming LD operation.
+    s.streaming_done = InPort(b1)
 
     s.ctrl_addr_inport = InPort(CtrlAddrType)
 
@@ -103,7 +106,8 @@ class CrossbarRTL(Component):
             s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
         s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
-                          reduce_and(s.recv_valid_or_prologue_allowing_vector)
+                          reduce_and(s.recv_valid_or_prologue_allowing_vector) & \
+                          s.streaming_done
 
     @update_ff
     def update_prologue_counter():

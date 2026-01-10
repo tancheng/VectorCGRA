@@ -57,6 +57,13 @@ class FlexibleFuRTL(Component):
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
     s.send_to_ctrl_mem = SendIfcRTL(CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(CgraPayloadType)
+    # Interfaces for streamimg LD.
+    s.streaming_start_raddr = InPort(AddrType)
+    s.streaming_stride = InPort(AddrType)
+    s.streaming_end_raddr = InPort(AddrType)
+    # This is for blocking fu_crossbar and routing_crossbar
+    # when performing streaming LD operation.
+    s.streaming_done = OutPort(b1)
 
     s.to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
@@ -86,6 +93,11 @@ class FlexibleFuRTL(Component):
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
       s.clear[i] //= s.fu[i].clear
+      if FuList[i] == MemUnitRTL:
+        s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
+        s.streaming_stride //= s.fu[i].streaming_stride
+        s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
+        s.streaming_done //= s.fu[i].streaming_done
     
     @update
     def connect_to_controller():

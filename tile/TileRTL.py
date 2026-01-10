@@ -131,6 +131,11 @@ class TileRTL(Component):
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
 
+    # Signals for streamimg LD.
+    s.streaming_start_raddr = Wire(DataAddrType)
+    s.streaming_stride = Wire(DataAddrType)
+    s.streaming_end_raddr = Wire(DataAddrType)
+
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
@@ -174,6 +179,11 @@ class TileRTL(Component):
         s.from_mem_rdata //= s.element.from_mem_rdata[i]
         s.to_mem_waddr //= s.element.to_mem_waddr[i]
         s.to_mem_wdata //= s.element.to_mem_wdata[i]
+        s.streaming_start_raddr //= s.element.streaming_start_raddr
+        s.streaming_stride //= s.element.streaming_stride
+        s.streaming_end_raddr //= s.element.streaming_end_raddr
+        s.fu_crossbar.streaming_done //= s.element.streaming_done
+        s.routing_crossbar.streaming_done //= s.element.streaming_done
       else:
         s.element.to_mem_raddr[i].rdy //= 0
         s.element.from_mem_rdata[i].val //= 0
@@ -250,6 +260,9 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
@@ -307,6 +320,28 @@ class TileRTL(Component):
           s.fu_crossbar_done <<= 1
         if s.routing_crossbar.recv_opt.rdy:
           s.routing_crossbar_done <<= 1
+
+    # Updates the streaming LD config registers.
+    @update_ff
+    def update_streaming_start_raddr():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR):
+        s.streaming_start_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
+      else:
+        s.streaming_start_raddr <<= s.streaming_start_raddr
+
+    @update_ff
+    def update_streaming_stride():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE):
+        s.streaming_stride <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
+      else:
+        s.streaming_stride <<= s.streaming_stride
+
+    @update_ff
+    def update_streaming_end_raddr():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR):
+        s.streaming_end_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
+      else:
+        s.streaming_end_raddr <<= s.streaming_end_raddr
 
     @update
     def notify_crossbars_compute_status():

@@ -322,6 +322,9 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONST) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PAUSE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PRESERVE) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RESUME) | \
