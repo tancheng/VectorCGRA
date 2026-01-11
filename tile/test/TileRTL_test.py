@@ -14,7 +14,7 @@ from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
-from ..TileRTL import TileRTL
+from ..TileRTL import TileRTL, _fu_contains_mem_unit
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.GrantRTL import GrantRTL
@@ -28,6 +28,7 @@ from ...fu.single.ShifterRTL import ShifterRTL
 from ...fu.single.ExclusiveDivRTL import ExclusiveDivRTL
 from ...fu.single.InclusiveDivRTL import InclusiveDivRTL
 from ...fu.triple.ThreeMulAdderShifterRTL import ThreeMulAdderShifterRTL
+from ...fu.double.SeqAdderMemRTL import SeqAdderMemRTL
 from ...fu.vector.VectorAdderComboRTL import VectorAdderComboRTL
 from ...fu.vector.VectorMulComboRTL import VectorMulComboRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
@@ -79,7 +80,9 @@ class TestHarness(Component):
     for i in range(num_tile_outports):
       connect(s.dut.send_data[i], s.sink_out[i].recv)
 
-    if MemUnitRTL in FuList:
+    # Check if any FU in FuList contains MemUnitRTL (including combo FUs)
+    has_mem_unit = any(_fu_contains_mem_unit(fu) for fu in FuList)
+    if has_mem_unit:
       s.dut.to_mem_raddr.rdy //= 0
       s.dut.from_mem_rdata.val //= 0
       s.dut.from_mem_rdata.msg //= DataType(0, 0)
@@ -433,6 +436,116 @@ def test_tile_multicycle_inclusive(cmdline_opts):
                                              # src  dst        src/dst cgra x/y
   complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 #          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   ctrl_mem_size,
+                   data_mem_size_global, num_fu_inports, num_fu_outports,
+                   num_tile_inports, num_tile_outports,
+                   num_registers_per_reg_bank, src_data,
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+# Tests that combo FUs with MemUnit are properly detected and connected
+def test_tile_combo_fu_with_memunit(cmdline_opts):
+  """
+  Test that SeqAdderMemRTL (a combo FU containing MemUnit) is properly 
+  detected by TileRTL and has its memory ports connected.
+  This validates the fix for issue #214 - MemUnit is now fusible.
+  """
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_fu_inports + num_tile_outports
+  ctrl_mem_size = 3
+  data_mem_size_global = 16
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
+  num_tiles = 4
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
+  num_registers_per_reg_bank = 16
+  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(0), FuInType(0)]
+  DUT = TileRTL
+  FunctionUnit = FlexibleFuRTL
+  # Test FuList includes SeqAdderMemRTL - a combo FU with MemUnit
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            SeqAdderMemRTL]  # Combo FU with MemUnit
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
+  PredicateType = mk_predicate(1, 1)
+  cgra_id_nbits = 1
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  # Test using OPT_ADD (supported by AdderRTL in FuList)
+  src_ctrl_pkt = [
+      IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                 ctrl = CtrlType(OPT_ADD,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(3), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+      IntraCgraPktType(0,  0,  0,          0,          0,         0,         0,         0,
+                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                 ctrl = CtrlType(OPT_SUB,
+                                                                 [FuInType(1), FuInType(2), FuInType(0), FuInType(0)],
+                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                  TileInType(4), TileInType(1), TileInType(0), TileInType(0)],
+                                                                 [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                  FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(7, 1))),
+      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
+
+  src_data = [[DataType(3, 1)],
+              [],
+              [DataType(4, 1)],
+              [DataType(5, 1), DataType(7, 1)]]
+
+  sink_out = [
+              [                         DataType(4, 1)],
+              [],
+              [],
+              [DataType(9, 1),          DataType(4, 1)]]
+  complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0,   0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,

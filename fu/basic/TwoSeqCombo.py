@@ -90,13 +90,32 @@ class TwoSeqCombo(Component):
 
     @update
     def update_mem():
-      s.to_mem_waddr.val   @= b1(0)
-      s.to_mem_wdata.val   @= b1(0)
-      s.to_mem_wdata.msg   @= s.const_zero
-      s.to_mem_waddr.msg   @= AddrType(0)
-      s.to_mem_raddr.msg   @= AddrType(0)
-      s.to_mem_raddr.val   @= b1(0)
-      s.from_mem_rdata.rdy @= b1(0)
+      # Propagate memory interfaces from internal FUs using OR logic.
+      # This enables MemUnitRTL to be fused with other operations.
+      # Non-memory FUs tie their ports to 0, so OR-ing is effectively a passthrough.
+      s.to_mem_raddr.val @= s.Fu0.to_mem_raddr.val | s.Fu1.to_mem_raddr.val
+      s.to_mem_raddr.msg @= AddrType(zext(s.Fu0.to_mem_raddr.msg, AddrType) |
+                                     zext(s.Fu1.to_mem_raddr.msg, AddrType))
+      s.Fu0.to_mem_raddr.rdy @= s.to_mem_raddr.rdy
+      s.Fu1.to_mem_raddr.rdy @= s.to_mem_raddr.rdy
+
+      s.from_mem_rdata.rdy @= s.Fu0.from_mem_rdata.rdy | s.Fu1.from_mem_rdata.rdy
+      s.Fu0.from_mem_rdata.val @= s.from_mem_rdata.val
+      s.Fu1.from_mem_rdata.val @= s.from_mem_rdata.val
+      s.Fu0.from_mem_rdata.msg @= s.from_mem_rdata.msg
+      s.Fu1.from_mem_rdata.msg @= s.from_mem_rdata.msg
+
+      s.to_mem_waddr.val @= s.Fu0.to_mem_waddr.val | s.Fu1.to_mem_waddr.val
+      s.to_mem_waddr.msg @= AddrType(zext(s.Fu0.to_mem_waddr.msg, AddrType) |
+                                     zext(s.Fu1.to_mem_waddr.msg, AddrType))
+      s.Fu0.to_mem_waddr.rdy @= s.to_mem_waddr.rdy
+      s.Fu1.to_mem_waddr.rdy @= s.to_mem_waddr.rdy
+
+      s.to_mem_wdata.val @= s.Fu0.to_mem_wdata.val | s.Fu1.to_mem_wdata.val
+      s.to_mem_wdata.msg.payload @= s.Fu0.to_mem_wdata.msg.payload | s.Fu1.to_mem_wdata.msg.payload
+      s.to_mem_wdata.msg.predicate @= s.Fu0.to_mem_wdata.msg.predicate | s.Fu1.to_mem_wdata.msg.predicate
+      s.Fu0.to_mem_wdata.rdy @= s.to_mem_wdata.rdy
+      s.Fu1.to_mem_wdata.rdy @= s.to_mem_wdata.rdy
 
     @update
     def update_send_to_controller():
