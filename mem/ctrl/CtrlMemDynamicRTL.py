@@ -275,7 +275,9 @@ class CtrlMemDynamicRTL(Component):
         if s.recv_pkt_from_controller_queue.send.val & \
            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR):
           temp_routing_crossbar_in = s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.routing_xbar_outport[0]
-          s.prologue_count_reg_routing_crossbar[s.recv_pkt_from_controller_queue.send.msg.payload.ctrl_addr][trunc(temp_routing_crossbar_in, TileInPortType)] <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PrologueCountType)
+          # Subtract 1 to convert from TileInType(1-8) to array index (0-7), consistent with normal crossbar routing
+          if temp_routing_crossbar_in > 0:
+            s.prologue_count_reg_routing_crossbar[s.recv_pkt_from_controller_queue.send.msg.payload.ctrl_addr][trunc(temp_routing_crossbar_in - 1, TileInPortType)] <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PrologueCountType)
         elif s.recv_pkt_from_controller_queue.send.val & \
            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
           temp_fu_crossbar_in = s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[0]
