@@ -59,6 +59,13 @@ class Fu(Component):
     s.from_mem_rdata = RecvIfcRTL(DataType)
     s.to_mem_waddr = SendIfcRTL(DataAddrType)
     s.to_mem_wdata = SendIfcRTL(DataType)
+    # Redundant interfaces for streamimg LD in MemUnit.
+    s.streaming_start_raddr = InPort(DataAddrType)
+    s.streaming_stride = InPort(DataAddrType)
+    s.streaming_end_raddr = InPort(DataAddrType)
+    # This is for blocking fu_crossbar and routing_crossbar
+    # when performing streaming LD operation.
+    s.streaming_done = OutPort(b1)
 
     s.vector_factor_power = Wire(VectorFactorPowerType)
     s.vector_factor_counter = Wire(VectorFactorType)

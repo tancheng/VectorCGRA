@@ -55,6 +55,9 @@ class TestHarness( Component ):
     s.from_mem_rdata = [TestSrcRTL( DataType, []) for _ in FuList]
     s.to_mem_waddr = [TestSinkRTL(AddrType, []) for _ in FuList]
     s.to_mem_wdata = [TestSinkRTL(DataType, []) for _ in FuList]
+    s.dut.streaming_start_raddr //= 0
+    s.dut.streaming_stride //= 0
+    s.dut.streaming_end_raddr //= 0
 
     for i in range(len(FuList)):
       s.to_mem_raddr[i].recv //= s.dut.to_mem_raddr[i]
