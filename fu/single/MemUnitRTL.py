@@ -83,14 +83,17 @@ class MemUnitRTL(Component):
     s.vector_factor_power = Wire(VectorFactorPowerType)
     s.vector_factor_counter = Wire(VectorFactorType)
     s.reached_vector_factor = Wire(1)
-    # Registers for streaming LD.
-    s.streaming_raddr = Wire(AddrType)
-    s.streaming_status = Wire(1)
+
+    # One streaming LD will issue multiple single LD request.
+    # Indicates the raddr of each request.
+    s.single_request_addr = Wire(AddrType)
+    # Indicates the request that each response is corresponding to.
+    s.single_response_of_which_request_addr = Wire(AddrType)
+
+    # Registers for when to enter streaming status.
     operation_nbits = 7
-    # TODO: Replaces hard coding.
     s.operation_reg = Wire(operation_nbits)
-    # Counters the records the amount of finished LD requests.
-    s.streaming_results_consumed_counter = Wire(AddrType)
+    s.streaming_status = Wire(1)
 
     # Connections.
     s.vector_factor_power //= vector_factor_power
@@ -255,10 +258,8 @@ class MemUnitRTL(Component):
         elif s.recv_opt.msg.operation == OPT_STREAM_LD:
           # Streaming LD does not consume any operands.
           s.recv_in[s.in0_idx].rdy @= 0
-          # Keep issuing new LD requests as long as address buffer has free space,
-          # so that LD requests can be processed in pipeline.
-          s.to_mem_raddr.val @= s.streaming_status & s.to_mem_raddr.rdy
-          s.to_mem_raddr.msg @= s.streaming_raddr
+          s.to_mem_raddr.val @= s.streaming_status & (s.single_request_addr <= s.streaming_end_raddr)
+          s.to_mem_raddr.msg @= s.single_request_addr
           s.from_mem_rdata.rdy @= s.send_out[0].rdy
           s.send_out[0].val @= s.from_mem_rdata.val
           s.send_out[0].msg @= s.from_mem_rdata.msg
@@ -279,8 +280,7 @@ class MemUnitRTL(Component):
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_STREAM_LD:
           # Streaming LD is done when the last streaming result is consumed.
-          s.streaming_done @= (s.streaming_results_consumed_counter == \
-                  (s.streaming_end_raddr - s.streaming_start_raddr) // s.streaming_stride) &\
+          s.streaming_done @= (s.single_response_of_which_request_addr == s.streaming_end_raddr) &\
                   s.from_mem_rdata.val & s.from_mem_rdata.rdy
         else:
           s.streaming_done @= 1
@@ -330,18 +330,32 @@ class MemUnitRTL(Component):
           s.already_sent_raddr <<= s.already_sent_raddr
 
     @update_ff
-    def update_streaming_raddr():
+    def update_single_request_addr():
       if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.operation_reg != OPT_STREAM_LD):
-        # Initializes the streaming read address when detecting operation changes to OPT_STREAM_LD.
-        s.streaming_raddr <<= s.streaming_start_raddr
+        # Initializes when detecting operation changes to OPT_STREAM_LD, 
+        s.single_request_addr <<= s.streaming_start_raddr
       elif s.streaming_done:
-        # Stops streaming when address reach to the end.
-        s.streaming_raddr <<= 0
-      elif s.to_mem_raddr.val:
-        # Updates the raddr everytime issuing a LD request.
-        s.streaming_raddr <<= s.streaming_raddr + s.streaming_stride
+        # Resets when streaming done.
+        s.single_request_addr <<= 0
+      elif s.to_mem_raddr.val & s.to_mem_raddr.rdy:
+        # Updates everytime issuing a single request within the same streaming LD.
+        s.single_request_addr <<= s.single_request_addr + s.streaming_stride
       else:
-        s.streaming_raddr <<= s.streaming_raddr
+        s.single_request_addr <<= s.single_request_addr
+
+    @update_ff
+    def update_single_response_of_which_request_addr():
+      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.operation_reg != OPT_STREAM_LD):
+        # Initializes when detecting operation changes to OPT_STREAM_LD, 
+        s.single_response_of_which_request_addr <<= s.streaming_start_raddr
+      elif s.streaming_done:
+        # Resets when streaming done.
+        s.single_response_of_which_request_addr <<= 0
+      elif s.from_mem_rdata.val & s.from_mem_rdata.rdy:
+        # Updates everytime receives a response and is consumed.
+        s.single_response_of_which_request_addr <<= s.single_response_of_which_request_addr + s.streaming_stride
+      else:
+        s.single_response_of_which_request_addr <<= s.single_response_of_which_request_addr
 
     @update_ff
     def update_streaming_status():
@@ -357,16 +371,6 @@ class MemUnitRTL(Component):
     @update_ff
     def update_operation_reg():
       s.operation_reg <<= trunc(s.recv_opt.msg.operation, operation_nbits)
-
-    @update_ff
-    def update_streaming_results_consumed_counter():
-      # A LD request is officially done only after it is consumed.
-      if s.from_mem_rdata.val & s.from_mem_rdata.rdy:
-        s.streaming_results_consumed_counter <<= s.streaming_results_consumed_counter + 1
-      elif s.streaming_done:
-        s.streaming_results_consumed_counter <<= 0
-      else:
-        s.streaming_results_consumed_counter <<= s.streaming_results_consumed_counter
 
   def line_trace(s):
     opt_str = " #"
