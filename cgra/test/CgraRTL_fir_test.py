@@ -1674,7 +1674,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
