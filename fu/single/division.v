@@ -13,8 +13,6 @@ module division #(
     parameter ITER_BEGIN = 0,
     parameter ITER_END   = 32
 ) (
-    input  clk,
-    input  reset,
     input  [WIDTH-1:0] dividend,
     input  [WIDTH-1:0] divisor,
     input  [WIDTH:0]   r_i,
@@ -82,23 +80,25 @@ module pipeline_division #(
 
     genvar i; 
 
-    assign dividend_reg[0] = dividend;
-    assign divisor_reg[0]  = divisor;
-    assign q_i[0] = 0;
-    assign r_i[0] = 0;
+    always @(*) begin
+        dividend_reg[0] = dividend;
+        divisor_reg[0] = divisor;
+        q_i[0] = 0;
+        r_i[0] = 0;
+    end
 
     generate
-        for (i = 0; i < CYCLE; i++) begin
-            always @(posedge clk or posedge reset) begin
+        for (i = 1; i < CYCLE; i++) begin
+            always @(posedge clk) begin
                 if (reset) begin
                     q_i[i] <= 0;
                     r_i[i] <= 0;
                     dividend_reg[i] <= 0;
                     divisor_reg[i]  <= 0;
                 end
-                else if (i > 0) begin             // Propagate values through pipeline
-                    q_i[i] <= q_i[i-1];           // Temporal quotient to next stage
-                    r_i[i] <= r_i[i-1];           // Temporal remainder to next stage
+                else begin             // Propagate values through pipeline
+                    q_i[i] <= q_o[i-1];           // Temporal quotient to next stage
+                    r_i[i] <= r_o[i-1];           // Temporal remainder to next stage
                     dividend_reg[i] <= dividend_reg[i-1];       // Forward dividend
                     divisor_reg[i]  <= divisor_reg[i-1];        // Forward divisor
                 end
@@ -113,8 +113,6 @@ module pipeline_division #(
                 .ITER_BEGIN(i * num_div),
                 .ITER_END((i + 1) * num_div)
             ) u0 (
-                .clk(clk),
-                .reset(reset),
                 .dividend(dividend_reg[i]),
                 .divisor(divisor_reg[i]),
                 .q_i(q_i[i]),
