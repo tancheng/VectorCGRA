@@ -173,78 +173,78 @@ class CgraRTL(Component):
     for i in range(s.num_tiles):
 
       if i // width > 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.tile[i-width].recv_data[PORT_NORTH]
+        s.tile[i].send_data[PORT_INDEX_SOUTH] //= s.tile[i-width].recv_data[PORT_INDEX_NORTH]
 
       if i // width < height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.tile[i+width].recv_data[PORT_SOUTH]
+        s.tile[i].send_data[PORT_INDEX_NORTH] //= s.tile[i+width].recv_data[PORT_INDEX_SOUTH]
 
       if i % width > 0:
-        s.tile[i].send_data[PORT_WEST] //= s.tile[i-1].recv_data[PORT_EAST]
+        s.tile[i].send_data[PORT_INDEX_WEST] //= s.tile[i-1].recv_data[PORT_INDEX_EAST]
 
       if i % width < width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.tile[i+1].recv_data[PORT_WEST]
+        s.tile[i].send_data[PORT_INDEX_EAST] //= s.tile[i+1].recv_data[PORT_INDEX_WEST]
 
       if cgra_topology == KING_MESH:
         if i % width > 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_SOUTHEAST]
-          s.tile[i+width-1].send_data[PORT_SOUTHEAST] //= s.tile[i].recv_data[PORT_NORTHWEST]
+          s.tile[i].send_data[PORT_INDEX_NORTHWEST] //= s.tile[i+width-1].recv_data[PORT_INDEX_SOUTHEAST]
+          s.tile[i+width-1].send_data[PORT_INDEX_SOUTHEAST] //= s.tile[i].recv_data[PORT_INDEX_NORTHWEST]
 
         if i % width < width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST] //= s.tile[i+width+1].recv_data[PORT_SOUTHWEST]
-          s.tile[i+width+1].send_data[PORT_SOUTHWEST] //= s.tile[i].recv_data[PORT_NORTHEAST]
+          s.tile[i].send_data[PORT_INDEX_NORTHEAST] //= s.tile[i+width+1].recv_data[PORT_INDEX_SOUTHWEST]
+          s.tile[i+width+1].send_data[PORT_INDEX_SOUTHWEST] //= s.tile[i].recv_data[PORT_INDEX_NORTHEAST]
 
         if i // width == 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_SOUTHWEST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHWEST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHWEST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_SOUTHEAST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHEAST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHEAST].msg //= DataType(0, 0)
 
         if i // width == height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_NORTHWEST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHWEST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHWEST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_NORTHEAST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHEAST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHEAST].msg //= DataType(0, 0)
 
         if i % width == 0 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHWEST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_SOUTHWEST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHWEST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHWEST].msg //= DataType(0, 0)
 
         if i % width == 0 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHWEST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHWEST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_NORTHWEST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHWEST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHWEST].msg //= DataType(0, 0)
 
         if i % width == width - 1 and i // width > 0:
-          s.tile[i].send_data[PORT_SOUTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_SOUTHEAST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_SOUTHEAST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHEAST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_SOUTHEAST].msg //= DataType(0, 0)
 
         if i % width == width - 1 and i // width < height - 1:
-          s.tile[i].send_data[PORT_NORTHEAST].rdy //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].val //= 0
-          s.tile[i].recv_data[PORT_NORTHEAST].msg //= DataType(0, 0)
+          s.tile[i].send_data[PORT_INDEX_NORTHEAST].rdy //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHEAST].val //= 0
+          s.tile[i].recv_data[PORT_INDEX_NORTHEAST].msg //= DataType(0, 0)
 
 
       if i // width == 0:
-        s.tile[i].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[i % width]
-        s.tile[i].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[i % width]
+        s.tile[i].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[i % width]
+        s.tile[i].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[i % width]
 
       if i // width == height - 1:
-        s.tile[i].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[i % width]
-        s.tile[i].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[i % width]
+        s.tile[i].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[i % width]
+        s.tile[i].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[i % width]
 
       if i % width == 0:
-        s.tile[i].send_data[PORT_WEST] //= s.send_data_on_boundary_west[i // width]
-        s.tile[i].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[i // width]
+        s.tile[i].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[i // width]
+        s.tile[i].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[i // width]
 
       if i % width == width - 1:
-        s.tile[i].send_data[PORT_EAST] //= s.send_data_on_boundary_east[i // width]
-        s.tile[i].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[i // width]
+        s.tile[i].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[i // width]
+        s.tile[i].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[i // width]
 
       if i % width == 0 or i // width == 0:
         s.tile[i].to_mem_raddr   //= s.data_mem.recv_raddr[width + i // width - 1 if i >= width else i % width]
@@ -266,6 +266,7 @@ class CgraRTL(Component):
       res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
+
 
 
 
