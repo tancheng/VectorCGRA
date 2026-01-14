@@ -36,7 +36,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-
+from ...lib.util.common import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -476,7 +476,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(2, 1))),
           IntraCgraPktType(0, 0,
@@ -542,7 +542,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(2, 1))),
           IntraCgraPktType(0, 1,
@@ -557,13 +557,13 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTHWEST), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
@@ -627,7 +627,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 2,

@@ -250,40 +250,40 @@ class CgraTemplateRTL(Component):
           tile_id = row * per_cgra_columns + col
           # Only connects if the port is valid
           if row == per_cgra_rows - 1:
-            if PORT_NORTH not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_NORTH] //= s.send_data_on_boundary_north[col]
-            if PORT_NORTH not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_NORTH] //= s.recv_data_on_boundary_north[col]
+            if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[col]
+            if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[col]
 
           if row == 0:
             # Corner case: In multi-cgra, for each row of CGRAs except the bottom row,
             # the south port of the bottom row tiles must be connected to the adjacent/south cgra.
             if cgra_idx_y > 0:
-              s.tile[tile_id].send_data[PORT_SOUTH] //= s.send_data_on_boundary_south[col]
-              s.tile[tile_id].recv_data[PORT_SOUTH] //= s.recv_data_on_boundary_south[col]
+              s.tile[tile_id].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[col]
+              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[col]
             else: #cgra_idx_y == 0
               # In multi-cgra, for the bottom row CGRAs, the south ports of the bottom row tiles should be grounded.
-              s.tile[tile_id].send_data[PORT_SOUTH].rdy //= 0
-              s.tile[tile_id].recv_data[PORT_SOUTH].val //= 0
-              s.tile[tile_id].recv_data[PORT_SOUTH].msg //= DataType(0, 0)
+              s.tile[tile_id].send_data[PORT_INDEX_SOUTH].rdy //= 0
+              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].val //= 0
+              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].msg //= DataType(0, 0)
 
           if col == 0:
             # Corner case: In multi-cgra, for each column of CGRAs except the first column,
             # the west port of the first column tiles must be connected to the adjacent/west cgra.
             if cgra_idx_x > 0:
-              s.tile[tile_id].send_data[PORT_WEST] //= s.send_data_on_boundary_west[row]
-              s.tile[tile_id].recv_data[PORT_WEST] //= s.recv_data_on_boundary_west[row]
+              s.tile[tile_id].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[row]
+              s.tile[tile_id].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[row]
             else: #cgra_idx_x == 0
               # In multi-cgra, for the first column CGRAs, the west ports of the first column tiles should be grounded.
-              s.tile[tile_id].send_data[PORT_WEST].rdy //= 0
-              s.tile[tile_id].recv_data[PORT_WEST].val //= 0
-              s.tile[tile_id].recv_data[PORT_WEST].msg //= DataType(0, 0)
+              s.tile[tile_id].send_data[PORT_INDEX_WEST].rdy //= 0
+              s.tile[tile_id].recv_data[PORT_INDEX_WEST].val //= 0
+              s.tile[tile_id].recv_data[PORT_INDEX_WEST].msg //= DataType(0, 0)
 
           if col == per_cgra_columns - 1:
-            if PORT_EAST not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_EAST] //= s.send_data_on_boundary_east[row]
-            if PORT_EAST not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_EAST] //= s.recv_data_on_boundary_east[row]
+            if PORT_INDEX_EAST not in TileList[tile_id].getInvalidOutPorts():
+              s.tile[tile_id].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[row]
+            if PORT_INDEX_EAST not in TileList[tile_id].getInvalidInPorts():
+              s.tile[tile_id].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[row]
 
     for row in range(per_cgra_rows):
       for col in range(per_cgra_columns):
@@ -292,19 +292,19 @@ class CgraTemplateRTL(Component):
         for invalidInPort in TileList[i].getInvalidInPorts():
           """
             Corner case 1:
-              When the links between the dataSPM and the leftmost tiles are disabled, the PORT_WEST status becomes invalid.
+              When the links between the dataSPM and the leftmost tiles are disabled, the PORT_INDEX_WEST status becomes invalid.
               In this case, if the current CGRA needs to connect to the CGRA on its left, then the recv_data/send_data signals must not be tied to ground.
 
             Corner case 2:
-              When the links between the dataSPM and the bottom tiles are disabled, the PORT_SOUTH status becomes invalid.
+              When the links between the dataSPM and the bottom tiles are disabled, the PORT_INDEX_SOUTH status becomes invalid.
               In this case, if the current CGRA needs to connect to the CGRA below it, then the recv_data/send_data signals must not be tied to ground.
           """
-          if not ((is_multi_cgra and col == 0 and invalidInPort == PORT_WEST) or (is_multi_cgra and row == 0 and invalidInPort == PORT_SOUTH)):
+          if not ((is_multi_cgra and col == 0 and invalidInPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidInPort == PORT_INDEX_SOUTH)):
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
         for invalidOutPort in TileList[i].getInvalidOutPorts():
-          if not ((is_multi_cgra and col == 0 and invalidOutPort == PORT_WEST) or (is_multi_cgra and row == 0 and invalidOutPort == PORT_SOUTH)):
+          if not ((is_multi_cgra and col == 0 and invalidOutPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidOutPort == PORT_INDEX_SOUTH)):
             s.tile[i].send_data[invalidOutPort].rdy //= 0
 
         if not TileList[i].hasFromMem():
@@ -322,4 +322,5 @@ class CgraTemplateRTL(Component):
                        for (i,x) in enumerate(s.tile)])
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
+
 

@@ -1,4 +1,4 @@
-from ..common import PORT_DIRECTION_COUNTS
+from ..common import PORT_INDEX_DIRECTION_COUNTS
 
 
 
@@ -25,7 +25,7 @@ class Tile:
         # fromMem: Indicates if this tile has a dedicated link FROM the data memory (for Load operations).
         self.fromMem = False
 
-        # invalidOutPorts: A set containing port indices (e.g., PORT_NORTH, PORT_EAST) that are NOT used
+        # invalidOutPorts: A set containing port indices (e.g., PORT_INDEX_NORTH, PORT_INDEX_EAST) that are NOT used
         # as output ports. Initialized to contain ALL ports. When a link is created originating from this
         # tile, the corresponding port is removed from this set.
         # Used in RTL generation to ground/disable unused output ports.
@@ -37,7 +37,7 @@ class Tile:
         # Used in RTL generation to ground/disable unused input ports.
         self.invalidInPorts = set()
 
-        for i in range(PORT_DIRECTION_COUNTS):
+        for i in range(PORT_INDEX_DIRECTION_COUNTS):
             self.invalidOutPorts.add(i)
             self.invalidInPorts.add(i)
 
