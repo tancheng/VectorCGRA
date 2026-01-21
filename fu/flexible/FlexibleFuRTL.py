@@ -11,6 +11,7 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.StreamingMemUnitRTL import StreamingMemUnitRTL
 from ...fu.single.AdderRTL  import AdderRTL
 from ...fu.single.RetRTL  import RetRTL
 from ...fu.single.NahRTL  import NahRTL
@@ -94,11 +95,11 @@ class FlexibleFuRTL(Component):
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
       s.clear[i] //= s.fu[i].clear
-      s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
-      s.streaming_stride //= s.fu[i].streaming_stride
-      s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
-      if FuList[i] == MemUnitRTL:
+      if FuList[i] == StreamingMemUnitRTL:
         s.streaming_done //= s.fu[i].streaming_done
+        s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
+        s.streaming_stride //= s.fu[i].streaming_stride
+        s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
     
     @update
     def connect_to_controller():

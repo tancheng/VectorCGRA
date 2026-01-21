@@ -49,13 +49,6 @@ class ThreeCombo(Component):
     s.to_mem_wdata   = SendIfcRTL(DataType)
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
-    # Redundant interfaces for streamimg LD in MemUnit.
-    s.streaming_start_raddr = InPort(AddrType)
-    s.streaming_stride = InPort(AddrType)
-    s.streaming_end_raddr = InPort(AddrType)
-    # This is for blocking fu_crossbar and routing_crossbar
-    # when performing streaming LD operation.
-    s.streaming_done = OutPort(b1)
 
     # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)

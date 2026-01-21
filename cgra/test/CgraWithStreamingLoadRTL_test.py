@@ -1,18 +1,18 @@
 """
 ==========================================================================
-CgraRTL_streaming_read_test.py
+CgraRTLWithStreamingLoad_test.py
 ==========================================================================
 Test cases for CGRA with tiles that support streaming LD operation.
 
-Author : Cheng Tan
-  Date : Aug 30, 2025
+Author : Yufei Yang
+  Date : Jan 21, 2026
 """
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
-from ..CgraRTL import CgraRTL
+from ..CgraWithStreamingLoadRTL import CgraWithStreamingLoadRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
@@ -22,7 +22,7 @@ from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
-from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.StreamingMemUnitRTL import StreamingMemUnitRTL
 from ...fu.single.MulRTL import MulRTL
 from ...fu.single.PhiRTL import PhiRTL
 from ...fu.single.RetRTL import RetRTL
@@ -138,7 +138,7 @@ FuList = [AdderRTL,
           PhiRTL,
           CompRTL,
           GrantRTL,
-          MemUnitRTL,
+          StreamingMemUnitRTL,
           SelRTL,
           RetRTL,
           FourIncCmpNotGrantRTL,
@@ -172,7 +172,7 @@ num_tiles = x_tiles * y_tiles
 num_rd_tiles = x_tiles + y_tiles - 1
 per_cgra_data_size = int(data_mem_size_global / num_cgras)
 
-DUT = CgraRTL
+DUT = CgraWithStreamingLoadRTL
 FunctionUnit = FlexibleFuRTL
 
 DataAddrType = mk_bits(addr_nbits)
