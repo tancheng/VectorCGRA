@@ -22,7 +22,7 @@ def get_links(tiles):
     # The memPort index is assumed to match the row index.
     for r in range(per_cgra_row):
         # From memory to tile
-        link_from_mem = Link(None, tiles[r][0], r, PORT_WEST)
+        link_from_mem = Link(None, tiles[r][0], r, PORT_INDEX_WEST)
         link_from_mem.fromMem = True
         # The leftmost column of tiles connects to ports [0, per_cgra_row - 1] of dataSPM.
         link_from_mem.memPort = r
@@ -30,7 +30,7 @@ def get_links(tiles):
         links.append(link_from_mem)
 
         # From tile to memory
-        link_to_mem = Link(tiles[r][0], None, PORT_WEST, r)
+        link_to_mem = Link(tiles[r][0], None, PORT_INDEX_WEST, r)
         link_to_mem.toMem = True
         link_to_mem.memPort = r
         link_to_mem.validatePorts()
@@ -40,7 +40,7 @@ def get_links(tiles):
     # Creates bidirectional links between memory and each tile in the bottom row.
     for c in range(1, per_cgra_col):
         # From memory to tile.
-        link_from_mem = Link(None, tiles[0][c], per_cgra_row - 1 + c, PORT_SOUTH)
+        link_from_mem = Link(None, tiles[0][c], per_cgra_row - 1 + c, PORT_INDEX_SOUTH)
         link_from_mem.fromMem = True
         # The bottom row of tiles connects to ports [per_cgra_row, per_cgra_row + per_cgra_col - 2]
         link_from_mem.memPort = per_cgra_row - 1 + c
@@ -48,7 +48,7 @@ def get_links(tiles):
         links.append(link_from_mem)
 
         # From tile to memory.
-        link_to_mem = Link(tiles[0][c], None, PORT_SOUTH, per_cgra_row - 1 + c)
+        link_to_mem = Link(tiles[0][c], None, PORT_INDEX_SOUTH, per_cgra_row - 1 + c)
         link_to_mem.toMem = True
         link_to_mem.memPort = per_cgra_row - 1 + c
         link_to_mem.validatePorts()
@@ -59,12 +59,12 @@ def get_links(tiles):
     for r in range(per_cgra_row):
         for c in range(per_cgra_col - 1):
             # Eastward: (r, c) -> (r, c+1)
-            link_east = Link(tiles[r][c], tiles[r][c+1], PORT_EAST, PORT_WEST)
+            link_east = Link(tiles[r][c], tiles[r][c+1], PORT_INDEX_EAST, PORT_INDEX_WEST)
             link_east.validatePorts()
             links.append(link_east)
 
             # Westward: (r, c+1) -> (r, c)
-            link_west = Link(tiles[r][c+1], tiles[r][c], PORT_WEST, PORT_EAST)
+            link_west = Link(tiles[r][c+1], tiles[r][c], PORT_INDEX_WEST, PORT_INDEX_EAST)
             link_west.validatePorts()
             links.append(link_west)
 
@@ -74,12 +74,12 @@ def get_links(tiles):
     for r in range(per_cgra_row - 1):
         for c in range(per_cgra_col):
             # "Downward" (North port -> South port)
-            link_down = Link(tiles[r][c], tiles[r+1][c], PORT_NORTH, PORT_SOUTH)
+            link_down = Link(tiles[r][c], tiles[r+1][c], PORT_INDEX_NORTH, PORT_INDEX_SOUTH)
             link_down.validatePorts()
             links.append(link_down)
 
             # "Upward" (South port -> North port)
-            link_up = Link(tiles[r+1][c], tiles[r][c], PORT_SOUTH, PORT_NORTH)
+            link_up = Link(tiles[r+1][c], tiles[r][c], PORT_INDEX_SOUTH, PORT_INDEX_NORTH)
             link_up.validatePorts()
             links.append(link_up)
 
@@ -89,20 +89,20 @@ def get_links(tiles):
         for c in range(per_cgra_col - 1):
             
             # NE <-> SW: (r, c) <-> (r+1, c+1)
-            link_ne_sw = Link(tiles[r][c], tiles[r+1][c+1], PORT_NORTHEAST, PORT_SOUTHWEST)
+            link_ne_sw = Link(tiles[r][c], tiles[r+1][c+1], PORT_INDEX_NORTHEAST, PORT_INDEX_SOUTHWEST)
             link_ne_sw.validatePorts()
             links.append(link_ne_sw)
 
-            link_sw_ne = Link(tiles[r+1][c+1], tiles[r][c], PORT_SOUTHWEST, PORT_NORTHEAST)
+            link_sw_ne = Link(tiles[r+1][c+1], tiles[r][c], PORT_INDEX_SOUTHWEST, PORT_INDEX_NORTHEAST)
             link_sw_ne.validatePorts()
             links.append(link_sw_ne)
 
             # NW <-> SE: (r, c+1) <-> (r+1, c)
-            link_nw_se = Link(tiles[r][c+1], tiles[r+1][c], PORT_NORTHWEST, PORT_SOUTHEAST)
+            link_nw_se = Link(tiles[r][c+1], tiles[r+1][c], PORT_INDEX_NORTHWEST, PORT_INDEX_SOUTHEAST)
             link_nw_se.validatePorts()
             links.append(link_nw_se)
 
-            link_se_nw = Link(tiles[r+1][c], tiles[r][c+1], PORT_SOUTHEAST, PORT_NORTHWEST)
+            link_se_nw = Link(tiles[r+1][c], tiles[r][c+1], PORT_INDEX_SOUTHEAST, PORT_INDEX_NORTHWEST)
             link_se_nw.validatePorts()
             links.append(link_se_nw)
 
@@ -116,7 +116,7 @@ def set_port_validity(tile, port, is_valid = True):
 
     Parameters:
     - tile: A tile object.
-    - port: The port ID(PORT_EAST, PORT_WEST, PORT_SOUTH, PORT_NORTH).
+    - port: The port ID(PORT_INDEX_EAST, PORT_INDEX_WEST, PORT_INDEX_SOUTH, PORT_INDEX_NORTH).
     - is_valid: If True, enables the port(removes from invalid sets), otherwise 
       disables the port(adds to the invalid sets).
     """
@@ -164,7 +164,7 @@ def configure_boundary_ports(cgra_id, tiles_flat,
         # Top row of tiles in this CGRA should have NORTH ports enabled
         top_row_idx = per_cgra_rows - 1
         for tile_col in range(per_cgra_columns):
-            set_port_validity(get_tile(top_row_idx, tile_col), PORT_NORTH, is_valid)
+            set_port_validity(get_tile(top_row_idx, tile_col), PORT_INDEX_NORTH, is_valid)
 
     # Enables SOUTH ports if there's a neighbor to the south
     if cgra_row < num_cgra_rows - 1:
@@ -172,18 +172,18 @@ def configure_boundary_ports(cgra_id, tiles_flat,
         # Bottom row of tiles in this CGRA should have SOUTH ports enabled
         bottom_row_idx = 0
         for tile_col in range(per_cgra_columns):
-            set_port_validity(get_tile(bottom_row_idx, tile_col), PORT_SOUTH, is_valid)
+            set_port_validity(get_tile(bottom_row_idx, tile_col), PORT_INDEX_SOUTH, is_valid)
 
     # Enables EAST ports if there's a neighbor to the east
     if cgra_col < num_cgra_columns - 1:
         # Rightmost column of tiles in this CGRA should have EAST ports enabled
         east_col_idx = per_cgra_columns - 1
         for tile_row in range(per_cgra_rows):
-            set_port_validity(get_tile(tile_row, east_col_idx), PORT_EAST, is_valid)
+            set_port_validity(get_tile(tile_row, east_col_idx), PORT_INDEX_EAST, is_valid)
 
     # Enables WEST ports if there's a neighbor to the west
     if cgra_col > 0:
         # Leftmost column of tiles in this CGRA should have WEST ports enabled
         west_col_idx = 0
         for tile_row in range(per_cgra_rows):
-            set_port_validity(get_tile(tile_row, west_col_idx), PORT_WEST, is_valid)
+            set_port_validity(get_tile(tile_row, west_col_idx), PORT_INDEX_WEST, is_valid)
