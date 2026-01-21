@@ -14,10 +14,11 @@ Author : Shangkun Li
 
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL, ValRdySendIfcRTL
+from ..basic.Fu import Fu
 from ...lib.opt_type import *
 from ...lib.messages import *
 
-class LoopCounterRTL(Component):
+class LoopCounterRTL(Fu):
   
   def construct(s, DataType, CtrlType,
                 num_inports, num_outports,
@@ -47,15 +48,15 @@ class LoopCounterRTL(Component):
     s.current_loop_cnt = Wire(DataType)
     
     # Configuration state machine.
-    ConfigStateType = mk_bits(3)
-    s.kConfigIdle = ConfigStateType(0)
-    s.kConfigLowerBound = ConfigStateType(1)
-    s.kConfigUpperBound = ConfigStateType(2)
-    s.kConfigStep = ConfigStateType(3)
-    s.kConfigDone = ConfigStateType(4) 
+    LoopStateType = mk_bits(3)
+    s.kWaitConfig = LoopStateType(0)
+    s.kLoadLowerBound = LoopStateType(1)
+    s.kLoadUpperBound = LoopStateType(2)
+    s.kLoadStep = LoopStateType(3)
+    s.kLoopConfigDone = LoopStateType(4) 
     
-    s.config_state = Wire(ConfigStateType)
-    s.is_configured = Wire(1)
+    s.loop_state = Wire(LoopStateType)
+    s.is_in_count_phase = Wire(1)
     
     @update
     def comb_logic():
@@ -69,27 +70,27 @@ class LoopCounterRTL(Component):
       s.recv_const.rdy @= b1(0)
       s.recv_opt.rdy @= b1(0)
       
-      s.is_configured @= (s.config_state == s.kConfigDone)
+      s.is_in_count_phase @= (s.loop_state == s.kLoopConfigDone)
       
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_LOOP_COUNT:
           # Configuration phase: sequentially reads 3 constants from ConstQueue.
-          if ~s.is_configured:
-            if s.config_state == s.kConfigLowerBound:
+          if ~s.is_in_count_phase:
+            if s.loop_state == s.kLoadLowerBound:
               if s.recv_const.val:
                 # Tells ConstQueue to dequeue the constant.
                 s.recv_const.rdy @= b1(1)
               # Don't consume recv_opt yet, continues to next config state.
               s.recv_opt.rdy @= b1(0)
               s.send_out[0].val @= b1(0)
-            elif s.config_state == s.kConfigUpperBound:
+            elif s.loop_state == s.kLoadUpperBound:
               if s.recv_const.val:
                 # Tells ConstQueue to dequeue the constant.
                 s.recv_const.rdy @= b1(1)
               # Don't consume recv_opt yet, continues to next config state.
               s.recv_opt.rdy @= b1(0)
               s.send_out[0].val @= b1(0)
-            elif s.config_state == s.kConfigStep:
+            elif s.loop_state == s.kLoadStep:
               if s.recv_const.val:
                 # Tells ConstQueue to dequeue the constant.
                 s.recv_const.rdy @= b1(1)
@@ -101,7 +102,7 @@ class LoopCounterRTL(Component):
               # kConfigIdle or unexpected state.
               s.recv_opt.rdy @= b1(0)
               s.send_out[0].val @= b1(0)
-          # Execution phase: uses stored configuration to count loops.
+          # Counter phase: uses stored configuration to count loops.
           else:
             # No longer accesses recv_const.
             s.recv_const.rdy @= b1(0)
@@ -126,20 +127,20 @@ class LoopCounterRTL(Component):
     @update_ff
     def update_config_state():
       if s.reset | s.clear:
-        s.config_state <<= s.kConfigIdle
+        s.loop_state <<= s.kWaitConfig
       else:
         if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT):
-          if s.config_state == s.kConfigIdle:
-            s.config_state <<= s.kConfigLowerBound
-          elif s.config_state == s.kConfigLowerBound:
+          if s.loop_state == s.kWaitConfig:
+            s.loop_state <<= s.kLoadLowerBound
+          elif s.loop_state == s.kLoadLowerBound:
             if s.recv_const.val & s.recv_const.rdy:
-              s.config_state <<= s.kConfigUpperBound
-          elif s.config_state == s.kConfigUpperBound:
+              s.loop_state <<= s.kLoadUpperBound
+          elif s.loop_state == s.kLoadUpperBound:
             if s.recv_const.val & s.recv_const.rdy:
-              s.config_state <<= s.kConfigStep
-          elif s.config_state == s.kConfigStep:
+              s.loop_state <<= s.kLoadStep
+          elif s.loop_state == s.kLoadStep:
             if s.recv_const.val & s.recv_const.rdy:
-              s.config_state <<= s.kConfigDone
+              s.loop_state <<= s.kLoopConfigDone
     
     @update_ff
     def update_counter_state():
@@ -150,36 +151,30 @@ class LoopCounterRTL(Component):
         s.step_reg <<= DataType(0,0)
       else:
         # Configuration phase: captures constants when rdy is asserted.
-        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & ~s.is_configured:
-          if s.config_state == s.kConfigLowerBound:
+        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & ~s.is_in_count_phase:
+          if s.loop_state == s.kLoadLowerBound:
             if s.recv_const.val & s.recv_const.rdy:
               s.lower_bound_reg <<= s.recv_const.msg
-          elif s.config_state == s.kConfigUpperBound:
+          elif s.loop_state == s.kLoadUpperBound:
             if s.recv_const.val & s.recv_const.rdy:
               s.upper_bound_reg <<= s.recv_const.msg
-          elif s.config_state == s.kConfigStep:
+          elif s.loop_state == s.kLoadStep:
             if s.recv_const.val & s.recv_const.rdy:
               s.step_reg <<= s.recv_const.msg
               # Initializes current_loop_cnt to lower_bound when step config done.
               s.current_loop_cnt <<= s.lower_bound_reg
-        # Execution phase: updates counter operation every cycle when configured and output consumed. 
-        elif s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & s.is_configured:
+        # Counter phase: updates counter operation every cycle when configured and output consumed. 
+        elif s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & s.is_in_count_phase:
           if s.send_out[0].val & s.send_out[0].rdy:
             # Only increments if is still below upper_bound.
             if s.current_loop_cnt.payload < s.upper_bound_reg.payload:
               s.current_loop_cnt <<= DataType(s.current_loop_cnt.payload + s.step_reg.payload, b1(1))
     
   def line_trace(s):
-    config_state_str = ['IDLE', 'LOWER', 'UPPER', 'STEP', 'DONE'][s.config_state]
+    config_state_str = ['WAIT', 'LOWER', 'UPPER', 'STEP', 'DONE'][s.loop_state]
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     return f'[DCU:{config_state_str}|{opt_str}|idx={s.current_loop_cnt.payload}/{s.upper_bound_reg.payload}|' + \
            f'pred={s.send_out[0].msg.predicate}|out.val={s.send_out[0].val}] ' + \
            f'<const:{s.recv_const.val}|{s.recv_const.msg}>'
-      
-              
-            
-              
-              
-        
