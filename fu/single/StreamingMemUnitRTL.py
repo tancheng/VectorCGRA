@@ -91,8 +91,7 @@ class StreamingMemUnitRTL(Component):
     s.single_response_of_which_request_addr = Wire(AddrType)
 
     # Registers for when to enter streaming status.
-    operation_nbits = 7
-    s.operation_reg = Wire(operation_nbits)
+    s.ctrl_addr_reg = Wire(CtrlAddrType)
     s.streaming_status = Wire(1)
 
     # Connections.
@@ -209,7 +208,7 @@ class StreamingMemUnitRTL(Component):
 
     @update_ff
     def update_single_request_addr():
-      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.operation_reg != OPT_STREAM_LD):
+      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.ctrl_addr_reg != s.ctrl_addr_inport):
         # Initializes when detecting operation changes to OPT_STREAM_LD, 
         s.single_request_addr <<= s.streaming_start_raddr
       elif s.streaming_done:
@@ -223,7 +222,7 @@ class StreamingMemUnitRTL(Component):
 
     @update_ff
     def update_single_response_of_which_request_addr():
-      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.operation_reg != OPT_STREAM_LD):
+      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.ctrl_addr_reg != s.ctrl_addr_inport):
         # Initializes when detecting operation changes to OPT_STREAM_LD, 
         s.single_response_of_which_request_addr <<= s.streaming_start_raddr
       elif s.streaming_done:
@@ -237,7 +236,7 @@ class StreamingMemUnitRTL(Component):
 
     @update_ff
     def update_streaming_status():
-      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.operation_reg != OPT_STREAM_LD):
+      if (s.recv_opt.msg.operation == OPT_STREAM_LD) & (s.ctrl_addr_reg != s.ctrl_addr_inport):
         # Starts streaming at next cycle when detecting operation changes to OPT_STREAM_LD.
         s.streaming_status <<= 1
       elif s.streaming_done:
@@ -247,8 +246,8 @@ class StreamingMemUnitRTL(Component):
         s.streaming_status <<= s.streaming_status
 
     @update_ff
-    def update_operation_reg():
-      s.operation_reg <<= trunc(s.recv_opt.msg.operation, operation_nbits)
+    def update_ctrl_addr_reg():
+      s.ctrl_addr_reg <<= s.ctrl_addr_inport
 
   def line_trace(s):
     opt_str = " #"

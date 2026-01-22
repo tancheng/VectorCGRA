@@ -130,11 +130,6 @@ class TileWithContextSwitchRTL(Component):
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
 
-    # Signals for streamimg LD.
-    s.streaming_start_raddr = Wire(DataAddrType)
-    s.streaming_stride = Wire(DataAddrType)
-    s.streaming_end_raddr = Wire(DataAddrType)
-
     # Used for:
     # Clearing the 'first' signal in PhiRTL to correctly resume the progress.
     # Clearing the 'prologue_counter' signal in CrossbarRTL to correctly resume the progress.
@@ -154,7 +149,9 @@ class TileWithContextSwitchRTL(Component):
 
     # Assigns crossbar id.
     s.routing_crossbar.crossbar_id //= PORT_ROUTING_CROSSBAR
+    s.routing_crossbar.streaming_done //= 1
     s.fu_crossbar.crossbar_id //= PORT_FU_CROSSBAR
+    s.fu_crossbar.streaming_done //= 1
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
@@ -198,12 +195,6 @@ class TileWithContextSwitchRTL(Component):
         s.element.from_mem_rdata[i].msg //= DataType()
         s.element.to_mem_waddr[i].rdy //= 0
         s.element.to_mem_wdata[i].rdy //= 0
-
-    s.streaming_start_raddr //= s.element.streaming_start_raddr
-    s.streaming_stride //= s.element.streaming_stride
-    s.streaming_end_raddr //= s.element.streaming_end_raddr
-    s.fu_crossbar.streaming_done //= s.element.streaming_done
-    s.routing_crossbar.streaming_done //= s.element.streaming_done
 
     # Feed clear signal to PhiRTL and CrossbarRTL to correctly resume the progress.
     for i in range(len(FuList)):
@@ -365,28 +356,6 @@ class TileWithContextSwitchRTL(Component):
           s.fu_crossbar_done <<= 1
         if s.routing_crossbar.recv_opt.rdy:
           s.routing_crossbar_done <<= 1
-
-    # Updates the streaming LD config registers.
-    @update_ff
-    def update_streaming_start_raddr():
-      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR):
-        s.streaming_start_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
-      else:
-        s.streaming_start_raddr <<= s.streaming_start_raddr
-
-    @update_ff
-    def update_streaming_stride():
-      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE):
-        s.streaming_stride <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
-      else:
-        s.streaming_stride <<= s.streaming_stride
-
-    @update_ff
-    def update_streaming_end_raddr():
-      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR):
-        s.streaming_end_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, DataAddrType)
-      else:
-        s.streaming_end_raddr <<= s.streaming_end_raddr
 
     @update
     def notify_crossbars_compute_status():
