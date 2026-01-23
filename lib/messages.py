@@ -385,7 +385,6 @@ def mk_mem_access_pkt(DataType,
   CgraIdType = mk_bits(max(1, clog2(num_cgras)))
   TileIdType = mk_bits(clog2(num_tiles + 1))
   RemoteSrcPortType = mk_bits(clog2(num_rd_tiles + 1))
-  StreamingRdFlagType = mk_bits(1)
 
   new_name = f"{prefix}_{number_src}_{number_dst}_{mem_size_global}"
 
@@ -400,9 +399,6 @@ def mk_mem_access_pkt(DataType,
       kAttrSrcCgra: CgraIdType,
       kAttrSrcTile: TileIdType,
       kAttrRemoteSrcPort: RemoteSrcPortType,
-      kAttrStreamingRd: StreamingRdFlagType,
-      kAttrStreamingRdStride: AddrType,
-      kAttrStreamingRdEndAddr: AddrType
     },
     namespace = {'__str__': str_func}
   )
