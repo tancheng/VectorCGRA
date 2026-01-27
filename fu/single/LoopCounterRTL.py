@@ -186,8 +186,8 @@ class LoopCounterRTL(Fu):
           s.should_reset_counter @= b1(1)
           s.reset_counter_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
         
-        # CMD_CONFIG_COUNTER_SHADOW_VALUE: Updates shadow register.
-        elif s.recv_from_ctrl_mem.msg.cmd == CMD_CONFIG_COUNTER_SHADOW_VALUE:
+        # CMD_UPDATE_COUNTER_SHADOW_VALUE: Updates shadow register.
+        elif s.recv_from_ctrl_mem.msg.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE:
           s.should_update_shadow @= b1(1)
           s.update_shadow_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
           s.update_shadow_value @= s.recv_from_ctrl_mem.msg.data

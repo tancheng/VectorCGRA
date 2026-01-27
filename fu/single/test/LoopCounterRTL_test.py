@@ -218,9 +218,9 @@ def test_shadow_register_basic():
     # AC updates shadow register at ctrl_addr=2
     src_from_ctrl = [
         # Update shadow[2] = 5
-        CgraPayloadType(CMD_CONFIG_COUNTER_SHADOW_VALUE, DataType(5, 1), 0, CtrlType(0), 2),
+        CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(5, 1), 0, CtrlType(0), 2),
         # Update shadow[2] = 10
-        CgraPayloadType(CMD_CONFIG_COUNTER_SHADOW_VALUE, DataType(10, 1), 0, CtrlType(0), 2),
+        CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(10, 1), 0, CtrlType(0), 2),
     ]
     
     # Expected outputs
@@ -282,7 +282,7 @@ def test_multiple_counters():
     
     #Update shadow[1] from AC
     src_from_ctrl = [
-        CgraPayloadType(CMD_CONFIG_COUNTER_SHADOW_VALUE, DataType(100, 1), 0, CtrlType(0), 1),
+        CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(100, 1), 0, CtrlType(0), 1),
     ]
     
     # Expected outputs
