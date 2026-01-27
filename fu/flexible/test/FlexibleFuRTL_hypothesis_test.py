@@ -34,7 +34,7 @@ import hypothesis
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, FuList, DataType, CtrlType,
+  def construct( s, FunctionUnit, FuList, IntraCgraPktType, DataType, CtrlType,
                  src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs ):
     data_mem_size = 8
     num_inports   = 2
@@ -46,7 +46,7 @@ class TestHarness( Component ):
     s.src_opt       = TestSrcRTL (CtrlType,      ctrl_msgs    )
     s.sink_out0     = TestSinkRTL(DataType,      sink0_msgs   )
 
-    s.dut = FunctionUnit(DataType, CtrlType,
+    s.dut = FunctionUnit(IntraCgraPktType, DataType, CtrlType,
                          num_inports, num_outports, data_mem_size,
                          4, 1, FuList )
 
@@ -61,9 +61,6 @@ class TestHarness( Component ):
     s.from_mem_rdata = [TestSrcRTL (DataType, []) for _ in FuList]
     s.to_mem_waddr   = [TestSinkRTL(AddrType, []) for _ in FuList]
     s.to_mem_wdata   = [TestSinkRTL(DataType, []) for _ in FuList]
-    s.dut.streaming_start_raddr //= 0
-    s.dut.streaming_stride //= 0
-    s.dut.streaming_end_raddr //= 0
 
     for i in range(s.dut.fu_list_size):
       s.to_mem_raddr[i].recv   //= s.dut.to_mem_raddr[i]
@@ -126,9 +123,13 @@ def test_hypothesis(functions, inputs):
   src_a, src_b, src_opt = [], [], []
   data_bitwidth = 16
   DataType      = mk_data(data_bitwidth, 1)
+  DataAddrType  = mk_bits(1)
   PredicateType = mk_predicate(1, 1)
   num_inports   = 2
   CtrlType      = mk_ctrl(num_inports)
+  CtrlAddrType = mk_bits(1)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   for value in input_list:
@@ -136,7 +137,7 @@ def test_hypothesis(functions, inputs):
     src_b.append  (DataType(value[1]))
     src_opt.append(CtrlType(value[2], pickRegister))
   sink_out      = FuFL(DataType, src_a, src_b, src_opt)
-  th = TestHarness(FU, functions, DataType, CtrlType,
+  th = TestHarness(FU, functions, IntraCgraPktType, DataType, CtrlType,
                    src_a, src_b, src_opt, sink_out)
   run_sim(th)
 

@@ -90,7 +90,6 @@ class FlexibleFuRTL(Component):
                           data_mem_size, ctrl_mem_size, latency=exec_lantency[fu_class])
 
     s.fu = [create_fu_instance(FuList[i]) for i in range(s.fu_list_size)]
-    print(s.fu[7].to_mem_raddr)
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)
