@@ -23,6 +23,7 @@ from ...lib.util.common import *
 
 class FlexibleFuRTL(Component):
   def construct(s,
+                CtrlPktType,
                 DataType,
                 CtrlType,
                 num_inports,
@@ -59,13 +60,8 @@ class FlexibleFuRTL(Component):
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
     s.send_to_ctrl_mem = SendIfcRTL(CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(CgraPayloadType)
-    # Interfaces for streamimg LD.
-    s.streaming_start_raddr = InPort(AddrType)
-    s.streaming_stride = InPort(AddrType)
-    s.streaming_end_raddr = InPort(AddrType)
-    # This is for blocking fu_crossbar and routing_crossbar
-    # when performing streaming LD operation.
-    s.streaming_done = OutPort(b1)
+    # Interfaces for streaming LD.
+    s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
 
     s.to_mem_raddr = [SendIfcRTL(AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(DataType) for _ in range(s.fu_list_size)]
@@ -77,11 +73,24 @@ class FlexibleFuRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    s.fu = [FuList[i](DataType, CtrlType,
-                      num_inports, num_outports,
-                      data_mem_size, ctrl_mem_size,
-                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, CtrlType, num_inports, num_outports,
-                      data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
+    def create_fu_instance(fu_class):
+      if fu_class not in exec_lantency.keys():
+        if fu_class == StreamingMemUnitRTL:
+          return fu_class(CtrlPktType, DataType, CtrlType, num_inports, num_outports,
+                          data_mem_size, ctrl_mem_size, data_bitwidth=data_bitwidth)
+        else:
+          return fu_class(DataType, CtrlType, num_inports, num_outports,
+                          data_mem_size, ctrl_mem_size, data_bitwidth=data_bitwidth)
+      else:
+        if fu_class == StreamingMemUnitRTL:
+          return fu_class(CtrlPktType, DataType, CtrlType, num_inports, num_outports,
+                          data_mem_size, ctrl_mem_size, latency=exec_lantency[fu_class])
+        else:
+          return fu_class(DataType, CtrlType, num_inports, num_outports,
+                          data_mem_size, ctrl_mem_size, latency=exec_lantency[fu_class])
+
+    s.fu = [create_fu_instance(FuList[i]) for i in range(s.fu_list_size)]
+    print(s.fu[7].to_mem_raddr)
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)
@@ -96,10 +105,7 @@ class FlexibleFuRTL(Component):
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
       s.clear[i] //= s.fu[i].clear
       if FuList[i] == StreamingMemUnitRTL:
-        s.streaming_done //= s.fu[i].streaming_done
-        s.streaming_start_raddr //= s.fu[i].streaming_start_raddr
-        s.streaming_stride //= s.fu[i].streaming_stride
-        s.streaming_end_raddr //= s.fu[i].streaming_end_raddr
+        s.recv_pkt_from_controller //= s.fu[i].recv_from_controller_pkt
     
     @update
     def connect_to_controller():

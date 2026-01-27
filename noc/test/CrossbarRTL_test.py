@@ -45,7 +45,6 @@ class TestHarness(Component):
       for addr in range(ctrl_mem_size):
         s.dut.prologue_count_inport[addr][i] //= 0
     s.src_opt.send //= s.dut.recv_opt
-    s.dut.streaming_done //= 1
 
     for i in range(num_outports):
       s.dut.send_data[i] //= s.sink_out[i].recv

@@ -81,6 +81,8 @@ class GrantRTL(Fu):
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.recv_in[s.in1_idx].msg.predicate & \
                                            s.reached_vector_factor
+          else:
+            s.send_out[0].msg.predicate @= 0
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy

@@ -16,7 +16,7 @@ from ...lib.opt_type import *
 
 class StreamingMemUnitRTL(Component):
 
-  def construct(s, DataType, CtrlType, num_inports,
+  def construct(s, CtrlPktType, DataType, CtrlType, num_inports,
                 num_outports, data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0,
                 data_bitwidth = 32):
@@ -44,6 +44,7 @@ class StreamingMemUnitRTL(Component):
     s.send_out = [ValRdySendIfcRTL(DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = ValRdySendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = ValRdyRecvIfcRTL(s.CgraPayloadType)
+    s.recv_from_controller_pkt = ValRdyRecvIfcRTL(CtrlPktType)
 
     # Interfaces to the data sram, need to interface them with
     # the data memory module in top level.
@@ -51,14 +52,6 @@ class StreamingMemUnitRTL(Component):
     s.from_mem_rdata = ValRdyRecvIfcRTL(DataType)
     s.to_mem_waddr = ValRdySendIfcRTL(AddrType)
     s.to_mem_wdata = ValRdySendIfcRTL(DataType)
-
-    # Interfaces for streaming LD.
-    s.streaming_start_raddr = InPort(AddrType)
-    s.streaming_stride = InPort(AddrType)
-    s.streaming_end_raddr = InPort(AddrType)
-    # This is for blocking fu_crossbar and routing_crossbar
-    # when performing streaming LD operation.
-    s.streaming_done = OutPort(b1)
 
     # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)
@@ -93,6 +86,12 @@ class StreamingMemUnitRTL(Component):
     # Registers for when to enter streaming status.
     s.ctrl_addr_reg = Wire(CtrlAddrType)
     s.streaming_status = Wire(1)
+
+    # Registers for streaming LD.
+    s.streaming_start_raddr = Wire(AddrType)
+    s.streaming_stride = Wire(AddrType)
+    s.streaming_end_raddr = Wire(AddrType)
+    s.streaming_done = Wire(b1)
 
     # Connections.
     s.vector_factor_power //= vector_factor_power
@@ -248,6 +247,32 @@ class StreamingMemUnitRTL(Component):
     @update_ff
     def update_ctrl_addr_reg():
       s.ctrl_addr_reg <<= s.ctrl_addr_inport
+
+    # Updates the streaming LD config registers.
+    @update_ff
+    def update_streaming_start_raddr():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR):
+        s.streaming_start_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, AddrType)
+      else:
+        s.streaming_start_raddr <<= s.streaming_start_raddr
+
+    @update_ff
+    def update_streaming_stride():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE):
+        s.streaming_stride <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, AddrType)
+      else:
+        s.streaming_stride <<= s.streaming_stride
+
+    @update_ff
+    def update_streaming_end_raddr():
+      if s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR):
+        s.streaming_end_raddr <<= trunc(s.recv_from_controller_pkt.msg.payload.data.payload, AddrType)
+      else:
+        s.streaming_end_raddr <<= s.streaming_end_raddr
+
+    @update
+    def update_recv_from_controller_pkt_rdy():
+      s.recv_from_controller_pkt.rdy @= 1
 
   def line_trace(s):
     opt_str = " #"

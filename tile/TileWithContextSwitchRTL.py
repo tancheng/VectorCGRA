@@ -149,9 +149,7 @@ class TileWithContextSwitchRTL(Component):
 
     # Assigns crossbar id.
     s.routing_crossbar.crossbar_id //= PORT_ROUTING_CROSSBAR
-    s.routing_crossbar.streaming_done //= 1
     s.fu_crossbar.crossbar_id //= PORT_FU_CROSSBAR
-    s.fu_crossbar.streaming_done //= 1
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const

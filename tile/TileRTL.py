@@ -81,7 +81,7 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
+    s.element = FlexibleFuRTL(CtrlPktType, DataType, CtrlSignalType,
                               num_fu_inports, num_fu_outports,
                               data_mem_size, ctrl_mem_size,
                               num_tiles, FuList)
@@ -145,9 +145,7 @@ class TileRTL(Component):
 
     # Assigns crossbar id.
     s.routing_crossbar.crossbar_id //= PORT_ROUTING_CROSSBAR
-    s.routing_crossbar.streaming_done //= 1
     s.fu_crossbar.crossbar_id //= PORT_FU_CROSSBAR
-    s.fu_crossbar.streaming_done //= 1
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
