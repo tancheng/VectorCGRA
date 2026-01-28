@@ -52,15 +52,7 @@ class LoopCounterRTL(Fu):
     s.leaf_step = [Wire(DataType) for _ in range(ctrl_mem_size)]
     s.leaf_current_value = [Wire(DataType) for _ in range(ctrl_mem_size)]
     
-    # Configuration state for each ctrl_addr's leaf counter.
-    LoopStateType = mk_bits(3)
-    s.kWaitConfig = LoopStateType(0)
-    s.kLoadLowerBound = LoopStateType(1)
-    s.kLoadUpperBound = LoopStateType(2)
-    s.kLoadStep = LoopStateType(3)
-    s.kLoopConfigDone = LoopStateType(4)
-    
-    s.leaf_config_state = [Wire(LoopStateType) for _ in range(ctrl_mem_size)]
+
     
     # Shadow register for each ctrl_addr (stores relay/root counter values).
     s.shadow_regs = [Wire(DataType) for _ in range(ctrl_mem_size)]
@@ -71,15 +63,17 @@ class LoopCounterRTL(Fu):
     
     # ===== Control Signals =====
     s.current_ctrl_addr = Wire(CtrlAddrType)
-    s.leaf_is_running = Wire(1)
     s.loop_terminated = Wire(1)
     
-    # Update triggers from AC.
-    s.should_reset_counter = Wire(1)
-    s.should_update_shadow = Wire(1)
-    s.reset_counter_addr = Wire(CtrlAddrType)
-    s.update_shadow_addr = Wire(CtrlAddrType)
-    s.update_shadow_value = Wire(DataType)
+    # Update triggers from AC (CMD).
+    s.cmd_reset_counter = Wire(1)
+    s.cmd_update_shadow = Wire(1)
+    s.cmd_config_lower = Wire(1)
+    s.cmd_config_upper = Wire(1)
+    s.cmd_config_step = Wire(1)
+    
+    s.target_ctrl_addr = Wire(CtrlAddrType)
+    s.target_ctrl_data = Wire(DataType)
     
     @update
     def comb_logic():
@@ -98,71 +92,48 @@ class LoopCounterRTL(Fu):
       
       # Gets current ctrl_addr for operation.
       s.current_ctrl_addr @= s.ctrl_addr_inport
-      s.leaf_is_running @= (s.leaf_config_state[s.current_ctrl_addr] == s.kLoopConfigDone)
       s.loop_terminated @= (s.leaf_current_value[s.current_ctrl_addr].payload >= 
                             s.leaf_upper_bound[s.current_ctrl_addr].payload)
       
-      s.should_reset_counter @= b1(0)
-      s.should_update_shadow @= b1(0)
-      s.reset_counter_addr @= CtrlAddrType(0)
-      s.update_shadow_addr @= CtrlAddrType(0)
-      s.update_shadow_value @= DataType(0, 0)
+      # CMD signal reset
+      s.cmd_reset_counter @= b1(0)
+      s.cmd_update_shadow @= b1(0)
+      s.cmd_config_lower @= b1(0)
+      s.cmd_config_upper @= b1(0)
+      s.cmd_config_step @= b1(0)
+      s.target_ctrl_addr @= CtrlAddrType(0)
+      s.target_ctrl_data @= DataType(0, 0)
       
       if s.recv_opt.val:
         # ===== OPT_LOOP_COUNT: Loop-Driven Mode (Leaf Counter) =====
         if s.recv_opt.msg.operation == OPT_LOOP_COUNT:
           addr = s.current_ctrl_addr
           
-          # Configuration phase: sequentially read 3 constants.
-          if ~s.leaf_is_running:
-            if s.leaf_config_state[addr] == s.kLoadLowerBound:
-              if s.recv_const.val:
-                s.recv_const.rdy @= b1(1)
-              s.recv_opt.rdy @= b1(0)
-              s.send_out[0].val @= b1(0)
-              
-            elif s.leaf_config_state[addr] == s.kLoadUpperBound:
-              if s.recv_const.val:
-                s.recv_const.rdy @= b1(1)
-              s.recv_opt.rdy @= b1(0)
-              s.send_out[0].val @= b1(0)
-              
-            elif s.leaf_config_state[addr] == s.kLoadStep:
-              if s.recv_const.val:
-                s.recv_const.rdy @= b1(1)
-              s.recv_opt.rdy @= b1(0)
-              s.send_out[0].val @= b1(0)
-              
-            else:
-              s.recv_opt.rdy @= b1(0)
-              s.send_out[0].val @= b1(0)
-          
           # Execution phase: output current counter value.
-          else:
-            s.recv_const.rdy @= b1(0)
-            s.send_out[0].msg.payload @= s.leaf_current_value[addr].payload
+          s.recv_const.rdy @= b1(0)
+          s.send_out[0].msg.payload @= s.leaf_current_value[addr].payload
+          
+          if s.loop_terminated:
+            # Loop terminated: predicate = 0.
+            s.send_out[0].msg.predicate @= 0
             
-            if s.loop_terminated:
-              # Loop terminated: predicate = 0.
-              s.send_out[0].msg.predicate @= 0
-              
-              # Sends CMD_COMPLETE if not already done (meaning it has not sent a completion message).
-              if ~s.already_done[addr]:
-                s.send_to_ctrl_mem.val @= b1(1)
-                s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
-                  CMD_COMPLETE, DataType(0, 0), 0, s.recv_opt.msg, addr
-                )
-                s.send_out[0].val @= b1(1)
-                s.recv_opt.rdy @= s.send_to_ctrl_mem.rdy & s.send_out[0].rdy
-              else:
-                # Already sent completion.
-                s.send_out[0].val @= b1(1)
-                s.recv_opt.rdy @= s.send_out[0].rdy
+            # Sends CMD_COMPLETE if not already done.
+            if ~s.already_done[addr]:
+              s.send_to_ctrl_mem.val @= b1(1)
+              s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
+                CMD_COMPLETE, DataType(0, 0), 0, s.recv_opt.msg, addr
+              )
+              s.send_out[0].val @= b1(1)
+              s.recv_opt.rdy @= s.send_to_ctrl_mem.rdy & s.send_out[0].rdy
             else:
-              # Valid iteration: predicate = 1.
-              s.send_out[0].msg.predicate @= 1
+              # Already sent completion.
               s.send_out[0].val @= b1(1)
               s.recv_opt.rdy @= s.send_out[0].rdy
+          else:
+            # Valid iteration: predicate = 1.
+            s.send_out[0].msg.predicate @= 1
+            s.send_out[0].val @= b1(1)
+            s.recv_opt.rdy @= s.send_out[0].rdy
         
         # ===== OPT_LOOP_DELIVERY: Loop-Delivery Mode (Shadow Register) =====
         elif s.recv_opt.msg.operation == OPT_LOOP_DELIVERY:
@@ -177,41 +148,28 @@ class LoopCounterRTL(Fu):
             s.send_out[0].val @= b1(0)
             s.recv_opt.rdy @= b1(0)
       
-      # ===== Handle messages from AC (runtime updates) =====
+      # ===== Handle messages from AC (CMD updates) =====
       if s.recv_from_ctrl_mem.val:
         s.recv_from_ctrl_mem.rdy @= b1(1)
+        s.target_ctrl_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
+        s.target_ctrl_data @= s.recv_from_ctrl_mem.msg.data
         
-        # CMD_RESET_LEAF_COUNTER: Resets leaf counter to lower_bound.
         if s.recv_from_ctrl_mem.msg.cmd == CMD_RESET_LEAF_COUNTER:
-          s.should_reset_counter @= b1(1)
-          s.reset_counter_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
+          s.cmd_reset_counter @= b1(1)
         
-        # CMD_UPDATE_COUNTER_SHADOW_VALUE: Updates shadow register.
         elif s.recv_from_ctrl_mem.msg.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE:
-          s.should_update_shadow @= b1(1)
-          s.update_shadow_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
-          s.update_shadow_value @= s.recv_from_ctrl_mem.msg.data
-    
-    @update_ff
-    def update_leaf_config_state():
-      if s.reset | s.clear:
-        for i in range(ctrl_mem_size):
-          s.leaf_config_state[i] <<= s.kWaitConfig
-      else:
-        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT):
-          addr = s.current_ctrl_addr
+          s.cmd_update_shadow @= b1(1)
           
-          if s.leaf_config_state[addr] == s.kWaitConfig:
-            s.leaf_config_state[addr] <<= s.kLoadLowerBound
-          elif s.leaf_config_state[addr] == s.kLoadLowerBound:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_config_state[addr] <<= s.kLoadUpperBound
-          elif s.leaf_config_state[addr] == s.kLoadUpperBound:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_config_state[addr] <<= s.kLoadStep
-          elif s.leaf_config_state[addr] == s.kLoadStep:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_config_state[addr] <<= s.kLoopConfigDone
+        elif s.recv_from_ctrl_mem.msg.cmd == CMD_CONFIG_LOOP_LOWER:
+          s.cmd_config_lower @= b1(1)
+          
+        elif s.recv_from_ctrl_mem.msg.cmd == CMD_CONFIG_LOOP_UPPER:
+          s.cmd_config_upper @= b1(1)
+          
+        elif s.recv_from_ctrl_mem.msg.cmd == CMD_CONFIG_LOOP_STEP:
+          s.cmd_config_step @= b1(1)
+    
+    # State update logic (Removed leaf_config_state)
     
     @update_ff
     def update_leaf_counters():
@@ -222,34 +180,29 @@ class LoopCounterRTL(Fu):
           s.leaf_step[i] <<= DataType(0, 0)
           s.leaf_current_value[i] <<= DataType(0, 0)
       else:
-        # Initial configuration phase.
-        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & ~s.leaf_is_running:
-          addr = s.current_ctrl_addr
+        # CMD Config Updates
+        if s.cmd_config_lower:
+          s.leaf_lower_bound[s.target_ctrl_addr] <<= s.target_ctrl_data
+          # Also initialize current value when lower bound is set (optional but safe)
+          s.leaf_current_value[s.target_ctrl_addr] <<= s.target_ctrl_data
           
-          if s.leaf_config_state[addr] == s.kLoadLowerBound:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_lower_bound[addr] <<= s.recv_const.msg
-          elif s.leaf_config_state[addr] == s.kLoadUpperBound:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_upper_bound[addr] <<= s.recv_const.msg
-          elif s.leaf_config_state[addr] == s.kLoadStep:
-            if s.recv_const.val & s.recv_const.rdy:
-              s.leaf_step[addr] <<= s.recv_const.msg
-              # Initializes current_value to lower_bound.
-              s.leaf_current_value[addr] <<= s.leaf_lower_bound[addr]
+        if s.cmd_config_upper:
+          s.leaf_upper_bound[s.target_ctrl_addr] <<= s.target_ctrl_data
+          
+        if s.cmd_config_step:
+          s.leaf_step[s.target_ctrl_addr] <<= s.target_ctrl_data
         
         # Execution phase: increments counter.
-        elif s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & s.leaf_is_running:
-          addr = s.current_ctrl_addr
-          if s.send_out[0].val & s.send_out[0].rdy:
-            if s.leaf_current_value[addr].payload < s.leaf_upper_bound[addr].payload:
-              s.leaf_current_value[addr] <<= DataType(
-                s.leaf_current_value[addr].payload + s.leaf_step[addr].payload, b1(1)
-              )
+        if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT):
+           addr = s.current_ctrl_addr
+           if s.send_out[0].val & s.send_out[0].rdy & ~s.loop_terminated:
+             s.leaf_current_value[addr] <<= DataType(
+               s.leaf_current_value[addr].payload + s.leaf_step[addr].payload, b1(1)
+             )
         
         # Runtime reset from AC.
-        if s.should_reset_counter:
-          addr = s.reset_counter_addr
+        if s.cmd_reset_counter:
+          addr = s.target_ctrl_addr
           s.leaf_current_value[addr] <<= s.leaf_lower_bound[addr]
     
     @update_ff
@@ -260,9 +213,9 @@ class LoopCounterRTL(Fu):
           s.shadow_valid[i] <<= b1(0)
       else:
         # Runtime update from AC.
-        if s.should_update_shadow:
-          addr = s.update_shadow_addr
-          s.shadow_regs[addr] <<= s.update_shadow_value
+        if s.cmd_update_shadow:
+          addr = s.target_ctrl_addr
+          s.shadow_regs[addr] <<= s.target_ctrl_data
           s.shadow_valid[addr] <<= b1(1)
     
     @update_ff
@@ -274,7 +227,6 @@ class LoopCounterRTL(Fu):
         # Sets done flag when loop completes.
         if s.recv_opt.val & \
            (s.recv_opt.msg.operation == OPT_LOOP_COUNT) & \
-           s.leaf_is_running & \
            ~s.already_done[s.current_ctrl_addr] & \
            s.loop_terminated & \
            s.send_to_ctrl_mem.val & \
@@ -283,20 +235,23 @@ class LoopCounterRTL(Fu):
           s.already_done[addr] <<= b1(1)
         
         # Resets done flag when counter is reset from AC.
-        if s.should_reset_counter:
-          addr = s.reset_counter_addr
+        if s.cmd_reset_counter:
+          addr = s.target_ctrl_addr
           s.already_done[addr] <<= b1(0)
     
   def line_trace(s):
     addr = s.current_ctrl_addr
-    config_state_str = ['WAIT', 'LOWER', 'UPPER', 'STEP', 'DONE'][s.leaf_config_state[addr]]
+    # config_state_str = ['WAIT', 'LOWER', 'UPPER', 'STEP', 'DONE'][s.leaf_config_state[addr]]
     opt_str = " #"
     if s.recv_opt.val:
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     
     if s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_COUNT:
-      return f'[DCU|addr={addr}|{config_state_str}|{opt_str}|' + \
+      return f'[DCU|addr={addr}|{opt_str}|' + \
              f'cnt={s.leaf_current_value[addr].payload}/{s.leaf_upper_bound[addr].payload}|' + \
+             f'step={s.leaf_step[addr].payload}|' + \
+             f'rdy={s.recv_opt.rdy}/{s.send_out[0].rdy}|' + \
+             f'cmd={s.cmd_config_lower}{s.cmd_config_upper}{s.cmd_config_step}|' + \
              f'pred={s.send_out[0].msg.predicate}|val={s.send_out[0].val}|' + \
              f'done={s.already_done[addr]}]'
     elif s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_DELIVERY:
