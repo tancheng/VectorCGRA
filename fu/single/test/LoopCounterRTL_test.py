@@ -207,12 +207,12 @@ def test_shadow_register_basic():
     # No constants needed for shadow register
     src_const = []
     
-    # Execute OPT_LOOP_PROVIDE operations
+    # Execute OPT_LOOP_DELIVERY operations
     src_opt = [
-        CtrlType(OPT_LOOP_PROVIDE),  # Output shadow[2]
-        CtrlType(OPT_LOOP_PROVIDE),  # Output shadow[2] (updated value)
-        CtrlType(OPT_LOOP_PROVIDE),  # Output shadow[2]
-        CtrlType(OPT_LOOP_PROVIDE),  # Output shadow[2]
+        CtrlType(OPT_LOOP_DELIVERY),  # Output shadow[2]
+        CtrlType(OPT_LOOP_DELIVERY),  # Output shadow[2] (updated value)
+        CtrlType(OPT_LOOP_DELIVERY),  # Output shadow[2]
+        CtrlType(OPT_LOOP_DELIVERY),  # Output shadow[2]
     ]
     
     # AC updates shadow register at ctrl_addr=2
@@ -272,11 +272,11 @@ def test_multiple_counters():
     # But src_opt is consumed only when recv_opt.rdy=1, so timing matters
     src_opt = [
         CtrlType(OPT_LOOP_COUNT),    # Consumed at cycle 5: output 0
-        CtrlType(OPT_LOOP_PROVIDE),  # Consumed at cycle 6: shadow[1]
+        CtrlType(OPT_LOOP_DELIVERY),  # Consumed at cycle 6: shadow[1]
         CtrlType(OPT_LOOP_COUNT),    # Consumed at cycle 7: output 1
-        CtrlType(OPT_LOOP_PROVIDE),  # Consumed at cycle 8: shadow[1]
+        CtrlType(OPT_LOOP_DELIVERY),  # Consumed at cycle 8: shadow[1]
         CtrlType(OPT_LOOP_COUNT),    # Consumed at cycle 9: output 2
-        CtrlType(OPT_LOOP_PROVIDE),  # Consumed at cycle 10: shadow[1]
+        CtrlType(OPT_LOOP_DELIVERY),  # Consumed at cycle 10: shadow[1]
         CtrlType(OPT_LOOP_COUNT),    # Consumed at cycle 11: output 3
     ]
     

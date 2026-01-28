@@ -10,8 +10,8 @@ Each ctrl_addr has:
 - Shadow register (for relay/root counter values from AC)
 
 Supports two operation modes per ctrl_addr:
-1. OPT_LOOP_COUNT: Data-Drive Mode (Leaf counter execution)
-2. OPT_LOOP_PROVIDE: Data-Provide Mode (Shadow register output)
+1. OPT_LOOP_COUNT: Loop-Driven Mode (Leaf counter execution)
+2. OPT_LOOP_DELIVERY: Loop-Delivery Mode (Shadow register output)
 
 Configuration methods:
 1. Initial config (via ConstQueue): Configure leaf counter parameters
@@ -109,7 +109,7 @@ class LoopCounterRTL(Fu):
       s.update_shadow_value @= DataType(0, 0)
       
       if s.recv_opt.val:
-        # ===== OPT_LOOP_COUNT: Data-Drive Mode (Leaf Counter) =====
+        # ===== OPT_LOOP_COUNT: Loop-Driven Mode (Leaf Counter) =====
         if s.recv_opt.msg.operation == OPT_LOOP_COUNT:
           addr = s.current_ctrl_addr
           
@@ -164,8 +164,8 @@ class LoopCounterRTL(Fu):
               s.send_out[0].val @= b1(1)
               s.recv_opt.rdy @= s.send_out[0].rdy
         
-        # ===== OPT_LOOP_PROVIDE: Data-Provide Mode (Shadow Register) =====
-        elif s.recv_opt.msg.operation == OPT_LOOP_PROVIDE:
+        # ===== OPT_LOOP_DELIVERY: Loop-Delivery Mode (Shadow Register) =====
+        elif s.recv_opt.msg.operation == OPT_LOOP_DELIVERY:
           addr = s.current_ctrl_addr
           
           if s.shadow_valid[addr]:
@@ -299,7 +299,7 @@ class LoopCounterRTL(Fu):
              f'cnt={s.leaf_current_value[addr].payload}/{s.leaf_upper_bound[addr].payload}|' + \
              f'pred={s.send_out[0].msg.predicate}|val={s.send_out[0].val}|' + \
              f'done={s.already_done[addr]}]'
-    elif s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_PROVIDE:
+    elif s.recv_opt.val and s.recv_opt.msg.operation == OPT_LOOP_DELIVERY:
       return f'[DCU|addr={addr}|{opt_str}|' + \
              f'shadow={s.shadow_regs[addr].payload}|' + \
              f'valid={s.shadow_valid[addr]}|val={s.send_out[0].val}]'
