@@ -44,6 +44,7 @@ CMD_RESET_LEAF_COUNTER               = 24  # Resets leaf counter to lower_bound.
 CMD_CONFIG_LOOP_LOWER                = 25
 CMD_CONFIG_LOOP_UPPER                = 26
 CMD_CONFIG_LOOP_STEP                 = 27
+CMD_LEAF_COUNTER_COMPLETE            = 28
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -74,5 +75,6 @@ CMD_SYMBOL_DICT = {
   CMD_CONFIG_LOOP_LOWER:                "(CONFIG_LOOP_LOWER)",
   CMD_CONFIG_LOOP_UPPER:                "(CONFIG_LOOP_UPPER)",
   CMD_CONFIG_LOOP_STEP:                 "(CONFIG_LOOP_STEP)",
+  CMD_LEAF_COUNTER_COMPLETE:            "(LEAF_COUNTER_COMPLETE)",
 }
 

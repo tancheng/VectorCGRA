@@ -134,7 +134,7 @@ def test_leaf_counter_basic():
     ]
     
     sink_to_ctrl = [
-        CgraPayloadType(CMD_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 0)
+        CgraPayloadType(CMD_LEAF_COUNTER_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 0)
     ]
     
     ctrl_addrs = [0]*20
@@ -170,7 +170,7 @@ def test_loop_counter_with_step():
         CgraPayloadType(CMD_CONFIG_LOOP_LOWER, DataType(0, 1), 0, CtrlType(0), 1),
         CgraPayloadType(CMD_CONFIG_LOOP_UPPER, DataType(10, 1), 0, CtrlType(0), 1),
         CgraPayloadType(CMD_CONFIG_LOOP_STEP, DataType(2, 1), 0, CtrlType(0), 1),
-    ] + [CgraPayloadType(0, DataType(0,0), 0, CtrlType(0), 0)] * 20
+    ]
     
     sink_out = [
         DataType(0, 1),
@@ -180,10 +180,10 @@ def test_loop_counter_with_step():
         DataType(8, 1),
         DataType(10, 0),
         DataType(10, 0),
-        DataType(10, 0),
+        DataType(10, 0)
     ]
     sink_to_ctrl = [
-        CgraPayloadType(CMD_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 1)
+        CgraPayloadType(CMD_LEAF_COUNTER_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 1)
     ]
     
     ctrl_addrs = [1]*20
@@ -304,7 +304,7 @@ def test_counter_reset():
     ]
     
     sink_to_ctrl = [
-        CgraPayloadType(CMD_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 0),
+        CgraPayloadType(CMD_LEAF_COUNTER_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 0),
     ]
     
     ctrl_addrs = [0] * 20
