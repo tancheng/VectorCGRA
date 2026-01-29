@@ -1,24 +1,18 @@
 """
 =========================================================================
-TileSeparateCrossbarRTL.py
+TileWithStreamingLoadRTL.py
 =========================================================================
-The tile contains a list of functional units, a configuration memory, a
-set of registers (e.g., channels), and two crossbars. One crossbar is for
-routing the data to registers (i.e., the channels before FU and the
-channels after the crossbar), and the other one is for passing the to the
-next crossbar.
+Integrates tile with StreamimgMemUnit for streaming LD.
 
-Detailed in: https://github.com/tancheng/VectorCGRA/issues/13 (Option 2).
-
-Author : Cheng Tan
-  Date : Nov 26, 2024
+Author : Yufei Yang
+  Date : Jan 21, 2026
 """
 
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.GrantRTL import GrantRTL
 from ..fu.single.CompRTL import CompRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
+from ..fu.single.StreamingMemUnitRTL import StreamingMemUnitRTL
 from ..fu.single.MulRTL import MulRTL
 from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
@@ -34,16 +28,15 @@ from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
 from ..lib.util.data_struct_attr import *
 
-
-class TileRTL(Component):
+class TileWithStreamingLoadRTL(Component):
 
   def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports, 
+                total_steps, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, StreamingMemUnitRTL]):
 
     # Derives types from IntraCgraPktType.
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
@@ -170,7 +163,7 @@ class TileRTL(Component):
             s.ctrl_mem.prologue_count_outport_fu_crossbar[addr][i]
 
     for i in range(len(FuList)):
-      if FuList[i] == MemUnitRTL:
+      if FuList[i] == StreamingMemUnitRTL:
         s.to_mem_raddr //= s.element.to_mem_raddr[i]
         s.from_mem_rdata //= s.element.from_mem_rdata[i]
         s.to_mem_waddr //= s.element.to_mem_waddr[i]
@@ -251,10 +244,16 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
-            s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
+            s.element.recv_pkt_from_controller.val @= 1
+            s.element.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
+            s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy | \
+                                              s.element.recv_pkt_from_controller.rdy
         elif s.recv_from_controller_pkt.val & (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONST):
             s.const_mem.recv_const.val @= 1
             s.const_mem.recv_const.msg @= s.recv_from_controller_pkt.msg.payload.data
@@ -302,12 +301,15 @@ class TileRTL(Component):
         s.fu_crossbar_done <<= 0
         s.routing_crossbar_done <<= 0
       else:
+        # s.element_done keeps 0 during streaming LD.
         if s.element.recv_opt.rdy:
           s.element_done <<= 1
         if s.fu_crossbar.recv_opt.rdy:
-          s.fu_crossbar_done <<= 1
+          # s.fu_crossbar_done should also be 0 during streaming LD.
+          s.fu_crossbar_done <<= (1 & s.element_done)
         if s.routing_crossbar.recv_opt.rdy:
-          s.routing_crossbar_done <<= 1
+          # s.routing_crossbar_done should also be 0 during streaming LD.
+          s.routing_crossbar_done <<= (1 & s.element_done)
 
     @update
     def notify_crossbars_compute_status():
