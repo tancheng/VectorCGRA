@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 26
+NUM_CMDS = 28
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -42,6 +42,12 @@ CMD_PRESERVE                         = 22
 CMD_CONFIG_STREAMING_LD_START_ADDR   = 23
 CMD_CONFIG_STREAMING_LD_STRIDE       = 24
 CMD_CONFIG_STREAMING_LD_END_ADDR     = 25
+CMD_UPDATE_COUNTER_SHADOW_VALUE      = 23  # Updates shadow registers value from AC.
+CMD_RESET_LEAF_COUNTER               = 24  # Resets leaf counter to lower_bound.
+CMD_CONFIG_LOOP_LOWER                = 25
+CMD_CONFIG_LOOP_UPPER                = 26
+CMD_CONFIG_LOOP_STEP                 = 27
+CMD_LEAF_COUNTER_COMPLETE            = 28
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -70,5 +76,11 @@ CMD_SYMBOL_DICT = {
   CMD_CONFIG_STREAMING_LD_START_ADDR:   "(STREAMING_LD_START_ADDR)",
   CMD_CONFIG_STREAMING_LD_STRIDE:       "(STREAMING_LD_STRIDE)",
   CMD_CONFIG_STREAMING_LD_END_ADDR:     "(STREAMING_LD_END_ADDR)"
+  CMD_UPDATE_COUNTER_SHADOW_VALUE:      "(UPDATE_COUNTER_SHADOW_REGISTER)",
+  CMD_RESET_LEAF_COUNTER:               "(RESET_LEAF_COUNTER)",
+  CMD_CONFIG_LOOP_LOWER:                "(CONFIG_LOOP_LOWER)",
+  CMD_CONFIG_LOOP_UPPER:                "(CONFIG_LOOP_UPPER)",
+  CMD_CONFIG_LOOP_STEP:                 "(CONFIG_LOOP_STEP)",
+  CMD_LEAF_COUNTER_COMPLETE:            "(LEAF_COUNTER_COMPLETE)",
 }
 
