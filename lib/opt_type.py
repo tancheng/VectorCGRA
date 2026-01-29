@@ -107,7 +107,6 @@ OPT_REM_INCLUSIVE_END            = OpCodeType( 15 )
 
 OPT_LOOP_CONTROL                 = OpCodeType( 83 )
 OPT_STREAM_LD                    = OpCodeType( 84 )
-OPT_LOOP_COUNT                 = OpCodeType( 85 )
 OPT_LOOP_COUNT                   = OpCodeType( 85 )
 OPT_LOOP_DELIVERY                = OpCodeType( 86 )
 
@@ -200,7 +199,6 @@ OPT_SYMBOL_DICT = {
   OPT_LOOP_CONTROL               : "(loop_ctrl)",
   OPT_STREAM_LD                  : "(streaming_ld)",
 
-  OPT_LOOP_COUNT                 : "(loop_cnt)"
   OPT_LOOP_COUNT                 : "(loop_cnt)",
   OPT_LOOP_DELIVERY              : "(loop_deli)"
 }

@@ -235,7 +235,7 @@ class MemUnitRTL(Component):
           s.send_out[0].val @= b1(0)
 
           s.recv_opt.rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
-        
+
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)

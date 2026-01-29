@@ -1750,7 +1750,7 @@ def translate_model(top, submodules_to_translate):
       m = getattr(top, submodule)
       _enable_translate_recursively(m)
   top.apply(VerilogTranslationPass())
-'''
+
 def test_multi_CGRA_fir_scalar_fused(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
                                num_cgra_rows = 2,
@@ -1790,7 +1790,7 @@ def test_multi_CGRA_fir_scalar_migrated(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
-'''
+
 def test_multi_CGRA_fir_scalar_dynamic_migration(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
                                num_cgra_rows = 2,
