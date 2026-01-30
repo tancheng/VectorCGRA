@@ -251,7 +251,10 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH)):
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
