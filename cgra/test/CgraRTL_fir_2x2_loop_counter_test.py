@@ -364,8 +364,8 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
   #          3(x)               |
   #           |                 |
   #    ┌---> 4(+)               |
-  #    |    /    \              |
-  # 5(phi_const)  8(grant_predicate)
+  #    |    /                   |
+  # 5(phi_const) ----- 8(grant_predicate)
   #                             |
   #                          9(ret)
   #
@@ -379,27 +379,27 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
        +-----------------→ X
         (0,0)    (1,0)
 
-  Tile 0: 0(loop_count), 1(+,ld), 3(x)
-  Tile 1: 2(+,ld), 6(extract_pred)
-  Tile 2: 4(+), 5(phi_const)
-  Tile 3: 7(not), 8(grant_predicate), 9(ret)
+  Tile 0: 0(loop_count), 1(+,ld)
+  Tile 1: 6(extract_pred), 7(not)
+  Tile 2: 4(+), 2(+,ld), 3(x)
+  Tile 3: 8(grant_predicate), 9(ret), 5(phi_const)
   =============================
   cycle 0:
-  [   4(+)     →   7(not)     ]
-       ↺             ↺
-  [    🔳      ←  0(loop_cnt) ]
-                      ↺
+  [   4(+)   →   8(grant_pred)]
+       ↑              ↺
+  [0(loop_cnt) →      🔳      ]
+       ↺
   =============================
   cycle 1:
-  [ 5(phi_c)    8(grant_pred) ]
-       ↺             ↺
-  [ 1(+,ld)   ←    2(+,ld)    ]
-       ↺              
+  [ 2(+,ld)        9(ret)     ]
+      ↑↺             
+  [ 1(+,ld)    6(extract_pred)]
+                     ↺
   =============================
   cycle 2:
-  [    🔳            9(ret)   ]
-       ↑              ↑
-  [   3(x)     6(extract_pred)]
+  [  3(x)   ←   5(phi_const)  ]
+       ↺             ↑↺
+  [   🔳            7(not)    ]
 
   =============================
   '''
@@ -410,14 +410,67 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
           # Const for ADD_CONST_LD.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
           
+           # Configure loop counter parameters via CMD.
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_LOOP_LOWER, data = DataType(kLoopLowerBound, 1), ctrl_addr = 0)),
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_LOOP_UPPER, data = DataType(kLoopUpperBound, 1), ctrl_addr = 0)),
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_LOOP_STEP, data = DataType(kLoopIncrement, 1), ctrl_addr = 0)),
+          
           # Pre-configure per-tile config count per iter.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
+          # LOOP_COUNT.
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_LOOP_COUNT,
+                                                                     fu_in_code,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
+          
+          # ADD_CONST_LD.
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                     ctrl = CtrlType(OPT_ADD_CONST_LD,
+                                                                     fu_in_code,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+
           # NAH.
           IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                     ctrl = CtrlType(OPT_NAH,
+                                                                     fu_in_code,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+          # Prologue delay for Loop Counter to wait for other tiles to start.
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
+                                                     data = DataType(3, 1))),
+          # Launch the tile.
+          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+      ],
+
+      # tile 1
+      [ 
+          # Pre-configure per-tile config count per iter.
+          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+          # Pre-configure per-tile total config count.
+          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+          
+          # NAH.
+          IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                      ctrl = CtrlType(OPT_NAH,
                                                                      fu_in_code,
@@ -425,74 +478,23 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
-          # ADD_CONST_LD.
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                     ctrl = CtrlType(OPT_ADD_CONST_LD,
-                                                                     fu_in_code,
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     # 2 indicates the FU xbar port (instead of const queue or routing xbr port).
-                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
-          # MUL.
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_MUL,
-                                                                     fu_in_code,
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(4), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
 
-          # Launch the tile.
-          IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
-      ],
-
-      # tile 1
-      [ 
-          # Const for ADD_CONST_LD.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
-
-          # Configure loop counter parameters via CMD.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_LOOP_LOWER, data = DataType(kLoopLowerBound, 1), ctrl_addr = 0)),
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_LOOP_UPPER, data = DataType(kLoopUpperBound, 1), ctrl_addr = 0)),
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_LOOP_STEP, data = DataType(kLoopIncrement, 1), ctrl_addr = 0)),
-          
-          # Pre-configure per-tile config count per iter.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
-
-          # Pre-configure per-tile total config count.
-          IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
-          
-          # LOOP_COUNT.
+          # EXTRACT_PREDICATE.
           IntraCgraPktType(0, 1,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                     ctrl = CtrlType(OPT_LOOP_COUNT,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                     ctrl = CtrlType(OPT_EXTRACT_PREDICATE,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
 
-          # ADD_CONST_LD.
-          IntraCgraPktType(0, 1,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                     ctrl = CtrlType(OPT_ADD_CONST_LD,
-                                                                     fu_in_code,
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
-          # EXTRACT_PREDICATE.
+          # NOT.
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_EXTRACT_PREDICATE,
+                                                     ctrl = CtrlType(OPT_NOT,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
@@ -506,8 +508,8 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
 
       # tile 2
       [
-          # Const for PHI_CONST.
-          IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
+          # Const for ADD_CONST_LD.
+          IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
 
           # Pre-configure per-tile config count per iter.
           IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
@@ -521,34 +523,31 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                      ctrl = CtrlType(OPT_ADD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(2), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_EAST), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
-                                                                     write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
-          # PHI_CONST.
+          # ADD_CONST_LD.
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
-                                                     ctrl = CtrlType(OPT_PHI,
-                                                                     # The first 2 indicates the first operand is from the second inport,
-                                                                     # which is actually from the second register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
-                                                                     [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
-          # NAH.
-          IntraCgraPktType(0, 2,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
-                                                     ctrl = CtrlType(OPT_NAH,
+                                                     ctrl = CtrlType(OPT_ADD_CONST_LD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+                                                                      FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                     write_reg_from = [b2(0), b2(2), b2(0), b2(0)]))),
+          # MUL.
+          IntraCgraPktType(0, 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                     ctrl = CtrlType(OPT_MUL,
+                                                                     fu_in_code,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)],
+                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
 
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
@@ -557,7 +556,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           
@@ -566,7 +565,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                      ctrl = CtrlType(fu_xbar_outport = [
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
-                                                     data = DataType(1, 1))),
+                                                     data = DataType(1, 1))),                                       
 
           # Launch the tile.
           IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_LAUNCH))
@@ -574,43 +573,54 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
 
       # tile 3
       [
+          # Const for PHI_CONST.
+          IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
+
           # Pre-configure per-tile config count per iter.
           IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
           # Pre-configure per-tile total config count.
           IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
-          # NOT.
-          IntraCgraPktType(0, 3,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                     ctrl = CtrlType(OPT_NOT,
-                                                                     fu_in_code,
-                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
-                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
-                                                                     write_reg_from = [b2(0), b2(1), b2(0), b2(0)]))),
           # GRT_PRED.
           IntraCgraPktType(0, 3,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                      ctrl = CtrlType(OPT_GRT_PRED,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_SOUTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
-                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                      FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                                                                     write_reg_from = [b2(0), b2(2), b2(0), b2(0)]))),
           # RET.
           IntraCgraPktType(0, 3,
-                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
                                                      ctrl = CtrlType(OPT_RET,
-                                                                     fu_in_code,
+                                                                     # The first 2 indicates the first operand is from the second inport,
+                                                                     # which is actually from the second register cluster rather than the
+                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(0), TileInType(PORT_WEST), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)],
+                                                                     write_reg_from = [b2(0), b2(0), b2(1), b2(0)]))),
+          # PHI_CONST.
+          IntraCgraPktType(0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                     ctrl = CtrlType(OPT_PHI_CONST,
+                                                                     # The first 3 indicates the first operand is from the third inport,
+                                                                     # which is actually from the third register cluster rather than the
+                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     [FuInType(3), FuInType(0), FuInType(0), FuInType(0)],
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     read_reg_from = [b1(0), b1(0), b1(1), b1(0)],
+                                                                     write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
 
           IntraCgraPktType(0, 3,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
@@ -623,6 +633,22 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 3,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
+                                                     ctrl = CtrlType(fu_xbar_outport = [
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                                                     data = DataType(1, 1))),
+
+          IntraCgraPktType(0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
+                                                     ctrl = CtrlType(routing_xbar_outport = [
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 3,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(fu_xbar_outport = [
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
