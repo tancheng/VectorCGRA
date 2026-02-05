@@ -137,7 +137,7 @@ def test_leaf_counter_basic():
         CgraPayloadType(CMD_LEAF_COUNTER_COMPLETE, DataType(0,0), 0, CtrlType(OPT_LOOP_COUNT), 0)
     ]
     
-    ctrl_addrs = [0]*20
+    ctrl_addrs = [0]*10
     
     th = TestHarness(LoopCounterRTL, DataType, CtrlType, CgraPayloadType,
                      num_inports, num_outports,

@@ -453,10 +453,6 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
-          # Prologue delay for Loop Counter to wait for other tiles to start.
-          IntraCgraPktType(0, 0,
-                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
-                                                     data = DataType(3, 1))),
           # Launch the tile.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
       ],
