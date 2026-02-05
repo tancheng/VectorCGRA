@@ -442,7 +442,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                      # [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                      #  TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
           # ADD_CONST_LD.
@@ -451,7 +451,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                      ctrl = CtrlType(OPT_ADD_CONST_LD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(6), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTHEAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
           # NAH.
@@ -504,7 +504,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                      ctrl = CtrlType(OPT_GRT_PRED,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(1), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
@@ -517,7 +517,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                      ctrl = CtrlType(OPT_ADD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(5), TileInType(3), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTHWEST), TileInType(PORT_WEST), TileInType(0), TileInType(0)],
                                                                      # Sends to west and self first reg cluster.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -597,7 +597,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                      ctrl = CtrlType(OPT_MUL,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(0), TileInType(2), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_SOUTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
@@ -607,7 +607,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                      ctrl = CtrlType(OPT_ADD_CONST_LD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
