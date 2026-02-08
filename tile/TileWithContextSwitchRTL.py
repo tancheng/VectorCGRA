@@ -233,6 +233,7 @@ class TileWithContextSwitchRTL(Component):
       s.fu_crossbar.send_data[i] //= s.tile_out_or_link[i].recv_fu
       s.routing_crossbar.send_data[i] //= s.tile_out_or_link[i].recv_xbar
       s.tile_out_or_link[i].send //= s.send_data[i]
+      s.tile_out_or_link[i].fu_xbar_rdy //= s.fu_crossbar.recv_opt.rdy
 
     # Crossbars outputs are integrated with the "register_cluster".
     # Whether the required operands for FU are from the "routing_crossbar"
