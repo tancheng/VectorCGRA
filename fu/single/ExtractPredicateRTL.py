@@ -63,7 +63,7 @@ class ExtractPredicateRTL(Fu):
 
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_EXTRACT_PREDICATE:
-          # Extract predicate bit from input and output as payload.
+          # Extracts predicate bit from input and output as payload.
           # When loop is running (predicate=1) -> payload=1
           # When loop terminates (predicate=0) -> payload=0
           # Downstream NOT will invert: running->0 (no RET), done->1 (trigger RET)

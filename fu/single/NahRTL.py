@@ -43,15 +43,9 @@ class NahRTL(Fu):
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
 
-      # >>> CHANGED IN: fu/single/NahRTL.py
-      # >>> BEFORE:
-      # if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_NAH):
-      #     s.recv_opt.rdy @= 1
-      #     # (no consumption of recv_in ports -> upstream backpressure)
-      # >>> AFTER: (added consumption of pending inputs to avoid backpressure)
       if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_NAH):
         s.recv_opt.rdy @= 1
-        # Consume any pending inputs to prevent backpressure on upstream
+        # Consumes any pending inputs to prevent backpressure on upstream
         # routing crossbar during prologue cycles.
         for i in range(num_inports):
           s.recv_in[i].rdy @= b1(1)

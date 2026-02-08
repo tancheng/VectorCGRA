@@ -665,7 +665,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
-  # Launch order matters for synchronization:
+  # Launches order matters for synchronization:
   # T2, T3 are downstream consumers - launch first so channels are ready
   # T0 is the producer (LoopCounter) - launch before T1 so they stay in sync
   # T1 forwards T0's output - launch last, just after T0

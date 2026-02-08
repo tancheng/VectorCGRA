@@ -31,11 +31,6 @@ class LinkOrRTL(Component):
     # is ready can accept data even though the crossbar hasn't committed,
     # causing duplicate data delivery on subsequent cycles.
     # fu_xbar_rdy indicates the FU crossbar has committed (recv_opt.rdy).
-
-    # >>> CHANGED
-    # >>> BEFORE: (no fu_xbar_rdy port; LinkOrRTL allowed recv_fu.val directly)
-    #   # s.send.val @= s.recv_fu.val | s.recv_xbar.val
-    # >>> AFTER: added fu_xbar_rdy InPort and gate recv_fu contribution
     s.fu_xbar_rdy = InPort(b1)
 
     @update
@@ -53,10 +48,7 @@ class LinkOrRTL(Component):
       # s.send.msg.bypass @= 0
       # s.send.msg.delay @= s.recv_fu.msg.delay | s.recv_xbar.msg.delay
 
-      # >>> CHANGED
-      # >>> BEFORE:
-      #   # s.send.val @= s.recv_fu.val | s.recv_xbar.val
-      # >>> AFTER:
+      # s.send.val @= s.send.rdy & (s.recv_fu.val | s.recv_xbar.val)
       # Gate recv_fu's contribution to send.val with fu_xbar_rdy to prevent
       # the downstream channel from accepting data unless the FU crossbar
       # has actually committed its multicast (all destinations ready).
