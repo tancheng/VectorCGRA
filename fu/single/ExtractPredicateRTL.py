@@ -63,9 +63,10 @@ class ExtractPredicateRTL(Fu):
 
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_EXTRACT_PREDICATE:
-          # Extract predicate bit from input and output as:
-          # payload = predicate_value (0 or 1)
-          # predicate = 1 (always valid)
+          # Extract predicate bit from input and output as payload.
+          # When loop is running (predicate=1) -> payload=1
+          # When loop terminates (predicate=0) -> payload=0
+          # Downstream NOT will invert: running->0 (no RET), done->1 (trigger RET)
           s.send_out[0].msg.payload @= zext(s.recv_in[s.in0_idx].msg.predicate, DataType.get_field_type('payload'))
           s.send_out[0].msg.predicate @= 1
           

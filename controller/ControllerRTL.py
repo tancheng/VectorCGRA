@@ -302,6 +302,15 @@ class ControllerRTL(Component):
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
 
+        # >>> CHANGED
+        # >>> BEFORE:
+        # # Controller didn't handle CMD_LEAF_COUNTER_COMPLETE -> NoC could be blocked
+        # >>> AFTER:
+        # Consume and discard the leaf counter complete signal (loop termination
+        # notification from LoopCounter FU) to avoid blocking the NoC.
+        elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LEAF_COUNTER_COMPLETE:
+          s.recv_from_inter_cgra_noc.rdy @= 1
+
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD:
           s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_data.rdy
           s.global_reduce_unit.recv_data.val @= 1

@@ -665,8 +665,12 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
-  for src_opt in src_opt_pkt:
-      src_ctrl_pkt.extend(src_opt)
+  # Launch order matters for synchronization:
+  # T2, T3 are downstream consumers - launch first so channels are ready
+  # T0 is the producer (LoopCounter) - launch before T1 so they stay in sync
+  # T1 forwards T0's output - launch last, just after T0
+  for tile_idx in [2, 3, 0, 1]:
+      src_ctrl_pkt.extend(src_opt_pkt[tile_idx])
 
   complete_signal_sink_out.extend(expected_complete_sink_out_pkg)
   complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
@@ -689,7 +693,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
+  run_sim(th, cmdline_opts)
 
 def test_homogeneous_2x2_fir_with_loop_counter_combinational_mem_access_return(cmdline_opts):
   sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational = True, has_ctrl_ring = True)

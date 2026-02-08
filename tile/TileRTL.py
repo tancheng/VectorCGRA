@@ -211,6 +211,12 @@ class TileRTL(Component):
       s.routing_crossbar.send_data[i] //= s.tile_out_or_link[i].recv_xbar
       s.tile_out_or_link[i].send //= s.send_data[i]
 
+      # >>> CHANGED
+      # >>> BEFORE: (no connection for fu_xbar_rdy)
+      # >>> AFTER: wire fu_xbar_rdy from fu_crossbar so LinkOrRTL can know when
+      # the FU crossbar has actually committed a multicast (all targets ready)
+      s.tile_out_or_link[i].fu_xbar_rdy //= s.fu_crossbar.recv_opt.rdy
+
     # Crossbars outputs are integrated with the "register_cluster".
     # Whether the required operands for FU are from the "routing_crossbar"
     # or from the "register_cluster" depends on the control signals.
