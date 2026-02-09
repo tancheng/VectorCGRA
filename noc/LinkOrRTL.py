@@ -30,6 +30,19 @@ class LinkOrRTL(Component):
     # outputs accept simultaneously. Without this guard, an output that
     # is ready can accept data even though the crossbar hasn't committed,
     # causing duplicate data delivery on subsequent cycles.
+    #
+    # Example: In the FIR LoopCounter test, Tile 0's LoopCounter produces
+    # the loop index `i` and multicasts it to 3 destinations via the FU
+    # crossbar:
+    #   fu_xbar_outport = [FuOutType(1), 0, 0, FuOutType(1), 0, 0, 0, 0,
+    #                      FuOutType(1), 0, 0, 0]
+    #   - Index 0 (NORTH)   -> Tile 2 for ADD
+    #   - Index 3 (EAST)    -> Tile 1 for EXTRACT_PREDICATE
+    #   - Index 8 (FU_IN_0) -> register bank for next-cycle reuse
+    # Without this guard, if EAST is ready but NORTH isn't, EAST's
+    # LinkOrRTL forwards the data prematurely, causing EAST to receive a
+    # duplicate on the next cycle, which leads to a deadlock.
+    #
     # fu_xbar_multi_cast_committed indicates the FU crossbar has committed
     # its multicast transaction, i.e., all destination outputs accepted.
     s.fu_xbar_multi_cast_committed = InPort(b1)
