@@ -43,9 +43,9 @@ class LinkOrRTL(Component):
     # LinkOrRTL forwards the data prematurely, causing EAST to receive a
     # duplicate on the next cycle, which leads to a deadlock.
     #
-    # fu_xbar_multi_cast_committed indicates the FU crossbar has committed
+    # fu_xbar_multi_cast_all_committed indicates the FU crossbar has committed
     # its multicast transaction, i.e., all destination outputs accepted.
-    s.fu_xbar_multi_cast_committed = InPort(b1)
+    s.fu_xbar_multi_cast_all_committed = InPort(b1)
 
     @update
     def process():
@@ -63,10 +63,10 @@ class LinkOrRTL(Component):
       # s.send.msg.delay @= s.recv_fu.msg.delay | s.recv_xbar.msg.delay
 
       # s.send.val @= s.send.rdy & (s.recv_fu.val | s.recv_xbar.val)
-      # Gate recv_fu's contribution to send.val with fu_xbar_multi_cast_committed
+      # Gate recv_fu's contribution to send.val with fu_xbar_multi_cast_all_committed
       # to prevent the downstream channel from accepting data unless the FU
       # crossbar has actually committed its multicast (all destinations ready).
-      s.send.val @= (s.recv_fu.val & s.fu_xbar_multi_cast_committed) | s.recv_xbar.val
+      s.send.val @= (s.recv_fu.val & s.fu_xbar_multi_cast_all_committed) | s.recv_xbar.val
       s.recv_fu.rdy @= s.send.rdy
       s.recv_xbar.rdy @= s.send.rdy
 
