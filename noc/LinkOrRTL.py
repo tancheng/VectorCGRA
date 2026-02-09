@@ -30,8 +30,9 @@ class LinkOrRTL(Component):
     # outputs accept simultaneously. Without this guard, an output that
     # is ready can accept data even though the crossbar hasn't committed,
     # causing duplicate data delivery on subsequent cycles.
-    # fu_xbar_rdy indicates the FU crossbar has committed (recv_opt.rdy).
-    s.fu_xbar_rdy = InPort(b1)
+    # fu_xbar_multi_cast_committed indicates the FU crossbar has committed
+    # its multicast transaction, i.e., all destination outputs accepted.
+    s.fu_xbar_multi_cast_committed = InPort(b1)
 
     @update
     def process():
@@ -49,10 +50,10 @@ class LinkOrRTL(Component):
       # s.send.msg.delay @= s.recv_fu.msg.delay | s.recv_xbar.msg.delay
 
       # s.send.val @= s.send.rdy & (s.recv_fu.val | s.recv_xbar.val)
-      # Gate recv_fu's contribution to send.val with fu_xbar_rdy to prevent
-      # the downstream channel from accepting data unless the FU crossbar
-      # has actually committed its multicast (all destinations ready).
-      s.send.val @= (s.recv_fu.val & s.fu_xbar_rdy) | s.recv_xbar.val
+      # Gate recv_fu's contribution to send.val with fu_xbar_multi_cast_committed
+      # to prevent the downstream channel from accepting data unless the FU
+      # crossbar has actually committed its multicast (all destinations ready).
+      s.send.val @= (s.recv_fu.val & s.fu_xbar_multi_cast_committed) | s.recv_xbar.val
       s.recv_fu.rdy @= s.send.rdy
       s.recv_xbar.rdy @= s.send.rdy
 

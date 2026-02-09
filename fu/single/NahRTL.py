@@ -45,10 +45,6 @@ class NahRTL(Fu):
 
       if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_NAH):
         s.recv_opt.rdy @= 1
-        # Consumes any pending inputs to prevent backpressure on upstream
-        # routing crossbar during prologue cycles.
-        for i in range(num_inports):
-          s.recv_in[i].rdy @= b1(1)
       else:
         for j in range(num_outports):
           s.send_out[j].val @= b1(0)
