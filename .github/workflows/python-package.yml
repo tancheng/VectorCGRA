@@ -115,6 +115,8 @@ jobs:
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
         # Generate FIR vector global reduce .v file with explicit file & module names.
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_vector_global_reduce_translation -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate 2x2 Systolic-array .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_systolic_2x2_2x2_translation -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
@@ -152,5 +154,7 @@ jobs:
         verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_scalar_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
         verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_vector_global_reduce_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_systolic_2x2_2x2_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
 
