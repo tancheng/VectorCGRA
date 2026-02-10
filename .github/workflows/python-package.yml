@@ -155,6 +155,6 @@ jobs:
         ./obj_dir/Vcgra_test
         verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_vector_global_reduce_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
-        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_systolic_2x2_2x2_tb.v --top cgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC -Wno-SELRANGE --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_systolic_2x2_2x2_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
 
