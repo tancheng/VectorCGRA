@@ -94,7 +94,7 @@ class CrossbarRTL(Component):
     s.prologue_counter = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_counter_next = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_inport = [[InPort(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
-    # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
+    # Wiki of "Workaround for sv2v Flattening Multi-dimensional Arrays into One-dimensional Vectors"
     # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
     s.prologue_count_wire = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
 
@@ -191,11 +191,11 @@ class CrossbarRTL(Component):
             s.send_accepted_next[i] @= 1
 
         # When the input is dequeued (recv_opt.rdy=1), the multicast is
-        # complete — clear send_accepted for the next transaction.
+        # complete -- clear send_accepted for the next transaction.
         if s.recv_opt.rdy:
           s.send_accepted_next @= 0
       else:
-        # Not active (OPT_START or opt not valid) — clear.
+        # Not active (OPT_START or opt not valid) -- clear.
         s.send_accepted_next @= 0
 
     @update
