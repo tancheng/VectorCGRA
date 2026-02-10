@@ -85,7 +85,7 @@ class CrossbarRTL(Component):
     # Whether all required multicast outputs have been committed (either
     # accepted in a previous cycle via send_accepted, or being accepted
     # in the current cycle via send_rdy_vector).
-    s.all_send_committed = Wire(b1)
+    s.all_send_accepted = Wire(b1)
 
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
@@ -111,7 +111,7 @@ class CrossbarRTL(Component):
         s.send_data[i].val @= 0
         s.send_data[i].msg @= DataType()
       s.recv_opt.rdy @= 0
-      s.all_send_committed @= 0
+      s.all_send_accepted @= 0
 
       if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
 
@@ -119,15 +119,14 @@ class CrossbarRTL(Component):
         # either accepted in a previous cycle (send_accepted) or being
         # accepted right now (send_rdy_vector). This is used for input
         # dequeue and recv_opt.rdy.
-        s.all_send_committed @= 1
+        s.all_send_accepted @= 1
         for i in range(num_outports):
-          if s.send_required_vector[i] & ~s.send_accepted[i]:
-            if ~s.send_rdy_vector[i]:
-              s.all_send_committed @= 0
+          if s.send_required_vector[i] & ~s.send_accepted[i] & ~s.send_rdy_vector[i]:
+            s.all_send_accepted @= 0
 
         for i in range(num_inports):
           s.recv_data[i].rdy @= reduce_and(s.recv_valid_vector) & \
-                                s.all_send_committed & \
+                                s.all_send_accepted & \
                                 s.recv_required_vector[i]
 
         for i in range(num_outports):
@@ -144,7 +143,7 @@ class CrossbarRTL(Component):
             s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
             s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
-        s.recv_opt.rdy @= s.all_send_committed & \
+        s.recv_opt.rdy @= s.all_send_accepted & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
 
     @update_ff
