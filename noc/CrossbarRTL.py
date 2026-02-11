@@ -63,6 +63,30 @@ class CrossbarRTL(Component):
 
     s.clear = InPort(b1)
 
+    # ---------------------------------------------------------------
+    # Multicast send-accepted tracking register.
+    # ---------------------------------------------------------------
+    # When multicasting, the crossbar asserts val on all target outputs
+    # simultaneously. Some outputs may accept (rdy=1) before others.
+    # Without tracking, the crossbar would retry ALL outputs next cycle,
+    # causing duplicates on already-accepted outputs.
+    #
+    # `send_accepted` is a per-output-port register that records which
+    # outputs have already accepted the current multicast data. On each
+    # cycle, for outputs where val=1 and rdy=1, we set the corresponding
+    # bit. Val is only asserted for outputs that haven't accepted yet.
+    # Once all required outputs have accepted, the input is dequeued and
+    # `send_accepted` is cleared.
+    #
+    # This approach keeps val independent of rdy (no val-depends-on-rdy
+    # violation), because send_accepted is a registered (flopped) value.
+    s.send_accepted = Wire(num_outports)
+    s.send_accepted_next = Wire(num_outports)
+    # Whether all required multicast outputs have been committed (either
+    # accepted in a previous cycle via send_accepted, or being accepted
+    # in the current cycle via send_rdy_vector).
+    s.all_send_accepted = Wire(b1)
+
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
     s.prologue_allowing_vector = Wire(num_outports)
@@ -70,7 +94,7 @@ class CrossbarRTL(Component):
     s.prologue_counter = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_counter_next = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_inport = [[InPort(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
-    # Wiki of "Workaround for sv2v Flattening Multi‐dimensional Arrays into One‐dimensional Vectors"
+    # Wiki of "Workaround for sv2v Flattening Multi-dimensional Arrays into One-dimensional Vectors"
     # https://github.com/tancheng/VectorCGRA/wiki/Workaround-for-sv2v-Flattening-Multi%E2%80%90dimensional-Arrays-into-One%E2%80%90dimensional-Vectors
     s.prologue_count_wire = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
 
@@ -87,22 +111,39 @@ class CrossbarRTL(Component):
         s.send_data[i].val @= 0
         s.send_data[i].msg @= DataType()
       s.recv_opt.rdy @= 0
+      s.all_send_accepted @= 0
 
       if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
+
+        # Determine whether all required outputs have been satisfied,
+        # either accepted in a previous cycle (send_accepted) or being
+        # accepted right now (send_rdy_vector). This is used for input
+        # dequeue and recv_opt.rdy.
+        s.all_send_accepted @= 1
+        for i in range(num_outports):
+          if s.send_required_vector[i] & ~s.send_accepted[i] & ~s.send_rdy_vector[i]:
+            s.all_send_accepted @= 0
+
         for i in range(num_inports):
           s.recv_data[i].rdy @= reduce_and(s.recv_valid_vector) & \
-                                reduce_and(s.send_rdy_vector) & \
+                                s.all_send_accepted & \
                                 s.recv_required_vector[i]
 
         for i in range(num_outports):
+          # Only assert val for outputs that are required AND have NOT
+          # yet accepted in a previous cycle.  This prevents duplicate
+          # delivery without making val depend on rdy (send_accepted is
+          # a register, so this is purely val-depends-on-registered-state).
           s.send_data[i].val @= reduce_and(s.recv_valid_vector) & \
-                                s.send_required_vector[i]
+                                s.send_required_vector[i] & \
+                                ~s.send_accepted[i]
           if reduce_and(s.recv_valid_vector) & \
-             s.send_required_vector[i]:
+             s.send_required_vector[i] & \
+             ~s.send_accepted[i]:
             s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
             s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
-        s.recv_opt.rdy @= reduce_and(s.send_rdy_vector) & \
+        s.recv_opt.rdy @= s.all_send_accepted & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
 
     @update_ff
@@ -111,10 +152,12 @@ class CrossbarRTL(Component):
         for addr in range(ctrl_mem_size):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= 0
+        s.send_accepted <<= 0
       else:
         for addr in range(ctrl_mem_size):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= s.prologue_counter_next[addr][i]
+        s.send_accepted <<= s.send_accepted_next
 
     @update
     def update_prologue_counter_next():
@@ -130,6 +173,29 @@ class CrossbarRTL(Component):
               (addr == s.ctrl_addr_inport) & \
               (s.prologue_counter[addr][i] < s.prologue_count_wire[addr][i]):
               s.prologue_counter_next[addr][i] @= s.prologue_counter[addr][i] + 1
+
+    @update
+    def update_send_accepted_next():
+      # By default, hold the current value.
+      s.send_accepted_next @= s.send_accepted
+
+      if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
+        # For each output that is required and not yet accepted:
+        # if it accepts this cycle (val=1 & rdy=1), mark it.
+        # Note: val is only asserted for ~send_accepted outputs (see
+        # update_signal), so send_data[i].val & send_data[i].rdy implies
+        # the output just accepted.
+        for i in range(num_outports):
+          if s.send_required_vector[i] & ~s.send_accepted[i] & s.send_data[i].rdy & s.send_data[i].val:
+            s.send_accepted_next[i] @= 1
+
+        # When the input is dequeued (recv_opt.rdy=1), the multicast is
+        # complete -- clear send_accepted for the next transaction.
+        if s.recv_opt.rdy:
+          s.send_accepted_next @= 0
+      else:
+        # Not active (OPT_START or opt not valid) -- clear.
+        s.send_accepted_next @= 0
 
     @update
     def update_prologue_allowing_vector():
