@@ -40,7 +40,6 @@ class LinkOrRTL(Component):
       # s.send.msg.bypass @= 0
       # s.send.msg.delay @= s.recv_fu.msg.delay | s.recv_xbar.msg.delay
 
-      # s.send.val @= s.send.rdy & (s.recv_fu.val | s.recv_xbar.val)
       s.send.val @= s.recv_fu.val | s.recv_xbar.val
       s.recv_fu.rdy @= s.send.rdy
       s.recv_xbar.rdy @= s.send.rdy

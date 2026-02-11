@@ -117,7 +117,7 @@ class LoopCounterRTL(Fu):
             # Loop terminated: predicate = 0.
             s.send_out[0].msg.predicate @= 0
             
-            # Sends CMD_COMPLETE if not already done.
+            # Sends CMD_LEAF_COUNTER_COMPLETE if not already done.
             if ~s.already_done[addr]:
               s.send_to_ctrl_mem.val @= b1(1)
               s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
