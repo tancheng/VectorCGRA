@@ -65,11 +65,11 @@ typedef struct packed {
 */
 /*
 typedef struct packed {
-  logic [31:0] payload;
+  logic [63:0] payload;
   logic [0:0] predicate;
   logic [0:0] bypass;
   logic [0:0] delay;
-} CgraData_32_1_1_1__payload_32__predicate_1__bypass_1__delay_1;
+} CgraData_64_1_1_1__payload_64__predicate_1__bypass_1__delay_1;
 */
 /*
 typedef struct packed {
