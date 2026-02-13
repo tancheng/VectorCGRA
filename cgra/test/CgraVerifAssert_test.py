@@ -1,12 +1,12 @@
 """
 ==========================================================================
-CgraRTL_fir_test.py
+CgraVerifAssert_test.py
 ==========================================================================
 Test cases for CGRA with crossbar-based data memory and ring-based control
 memory of each tile.
 
-Author : Cheng Tan
-  Date : Aug 30, 2025
+Author : Yuchen Wang
+  Date : Feb 13, 2026
 """
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
