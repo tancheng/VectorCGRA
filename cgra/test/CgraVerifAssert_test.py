@@ -331,18 +331,18 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
   # After fusion:
   #
   #            ------0(phi_const) <-----------┐
-  #           /       |     |  |   \          |
-  #          /        |     |  |    \         |
+  #           /       |     |  |  \           |
+  #          /        |     |  |    ↘        |
   #     1(+,ld)    2(+,ld)  |  |     8(+,cmp,not,grant_pred)
   #         |         |     |  |              |
   #         |         |    /   |              |
-  #     3(cmp)     4(cmp) /    |------ 9(grant_predicate)
+  #     3(cmp)     4(cmp) /    |------>9(grant_predicate)
   #          \      /    /                    |
   #           \    /    /                     |
   #           5(and)   /                   10(ret)
   #             |     /       
   #           6(not) /        
-  #             |   /   
+  #             |  ↙  
   #           7(str)  
   #                        
   # Corresponding mapping (II = 5):
