@@ -346,6 +346,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
   #           7(str)  
   #                        
   # Corresponding mapping (II = 5):
+  # RecMII = 2, ResMII = 3; manual mapping gives II = 5 due to resource constraints
   '''
        ↑ Y
        |
