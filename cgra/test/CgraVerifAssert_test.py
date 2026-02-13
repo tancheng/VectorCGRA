@@ -327,6 +327,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                     1000
   kExpectedOutput = 4
 
+  # More details are shown in docs/figures/assert_test/DFG.png & manual_mapping.png.
   # Corresponding DFG:
   # After fusion:
   #
