@@ -73,23 +73,9 @@ class FlexibleFuRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    def create_fu_instance(fu_class):
-      if fu_class not in exec_lantency.keys():
-        if fu_class == StreamingMemUnitRTL:
-          return fu_class(CtrlPktType, DataType, CtrlType, num_inports, num_outports,
-                          data_mem_size, ctrl_mem_size, data_bitwidth=data_bitwidth)
-        else:
-          return fu_class(DataType, CtrlType, num_inports, num_outports,
-                          data_mem_size, ctrl_mem_size, data_bitwidth=data_bitwidth)
-      else:
-        if fu_class == StreamingMemUnitRTL:
-          return fu_class(CtrlPktType, DataType, CtrlType, num_inports, num_outports,
-                          data_mem_size, ctrl_mem_size, latency=exec_lantency[fu_class])
-        else:
-          return fu_class(DataType, CtrlType, num_inports, num_outports,
-                          data_mem_size, ctrl_mem_size, latency=exec_lantency[fu_class])
-
-    s.fu = [create_fu_instance(FuList[i]) for i in range(s.fu_list_size)]
+    s.fu = [FuList[i](CtrlPktType, num_inports, num_outports) 
+            if FuList[i] not in exec_lantency.keys() else FuList[i](CtrlPktType, num_inports, 
+                num_outports, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size)]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)

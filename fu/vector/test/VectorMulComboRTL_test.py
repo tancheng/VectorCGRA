@@ -21,7 +21,7 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, ctrl_msgs, sink_msgs0):
 
@@ -30,9 +30,9 @@ class TestHarness(Component):
     s.src_opt   = TestSrcRTL (CtrlType, ctrl_msgs )
     s.sink_out0 = TestSinkRTL(DataType, sink_msgs0)
 
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size,
-                         4, 0, 4)
+    s.dut = FunctionUnit(IntraCgraPktType,
+                         num_inports, num_outports,
+                         0, 4)
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
     connect(s.src_in1.send,    s.dut.recv_in[1])
@@ -74,9 +74,13 @@ def test_vector_mul_combo():
   PredType      = mk_predicate(1, 1)
   num_inports   = 4
   num_outports  = 1
-  data_mem_size = 8
   CtrlType      = mk_ctrl(num_inports)
-
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
 
@@ -87,7 +91,7 @@ def test_vector_mul_combo():
               CtrlType(OPT_VEC_MUL_COMBINED, pickRegister),
               CtrlType(OPT_VEC_MUL,          pickRegister)]
 
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_opt, sink_out)
   run_sim(th)

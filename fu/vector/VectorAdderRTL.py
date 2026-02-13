@@ -16,15 +16,16 @@ from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
+from ...lib.util.data_struct_attr import *
 
 class VectorAdderRTL(Component):
 
-  def construct(s, bw, CtrlType, num_inports, num_outports,
-                data_mem_size):
+  def construct(s, bw, CtrlPktType, num_inports, num_outports):
 
     # DataType should be 1-bit more due to the carry-out.
     num_entries = 2
     DataType = mk_bits(bw + 1)
+    CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
     FuInType = mk_bits(clog2(num_inports + 1))

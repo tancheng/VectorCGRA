@@ -21,7 +21,7 @@ from ....lib.cmd_type import *
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
-    def construct(s, FunctionUnit, DataType, CtrlType, CgraPayloadType,
+    def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                   num_inports, num_outports,
                   data_mem_size, ctrl_mem_size,
                   src_const, src_opt, src_from_ctrl, sink_out, sink_to_ctrl, ctrl_addrs,
@@ -32,8 +32,7 @@ class TestHarness(Component):
         s.sink_out = TestSinkRTL(DataType, sink_out)
         s.sink_to_ctrl = TestSinkRTL(CgraPayloadType, sink_to_ctrl)
         
-        s.dut = FunctionUnit(DataType, CtrlType, num_inports, num_outports,
-                            data_mem_size, ctrl_mem_size)
+        s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
         
         s.ctrl_addrs = ctrl_addrs
         s.cycle_count = Wire(mk_bits(32))
@@ -103,6 +102,7 @@ def test_leaf_counter_basic():
     AddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CgraPayloadType = mk_cgra_payload(DataType, AddrType, CtrlType, CtrlAddrType)
+    IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
     
     # Constants are NO LONGER used for configuration.
     src_const = []
@@ -139,7 +139,7 @@ def test_leaf_counter_basic():
     
     ctrl_addrs = [0]*10
     
-    th = TestHarness(LoopCounterRTL, DataType, CtrlType, CgraPayloadType,
+    th = TestHarness(LoopCounterRTL, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                      num_inports, num_outports,
                      data_mem_size, ctrl_mem_size,
                      src_const, src_opt, src_from_ctrl, sink_out, sink_to_ctrl, ctrl_addrs,
@@ -160,6 +160,7 @@ def test_loop_counter_with_step():
     AddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CgraPayloadType = mk_cgra_payload(DataType, AddrType, CtrlType, CtrlAddrType)
+    IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
     
     src_const = []
     
@@ -188,7 +189,7 @@ def test_loop_counter_with_step():
     
     ctrl_addrs = [1]*20
     
-    th = TestHarness(LoopCounterRTL, DataType, CtrlType, CgraPayloadType,
+    th = TestHarness(LoopCounterRTL, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                      num_inports, num_outports,
                      data_mem_size, ctrl_mem_size,
                      src_const, src_opt, src_from_ctrl, sink_out, sink_to_ctrl, ctrl_addrs,
@@ -210,7 +211,8 @@ def test_shadow_register_basic():
     AddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CgraPayloadType = mk_cgra_payload(DataType, AddrType, CtrlType, CtrlAddrType)
-    
+    IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
     src_const = []
     
     # Execute OPT_LOOP_DELIVERY operations
@@ -242,7 +244,7 @@ def test_shadow_register_basic():
     # All operations target ctrl_addr = 2
     ctrl_addrs = [2] * 20
     
-    th = TestHarness(LoopCounterRTL, DataType, CtrlType, CgraPayloadType,
+    th = TestHarness(LoopCounterRTL, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                      num_inports, num_outports,
                      data_mem_size, ctrl_mem_size,
                      src_const, src_opt, src_from_ctrl, sink_out, sink_to_ctrl,
@@ -263,7 +265,7 @@ def test_counter_reset():
     AddrType = mk_bits(clog2(data_mem_size))
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     CgraPayloadType = mk_cgra_payload(DataType, AddrType, CtrlType, CtrlAddrType)
-    
+    IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
     
     src_const = []
     
@@ -309,7 +311,7 @@ def test_counter_reset():
     
     ctrl_addrs = [0] * 20
     
-    th = TestHarness(LoopCounterRTL, DataType, CtrlType, CgraPayloadType,
+    th = TestHarness(LoopCounterRTL, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                      num_inports, num_outports,
                      data_mem_size, ctrl_mem_size,
                      src_const, src_opt, src_from_ctrl, sink_out, sink_to_ctrl,

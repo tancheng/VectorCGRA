@@ -19,16 +19,11 @@ from ...lib.opt_type import *
 
 class PrlMulAdderRTL(TwoPrlCombo):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports):
 
-    super(PrlMulAdderRTL, s).construct(DataType, CtrlType,
+    super(PrlMulAdderRTL, s).construct(CtrlPktType,
                                        MulRTL, AdderRTL,
-                                       num_inports, num_outports,
-                                       data_mem_size, ctrl_mem_size,
-                                       data_bitwidth = data_bitwidth)
+                                       num_inports, num_outports)
 
     FuInType = mk_bits(clog2(num_inports + 1))
 

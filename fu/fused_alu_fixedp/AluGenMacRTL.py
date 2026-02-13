@@ -16,16 +16,13 @@ from ...lib.util.data_struct_attr import *
 
 class AluGenMacRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports, data_mem_size,
-                ctrl_mem_size = 4):
+  def construct(s, CtrlPktType,
+                num_inports, num_outports):
 
-    super(AluGenMacRTL, s).construct(DataType, CtrlType,
-                                     num_inports, num_outports,
-                                     data_mem_size, ctrl_mem_size)
+    super(AluGenMacRTL, s).construct(CtrlPktType, num_inports, num_outports)
 
     # Local parameters
-    assert DataType.get_field_type(kAttrPayload).nbits == 16
+    assert s.DataType.get_field_type(kAttrPayload).nbits == 16
 
     num_entries = 3
     FuInType    = mk_bits(clog2(num_inports + 1))
@@ -71,7 +68,7 @@ class AluGenMacRTL(Fu):
 
       for i in range(num_outports):
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0

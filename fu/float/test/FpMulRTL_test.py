@@ -28,10 +28,15 @@ def test_elaborate(cmdline_opts):
   data_bitwidth = 1 + exp_nbits + sig_nbits
   DataType       = mk_data(16, 1)
   PredType       = mk_predicate(1, 1)
-  data_mem_size  = 8
   num_inports    = 2
   num_outports   = 1
+  data_mem_size = 8
+  ctrl_mem_size = 4
   ConfigType     = mk_ctrl(num_inports, num_outports)
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType       = mk_bits(clog2(num_inports + 1))
   pick_register  = [FuInType(x + 1) for x in range(num_inports)]
   src_in0        = [DataType(2,  1), DataType(7,  1), DataType(4,  1)]
@@ -41,9 +46,8 @@ def test_elaborate(cmdline_opts):
   src_opt        = [ConfigType(OPT_MUL_CONST, pick_register),
                     ConfigType(OPT_MUL,       pick_register),
                     ConfigType(OPT_MUL_CONST, pick_register)]
-  dut = FpMulRTL(DataType, ConfigType, num_inports,
-                 num_outports, data_mem_size,
-                 data_bitwidth = data_bitwidth,
+  dut = FpMulRTL(IntraCgraPktType, num_inports,
+                 num_outports, 
                  exp_nbits = exp_nbits,
                  sig_nbits = sig_nbits)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
@@ -54,7 +58,7 @@ def test_elaborate(cmdline_opts):
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, ConfigType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, ConfigType,
                 data_bitwidth,
                 num_inports, num_outports, data_mem_size,
                 ctrl_mem_size,
@@ -68,11 +72,8 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType,   sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, ConfigType,
+    s.dut = FunctionUnit(IntraCgraPktType,
                          num_inports, num_outports,
-                         data_mem_size,
-                         ctrl_mem_size,
-                         data_bitwidth,
                          exp_nbits,
                          sig_nbits)
 
@@ -108,6 +109,10 @@ def test_mul():
   num_inports   = 2
   num_outports  = 1
   ConfigType    = mk_ctrl(num_inports, num_outports)
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [f2b(2.2,  1), f2b(7.7,  1), f2b(4.4,   1) ]
@@ -117,7 +122,7 @@ def test_mul():
   src_opt       = [ConfigType(OPT_FMUL_CONST, pick_register),
                    ConfigType(OPT_FMUL,       pick_register),
                    ConfigType(OPT_FMUL_CONST, pick_register)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    data_bitwidth, num_inports, num_outports,
                    data_mem_size, ctrl_mem_size,
                    exp_nbits, sig_nbits,

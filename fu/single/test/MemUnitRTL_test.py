@@ -25,7 +25,7 @@ from ....mem.data.DataMemRTL import DataMemRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataUnit, DataType,
+  def construct(s, FunctionUnit, DataUnit, IntraCgraPktType, DataType,
                 ConfigType, num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const_msgs, ctrl_msgs,
                 sink_msgs):
@@ -36,8 +36,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(ConfigType, ctrl_msgs)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, ConfigType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
     s.data_mem = DataUnit(DataType, data_mem_size)
 
     connect(s.dut.to_mem_raddr,   s.data_mem.recv_raddr[0])
@@ -84,10 +83,15 @@ def test_Mem():
   DataUnit = DataMemRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports = 2
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2( num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(3, 1), DataType(3, 1), DataType(3, 1)] # addr
@@ -98,7 +102,7 @@ def test_Mem():
                ConfigType(OPT_STR, pickRegister),
                ConfigType(OPT_LD,  pickRegister),
                ConfigType(OPT_LD,  pickRegister)]
-  th = TestHarness(FU, DataUnit, DataType, ConfigType,
+  th = TestHarness(FU, DataUnit, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -109,10 +113,15 @@ def test_PseudoMem():
   DataUnit = DataMemCL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports = 2
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(0, 1),                 DataType(0, 1)                ]
@@ -124,7 +133,7 @@ def test_PseudoMem():
                ConfigType(OPT_LD_CONST, pickRegister),
                ConfigType(OPT_LD,       pickRegister),
                ConfigType(OPT_LD_CONST, pickRegister)]
-  th = TestHarness(FU, DataUnit, DataType, ConfigType,
+  th = TestHarness(FU, DataUnit, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size, src_in0,
                    src_in1, src_const, src_opt, sink_out)
   run_sim(th)

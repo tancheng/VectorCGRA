@@ -38,8 +38,7 @@ class TestHarness(Component):
     s.src_ctrl_addr = TestSrcRTL(CtrlAddrType, src_ctrl_addr_msgs)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
-    s.dut = FunctionUnit(CtrlPktType, DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size, ctrl_mem_size)
+    s.dut = FunctionUnit(CtrlPktType, num_inports, num_outports)
     s.data_mem = DataUnit(DataType, data_mem_size)
 
     connect(s.dut.to_mem_raddr,   s.data_mem.recv_raddr[0])

@@ -25,7 +25,7 @@ from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports,
                 data_mem_size, src_in0, src_opt, sink_out):
 
@@ -33,9 +33,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL(DataType, sink_out)
 
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports,
-                         data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     FuInType = mk_bits(clog2(num_inports + 1))
 
@@ -90,7 +88,6 @@ def test_extract_predicate_basic():
   
   num_inports = 4
   num_outports = 2
-  data_mem_size = 8
   
   data_bitwidth = 32
   DataType = mk_data(data_bitwidth, 1)
@@ -105,6 +102,13 @@ def test_extract_predicate_basic():
                      num_registers_per_reg_bank)
   FuInType = mk_bits(clog2(num_inports + 1))
   
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
   # Input data with different predicates
   # payload doesn't matter, only predicate is extracted
   src_in0 = [
@@ -130,7 +134,7 @@ def test_extract_predicate_basic():
     DataType(0, 1),  # extracted pred=0, output pred=1
   ]
   
-  th = TestHarness(ExtractPredicateRTL, DataType, CtrlType,
+  th = TestHarness(ExtractPredicateRTL, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_opt, sink_out)
   run_sim(th)
@@ -140,8 +144,6 @@ def test_extract_predicate_for_loop_termination():
   
   num_inports = 4
   num_outports = 2
-  data_mem_size = 8
-  
   data_bitwidth = 32
   DataType = mk_data(data_bitwidth, 1)
   num_ctrl_operations = 64
@@ -154,7 +156,14 @@ def test_extract_predicate_for_loop_termination():
                      num_tile_inports, num_tile_outports,
                      num_registers_per_reg_bank)
   FuInType = mk_bits(clog2(num_inports + 1))
-  
+
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
   # Simulating counter output pattern:
   # - pred=1 for valid iterations
   # - pred=0 when loop terminates
@@ -180,7 +189,7 @@ def test_extract_predicate_for_loop_termination():
     DataType(0, 1),  # pred=0 -> payload=0 (terminate!)
   ]
   
-  th = TestHarness(ExtractPredicateRTL, DataType, CtrlType,
+  th = TestHarness(ExtractPredicateRTL, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_opt, sink_out)
   run_sim(th)

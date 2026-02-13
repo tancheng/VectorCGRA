@@ -16,30 +16,26 @@ from ...lib.opt_type import *
 
 class TwoPrlCombo(Component):
 
-  def construct(s, DataType, CtrlType,
+  def construct(s, CtrlPktType,
                 Fu0, Fu1,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size,
-                data_bitwidth = 32):
+                num_inports, num_outports):
 
-    PredicateType = DataType.get_field_type(kAttrPredicate)
     # Constants
     num_entries   = 2
-    AddrType      = mk_bits(clog2(data_mem_size))
-    CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
-    s.ctrl_addr_inport = InPort(CtrlAddrType)
+    s.DataType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrData)
+    s.AddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrDataAddr)
+    s.CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
+    s.CtrlAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrlAddr)
+    s.CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    s.ctrl_addr_inport = InPort(s.CtrlAddrType)
     CountType     = mk_bits(clog2(num_entries + 1))
-    s.const_zero  = DataType(0, 0)
+    s.const_zero  = s.DataType(0, 0)
 
-    s.CgraPayloadType = mk_cgra_payload(DataType,
-                                        AddrType,
-                                        CtrlType,
-                                        CtrlAddrType)
     # Interface
-    s.recv_in        = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_const     = RecvIfcRTL(DataType)
-    s.recv_opt       = RecvIfcRTL(CtrlType)
-    s.send_out       = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.recv_in        = [RecvIfcRTL(s.DataType) for _ in range(num_inports)]
+    s.recv_const     = RecvIfcRTL(s.DataType)
+    s.recv_opt       = RecvIfcRTL(s.CtrlType)
+    s.send_out       = [SendIfcRTL(s.DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
 
@@ -47,14 +43,14 @@ class TwoPrlCombo(Component):
     s.clear = InPort(b1)
 
     # Redundant interfaces for MemUnit
-    s.to_mem_raddr   = SendIfcRTL(AddrType)
-    s.from_mem_rdata = RecvIfcRTL(DataType)
-    s.to_mem_waddr   = SendIfcRTL(AddrType)
-    s.to_mem_wdata   = SendIfcRTL(DataType)
+    s.to_mem_raddr   = SendIfcRTL(s.AddrType)
+    s.from_mem_rdata = RecvIfcRTL(s.DataType)
+    s.to_mem_waddr   = SendIfcRTL(s.AddrType)
+    s.to_mem_wdata   = SendIfcRTL(s.DataType)
 
     # Components
-    s.Fu0 = Fu0(DataType, CtrlType, 2, 1, data_mem_size, ctrl_mem_size)
-    s.Fu1 = Fu1(DataType, CtrlType, 2, 1, data_mem_size, ctrl_mem_size)
+    s.Fu0 = Fu0(CtrlPktType, 2, 1)
+    s.Fu1 = Fu1(CtrlPktType, 2, 1)
 
     # Connections
     s.recv_in[0].msg      //= s.Fu0.recv_in[0].msg
@@ -96,8 +92,8 @@ class TwoPrlCombo(Component):
       s.to_mem_waddr.val   @= b1(0)
       s.to_mem_wdata.val   @= b1(0)
       s.to_mem_wdata.msg   @= s.const_zero
-      s.to_mem_waddr.msg   @= AddrType(0)
-      s.to_mem_raddr.msg   @= AddrType(0)
+      s.to_mem_waddr.msg   @= s.AddrType(0)
+      s.to_mem_raddr.msg   @= s.AddrType(0)
       s.to_mem_raddr.val   @= b1(0)
       s.from_mem_rdata.rdy @= b1(0)
 
