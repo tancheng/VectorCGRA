@@ -35,6 +35,21 @@ from ..rf.RegisterRTL import RegisterRTL
 from ..lib.util.data_struct_attr import *
 
 
+def _fu_contains_mem_unit(FuClass):
+  """
+  Check if a functional unit class is or contains MemUnitRTL.
+  This handles both standalone MemUnitRTL and combo FUs that may have
+  MemUnitRTL as one of their internal FUs.
+  """
+  # Direct match for standalone MemUnitRTL
+  if FuClass == MemUnitRTL:
+    return True
+  # Check for explicit class attribute (preferred for combo FUs)
+  if hasattr(FuClass, 'contains_mem_unit') and FuClass.contains_mem_unit:
+    return True
+  return False
+
+
 class TileRTL(Component):
 
   def construct(s, IntraCgraPktType,
@@ -170,7 +185,8 @@ class TileRTL(Component):
             s.ctrl_mem.prologue_count_outport_fu_crossbar[addr][i]
 
     for i in range(len(FuList)):
-      if FuList[i] == MemUnitRTL:
+      # Check if the FU is or contains MemUnitRTL (including combo FUs)
+      if _fu_contains_mem_unit(FuList[i]):
         s.to_mem_raddr //= s.element.to_mem_raddr[i]
         s.from_mem_rdata //= s.element.from_mem_rdata[i]
         s.to_mem_waddr //= s.element.to_mem_waddr[i]
