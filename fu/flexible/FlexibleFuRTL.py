@@ -22,6 +22,7 @@ from ...lib.util.common import *
 
 class FlexibleFuRTL(Component):
   def construct(s,
+                CtrlPktType,
                 DataType,
                 CtrlType,
                 num_inports,
@@ -69,11 +70,9 @@ class FlexibleFuRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
 
     # Components.
-    s.fu = [FuList[i](DataType, CtrlType,
-                      num_inports, num_outports,
-                      data_mem_size, ctrl_mem_size,
-                      data_bitwidth = data_bitwidth) if FuList[i] not in exec_lantency.keys() else FuList[i](DataType, CtrlType, num_inports, num_outports,
-                      data_mem_size, ctrl_mem_size, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size) ]
+    s.fu = [FuList[i](CtrlPktType, num_inports, num_outports) 
+            if FuList[i] not in exec_lantency.keys() else FuList[i](CtrlPktType, num_inports, 
+                num_outports, latency=exec_lantency[FuList[i]]) for i in range(s.fu_list_size)]
 
     s.fu_recv_const_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_opt_rdy_vector = Wire(s.fu_list_size)

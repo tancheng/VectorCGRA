@@ -16,16 +16,14 @@ from ...lib.opt_type import *
 
 class MemUnitRTL(Component):
 
-  def construct(s, DataType, CtrlType, num_inports,
-                num_outports, data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0,
-                data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    PredicateType = DataType.get_field_type(kAttrPredicate)
     # Constant
     num_entries = 2
-    AddrType = mk_bits(clog2(data_mem_size))
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    DataType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrData)
+    AddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrDataAddr)
+    CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
+    CtrlAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrlAddr)
     s.ctrl_addr_inport = InPort(CtrlAddrType)
     CountType = mk_bits(clog2(num_entries + 1))
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -200,7 +198,7 @@ class MemUnitRTL(Component):
                             s.recv_in[s.in1_idx].val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
-          s.to_mem_waddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
+          s.to_mem_waddr.msg @= AddrType(s.recv_in[0].msg.payload[0:AddrType.nbits])
           s.to_mem_waddr.val @= s.recv_all_val
           s.to_mem_wdata.msg @= s.recv_in[s.in1_idx].msg
           s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \

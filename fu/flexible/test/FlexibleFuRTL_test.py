@@ -29,10 +29,9 @@ from ....lib.messages import *
 
 class TestHarness( Component ):
 
-  def construct(s, FunctionUnit, FuList, DataType,
-                CtrlType,
-                data_mem_size, num_inports, num_outports,
-                src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs):
+  def construct(s, FunctionUnit, FuList, IntraCgraPktType,
+                DataType, CtrlType, data_mem_size, ctrl_mem_size, num_inports, 
+                num_outports, src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
     s.src_in1 = TestSrcRTL(DataType, src1_msgs)
@@ -40,9 +39,9 @@ class TestHarness( Component ):
     s.src_opt = TestSrcRTL(CtrlType, ctrl_msgs)
     s.sink_out0 = TestSinkRTL(DataType, sink0_msgs)
 
-    s.dut = FunctionUnit(DataType, CtrlType,
+    s.dut = FunctionUnit(IntraCgraPktType, DataType, CtrlType,
                          num_inports, num_outports, data_mem_size,
-                         4, 1, FuList)
+                         ctrl_mem_size, 1, FuList)
 
     connect(s.src_const.send, s.dut.recv_const)
     connect(s.src_in0.send, s.dut.recv_in[0])
@@ -95,12 +94,17 @@ def test_flexible_alu():
   FU = FlexibleFuRTL
   FuList = [AdderRTL]
   data_bitwidth = 16
+  data_mem_size = 2
+  ctrl_mem_size = 2
   DataType = mk_data(data_bitwidth, 1)
+  DataAddrType = mk_bits(clog2(data_mem_size))
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports = 2
   num_outports = 2
   CtrlType = mk_ctrl(num_inports, num_outports)
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(2, 1), DataType(9, 1)]
@@ -109,8 +113,8 @@ def test_flexible_alu():
   src_opt =   [CtrlType(OPT_ADD, pickRegister),
                CtrlType(OPT_ADD, pickRegister),
                CtrlType(OPT_SUB, pickRegister)]
-  th = TestHarness(FU, FuList, DataType, CtrlType,
-                   data_mem_size, num_inports, num_outports,
+  th = TestHarness(FU, FuList, IntraCgraPktType, DataType, CtrlType,
+                   data_mem_size, ctrl_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
 
@@ -118,12 +122,17 @@ def test_flexible_mul():
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL]
   data_bitwidth = 16
+  data_mem_size = 2
+  ctrl_mem_size = 2
   DataType      = mk_data( data_bitwidth, 1 )
+  DataAddrType  = mk_bits(clog2(data_mem_size))
   PredicateType = mk_predicate( 1, 1 )
-  data_mem_size = 8
   num_inports   = 2
   num_outports  = 2
   CtrlType      = mk_ctrl(num_inports, num_outports)
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [DataType(1, 1), DataType(2, 1), DataType(9,  1)]
@@ -132,8 +141,8 @@ def test_flexible_mul():
   src_opt       = [CtrlType(OPT_MUL, pickRegister),
                    CtrlType(OPT_MUL, pickRegister),
                    CtrlType(OPT_MUL, pickRegister)]
-  th = TestHarness(FU, FuList, DataType, CtrlType,
-                   data_mem_size, num_inports, num_outports,
+  th = TestHarness(FU, FuList, IntraCgraPktType, DataType, CtrlType,
+                   data_mem_size, ctrl_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim( th )
 
@@ -141,12 +150,17 @@ def test_flexible_universal():
   FU            = FlexibleFuRTL
   FuList        = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL, GrantRTL, MemUnitRTL]
   data_bitwidth = 16
+  data_mem_size = 2
+  ctrl_mem_size = 2
   DataType      = mk_data(data_bitwidth, 1)
+  DataAddrType  = mk_bits(clog2(data_mem_size))
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports   = 2
   num_outports  = 2
   CtrlType      = mk_ctrl(num_inports, num_outports)
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [DataType(2, 1), DataType(1, 1), DataType(3, 0)]
@@ -155,7 +169,7 @@ def test_flexible_universal():
   src_opt       = [CtrlType(OPT_EQ ,      pickRegister),
                    CtrlType(OPT_GRT_PRED, pickRegister),
                    CtrlType(OPT_PHI,      pickRegister)]
-  th = TestHarness(FU, FuList, DataType, CtrlType,
-                   data_mem_size, num_inports, num_outports,
+  th = TestHarness(FU, FuList, IntraCgraPktType, DataType, CtrlType,
+                   data_mem_size, ctrl_mem_size, num_inports, num_outports,
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
