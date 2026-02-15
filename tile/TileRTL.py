@@ -81,10 +81,8 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
-                              num_fu_inports, num_fu_outports,
-                              data_mem_size, ctrl_mem_size,
-                              num_tiles, FuList)
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, 
+                              num_fu_outports, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
                                      CtrlSignalType,

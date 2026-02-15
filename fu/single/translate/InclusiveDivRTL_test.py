@@ -27,18 +27,19 @@ num_outports  = 2
 ConfigType = mk_ctrl(4, 2)
 data_mem_size = 8
 latency       = 4
+ctrl_mem_size = 8
+DataAddrType  = mk_bits(clog2(data_mem_size))
+CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
 
 def test_elaborate(cmdline_opts):
-  dut = InclusiveDivRTL(DataType, ConfigType, num_inports,
-                 num_outports, data_mem_size,
-                 latency = 4, data_bitwidth = data_bitwidth)
+  dut = InclusiveDivRTL(IntraCgraPktType, num_inports, num_outports, latency = latency)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate( cmdline_opts ):
-  dut = InclusiveDivRTL( DataType, ConfigType,
-                         num_inports, num_outports, data_mem_size,
-                         latency, data_bitwidth = data_bitwidth )
+  dut = InclusiveDivRTL(IntraCgraPktType, num_inports, num_outports, latency = latency)
   dut.set_metadata( VerilogTranslationPass.explicit_module_name,
                     f'InclusiveDivRTL_test' )
   config_model_with_cmdline_opts( dut, cmdline_opts, duts=[] )

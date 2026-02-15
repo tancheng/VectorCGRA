@@ -34,9 +34,8 @@ import hypothesis
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, FuList, DataType, CtrlType,
-                 src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs ):
-    data_mem_size = 8
+  def construct( s, FunctionUnit, FuList, IntraCgraPktType, DataType, CtrlType, data_mem_size,
+                   ctrl_mem_size, src0_msgs, src1_msgs, ctrl_msgs, sink0_msgs ):
     num_inports   = 2
     num_outports  = 2
 
@@ -46,9 +45,7 @@ class TestHarness( Component ):
     s.src_opt       = TestSrcRTL (CtrlType,      ctrl_msgs    )
     s.sink_out0     = TestSinkRTL(DataType,      sink0_msgs   )
 
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size,
-                         4, 1, FuList )
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports, 1, FuList)
 
     connect(s.src_const.send,     s.dut.recv_const    )
     connect(s.src_in0.send,       s.dut.recv_in[0]    )
@@ -122,10 +119,16 @@ def test_hypothesis(functions, inputs):
   )
   src_a, src_b, src_opt = [], [], []
   data_bitwidth = 16
+  data_mem_size = 8
+  ctrl_mem_size = 8
   DataType      = mk_data(data_bitwidth, 1)
+  DataAddrType  = mk_bits(clog2(data_mem_size))
   PredicateType = mk_predicate(1, 1)
   num_inports   = 2
   CtrlType      = mk_ctrl(num_inports)
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   for value in input_list:
@@ -133,7 +136,7 @@ def test_hypothesis(functions, inputs):
     src_b.append  (DataType(value[1]))
     src_opt.append(CtrlType(value[2], pickRegister))
   sink_out      = FuFL(DataType, src_a, src_b, src_opt)
-  th = TestHarness(FU, functions, DataType, CtrlType,
-                   src_a, src_b, src_opt, sink_out)
+  th = TestHarness(FU, functions, IntraCgraPktType, DataType, CtrlType, data_mem_size,
+                   ctrl_mem_size, src_a, src_b, src_opt, sink_out)
   run_sim(th)
 

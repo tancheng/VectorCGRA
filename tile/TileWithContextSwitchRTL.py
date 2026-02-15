@@ -77,9 +77,7 @@ class TileWithContextSwitchRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
-                              num_fu_inports, num_fu_outports,
-                              data_mem_size, ctrl_mem_size,
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, num_fu_outports,
                               num_tiles, FuList)
     # We use many CMD_CONST to simulate runtime commands in TileWithContextSwitchRTL_test,
     # so here we increase the size of const_mem to avoid deadlock.

@@ -22,6 +22,11 @@ def test_elaborate( cmdline_opts ):
   PredType      = mk_predicate( 1, 1 )
   ConfigType    = mk_ctrl(3, 3, 1)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   num_inports   = 3
   num_outports  = 1
   FuInType      = mk_bits(clog2(num_inports + 1))
@@ -34,8 +39,7 @@ def test_elaborate( cmdline_opts ):
   src_opt       = [ConfigType(OPT_ADD_CONST, pick_register),
                    ConfigType(OPT_SUB,       pick_register),
                    ConfigType(OPT_ADD_CONST, pick_register)]
-  dut = AluGenMacRTL(DataType, ConfigType, num_inports,
-                     num_outports, data_mem_size)
+  dut = AluGenMacRTL(IntraCgraPktType, num_inports, num_outports)
   dut = config_model_with_cmdline_opts(dut, cmdline_opts, duts = [])
 
 #-------------------------------------------------------------------------
@@ -44,7 +48,7 @@ def test_elaborate( cmdline_opts ):
 
 class TestHarness( Component ):
 
-  def construct(s, FunctionUnit, DataType, ConfigType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src2_msgs, src_const,
                 ctrl_msgs, sink_msgs):
@@ -56,8 +60,7 @@ class TestHarness( Component ):
     s.sink_out = TestSinkRTL(DataType,  sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, ConfigType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     connect(s.src_in0.send,    s.dut.recv_in[0]        )
     connect(s.src_in1.send,    s.dut.recv_in[1]        )
@@ -81,6 +84,11 @@ def test_add_basic(cmdline_opts):
   PredType      = mk_predicate(1, 1)
   ConfigType    = mk_ctrl(3, 3, 1)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   num_inports   = 3
   num_outports  = 1
   FuInType      = mk_bits(clog2(num_inports + 1))
@@ -98,7 +106,7 @@ def test_add_basic(cmdline_opts):
                    ConfigType(OPT_GTE,     pick_register),
                    ConfigType(OPT_MUL,     pick_register),
                    ConfigType(OPT_MUL_ADD, pick_register)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                   num_inports, num_outports, data_mem_size,
                   src_in0, src_in1, src_in2, src_const, src_opt,
                   sink_out)

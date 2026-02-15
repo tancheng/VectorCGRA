@@ -18,16 +18,9 @@ from ...lib.opt_type import *
 
 class ExtractPredicateRTL(Fu):
 
-  def construct(s, DataType, CtrlType, num_inports,
-                num_outports, data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0,
-                data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(ExtractPredicateRTL, s).construct(DataType, CtrlType,
-                                            num_inports, num_outports,
-                                            data_mem_size, ctrl_mem_size,
-                                            1, vector_factor_power,
-                                            data_bitwidth = data_bitwidth)
+    super(ExtractPredicateRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -48,7 +41,7 @@ class ExtractPredicateRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= b1(0)
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -67,7 +60,7 @@ class ExtractPredicateRTL(Fu):
           # When loop is running (predicate=1) -> payload=1
           # When loop terminates (predicate=0) -> payload=0
           # Downstream NOT will invert: running->0 (no RET), done->1 (trigger RET)
-          s.send_out[0].msg.payload @= zext(s.recv_in[s.in0_idx].msg.predicate, DataType.get_field_type('payload'))
+          s.send_out[0].msg.payload @= zext(s.recv_in[s.in0_idx].msg.predicate, s.DataType.get_field_type('payload'))
           s.send_out[0].msg.predicate @= 1
           
           s.send_out[0].val @= s.recv_in[s.in0_idx].val
