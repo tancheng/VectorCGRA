@@ -11,6 +11,7 @@ Author : Cheng Tan
 
 from pymtl3 import *
 from ...fu.single.MemUnitRTL import MemUnitRTL
+from ...fu.single.StreamingMemUnitRTL import StreamingMemUnitRTL
 from ...fu.single.AdderRTL  import AdderRTL
 from ...fu.single.RetRTL  import RetRTL
 from ...fu.single.NahRTL  import NahRTL
@@ -51,6 +52,8 @@ class FlexibleFuRTL(Component):
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
+    # Interfaces for streaming LD.
+    s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
 
     s.to_mem_raddr = [SendIfcRTL(s.AddrType) for _ in range(s.fu_list_size)]
     s.from_mem_rdata = [RecvIfcRTL(s.DataType) for _ in range(s.fu_list_size)]
@@ -78,6 +81,8 @@ class FlexibleFuRTL(Component):
       s.to_mem_waddr[i] //= s.fu[i].to_mem_waddr
       s.to_mem_wdata[i] //= s.fu[i].to_mem_wdata
       s.clear[i] //= s.fu[i].clear
+      if FuList[i] == StreamingMemUnitRTL:
+        s.recv_pkt_from_controller //= s.fu[i].recv_from_controller_pkt
     
     @update
     def connect_to_controller():
