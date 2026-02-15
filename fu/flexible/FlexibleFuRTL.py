@@ -50,8 +50,8 @@ class FlexibleFuRTL(Component):
     s.recv_opt = RecvIfcRTL(s.CtrlType)
     s.send_out = [SendIfcRTL(s.DataType) for _ in range(num_outports)]
     # Serves as the bridge between the RetRTL and the ctrl memory controller.
-    s.send_to_ctrl_mem = SendIfcRTL(CgraPayloadType)
-    s.recv_from_ctrl_mem = RecvIfcRTL(CgraPayloadType)
+    s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
+    s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
     # Interfaces for streaming LD.
     s.recv_pkt_from_controller = RecvIfcRTL(CtrlPktType)
 
