@@ -21,7 +21,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src2_msgs, src3_msgs, ctrl_msgs,
                 sink_msgs0, sink_msgs1):
@@ -35,8 +35,7 @@ class TestHarness(Component):
     s.sink_out0     = TestSinkRTL(DataType,      sink_msgs0)
     s.sink_out1     = TestSinkRTL(DataType,      sink_msgs1)
 
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
     connect(s.src_in1.send,    s.dut.recv_in[1])
@@ -82,9 +81,13 @@ def test_mul_alu():
   PredicateType = mk_predicate(1, 1)
   num_inports   = 4
   num_outports  = 2
-  data_mem_size = 8
   CtrlType      = mk_ctrl(num_inports, num_outports)
-
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType( x+1 ) for x in range(num_inports)]
 
@@ -98,7 +101,7 @@ def test_mul_alu():
                    CtrlType(OPT_MUL_ADD, pickRegister),
                    CtrlType(OPT_MUL_SUB, pickRegister)]
 
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_in2, src_in3,
                    src_opt, sink_out0, sink_out1)

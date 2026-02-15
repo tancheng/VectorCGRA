@@ -26,7 +26,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, ConfigType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const, ctrl_msgs,
                 sink_msgs):
@@ -38,8 +38,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, ConfigType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     connect(s.src_in0.send, s.dut.recv_in[0])
     connect(s.src_in1.send, s.dut.recv_in[1])
@@ -89,13 +88,18 @@ def test_mul0(input_a, input_b):
   ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   src_in0 =   [DataType(input_a, 1)]
   src_in1 =   [DataType(input_b, 1)]
   src_const = [DataType(0, 1) ]
   sink_out =  [DataType(input_a * input_b, 1)]
   src_opt =   [ConfigType(OPT_MUL,
                [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)

@@ -3172,6 +3172,22 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+def test_multi_CGRA_systolic_2x2_2x2_translation(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_systolic')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v")
+  translate_model(th, ['dut'])
+
 
 def test_multi_CGRA_systolic_2x2_2x2_non_combinational_mem_access(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
