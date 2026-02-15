@@ -173,7 +173,7 @@ class VectorAllReduceRTL(Component):
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL):
           s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,
-                                DataType(s.reduce_add.out,
+                                s.DataType(s.reduce_add.out,
                                          s.recv_in[0].msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
@@ -182,7 +182,7 @@ class VectorAllReduceRTL(Component):
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL):
           s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,
-                                DataType(s.reduce_add.out,
+                                s.DataType(s.reduce_add.out,
                                          s.recv_in[0].msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
