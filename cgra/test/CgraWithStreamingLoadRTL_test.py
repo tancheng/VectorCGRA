@@ -1,6 +1,6 @@
 """
 ==========================================================================
-CgraRTLWithStreamingLoad_test.py
+CgraWithStreamingLoad_test.py
 ==========================================================================
 Test cases for CGRA with tiles that support streaming LD operation.
 
