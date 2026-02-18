@@ -14,16 +14,9 @@ from ...lib.opt_type import *
 
 class GrantRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(GrantRTL, s).construct(DataType, CtrlType,
-                                  num_inports, num_outports,
-                                  data_mem_size, ctrl_mem_size,
-                                  1, vector_factor_power,
-                                  data_bitwidth = data_bitwidth)
+    super(GrantRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
     # Constants.
     num_entries = 2
@@ -54,7 +47,7 @@ class GrantRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= b1(0)
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -81,6 +74,8 @@ class GrantRTL(Fu):
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.recv_in[s.in1_idx].msg.predicate & \
                                            s.reached_vector_factor
+          else:
+            s.send_out[0].msg.predicate @= 0
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy

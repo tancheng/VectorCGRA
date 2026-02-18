@@ -2,7 +2,9 @@
 ==========================================================================
 PhiRTL.py
 ==========================================================================
-Functional unit Phi for CGRA tile.
+Functional unit Phi for CGRA tile. Note that only one phi_const or
+phi_start can be mapped onto the same tile, as we only have one 'first'
+bit to record whether it is the first execution.
 
 Author : Cheng Tan
   Date : November 30, 2019
@@ -15,17 +17,10 @@ import copy
 
 class PhiRTL(Fu):
 
-  def construct(s, DataType, CtrlType, num_inports,
-                num_outports, data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0,
-                data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(PhiRTL, s).construct(DataType, CtrlType,
-                               num_inports, num_outports,
-                               data_mem_size, ctrl_mem_size,
-                               1, vector_factor_power,
-                               data_bitwidth = data_bitwidth)
-
+    super(PhiRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
+    
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
@@ -53,7 +48,7 @@ class PhiRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0
@@ -85,6 +80,26 @@ class PhiRTL(Fu):
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+        elif s.recv_opt.msg.operation == OPT_PHI_START:
+          if s.first:
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          elif s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          elif s.recv_in[s.in1_idx].msg.predicate == Bits1(1):
+            s.send_out[0].msg.payload @= s.recv_in[s.in1_idx].msg.payload
+            s.send_out[0].msg.predicate @= s.reached_vector_factor
+          else: # No predecessor is active.
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
+            s.send_out[0].msg.predicate @= 0
+          s.recv_all_val @= ((s.first & s.recv_in[s.in0_idx].val) | \
+                             (~s.first & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= ~s.first & s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:
@@ -120,7 +135,7 @@ class PhiRTL(Fu):
     def br_start_once():
       if s.reset | s.clear:
         s.first <<= b1(1)
-      if (s.recv_opt.msg.operation == OPT_PHI_CONST) & s.reached_vector_factor:
+      if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace(s):

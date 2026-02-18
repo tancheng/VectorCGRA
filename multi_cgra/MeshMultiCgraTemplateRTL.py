@@ -32,8 +32,8 @@ class MeshMultiCgraTemplateRTL(Component):
         CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
                                         num_tiles, CgraPayloadType)
         NocPktType = mk_inter_cgra_pkt(cgra_columns, cgra_rows,
-                                   num_tiles, num_rd_tiles,
-                                   CgraPayloadType)
+                                       num_tiles, num_rd_tiles,
+                                       CgraPayloadType)
 
         # Constant
         s.num_cgras = cgra_rows * cgra_columns
@@ -71,10 +71,8 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  is_multi_cgra
-                                  )
+                                  is_multi_cgra, cgra_id)
                   for cgra_id in range(s.num_cgras)]
-        
         # Latency is 1.
         s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
 
@@ -156,7 +154,7 @@ class MeshMultiCgraTemplateRTL(Component):
                 s.cgra[idx].send_data_on_boundary_east[tile_row].rdy //= 0
 
     def line_trace(s):
-        res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())
-                        for (i,x) in enumerate(s.cgra)])
-        res += " ## mesh: " + s.mesh.line_trace()
-        return res
+      res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())
+                      for (i,x) in enumerate(s.cgra)])
+      res += " ## mesh: " + s.mesh.line_trace()
+      return res

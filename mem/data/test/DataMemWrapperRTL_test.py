@@ -109,4 +109,3 @@ def test_const_queue():
                    global_data_mem_size, per_bank_data_mem_size,
                    mem_rd_request, mem_wr_request, mem_response)
   run_sim(th)
-

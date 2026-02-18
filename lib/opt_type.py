@@ -45,10 +45,12 @@ OPT_EQ_CONST                     = OpCodeType( 33 )
 OPT_NE                           = OpCodeType( 45 )
 OPT_NE_CONST                     = OpCodeType( 46 )
 OPT_RET                          = OpCodeType( 35 )
+OPT_RET_VOID                     = OpCodeType( 64 )
 OPT_GRT_PRED                     = OpCodeType( 16 )
 OPT_GRT_ALWAYS                   = OpCodeType( 34 )
 OPT_GRT_ONCE                     = OpCodeType( 47 )
 OPT_PHI                          = OpCodeType( 17 )
+OPT_PHI_START                    = OpCodeType( 84 )
 OPT_PHI_CONST                    = OpCodeType( 32 )
 OPT_SEL                          = OpCodeType( 27 )
 OPT_LD_CONST                     = OpCodeType( 28 )
@@ -103,6 +105,12 @@ OPT_DIV_INCLUSIVE_END            = OpCodeType( 49 )
 OPT_REM_INCLUSIVE_START          = OpCodeType( 59 )
 OPT_REM_INCLUSIVE_END            = OpCodeType( 15 )
 
+OPT_LOOP_CONTROL                 = OpCodeType( 83 )
+OPT_STREAM_LD                    = OpCodeType( 84 )
+OPT_LOOP_COUNT                   = OpCodeType( 85 )
+OPT_LOOP_DELIVERY                = OpCodeType( 86 )
+OPT_EXTRACT_PREDICATE            = OpCodeType( 87 )
+
 OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
   OPT_NAH                        : "(NAH)",
@@ -132,7 +140,9 @@ OPT_SYMBOL_DICT = {
   OPT_GRT_ALWAYS                 : "(grant_always)",
   OPT_GRT_ONCE                   : "(grant_once)",
   OPT_RET                        : "(ret)",
+  OPT_RET_VOID                   : "(ret_void)",
   OPT_PHI                        : "(ph)",
+  OPT_PHI_START                  : "(ph*)",
   OPT_PHI_CONST                  : "(ph')",
   OPT_SEL                        : "(sel)",
   OPT_LD_CONST                   : "(ldcst)",
@@ -187,4 +197,10 @@ OPT_SYMBOL_DICT = {
   OPT_DIV_INCLUSIVE_END          : "(/ed)",
   OPT_REM_INCLUSIVE_END          : "(%ed)",
 
+  OPT_LOOP_CONTROL               : "(loop_ctrl)",
+  OPT_STREAM_LD                  : "(streaming_ld)",
+
+  OPT_LOOP_COUNT                 : "(loop_cnt)",
+  OPT_LOOP_DELIVERY              : "(loop_deli)",
+  OPT_EXTRACT_PREDICATE          : "(extract_pred)"
 }

@@ -14,16 +14,9 @@ from ...lib.opt_type import *
 
 class NahRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(NahRTL, s).construct(DataType, CtrlType,
-                               num_inports, num_outports,
-                               data_mem_size, ctrl_mem_size,
-                               1, vector_factor_power,
-                               data_bitwidth = data_bitwidth)
+    super(NahRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
     @update
     def comb_logic():
@@ -37,13 +30,13 @@ class NahRTL(Fu):
       for i in range( num_outports ):
         # s.send_out[i].val @= s.recv_opt.val
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.send_to_ctrl_mem.val @= 0
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
 
-      if s.recv_opt.msg.operation == OPT_NAH:
+      if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_NAH):
         s.recv_opt.rdy @= 1
       else:
         for j in range(num_outports):

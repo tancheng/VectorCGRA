@@ -20,28 +20,26 @@ from ...lib.opt_type import *
 
 class VectorMulComboRTL(Component):
 
-  def construct(s, DataType, CtrlType,
+  def construct(s, CtrlPktType,
                 num_inports, num_outports,
-                data_mem_size,
-                ctrl_mem_size = 4,
                 vector_factor_power = 0,
-                num_lanes = 4, data_bitwidth = 64):
+                num_lanes = 4):
 
-    PredicateType = DataType.get_field_type(kAttrPredicate)
-    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     # Constants
-    assert(data_bitwidth % num_lanes == 0)
     # currently only support 4 due to the shift logic
     assert(num_lanes % 4 == 0)
-    num_entries = 2
-    s.const_zero = DataType(0, 0)
-    DataAddrType = mk_bits(clog2(data_mem_size))
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    num_entries   = 2
+    s.DataType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrData)
+    s.DataAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrDataAddr)
+    s.CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
+    s.CtrlAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrlAddr)
+    s.CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    s.const_zero = s.DataType(0, 0)
+    s.ctrl_addr_inport = InPort(s.CtrlAddrType)
     CountType = mk_bits(clog2(num_entries + 1))
-    s.CgraPayloadType = mk_cgra_payload(DataType,
-                                        DataAddrType,
-                                        CtrlType,
-                                        CtrlAddrType)
+    data_bitwidth = s.DataType.get_field_type(kAttrPayload).nbits
+    assert(data_bitwidth % num_lanes == 0)
+
     # By default 16-bit indicates both input and output. For a Mul,
     # if output is no longer than 16-bit, it means the
     # input is no longer than 8-bit. Here, the sub_bw is by default
@@ -53,10 +51,10 @@ class VectorMulComboRTL(Component):
     sub_bw_4 = 4 * data_bitwidth // num_lanes
 
     # Interface
-    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_const = RecvIfcRTL(DataType)
-    s.recv_opt = RecvIfcRTL(CtrlType)
-    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.recv_in = [RecvIfcRTL(s.DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(s.DataType)
+    s.recv_opt = RecvIfcRTL(s.CtrlType)
+    s.send_out = [SendIfcRTL(s.DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
     TempDataType = mk_bits(data_bitwidth)
@@ -64,18 +62,17 @@ class VectorMulComboRTL(Component):
     s.temp_result = [Wire(TempDataType) for _ in range(num_lanes)]
 
     # Components
-    s.Fu = [VectorMulRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
+    s.Fu = [VectorMulRTL(sub_bw, CtrlPktType, 4, 2)
             for _ in range(num_lanes)]
 
     # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)
 
     # Redundant interfaces for MemUnit
-    AddrType = mk_bits(clog2(data_mem_size))
-    s.to_mem_raddr = SendIfcRTL(AddrType)
-    s.from_mem_rdata = RecvIfcRTL(DataType)
-    s.to_mem_waddr = SendIfcRTL(AddrType)
-    s.to_mem_wdata = SendIfcRTL(DataType)
+    s.to_mem_raddr = SendIfcRTL(s.DataAddrType)
+    s.from_mem_rdata = RecvIfcRTL(s.DataType)
+    s.to_mem_waddr = SendIfcRTL(s.DataAddrType)
+    s.to_mem_wdata = SendIfcRTL(s.DataType)
 
     @update
     def update_input_output():
@@ -95,8 +92,8 @@ class VectorMulComboRTL(Component):
 
       for i in range(num_lanes):
         s.temp_result[i] @= TempDataType(0)
-        s.Fu[i].recv_in[0].msg[0:sub_bw] @= FuDataType()
-        s.Fu[i].recv_in[1].msg[0:sub_bw] @= FuDataType()
+        s.Fu[i].recv_in[0].msg @= 0
+        s.Fu[i].recv_in[1].msg @= 0
 
       if s.recv_opt.msg.operation == OPT_VEC_MUL:
         # Connection: split into vectorized FUs
@@ -185,8 +182,8 @@ class VectorMulComboRTL(Component):
       s.to_mem_waddr.val @= b1(0)
       s.to_mem_wdata.val @= b1(0)
       s.to_mem_wdata.msg @= s.const_zero
-      s.to_mem_waddr.msg @= AddrType(0)
-      s.to_mem_raddr.msg @= AddrType(0)
+      s.to_mem_waddr.msg @= s.DataAddrType(0)
+      s.to_mem_raddr.msg @= s.DataAddrType(0)
       s.to_mem_raddr.val @= b1(0)
       s.from_mem_rdata.rdy @= b1(0)
 

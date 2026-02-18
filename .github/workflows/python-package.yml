@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         # same as `git submodule update --init` to update submodules
-        submodules: true
+        submodules: recursive
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -54,6 +54,7 @@ jobs:
         pip install hypothesis
         pip install pytest
         pip install py-markdown-table
+        pip install PyYAML
         pip list
         
     - name: Install dependencies for sv2v
@@ -110,13 +111,19 @@ jobs:
         pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # MeshMultiCgraTemplateRTL Test
         pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate FIR scalar .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate FIR vector global reduce .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_vector_global_reduce_translation -xvs --test-verilog --dump-vtb --dump-vcd
+        # Generate 2x2 Systolic-array .v file with explicit file & module names.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_systolic_2x2_2x2_translation -xvs --test-verilog --dump-vtb --dump-vcd
 
     - name: Test synthesis for CGRA template
       run: |
         start_time=$(date +%s)
         export PATH="${HOME}/oss-cad-suite/bin:$PATH"
         cd build
-        cp CgraTemplateRTL__*.v design.v
+        cp CgraTemplateRTL__pickled.v design.v
         export PATH="${{github.workspace}}/tools/sv2v/bin:$PATH"
         ${{github.workspace}}/tools/sv2v/bin/sv2v design.v > design_sv2v.v
         cp design_sv2v.v ${{github.workspace}}/tools/mflowgen/designs/cgra/rtl/outputs/design.v
@@ -132,3 +139,22 @@ jobs:
           echo "ERROR: Synthesis step took longer than 15 minutes!"
           exit 1
         fi
+
+    - name: Use setup-verilator action
+      uses: veryl-lang/setup-verilator@v1 # Check the marketplace for the latest tag/version
+      with:
+        verilator-version: 'v5.026' # Specify the desired version
+
+    - name: Test pure SV tb.
+      run: |
+        unset VERILATOR_ROOT
+        unset PYMTL_VERILATOR_INCLUDE_DIR
+        mkdir -p build && cd build
+        verilator --version
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_scalar_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_2x2_fir_vector_global_reduce_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+        verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC -Wno-SELRANGE --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_systolic_2x2_2x2_tb.v --top cgra_test
+        ./obj_dir/Vcgra_test
+

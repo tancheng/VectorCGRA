@@ -81,10 +81,8 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
-                              num_fu_inports, num_fu_outports,
-                              data_mem_size, ctrl_mem_size,
-                              num_tiles, FuList)
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, 
+                              num_fu_outports, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
                                      CtrlSignalType,
@@ -157,6 +155,7 @@ class TileRTL(Component):
     # Ctrl address port.
     s.routing_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
     s.fu_crossbar.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
+    s.element.ctrl_addr_inport //= s.ctrl_mem.ctrl_addr_outport
 
     # Prologue port.
     s.element.prologue_count_inport //= s.ctrl_mem.prologue_count_outport_fu
@@ -250,7 +249,10 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH)):
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy

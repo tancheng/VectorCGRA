@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 23
+NUM_CMDS = 32
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -39,6 +39,15 @@ CMD_GLOBAL_REDUCE_MUL                = 19
 CMD_GLOBAL_REDUCE_ADD_RESPONSE       = 20
 CMD_GLOBAL_REDUCE_MUL_RESPONSE       = 21
 CMD_PRESERVE                         = 22
+CMD_CONFIG_STREAMING_LD_START_ADDR   = 23
+CMD_CONFIG_STREAMING_LD_STRIDE       = 24
+CMD_CONFIG_STREAMING_LD_END_ADDR     = 25
+CMD_UPDATE_COUNTER_SHADOW_VALUE      = 26  # Updates shadow registers value from AC.
+CMD_RESET_LEAF_COUNTER               = 27  # Resets leaf counter to lower_bound.
+CMD_CONFIG_LOOP_LOWER                = 28
+CMD_CONFIG_LOOP_UPPER                = 29
+CMD_CONFIG_LOOP_STEP                 = 30
+CMD_LEAF_COUNTER_COMPLETE            = 31
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -63,6 +72,15 @@ CMD_SYMBOL_DICT = {
   CMD_GLOBAL_REDUCE_MUL:                "(GLOBAL_REDUCE_MUL)",
   CMD_GLOBAL_REDUCE_ADD_RESPONSE:       "(GLOBAL_REDUCE_ADD_RESPONSE)",
   CMD_GLOBAL_REDUCE_MUL_RESPONSE:       "(GLOBAL_REDUCE_MUL_RESPONSE)",
-  CMD_PRESERVE:                         "(PRESERVE_ACCUMULATED_VALUE)"
+  CMD_PRESERVE:                         "(PRESERVE_ACCUMULATED_VALUE)",
+  CMD_CONFIG_STREAMING_LD_START_ADDR:   "(STREAMING_LD_START_ADDR)",
+  CMD_CONFIG_STREAMING_LD_STRIDE:       "(STREAMING_LD_STRIDE)",
+  CMD_CONFIG_STREAMING_LD_END_ADDR:     "(STREAMING_LD_END_ADDR)",
+  CMD_UPDATE_COUNTER_SHADOW_VALUE:      "(UPDATE_COUNTER_SHADOW_REGISTER)",
+  CMD_RESET_LEAF_COUNTER:               "(RESET_LEAF_COUNTER)",
+  CMD_CONFIG_LOOP_LOWER:                "(CONFIG_LOOP_LOWER)",
+  CMD_CONFIG_LOOP_UPPER:                "(CONFIG_LOOP_UPPER)",
+  CMD_CONFIG_LOOP_STEP:                 "(CONFIG_LOOP_STEP)",
+  CMD_LEAF_COUNTER_COMPLETE:            "(LEAF_COUNTER_COMPLETE)",
 }
 

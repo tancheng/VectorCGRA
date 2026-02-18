@@ -21,7 +21,7 @@ from ....lib.messages             import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src_const, src_opt, sink_msgs):
 
@@ -31,9 +31,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
-                         num_outports, data_mem_size,
-                         vector_factor_power = 0)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     s.src_in0.send //= s.dut.recv_in[0]
     s.src_in1.send //= s.dut.recv_in[1]
@@ -68,7 +66,6 @@ def run_sim(test_harness, max_cycles = 20):
   test_harness.sim_tick()
   test_harness.sim_tick()
 
-
 def test_Phi():
   FU = PhiRTL
   DataType = mk_data(16, 1, 1)
@@ -78,6 +75,10 @@ def test_Phi():
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 0), DataType(3, 1), DataType(6, 0)]
@@ -88,7 +89,35 @@ def test_Phi():
                CtrlType(OPT_PHI, pickRegister)]
 
   sink_out = [DataType(1, 0), DataType(3, 1), DataType(2, 1)]
-  th = TestHarness(FU, DataType, CtrlType, num_inports,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
+                   num_outports, data_mem_size, src_in0, src_in1,
+                   src_const, src_opt, sink_out)
+  run_sim(th)
+
+def test_Phi_start():
+  FU = PhiRTL
+  DataType = mk_data(16, 1, 1)
+  PredicateType = mk_predicate(1, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pickRegister = [FuInType(x + 1) for x in range(num_inports)]
+  src_in0 =   [DataType(2, 1), DataType(3, 0), DataType(6, 0)]
+  src_in1 =   [                DataType(5, 1), DataType(2, 1)]
+  src_const = [DataType(0, 0), DataType(5, 0), DataType(2, 1)]
+  src_opt =   [CtrlType(OPT_PHI_START, pickRegister),
+               CtrlType(OPT_PHI_START, pickRegister),
+               CtrlType(OPT_PHI_START, pickRegister)]
+
+  sink_out = [DataType(2, 1), DataType(5, 1), DataType(2, 1)]
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out)
   run_sim(th)
@@ -102,6 +131,10 @@ def test_Phi_const():
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(4, 1), DataType(7, 0)]
@@ -113,7 +146,7 @@ def test_Phi_const():
                CtrlType(OPT_PHI_CONST, pickRegister),
                CtrlType(OPT_PHI_CONST, pickRegister) ]
   sink_out =  [DataType(3, 0), DataType(4, 1), DataType(7, 0)]
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -128,6 +161,10 @@ def test_Phi_vector():
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
   ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   # We can consume the inputs as the producer is also performed
@@ -175,7 +212,7 @@ def test_Phi_vector():
               DataType(1, 0), DataType(3, 0), DataType(2, 0),
               DataType(1, 0), DataType(3, 0), DataType(2, 0),
               DataType(1, 1), DataType(3, 1), DataType(2, 1)]
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)

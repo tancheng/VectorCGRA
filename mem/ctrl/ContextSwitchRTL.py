@@ -74,7 +74,7 @@ class ContextSwitchRTL(Component):
       s.is_pausing @= (s.status_reg == STATUS_PAUSING)
       s.is_preserving @= (s.status_reg == STATUS_PRESERVING)
       s.is_resuming @= (s.status_reg == STATUS_RESUMING)
-      s.is_executing_phi @= ((s.recv_opt == OPT_PHI_CONST) & (s.phi_addr_reg == s.ctrl_mem_rd_addr))
+      s.is_executing_phi @= (((s.recv_opt == OPT_PHI_CONST) | (s.recv_opt == OPT_PHI_START)) & (s.phi_addr_reg == s.ctrl_mem_rd_addr))
 
       # Updates overwrite_fu_outport, there are 3 scenarios:
       # (1) During the PAUSING status, FU's output iteration should always be replaced with DataType(0,0) that

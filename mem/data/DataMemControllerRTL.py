@@ -192,7 +192,7 @@ class DataMemControllerRTL(Component):
                                                DataType(0, 0, 0, 0),                             # data
                                                s.recv_from_noc_load_request.msg.src,             # src_cgra
                                                s.recv_from_noc_load_request.msg.src_tile_id,     # src_tile
-                                               s.recv_from_noc_load_request.msg.remote_src_port) # remote_src_port
+                                               s.recv_from_noc_load_request.msg.remote_src_port) # remote_src_port   
 
       for i in range(num_wr_tiles):
         recv_waddr = s.recv_waddr[i].msg
@@ -384,6 +384,7 @@ class DataMemControllerRTL(Component):
                              s.recv_from_noc_load_response_pkt.msg.src,
                              s.recv_from_noc_load_response_pkt.msg.src_tile_id,
                              0)
+
       # Allows other load request towards NoC when the previous one is not responded. There
       # could be out-of-order load response, i.e., potential consistency issue.
       s.read_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_load_request_pkt.rdy

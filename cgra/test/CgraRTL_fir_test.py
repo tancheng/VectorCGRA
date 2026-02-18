@@ -36,7 +36,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-
+from ...lib.util.common import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -438,7 +438,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(4), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(PORT_EAST), TileInType(0), TileInType(0)],
                                                                      # Sends to east tile: tile 1; and self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -480,13 +480,13 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
@@ -527,7 +527,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to west tile: tile 0.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -552,7 +552,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -587,7 +587,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -611,7 +611,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_MUL,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile: tile 0.
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -658,7 +658,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_NE_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to north tile9.
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -696,7 +696,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = write_reg_from_code))),
@@ -742,7 +742,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -777,7 +777,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile5 and self reg (cluster 1).
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -800,7 +800,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                                                                      # by default treated as the condition.
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to west tile8.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -995,7 +995,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to east tile: tile 1; and self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1043,7 +1043,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
@@ -1081,7 +1081,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_GRT_PRED,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(1), TileInType(0), TileInType(0)],
                                                                      # Sends to self first reg cluster.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1114,13 +1114,13 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
@@ -1161,7 +1161,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1185,7 +1185,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_MUL,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile: tile 0.
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1232,7 +1232,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_NE_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to north tile9, and self first register cluster.
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1274,7 +1274,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = write_reg_from_code))),
@@ -1320,7 +1320,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -1355,7 +1355,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile5 and self reg (cluster 1).
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -1378,7 +1378,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                                      # by default treated as the condition.
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to west tile8.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1598,7 +1598,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_VEC_REDUCE_ADD_BASE,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(4), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(PORT_EAST), TileInType(0), TileInType(0)],
                                                                      # Sends to east tile: tile 1; and self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1640,13 +1640,13 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
@@ -1687,7 +1687,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to west tile: tile 0.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -1712,7 +1712,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -1747,7 +1747,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1771,7 +1771,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_VEC_MUL,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile: tile 0.
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1818,7 +1818,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_NE_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to north tile9.
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -1856,7 +1856,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = write_reg_from_code))),
@@ -1902,7 +1902,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -1937,7 +1937,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile5 and self reg (cluster 1).
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -1960,7 +1960,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                                                                      # by default treated as the condition.
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to west tile8.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2177,7 +2177,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_VEC_REDUCE_ADD_BASE,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to east tile: tile 1; and self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2225,7 +2225,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 0,
@@ -2263,7 +2263,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_GRT_PRED,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                      # Sends to self first reg cluster.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2296,13 +2296,13 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
           IntraCgraPktType(0, 1,
@@ -2343,7 +2343,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to self reg.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2367,7 +2367,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_VEC_MUL,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile: tile 0.
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2414,7 +2414,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_NE_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to north tile9, and self first register cluster.
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2456,7 +2456,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = write_reg_from_code))),
@@ -2502,7 +2502,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                      ctrl = CtrlType(routing_xbar_outport = [
-                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                      data = DataType(1, 1))),
 
@@ -2537,7 +2537,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_ADD_CONST,
                                                                      fu_in_code,
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends to south tile5 and self reg (cluster 1).
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -2560,7 +2560,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                                                                      # by default treated as the condition.
                                                                      [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      # Sends result to west tile8.
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],

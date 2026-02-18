@@ -60,13 +60,13 @@ class DataMemWrapperRTL(Component):
       s.send.msg @= MemResponseType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
       # TODO: change to pipe's out's wen.
       if s.channel_rd.send.val:
-        s.send.msg.src             @= s.channel_rd.send.msg.dst
-        s.send.msg.dst             @= s.channel_rd.send.msg.src
-        s.send.msg.addr            @= s.channel_rd.send.msg.addr
-        s.send.msg.data            @= s.memory.rdata[0]
-        s.send.msg.src_cgra        @= s.channel_rd.send.msg.src_cgra
-        s.send.msg.src_tile        @= s.channel_rd.send.msg.src_tile
-        s.send.msg.remote_src_port @= s.channel_rd.send.msg.remote_src_port
+        s.send.msg.src                @= s.channel_rd.send.msg.dst
+        s.send.msg.dst                @= s.channel_rd.send.msg.src
+        s.send.msg.addr               @= s.channel_rd.send.msg.addr
+        s.send.msg.data               @= s.memory.rdata[0]
+        s.send.msg.src_cgra           @= s.channel_rd.send.msg.src_cgra
+        s.send.msg.src_tile           @= s.channel_rd.send.msg.src_tile
+        s.send.msg.remote_src_port    @= s.channel_rd.send.msg.remote_src_port
 
     @update
     def request_memory():

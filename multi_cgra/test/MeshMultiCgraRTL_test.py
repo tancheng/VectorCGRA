@@ -38,7 +38,7 @@ from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
-
+from ...lib.util.common import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -274,7 +274,7 @@ def initialize_test_harness(cmdline_opts,
                                                       ctrl = CtrlType(OPT_STR_CONST,
                                                                       [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                       TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
            # Pre-configure per-tile total config count.
@@ -438,7 +438,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          # Forward data from west(CGRA 2, tile 2) to east (CGRA 3, tile 2).
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 2, tile 2) to first inport of FU, to do OPT_MUL_CONST.
-                                                                          TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                          #              Sends mul to south tile(CGRA 2, tile1).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -466,7 +466,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 2, tile 0) to first inport of FU, to do MUL_CONST (const 4).
                                                                           # Put data from north(CGRA 2, tile 3) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                          #              Sends mul_add to south tile(CGRA 0, tile 3).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -495,7 +495,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 0, tile 2) to first inport of FU, to do MUL_CONST (const 6).
                                                                           # Put data from north(CGRA 2, tile 1) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                          #              Sends mul_add to south tile(CGRA 0, tile 1).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -526,7 +526,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Stores data from north(CGRA 0, tile 3).
-                                                                          TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                          [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
@@ -552,7 +552,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          # Forward data from west(CGRA 2, tile 3) to east (CGRA 3, tile 3).
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 2, tile 3) to first inport of FU, to do OPT_MUL_CONST.
-                                                                          TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                          #              Sends mul to south tile(CGRA 3, tile 0).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -580,7 +580,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 2, tile 1) to first inport of FU, to do MUL_CONST (const 10).
                                                                           # Put data from north(CGRA 3, tile 2) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                           #             Sends mul_add to south tile(CGRA 1, tile 2).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -608,7 +608,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
                                                                           # Put data from west(CGRA 0, tile 3) to first inport of FU, to do MUL_CONST (const 12).
                                                                           # Put data from north(CGRA 3, tile 0) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                           #             Sends mul_add to south tile(CGRA 1, tile 0).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -637,7 +637,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Stores data from north(CGRA 1, tile 2).
-                                                                          TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                          [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
@@ -662,7 +662,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Put data from west(CGRA 3, tile 2) to first inport of FU, to do OPT_MUL_CONST.
-                                                                          TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                           #             Sends mul to south tile(CGRA 3, tile 1).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -689,7 +689,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Put data from west(CGRA 3, tile 0) to first inport of FU, to do MUL_CONST (const 16).
                                                                           # Put data from north(CGRA 3, tile 3) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                           #             Sends mul_add to south tile(CGRA 1, tile 3).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -716,7 +716,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Put data from west(CGRA 1, tile 2) to first inport of FU, to do MUL_CONST (const 18).
                                                                           # Put data from north(CGRA 3, tile 1) to third inport to do ADD.
-                                                                          TileInType(3), TileInType(0), TileInType(1), TileInType(0)],
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
                                                                           #             Sends mul_add to south tile(CGRA 1, tile 1).
                                                                          [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
@@ -745,7 +745,7 @@ def initialize_test_harness(cmdline_opts,
                                                                          fu_in_code,
                                                                          [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                           # Stores data from north(CGRA 1, tile 3).
-                                                                          TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                          [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
@@ -956,7 +956,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to east tile: tile 1; and self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1004,7 +1004,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 0,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 0,
@@ -1042,7 +1042,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_GRT_PRED,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                        # Sends to self first reg cluster.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1075,13 +1075,13 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1,
@@ -1122,7 +1122,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1146,7 +1146,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_MUL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1193,7 +1193,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_NE_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to north tile9, and self first register cluster.
                                                                        [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1235,7 +1235,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_PHI_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = write_reg_from_code))),
@@ -1281,7 +1281,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
 
@@ -1316,7 +1316,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile5 and self reg (cluster 1).
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -1340,7 +1340,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # by default treated as the condition.
                                                                        [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1558,7 +1558,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_REDUCE_ADD_BASE,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to east tile: tile 1; and self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1606,7 +1606,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 0,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 0,
@@ -1644,7 +1644,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_GRT_PRED,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                        # Sends to self first reg cluster.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1677,13 +1677,13 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1,
@@ -1724,7 +1724,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1748,7 +1748,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_MUL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1795,7 +1795,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_NE_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to north tile9, and self first register cluster.
                                                                        [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -1837,7 +1837,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_PHI_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = write_reg_from_code))),
@@ -1883,7 +1883,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
 
@@ -1918,7 +1918,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile5 and self reg (cluster 1).
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -1941,7 +1941,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # by default treated as the condition.
                                                                        [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2238,7 +2238,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_REDUCE_ADD_BASE_GLOBAL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to east tile: tile 1; and self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2291,7 +2291,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 0, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 0, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
@@ -2329,7 +2329,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_GRT_PRED,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                        # Sends to self first reg cluster.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2362,13 +2362,13 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 1, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
@@ -2409,7 +2409,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2433,7 +2433,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_MUL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2480,7 +2480,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_NE_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to north tile9, and self first register cluster.
                                                                        [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2522,7 +2522,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_PHI_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = write_reg_from_code))),
@@ -2568,7 +2568,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 8, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
 
@@ -2603,7 +2603,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile5 and self reg (cluster 1).
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -2626,7 +2626,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # by default treated as the condition.
                                                                        [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2658,7 +2658,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_REDUCE_ADD_BASE_GLOBAL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to east tile: tile 1; and self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2706,7 +2706,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 0, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 0, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
@@ -2744,7 +2744,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_GRT_PRED,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                        # Sends to self first reg cluster.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2777,13 +2777,13 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 1, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(2), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
             IntraCgraPktType(0, 1, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
@@ -2824,7 +2824,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to self reg.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2848,7 +2848,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_VEC_MUL,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2895,7 +2895,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_NE_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to north tile9, and self first register cluster.
                                                                        [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -2937,7 +2937,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_PHI_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                         FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = write_reg_from_code))),
@@ -2983,7 +2983,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 8, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
-                                                           TileInType(3), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
                                                            TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
                                                        data = DataType(1, 1))),
 
@@ -3018,7 +3018,7 @@ def initialize_test_harness(cmdline_opts,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile5 and self reg (cluster 1).
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
@@ -3041,7 +3041,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # by default treated as the condition.
                                                                        [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                        TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
@@ -3121,7 +3121,6 @@ def _enable_translate_recursively(m):
     _enable_translate_recursively( child )
 
 def translate_model(top, submodules_to_translate):
-  top.elaborate()
   top.apply(VerilogPlaceholderPass())
   if not submodules_to_translate:
     _enable_translate_recursively(top)
@@ -3140,6 +3139,7 @@ def test_verilog_homo_2x2_4x4(cmdline_opts):
                                num_banks_per_cgra = 8,
                                data_mem_size_per_bank = 256,
                                mem_access_is_combinational = False)
+  th.elaborate()
   translate_model(th, ['dut'])
 
 def test_tapeout_2x2_2x2(cmdline_opts):
@@ -3151,6 +3151,7 @@ def test_tapeout_2x2_2x2(cmdline_opts):
                                num_banks_per_cgra = 4,
                                data_mem_size_per_bank = 128,
                                mem_access_is_combinational = False)
+  th.elaborate()
   translate_model(th, ['dut'])
 
 def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
@@ -3170,6 +3171,22 @@ def test_multi_CGRA_systolic_2x2_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_multi_CGRA_systolic_2x2_2x2_translation(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_systolic')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v")
+  translate_model(th, ['dut'])
 
 
 def test_multi_CGRA_systolic_2x2_2x2_non_combinational_mem_access(cmdline_opts):
@@ -3208,6 +3225,22 @@ def test_multi_CGRA_fir_scalar(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+def test_multi_CGRA_fir_scalar_translation(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 4,
+                               num_y_tiles_per_cgra = 4,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_fir_scalar')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit__pickled.v")
+  translate_model(th, ['dut'])
+
 def test_multi_CGRA_fir_vector(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
                                num_cgra_rows = 2,
@@ -3243,3 +3276,19 @@ def test_multi_CGRA_fir_vector_global_reduce(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_multi_CGRA_fir_vector_global_reduce_translation(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 4,
+                               num_y_tiles_per_cgra = 4,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_fir_vector_global_reduce')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit_vector_global_reduce")
+  th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_vector_global_reduce__pickled.v")
+  translate_model(th, ['dut'])
