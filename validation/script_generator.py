@@ -22,7 +22,7 @@ from lib.opt_type import *
 REG_CLUSTER_SIZE = 8
 
 yaml_to_VectorCGRA_map = {
-    "CONSTANT": None, # ?
+    "CONSTANT": OPT_CONST, # ?
     "ADD": OPT_ADD,
     "MUL": OPT_MUL,
     "SUB": OPT_SUB,
@@ -38,7 +38,7 @@ yaml_to_VectorCGRA_map = {
     "FCMP": None, # ?
     "SEL": OPT_SEL,
     "CAST": None, # ?
-    "SEXT": None, # ?
+    "SEXT": OPT_PAS, # no sext, just a fake one.
     "ZEXT": None, # ?
     "SHL": OPT_LLS,
     "VFMUL": None, # ?
@@ -49,20 +49,26 @@ yaml_to_VectorCGRA_map = {
     "RESERVE": None, #?
     "GRANT_PREDICATE": OPT_GRT_PRED,
     "GRANT_ALWAYS": None, #?
-    "GRANT_ONCE": None, #?
+    "GRANT_ONCE": OPT_GRT_ONCE, #?
     "PHI": OPT_PHI,
     "LOOP_CONTROL": None, #?
     "PHI_CONST": OPT_PHI_CONST, 
     
     "RETURN": OPT_RET,
     "LDD": OPT_LD,
+    
     "NE": OPT_NE,
+    "MUL_ADD": OPT_MUL_ADD,
+    "DATA_MOV": OPT_PAS
+    
 }
 
 yaml_to_VectorCGRA_map_const = {
     "NE": OPT_NE_CONST,
     "ADD": OPT_ADD_CONST,
+    "MUL_ADD": OPT_MUL_CONST_ADD,
 }
+
 
 
 def _type(Operand):
@@ -75,10 +81,10 @@ def _type(Operand):
         return 'IMM'
 
 def _is_take_up_fu_operation(operation):
-    if operation['opcode'] == 'MOV':
-        if len(operation['srcOperands']) != 1:
+    if operation['opcode'] == 'MOV' or operation['opcode'] == 'DATA_MOV':
+        if len(operation['src_operands']) != 1:
             raise ValueError("MOV operation must have exactly one source operand")
-        elif _type(operation['srcOperands'][0]) == 'REG':
+        elif _type(operation['src_operands'][0]) == 'REG':
             return True
         else:
             return False
@@ -180,8 +186,8 @@ class InstructionSignals:
                     has_const = True
                     break 
                 
-            if take_up_fu_operation['opcode'] == 'PHI_CONST':
-                has_const = False # PHI_CONST is special.
+            if take_up_fu_operation['opcode'] == 'PHI_CONST' or take_up_fu_operation['opcode'] == 'CONSTANT' or take_up_fu_operation['opcode'] == 'GRANT_ONCE':
+                has_const = False # PHI_CONST and CONSTANT are special.
             
             if has_const:
                 self.opCode = yaml_to_VectorCGRA_map_const[self.operations[take_up_fu_operation_idx]['opcode']]
@@ -216,6 +222,12 @@ class InstructionSignals:
                         print(f">>> index {index} is REG")
                         cluster_no = _reg_cluster_no_of(src_operand)
                         intra_index = _reg_cluster_intra_index_of(src_operand)
+                        # Check if cluster_no is within valid range (1 to num_fu_inports)
+                        if cluster_no < 1 or cluster_no > len(self.read_from_reg_idx):
+                            raise ValueError(f"Register cluster number {cluster_no} is out of range. Valid range is 1 to {len(self.read_from_reg_idx)} for register {src_operand['operand']} in operation {operation}")
+                        # Check if intra_index is within valid range (0 to REG_CLUSTER_SIZE-1)
+                        if intra_index < 0 or intra_index >= REG_CLUSTER_SIZE:
+                            raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {src_operand['operand']} in operation {operation}")
                         if self.read_from_reg_idx[cluster_no - 1] != -1 and self.read_from_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when reading from register in read_from_reg_idx, when translate the operation {operation} to VectorCGRA")
                         self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER
@@ -257,6 +269,12 @@ class InstructionSignals:
                     if _type(dst_operand) == 'REG':
                         cluster_no = _reg_cluster_no_of(dst_operand)
                         intra_index = _reg_cluster_intra_index_of(dst_operand)
+                        # Check if cluster_no is within valid range (1 to num_fu_inports)
+                        if cluster_no < 1 or cluster_no > len(self.write_to_reg_idx):
+                            raise ValueError(f"Register cluster number {cluster_no} is out of range. Valid range is 1 to {len(self.write_to_reg_idx)} for register {dst_operand['operand']} in operation {operation}")
+                        # Check if intra_index is within valid range (0 to REG_CLUSTER_SIZE-1)
+                        if intra_index < 0 or intra_index >= REG_CLUSTER_SIZE:
+                            raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {dst_operand['operand']} in operation {operation}")
                         if self.write_to_reg_idx[cluster_no - 1] != -1 and self.write_to_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
                         self.write_to_reg[cluster_no - 1] = FROM_FU
@@ -536,7 +554,7 @@ class TileSignals:
         for idx, const_operand in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
                                               payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(int(const_operand['operand']), 1)))
+                                                                             data = self.DataType(int(const_operand['operand'][1:]), 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
@@ -707,7 +725,10 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/fir_acceptance_test.yaml",
+        #path = "./validation/test/fir_acceptance_test.yaml",
+        #path = "./validation/test/jacobi2d.yaml",
+        #path = "./validation/test/bicg_int.yaml",
+        path = "./validation/test/fir.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
