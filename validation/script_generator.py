@@ -554,7 +554,7 @@ class TileSignals:
         for idx, const_operand in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
                                               payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(int(const_operand['operand'][1:]), 1)))
+                                                                             data = self.DataType(int(const_operand['operand'][1:] if const_operand['operand'].startswith('#') else const_operand['operand']), 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
@@ -725,10 +725,10 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        #path = "./validation/test/fir_acceptance_test.yaml",
+        path = "./validation/test/fir_acceptance_test.yaml",
         #path = "./validation/test/jacobi2d.yaml",
         #path = "./validation/test/bicg_int.yaml",
-        path = "./validation/test/fir.yaml",
+        #path = "./validation/test/fir.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
