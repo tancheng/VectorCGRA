@@ -18,7 +18,6 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.basic.TimedWriteSource import TimedWriteSource
 
-
 #-------------------------------------------------------------------------
 # TestHarness
 #-------------------------------------------------------------------------
@@ -44,17 +43,17 @@ class TestHarness(Component):
         s.num_tile_outports = num_tile_outports
 
         # Configure sources - recv_from_cpu_pkt launches every cycle
-        intial_delay = 2
-        interval_delay = 7
-        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], intial_delay, interval_delay) for i in range(num_tile_inports)]
+        initial_delay = 1
+        interval_delay = 3
+        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], initial_delay) for i in range(num_tile_inports)]
         s.tile_bitstream = TestSrcRTL(TileBitstreamType, tile_in_bitstream_msgs, 0, interval_delay)
-        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, intial_delay, interval_delay)
-        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], intial_delay, interval_delay) for i in range(num_tile_inports)]
+        s.pred_in_rf_pkts = TestSrcRTL(Bits1, pred_in_rf_msgs, initial_delay, interval_delay)
+        s.pred_in_pkts = [TestSrcRTL(Bits1, [Bits1(i < 2)], initial_delay) for i in range(num_tile_inports)]
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], intial_delay, interval_delay, cmp_fn = cmp_fn) for i in range(num_tile_outports)]
-        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1)], intial_delay, interval_delay) for i in range(num_tile_outports)]
+        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], initial_delay + 1, cmp_fn = cmp_fn) for i in range(num_tile_outports)]
+        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(i < 1 or i == 6)], initial_delay) for i in range(num_tile_outports)]
 
         s.dut = STEP_TileRTL(num_tile_inports,
                                 num_tile_outports,
@@ -99,8 +98,9 @@ def init_param():
     #-------------------------------------------------------------------------
 
     # Fixed for now... @darrenl
-    num_tile_inports = 4
-    num_tile_outports = 4
+    # Out & In ports must match and be in [4,8]
+    num_tile_inports = 8
+    num_tile_outports = 8
     num_fu_inports = 3
     num_fu_outports = 1
 
@@ -114,6 +114,7 @@ def init_param():
     TileOutType = mk_bits( num_tile_outports ) # Binary for each direction if valid
     RegAddrType = mk_bits( clog2(num_regs) )
     PredRegAddrType = mk_bits( clog2(num_pred_regs) )
+    ShiftAmountType = mk_bits( clog2(SHIFT_REGISTER_SIZE) )
 
     TileBitstreamType = mk_tile_bitstream_pkt(num_tile_inports,
                                                 num_tile_outports,
@@ -124,60 +125,78 @@ def init_param():
                                                 RegAddrType,
                                                 PredRegAddrType,
                                                 )
-                                        
+
+    # Single cycle shift
+    shift_amount = 0
+    SCSAmount = ShiftAmountType(shift_amount)
+    SCSAmountRow = [SCSAmount] * num_tile_outports
+    shiftData = [0] * shift_amount
+
+    # Empty TileOutType
+    emptyTileOut = TileOutType(0)
+
     # Bitstream Pkt
     tile_in_bitstream_msgs = [
         TileBitstreamType(
             tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b1000),
-            tile_pred_route = TileOutType(0b1000),
+            tile_out_route = TileOutType(0b10000010),
+            tile_pred_route = TileOutType(0b10000010),
+            tile_fwd_route = [TileOutType(0b00100000), emptyTileOut, emptyTileOut, TileOutType(0b00000100)] + [emptyTileOut] * 4,
+            tile_out_shift_amounts = SCSAmountRow,
             opt_type = OPT_ADD),
         TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b1000),
-            tile_pred_route = TileOutType(0b1000),
+            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_WEST + 1), TilePortType(0)],
+            tile_out_route = TileOutType(0b01000000),
+            tile_pred_route = TileOutType(0b01000000),
+            tile_out_shift_amounts = SCSAmountRow,
             opt_type = OPT_MUL),
         TileBitstreamType(
             tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_NORTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b1000),
-            tile_pred_route = TileOutType(0b1000),
+            tile_out_route = TileOutType(0b00100000),
+            tile_pred_route = TileOutType(0b00100000),
+            tile_out_shift_amounts = SCSAmountRow,
             opt_type = OPT_ADD),
-        TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(0), TilePortType(0)],
-            const_val = DataType(7),
-            tile_out_route = TileOutType(0b1000),
-            tile_pred_route = TileOutType(0b1000),
-            opt_type = OPT_ADD_CONST),
-        TileBitstreamType(
-            tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_SOUTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b1001),
-            tile_pred_route = TileOutType(0b1001),
-            opt_type = OPT_NAH),
     ]
 
     data_in_msgs = [
         # North
-        [DataType(2), DataType(4), DataType(5), DataType(7)],
+        [DataType(2), DataType(5)] + [0] * 2 + [DataType(4)] + [0] * 3 + [DataType(3), DataType(7)] + [0],
         # South
-        [DataType(1), DataType(2)],
+        [DataType(1), DataType(2)] + [0],
         # West
-        [],
+        [0] * 4 + [DataType(2)] + [0],
         # East
+        [DataType(8), DataType(3)],
+        # NW
+        [],
+        # NE
+        [],
+        # SE
+        [],
+        # SW
         [],
     ]
 
     data_out_msgs = [
         # North
-        [DataType(3), DataType(8), DataType(10), DataType(14)],
+        shiftData + [DataType(3), DataType(7)],
         # South
-        [],
+        shiftData + [0] * 4 + [DataType(8)] + [0] * 3,
         # West
-        [],
+        shiftData + [DataType(2), DataType(5)] + [0] * 6 + [DataType(6), DataType(14)],
         # East
+        [],
+        # NW
+        [],
+        # NE
+        shiftData + [DataType(8), DataType(3)],
+        # SE
+        shiftData + [DataType(3), DataType(7)],
+        # SW
         [],
     ]
 
-    pred_in_rf_msgs = [ Bits1(1) for i in range(3) ]
+    pred_in_rf_msgs = [ Bits1(1) ]
 
     th = TestHarness(
                     num_tile_inports,

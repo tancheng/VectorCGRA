@@ -1,0 +1,1345 @@
+{
+  "schema": "xilinx.com:schema:json_instance:1.0",
+  "ip_inst": {
+    "xci_name": "dma_mm2s_s2mm",
+    "component_reference": "xilinx.com:ip:axi_dma:7.1",
+    "ip_revision": "36",
+    "gen_directory": "../../../../cgra_proj.gen/sources_1/ip/dma_mm2s_s2mm",
+    "parameters": {
+      "component_parameters": {
+        "Component_Name": [ { "value": "dma_mm2s_s2mm", "resolve_type": "user", "usage": "all" } ],
+        "c_include_sg": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_enable_multi_channel": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_num_mm2s_channels": [ { "value": "1", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
+        "c_num_s2mm_channels": [ { "value": "1", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
+        "c_sg_length_width": [ { "value": "14", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_dlytmr_resolution": [ { "value": "125", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_prmry_is_aclk_async": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_sg_include_stscntrl_strm": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_micro_dma": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_mm2s": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_m_axi_mm2s_data_width": [ { "value": "64", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_m_axis_mm2s_tdata_width": [ { "value": "64", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_mm2s_dre": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_mm2s_sf": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_mm2s_burst_size": [ { "value": "8", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_s2mm": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_sg_use_stsapp_length": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_m_axi_s2mm_data_width": [ { "value": "64", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_s_axis_s2mm_tdata_width": [ { "value": "64", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_s2mm_dre": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_include_s2mm_sf": [ { "value": "1", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_s2mm_burst_size": [ { "value": "8", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_addr_width": [ { "value": "32", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_single_interface": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "c_increase_throughput": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ]
+      },
+      "model_parameters": {
+        "C_S_AXI_LITE_ADDR_WIDTH": [ { "value": "10", "format": "long", "usage": "all" } ],
+        "C_S_AXI_LITE_DATA_WIDTH": [ { "value": "32", "format": "long", "usage": "all" } ],
+        "C_DLYTMR_RESOLUTION": [ { "value": "125", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_PRMRY_IS_ACLK_ASYNC": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_ENABLE_MULTI_CHANNEL": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_NUM_MM2S_CHANNELS": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_NUM_S2MM_CHANNELS": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_SG": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_SG_INCLUDE_STSCNTRL_STRM": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_SG_USE_STSAPP_LENGTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_SG_LENGTH_WIDTH": [ { "value": "14", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_SG_ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_SG_DATA_WIDTH": [ { "value": "32", "format": "long", "usage": "all" } ],
+        "C_M_AXIS_MM2S_CNTRL_TDATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_S_AXIS_S2MM_STS_TDATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_MICRO_DMA": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_MM2S": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_MM2S_SF": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_MM2S_BURST_SIZE": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_MM2S_ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_MM2S_DATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXIS_MM2S_TDATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_MM2S_DRE": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_S2MM": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_S2MM_SF": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_S2MM_BURST_SIZE": [ { "value": "8", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_S2MM_ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_M_AXI_S2MM_DATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_S_AXIS_S2MM_TDATA_WIDTH": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCLUDE_S2MM_DRE": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_INCREASE_THROUGHPUT": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_FAMILY": [ { "value": "zynquplus", "resolve_type": "generated", "usage": "all" } ]
+      },
+      "project_parameters": {
+        "ARCHITECTURE": [ { "value": "zynquplus" } ],
+        "BASE_BOARD_PART": [ { "value": "" } ],
+        "BOARD_CONNECTIONS": [ { "value": "" } ],
+        "DEVICE": [ { "value": "xczu9eg" } ],
+        "PACKAGE": [ { "value": "ffvb1156" } ],
+        "PREFHDL": [ { "value": "VERILOG" } ],
+        "SILICON_REVISION": [ { "value": "" } ],
+        "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
+        "SPEEDGRADE": [ { "value": "-2" } ],
+        "STATIC_POWER": [ { "value": "" } ],
+        "TEMPERATURE_GRADE": [ { "value": "E" } ]
+      },
+      "runtime_parameters": {
+        "IPCONTEXT": [ { "value": "IP_Flow" } ],
+        "IPREVISION": [ { "value": "36" } ],
+        "MANAGED": [ { "value": "TRUE" } ],
+        "OUTPUTDIR": [ { "value": "../../../../cgra_proj.gen/sources_1/ip/dma_mm2s_s2mm" } ],
+        "SELECTEDSIMMODEL": [ { "value": "" } ],
+        "SHAREDDIR": [ { "value": "." } ],
+        "SWVERSION": [ { "value": "2025.1" } ],
+        "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
+      }
+    },
+    "boundary": {
+      "ports": {
+        "s_axi_lite_aclk": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_aclk": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_mm2s_aclk": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_s2mm_aclk": [ { "direction": "in", "driver_value": "0" } ],
+        "axi_resetn": [ { "direction": "in", "driver_value": "1" } ],
+        "s_axi_lite_awvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axi_lite_awready": [ { "direction": "out" } ],
+        "s_axi_lite_awaddr": [ { "direction": "in", "size_left": "9", "size_right": "0", "driver_value": "0" } ],
+        "s_axi_lite_wvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axi_lite_wready": [ { "direction": "out" } ],
+        "s_axi_lite_wdata": [ { "direction": "in", "size_left": "31", "size_right": "0", "driver_value": "0" } ],
+        "s_axi_lite_bresp": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "s_axi_lite_bvalid": [ { "direction": "out" } ],
+        "s_axi_lite_bready": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axi_lite_arvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axi_lite_arready": [ { "direction": "out" } ],
+        "s_axi_lite_araddr": [ { "direction": "in", "size_left": "9", "size_right": "0", "driver_value": "0" } ],
+        "s_axi_lite_rvalid": [ { "direction": "out" } ],
+        "s_axi_lite_rready": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axi_lite_rdata": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "s_axi_lite_rresp": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "m_axi_sg_awaddr": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axi_sg_awlen": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axi_sg_awsize": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_sg_awburst": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "m_axi_sg_awprot": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_sg_awcache": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axi_sg_awvalid": [ { "direction": "out" } ],
+        "m_axi_sg_awready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_wdata": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axi_sg_wstrb": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axi_sg_wlast": [ { "direction": "out" } ],
+        "m_axi_sg_wvalid": [ { "direction": "out" } ],
+        "m_axi_sg_wready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_bresp": [ { "direction": "in", "size_left": "1", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_sg_bvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_bready": [ { "direction": "out" } ],
+        "m_axi_sg_araddr": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axi_sg_arlen": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axi_sg_arsize": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_sg_arburst": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "m_axi_sg_arprot": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_sg_arcache": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axi_sg_arvalid": [ { "direction": "out" } ],
+        "m_axi_sg_arready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_rdata": [ { "direction": "in", "size_left": "31", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_sg_rresp": [ { "direction": "in", "size_left": "1", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_sg_rlast": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_rvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_sg_rready": [ { "direction": "out" } ],
+        "m_axi_mm2s_araddr": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axi_mm2s_arlen": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axi_mm2s_arsize": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_mm2s_arburst": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "m_axi_mm2s_arprot": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_mm2s_arcache": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axi_mm2s_arvalid": [ { "direction": "out" } ],
+        "m_axi_mm2s_arready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_mm2s_rdata": [ { "direction": "in", "size_left": "63", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_mm2s_rresp": [ { "direction": "in", "size_left": "1", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_mm2s_rlast": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_mm2s_rvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_mm2s_rready": [ { "direction": "out" } ],
+        "mm2s_prmry_reset_out_n": [ { "direction": "out" } ],
+        "m_axis_mm2s_tdata": [ { "direction": "out", "size_left": "63", "size_right": "0" } ],
+        "m_axis_mm2s_tkeep": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axis_mm2s_tvalid": [ { "direction": "out" } ],
+        "m_axis_mm2s_tready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axis_mm2s_tlast": [ { "direction": "out" } ],
+        "mm2s_cntrl_reset_out_n": [ { "direction": "out" } ],
+        "m_axis_mm2s_cntrl_tdata": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axis_mm2s_cntrl_tkeep": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axis_mm2s_cntrl_tvalid": [ { "direction": "out" } ],
+        "m_axis_mm2s_cntrl_tready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axis_mm2s_cntrl_tlast": [ { "direction": "out" } ],
+        "m_axi_s2mm_awaddr": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "m_axi_s2mm_awlen": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axi_s2mm_awsize": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_s2mm_awburst": [ { "direction": "out", "size_left": "1", "size_right": "0" } ],
+        "m_axi_s2mm_awprot": [ { "direction": "out", "size_left": "2", "size_right": "0" } ],
+        "m_axi_s2mm_awcache": [ { "direction": "out", "size_left": "3", "size_right": "0" } ],
+        "m_axi_s2mm_awvalid": [ { "direction": "out" } ],
+        "m_axi_s2mm_awready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_s2mm_wdata": [ { "direction": "out", "size_left": "63", "size_right": "0" } ],
+        "m_axi_s2mm_wstrb": [ { "direction": "out", "size_left": "7", "size_right": "0" } ],
+        "m_axi_s2mm_wlast": [ { "direction": "out" } ],
+        "m_axi_s2mm_wvalid": [ { "direction": "out" } ],
+        "m_axi_s2mm_wready": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_s2mm_bresp": [ { "direction": "in", "size_left": "1", "size_right": "0", "driver_value": "0" } ],
+        "m_axi_s2mm_bvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "m_axi_s2mm_bready": [ { "direction": "out" } ],
+        "s2mm_prmry_reset_out_n": [ { "direction": "out" } ],
+        "s_axis_s2mm_tdata": [ { "direction": "in", "size_left": "63", "size_right": "0", "driver_value": "0" } ],
+        "s_axis_s2mm_tkeep": [ { "direction": "in", "size_left": "7", "size_right": "0", "driver_value": "0xFF" } ],
+        "s_axis_s2mm_tvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axis_s2mm_tready": [ { "direction": "out" } ],
+        "s_axis_s2mm_tlast": [ { "direction": "in", "driver_value": "0" } ],
+        "s2mm_sts_reset_out_n": [ { "direction": "out" } ],
+        "s_axis_s2mm_sts_tdata": [ { "direction": "in", "size_left": "31", "size_right": "0", "driver_value": "0" } ],
+        "s_axis_s2mm_sts_tkeep": [ { "direction": "in", "size_left": "3", "size_right": "0", "driver_value": "0xF" } ],
+        "s_axis_s2mm_sts_tvalid": [ { "direction": "in", "driver_value": "0" } ],
+        "s_axis_s2mm_sts_tready": [ { "direction": "out" } ],
+        "s_axis_s2mm_sts_tlast": [ { "direction": "in", "driver_value": "0" } ],
+        "mm2s_introut": [ { "direction": "out" } ],
+        "s2mm_introut": [ { "direction": "out" } ],
+        "axi_dma_tstvec": [ { "direction": "out", "size_left": "31", "size_right": "0" } ]
+      },
+      "interfaces": {
+        "S_AXI_LITE": {
+          "vlnv": "xilinx.com:interface:aximm:1.0",
+          "abstraction_type": "xilinx.com:interface:aximm_rtl:1.0",
+          "mode": "slave",
+          "memory_map_ref": "S_AXI_LITE",
+          "parameters": {
+            "DATA_WIDTH": [ { "value": "32", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PROTOCOL": [ { "value": "AXI4LITE", "value_src": "constant", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ADDR_WIDTH": [ { "value": "10", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "AWUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ARUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "BUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "READ_WRITE_MODE": [ { "value": "READ_WRITE", "value_src": "constant", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BURST": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_LOCK": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_PROT": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_CACHE": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_QOS": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_REGION": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_WSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BRESP": [ { "value": "1", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_RRESP": [ { "value": "1", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "SUPPORTS_NARROW_BURST": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_OUTSTANDING": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_OUTSTANDING": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "MAX_BURST_LENGTH": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "ARADDR": [ { "physical_name": "s_axi_lite_araddr" } ],
+            "ARREADY": [ { "physical_name": "s_axi_lite_arready" } ],
+            "ARVALID": [ { "physical_name": "s_axi_lite_arvalid" } ],
+            "AWADDR": [ { "physical_name": "s_axi_lite_awaddr" } ],
+            "AWREADY": [ { "physical_name": "s_axi_lite_awready" } ],
+            "AWVALID": [ { "physical_name": "s_axi_lite_awvalid" } ],
+            "BREADY": [ { "physical_name": "s_axi_lite_bready" } ],
+            "BRESP": [ { "physical_name": "s_axi_lite_bresp" } ],
+            "BVALID": [ { "physical_name": "s_axi_lite_bvalid" } ],
+            "RDATA": [ { "physical_name": "s_axi_lite_rdata" } ],
+            "RREADY": [ { "physical_name": "s_axi_lite_rready" } ],
+            "RRESP": [ { "physical_name": "s_axi_lite_rresp" } ],
+            "RVALID": [ { "physical_name": "s_axi_lite_rvalid" } ],
+            "WDATA": [ { "physical_name": "s_axi_lite_wdata" } ],
+            "WREADY": [ { "physical_name": "s_axi_lite_wready" } ],
+            "WVALID": [ { "physical_name": "s_axi_lite_wvalid" } ]
+          }
+        },
+        "M_AXI_SG": {
+          "vlnv": "xilinx.com:interface:aximm:1.0",
+          "abstraction_type": "xilinx.com:interface:aximm_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Data_SG",
+          "parameters": {
+            "SUPPORTS_NARROW_BURST": [ { "value": "0", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "NUM_READ_OUTSTANDING": [ { "value": "2", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "NUM_WRITE_OUTSTANDING": [ { "value": "2", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "MAX_BURST_LENGTH": [ { "value": "16", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "DATA_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PROTOCOL": [ { "value": "AXI4", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "AWUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ARUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "BUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "READ_WRITE_MODE": [ { "value": "READ_WRITE", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BURST": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_LOCK": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_PROT": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_CACHE": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_QOS": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_REGION": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_WSTRB": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BRESP": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_RRESP": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "ARADDR": [ { "physical_name": "m_axi_sg_araddr" } ],
+            "ARBURST": [ { "physical_name": "m_axi_sg_arburst" } ],
+            "ARCACHE": [ { "physical_name": "m_axi_sg_arcache" } ],
+            "ARLEN": [ { "physical_name": "m_axi_sg_arlen" } ],
+            "ARPROT": [ { "physical_name": "m_axi_sg_arprot" } ],
+            "ARREADY": [ { "physical_name": "m_axi_sg_arready" } ],
+            "ARSIZE": [ { "physical_name": "m_axi_sg_arsize" } ],
+            "ARVALID": [ { "physical_name": "m_axi_sg_arvalid" } ],
+            "AWADDR": [ { "physical_name": "m_axi_sg_awaddr" } ],
+            "AWBURST": [ { "physical_name": "m_axi_sg_awburst" } ],
+            "AWCACHE": [ { "physical_name": "m_axi_sg_awcache" } ],
+            "AWLEN": [ { "physical_name": "m_axi_sg_awlen" } ],
+            "AWPROT": [ { "physical_name": "m_axi_sg_awprot" } ],
+            "AWREADY": [ { "physical_name": "m_axi_sg_awready" } ],
+            "AWSIZE": [ { "physical_name": "m_axi_sg_awsize" } ],
+            "AWVALID": [ { "physical_name": "m_axi_sg_awvalid" } ],
+            "BREADY": [ { "physical_name": "m_axi_sg_bready" } ],
+            "BRESP": [ { "physical_name": "m_axi_sg_bresp" } ],
+            "BVALID": [ { "physical_name": "m_axi_sg_bvalid" } ],
+            "RDATA": [ { "physical_name": "m_axi_sg_rdata" } ],
+            "RLAST": [ { "physical_name": "m_axi_sg_rlast" } ],
+            "RREADY": [ { "physical_name": "m_axi_sg_rready" } ],
+            "RRESP": [ { "physical_name": "m_axi_sg_rresp" } ],
+            "RVALID": [ { "physical_name": "m_axi_sg_rvalid" } ],
+            "WDATA": [ { "physical_name": "m_axi_sg_wdata" } ],
+            "WLAST": [ { "physical_name": "m_axi_sg_wlast" } ],
+            "WREADY": [ { "physical_name": "m_axi_sg_wready" } ],
+            "WSTRB": [ { "physical_name": "m_axi_sg_wstrb" } ],
+            "WVALID": [ { "physical_name": "m_axi_sg_wvalid" } ]
+          }
+        },
+        "M_AXI_MM2S": {
+          "vlnv": "xilinx.com:interface:aximm:1.0",
+          "abstraction_type": "xilinx.com:interface:aximm_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Data_MM2S",
+          "parameters": {
+            "SUPPORTS_NARROW_BURST": [ { "value": "0", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "NUM_READ_OUTSTANDING": [ { "value": "16", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "DATA_WIDTH": [ { "value": "64", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PROTOCOL": [ { "value": "AXI4", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "AWUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ARUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "BUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "READ_WRITE_MODE": [ { "value": "READ_ONLY", "value_src": "auto", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BURST": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_LOCK": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_PROT": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_CACHE": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_QOS": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_REGION": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_WSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BRESP": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_RRESP": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_OUTSTANDING": [ { "value": "2", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "MAX_BURST_LENGTH": [ { "value": "256", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "ARADDR": [ { "physical_name": "m_axi_mm2s_araddr" } ],
+            "ARBURST": [ { "physical_name": "m_axi_mm2s_arburst" } ],
+            "ARCACHE": [ { "physical_name": "m_axi_mm2s_arcache" } ],
+            "ARLEN": [ { "physical_name": "m_axi_mm2s_arlen" } ],
+            "ARPROT": [ { "physical_name": "m_axi_mm2s_arprot" } ],
+            "ARREADY": [ { "physical_name": "m_axi_mm2s_arready" } ],
+            "ARSIZE": [ { "physical_name": "m_axi_mm2s_arsize" } ],
+            "ARVALID": [ { "physical_name": "m_axi_mm2s_arvalid" } ],
+            "RDATA": [ { "physical_name": "m_axi_mm2s_rdata" } ],
+            "RLAST": [ { "physical_name": "m_axi_mm2s_rlast" } ],
+            "RREADY": [ { "physical_name": "m_axi_mm2s_rready" } ],
+            "RRESP": [ { "physical_name": "m_axi_mm2s_rresp" } ],
+            "RVALID": [ { "physical_name": "m_axi_mm2s_rvalid" } ]
+          }
+        },
+        "M_AXI_S2MM": {
+          "vlnv": "xilinx.com:interface:aximm:1.0",
+          "abstraction_type": "xilinx.com:interface:aximm_rtl:1.0",
+          "mode": "master",
+          "address_space_ref": "Data_S2MM",
+          "parameters": {
+            "SUPPORTS_NARROW_BURST": [ { "value": "0", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "NUM_WRITE_OUTSTANDING": [ { "value": "16", "value_src": "constant", "format": "long", "usage": "all" } ],
+            "DATA_WIDTH": [ { "value": "64", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PROTOCOL": [ { "value": "AXI4", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ADDR_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "AWUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "ARUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "BUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "READ_WRITE_MODE": [ { "value": "WRITE_ONLY", "value_src": "auto", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BURST": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_LOCK": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_PROT": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_CACHE": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_QOS": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_REGION": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_WSTRB": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_BRESP": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_RRESP": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_OUTSTANDING": [ { "value": "2", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "MAX_BURST_LENGTH": [ { "value": "256", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_READ_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "NUM_WRITE_THREADS": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "RUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "WUSER_BITS_PER_BYTE": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "AWADDR": [ { "physical_name": "m_axi_s2mm_awaddr" } ],
+            "AWBURST": [ { "physical_name": "m_axi_s2mm_awburst" } ],
+            "AWCACHE": [ { "physical_name": "m_axi_s2mm_awcache" } ],
+            "AWLEN": [ { "physical_name": "m_axi_s2mm_awlen" } ],
+            "AWPROT": [ { "physical_name": "m_axi_s2mm_awprot" } ],
+            "AWREADY": [ { "physical_name": "m_axi_s2mm_awready" } ],
+            "AWSIZE": [ { "physical_name": "m_axi_s2mm_awsize" } ],
+            "AWVALID": [ { "physical_name": "m_axi_s2mm_awvalid" } ],
+            "BREADY": [ { "physical_name": "m_axi_s2mm_bready" } ],
+            "BRESP": [ { "physical_name": "m_axi_s2mm_bresp" } ],
+            "BVALID": [ { "physical_name": "m_axi_s2mm_bvalid" } ],
+            "WDATA": [ { "physical_name": "m_axi_s2mm_wdata" } ],
+            "WLAST": [ { "physical_name": "m_axi_s2mm_wlast" } ],
+            "WREADY": [ { "physical_name": "m_axi_s2mm_wready" } ],
+            "WSTRB": [ { "physical_name": "m_axi_s2mm_wstrb" } ],
+            "WVALID": [ { "physical_name": "m_axi_s2mm_wvalid" } ]
+          }
+        },
+        "M_AXIS_MM2S": {
+          "vlnv": "xilinx.com:interface:axis:1.0",
+          "abstraction_type": "xilinx.com:interface:axis_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "TDATA_NUM_BYTES": [ { "value": "8", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TDEST_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TID_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TREADY": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TKEEP": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TLAST": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "LAYERED_METADATA": [ { "value": "undef", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "TDATA": [ { "physical_name": "m_axis_mm2s_tdata" } ],
+            "TKEEP": [ { "physical_name": "m_axis_mm2s_tkeep" } ],
+            "TLAST": [ { "physical_name": "m_axis_mm2s_tlast" } ],
+            "TREADY": [ { "physical_name": "m_axis_mm2s_tready" } ],
+            "TVALID": [ { "physical_name": "m_axis_mm2s_tvalid" } ]
+          }
+        },
+        "S_AXIS_S2MM": {
+          "vlnv": "xilinx.com:interface:axis:1.0",
+          "abstraction_type": "xilinx.com:interface:axis_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "TDATA_NUM_BYTES": [ { "value": "8", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TDEST_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TID_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TUSER_WIDTH": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TREADY": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TKEEP": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TLAST": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "LAYERED_METADATA": [ { "value": "undef", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "TDATA": [ { "physical_name": "s_axis_s2mm_tdata" } ],
+            "TKEEP": [ { "physical_name": "s_axis_s2mm_tkeep" } ],
+            "TLAST": [ { "physical_name": "s_axis_s2mm_tlast" } ],
+            "TREADY": [ { "physical_name": "s_axis_s2mm_tready" } ],
+            "TVALID": [ { "physical_name": "s_axis_s2mm_tvalid" } ]
+          }
+        },
+        "M_AXIS_CNTRL": {
+          "vlnv": "xilinx.com:interface:axis:1.0",
+          "abstraction_type": "xilinx.com:interface:axis_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "TDATA_NUM_BYTES": [ { "value": "4", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TDEST_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TREADY": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TKEEP": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TLAST": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "LAYERED_METADATA": [ { "value": "undef", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "TDATA": [ { "physical_name": "m_axis_mm2s_cntrl_tdata" } ],
+            "TKEEP": [ { "physical_name": "m_axis_mm2s_cntrl_tkeep" } ],
+            "TLAST": [ { "physical_name": "m_axis_mm2s_cntrl_tlast" } ],
+            "TREADY": [ { "physical_name": "m_axis_mm2s_cntrl_tready" } ],
+            "TVALID": [ { "physical_name": "m_axis_mm2s_cntrl_tvalid" } ]
+          }
+        },
+        "S_AXIS_STS": {
+          "vlnv": "xilinx.com:interface:axis:1.0",
+          "abstraction_type": "xilinx.com:interface:axis_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "TDATA_NUM_BYTES": [ { "value": "4", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TDEST_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TID_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "TUSER_WIDTH": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TREADY": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TSTRB": [ { "value": "0", "value_src": "constant", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TKEEP": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "HAS_TLAST": [ { "value": "1", "value_src": "auto", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "LAYERED_METADATA": [ { "value": "undef", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "TDATA": [ { "physical_name": "s_axis_s2mm_sts_tdata" } ],
+            "TKEEP": [ { "physical_name": "s_axis_s2mm_sts_tkeep" } ],
+            "TLAST": [ { "physical_name": "s_axis_s2mm_sts_tlast" } ],
+            "TREADY": [ { "physical_name": "s_axis_s2mm_sts_tready" } ],
+            "TVALID": [ { "physical_name": "s_axis_s2mm_sts_tvalid" } ]
+          }
+        },
+        "AXI_RESETN": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "constant", "usage": "all" } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "RST": [ { "physical_name": "axi_resetn" } ]
+          }
+        },
+        "MM2S_INTROUT": {
+          "vlnv": "xilinx.com:signal:interrupt:1.0",
+          "abstraction_type": "xilinx.com:signal:interrupt_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "SENSITIVITY": [ { "value": "LEVEL_HIGH", "value_src": "constant", "usage": "all" } ],
+            "PortWidth": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "INTERRUPT": [ { "physical_name": "mm2s_introut" } ]
+          }
+        },
+        "S2MM_INTROUT": {
+          "vlnv": "xilinx.com:signal:interrupt:1.0",
+          "abstraction_type": "xilinx.com:signal:interrupt_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "SENSITIVITY": [ { "value": "LEVEL_HIGH", "value_src": "constant", "usage": "all" } ],
+            "PortWidth": [ { "value": "1", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "INTERRUPT": [ { "physical_name": "s2mm_introut" } ]
+          }
+        },
+        "M_AXI_SG_CLK": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "ASSOCIATED_BUSIF": [ { "value": "M_AXI_SG", "value_src": "constant", "usage": "all" } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "user", "format": "long", "usage": "all" } ],
+            "FREQ_TOLERANCE_HZ": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "ASSOCIATED_PORT": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "ASSOCIATED_RESET": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "CLK": [ { "physical_name": "m_axi_sg_aclk" } ]
+          }
+        },
+        "M_AXI_MM2S_CLK": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "ASSOCIATED_BUSIF": [ { "value": "M_AXI_MM2S:M_AXIS_MM2S:M_AXIS_CNTRL", "value_src": "constant", "usage": "all" } ],
+            "ASSOCIATED_RESET": [ { "value": "mm2s_prmry_reset_out_n:mm2s_cntrl_reset_out_n", "value_src": "constant", "usage": "all" } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "user", "format": "long", "usage": "all" } ],
+            "FREQ_TOLERANCE_HZ": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "ASSOCIATED_PORT": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "CLK": [ { "physical_name": "m_axi_mm2s_aclk" } ]
+          }
+        },
+        "M_AXI_S2MM_CLK": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "ASSOCIATED_BUSIF": [ { "value": "M_AXI_S2MM:S_AXIS_S2MM:S_AXIS_STS", "value_src": "constant", "usage": "all" } ],
+            "ASSOCIATED_RESET": [ { "value": "s2mm_prmry_reset_out_n:s2mm_sts_reset_out_n", "value_src": "constant", "usage": "all" } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "user", "format": "long", "usage": "all" } ],
+            "FREQ_TOLERANCE_HZ": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "ASSOCIATED_PORT": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "CLK": [ { "physical_name": "m_axi_s2mm_aclk" } ]
+          }
+        },
+        "S_AXI_LITE_ACLK": {
+          "vlnv": "xilinx.com:signal:clock:1.0",
+          "abstraction_type": "xilinx.com:signal:clock_rtl:1.0",
+          "mode": "slave",
+          "parameters": {
+            "ASSOCIATED_BUSIF": [ { "value": "S_AXI_LITE:M_AXI", "value_src": "constant", "usage": "all" } ],
+            "ASSOCIATED_RESET": [ { "value": "axi_resetn", "value_src": "constant", "usage": "all" } ],
+            "FREQ_HZ": [ { "value": "100000000", "resolve_type": "user", "format": "long", "usage": "all" } ],
+            "FREQ_TOLERANCE_HZ": [ { "value": "0", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "PHASE": [ { "value": "0.0", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
+            "CLK_DOMAIN": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "ASSOCIATED_PORT": [ { "value": "", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "CLK": [ { "physical_name": "s_axi_lite_aclk" } ]
+          }
+        },
+        "MM2S_PRMRY_RESET_OUT_N": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "constant", "usage": "all" } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "RST": [ { "physical_name": "mm2s_prmry_reset_out_n" } ]
+          }
+        },
+        "S2MM_PRMRY_RESET_OUT_N": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "constant", "usage": "all" } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "RST": [ { "physical_name": "s2mm_prmry_reset_out_n" } ]
+          }
+        },
+        "MM2S_CNTRL_RESET_OUT_N": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "constant", "usage": "all" } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "RST": [ { "physical_name": "mm2s_cntrl_reset_out_n" } ]
+          }
+        },
+        "S2MM_STS_RESET_OUT_N": {
+          "vlnv": "xilinx.com:signal:reset:1.0",
+          "abstraction_type": "xilinx.com:signal:reset_rtl:1.0",
+          "mode": "master",
+          "parameters": {
+            "POLARITY": [ { "value": "ACTIVE_LOW", "value_src": "constant", "usage": "all" } ],
+            "INSERT_VIP": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "simulation.rtl", "is_ips_inferred": true, "is_static_object": false } ]
+          },
+          "port_maps": {
+            "RST": [ { "physical_name": "s2mm_sts_reset_out_n" } ]
+          }
+        }
+      },
+      "address_spaces": {
+        "Data_SG": {
+          "range": "4294967296",
+          "width": "32"
+        },
+        "Data_MM2S": {
+          "range": "4294967296",
+          "width": "32"
+        },
+        "Data_S2MM": {
+          "range": "4294967296",
+          "width": "32"
+        }
+      },
+      "memory_maps": {
+        "S_AXI_LITE": {
+          "display_name": "S_AXI_MEM",
+          "description": "Memory Map for S_AXI_LITE",
+          "address_blocks": {
+            "Reg": {
+              "base_address": "0",
+              "range": "4096",
+              "display_name": "Reg",
+              "description": "Register Block",
+              "usage": "register",
+              "access": "read-write",
+              "registers": {
+                "MM2S_DMACR": {
+                  "address_offset": "0x0",
+                  "size": 32,
+                  "display_name": "MM2S DMA Control Register",
+                  "description": "MM2S DMA Control Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x10002",
+                  "fields": {
+                    "RS": {
+                      "bit_offset": 0,
+                      "bit_width": 1,
+                      "display_name": "Run/Stop Control",
+                      "description": "Run / Stop control for controlling running and stopping of the DMA channel.\n  0 - Stop, DMA stops when current (if any) DMA operations are complete. For Scatter / Gather Mode pending commands/transfers are flushed or completed. \n  AXI4-Stream outs are potentially terminated early. Descriptors in the update queue are allowed to finish updating to remote memory before engine halt.\n  For Direct Register mode pending commands/transfers are flushed or completed. AXI4-Stream outs are potentially terminated.\n  The halted bit in the DMA Status register asserts to 1 when the DMA engine is halted. This bit is cleared by AXI DMA hardware when an error occurs. The CPU can also choose to clear this bit to stop DMA operations.\n  1 - Run, Start DMA operations. The halted bit in the DMA Status register deasserts to 0 when the DMA engine begins operations.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Reset": {
+                      "bit_offset": 2,
+                      "bit_width": 1,
+                      "display_name": "Soft Reset",
+                      "description": "Soft reset for resetting the AXI DMA core. Setting this bit to a 1 causes the AXI DMA to be reset. Reset is accomplished gracefully. Pending commands/transfers are flushed or completed.\nAXI4-Stream outs are potentially terminated early. Setting either MM2S_DMACR. Reset = 1 or S2MM_DMACR.Reset = 1 resets the entire AXI DMA engine. After completion of a soft reset, all registers and bits are in the Reset State.      0 - Normal operation.   1 - Reset in progress.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Keyhole": {
+                      "bit_offset": 3,
+                      "bit_width": 1,
+                      "display_name": "Keyhole Read",
+                      "description": "Keyhole Read. Setting this bit to 1 causes AXI DMA to initiate MM2S reads (AXI4read) in non-incrementing address mode (Fixed Address Burst transfer on AXI4). This bit can be updated when AXI DMA is in idle. When using keyhole operation the Max Burst Length should not exceed 16. This bit should not be set when DRE is enabled.\nThis bit is non functional when the multichannel feature is enabled or in Direct Register mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Cyclic_BD_Enable": {
+                      "bit_offset": 4,
+                      "bit_width": 1,
+                      "display_name": "Cyclic BD Enable",
+                      "description": "When set to 1, the DMA operates in Cyclic Buffer Descriptor (BD) mode without any user intervention. In this mode, the Scatter Gather module ignores the Completed bit of the BD. With this bit set, you can use the same BDs in cyclic manner without worrying about any stale descriptor errors.\nThis bit should be set/unset only when the DMA is idle or when not running. Updating this bit while the DMA is running can result in unexpected behavior.\nThis bit is non functional when DMA operates in multichannel mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IOC_IrqEn": {
+                      "bit_offset": 12,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Complete (IOC) Interrupt Enable",
+                      "description": "Interrupt on Complete (IOC) Interrupt Enable. When set to 1, allows DMASR.IOC_Irq to generate an interrupt out for descriptors with the IOC bit set.   0 - IOC Interrupt disabled      1 - IOC Interrupt enabled\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Dly_IrqEn": {
+                      "bit_offset": 13,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Delay Timer Interrupt Enable",
+                      "description": "Interrupt on Delay Timer Interrupt Enable. When set to 1, allows DMASR.Dly_Irq to generate an interrupt out.      0 - Delay Interrupt disabled   1 - Delay Interrupt enabled Note: This field is ignored when AXI DMA is configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Err_IrqEn": {
+                      "bit_offset": 14,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Error Interrupt Enable",
+                      "description": "Interrupt on Error Interrupt Enable.\n  0 - Error Interrupt disabled\n  1 - Error Interrupt enabled\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQThreshold": {
+                      "bit_offset": 16,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Threshold",
+                      "description": "Interrupt Threshold. This value is used for setting the interrupt threshold. When IOC interrupt events occur, an internal counter counts down from the Interrupt Threshold setting. When the count reaches zero, an interrupt out is generated by the DMA engine.   Note: The minimum setting for the threshold is 0x01. A write of 0x00 to this register has no effect.   Note: This field is ignored when AXI DMA is configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQDelay": {
+                      "bit_offset": 24,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Delay Time Out",
+                      "description": "Interrupt Delay Time Out. This value is used for setting the interrupt timeout value. The interrupt timeout mechanism causes the DMA engine to generate an interrupt after the delay time period has expired. Timer begins counting at the end of a packet and resets with receipt of a new packet or a timeout event occurs.\nNote: Setting this value to zero disables the delay timer interrupt.\nNote: This field is ignored when AXI DMA is configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "MM2S_DMASR": {
+                  "address_offset": "0x04",
+                  "size": 32,
+                  "display_name": "MM2S DMA Status Register",
+                  "description": "MM2S DMA Status Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x10000",
+                  "fields": {
+                    "Halted": {
+                      "bit_offset": 0,
+                      "bit_width": 1,
+                      "display_name": "DMA Channel Halted",
+                      "description": "DMA Channel Halted. Indicates the run/stop state of the DMA channel.      0 - DMA channel running.      1 - DMA channel halted.  For Scatter / Gather Mode this bit gets set when DMACR.RS = 0 and DMA and SG operations have halted. For Direct Register mode (C_INCLUDE_SG = 0) this bit gets set when DMACR.RS = 0 and DMA operations have halted. There can be a lag of time between when DMACR.RS = 0 and when DMASR.Halted = 1 Note: When halted (RS= 0 and Halted = 1), writing to CURDESC_PTR or TAILDESC_PTR pointer registers has no effect on DMA operations when in Scatter Gather Mode. For Direct Register Mode, writing to the LENGTH register has no effect on DMA operations.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "Idle": {
+                      "bit_offset": 1,
+                      "bit_width": 1,
+                      "display_name": "DMA Channel Idle",
+                      "description": "DMA Channel Idle. Indicates the state of AXI DMA operations.\nFor Scatter / Gather Mode when IDLE indicates the SG Engine has reached the tail pointer for the associated channel and all queued descriptors have been processed. Writing to the tail pointer register automatically restarts DMA operations.\nFor Direct Register Mode when IDLE indicates the current transfer has completed.      0 - Not Idle. For Scatter / Gather Mode, SG has not reached tail descriptor pointer and/or DMA operations in progress. For Direct Register Mode, transfer is not complete.      1 - Idle. For Scatter / Gather Mode, SG has reached tail descriptor pointer and DMA operation paused. for Direct Register Mode, DMA transfer has completed and controller is paused.  Note: This bit is 0 when channel is halted (DMASR.Halted=1). This bit is also 0 prior to initial transfer when AXI DMA configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGIncld": {
+                      "bit_offset": 3,
+                      "bit_width": 1,
+                      "display_name": "SGIncld",
+                      "description": "1 - Scatter Gather Enabled\n0 - Scatter Gather not enabled\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMAIntErr": {
+                      "bit_offset": 4,
+                      "bit_width": 1,
+                      "display_name": "DMA Internal Error",
+                      "description": "DMA Internal Error. Internal error occurs if the buffer length specified in the fetched descriptor is set to 0. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No DMA Internal Errors        1 - DMA Internal Error detected. DMA Engine halts\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMASlvErr": {
+                      "bit_offset": 5,
+                      "bit_width": 1,
+                      "display_name": "DMA Slave Error",
+                      "description": "DMA Slave Error. This error occurs if the slave read from the Memory Map interface issues a Slave Error. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No DMA Slave Errors.      1 - DMA Slave Error detected. DMA Engine halts\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMADecErr": {
+                      "bit_offset": 6,
+                      "bit_width": 1,
+                      "display_name": "DMA Decode Error",
+                      "description": "DMA Decode Error. This error occurs if the address request points to an invalid address. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No DMA Decode Errors.      1 - DMA Decode Error detected. DMA Engine halts.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGIntErr": {
+                      "bit_offset": 8,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Internal Error",
+                      "description": "Scatter Gather Internal Error. This error occurs if a descriptor with the \"Complete bit\" already set is fetched. Refer to the Scatter Gather Descriptor section for more information.This indicates to the SG Engine that the descriptor is a stale descriptor. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Internal Errors.      1 - SG Internal Error detected. DMA Engine halts.  Note: This bit is not used and is fixed at 0 when AXI DMA is configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGSlvErr": {
+                      "bit_offset": 9,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Slave Error",
+                      "description": "Scatter Gather Slave Error. This error occurs if the slave read from on the Memory Map interface issues a Slave error. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Slave Errors.      1 - SG Slave Error detected. DMA Engine halts.  Note: This bit is not used and is fixed at 0 when AXI DMA is configured for Direct Register Mode. \n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGDecErr": {
+                      "bit_offset": 10,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Decode Error",
+                      "description": "Scatter Gather Decode Error. This error occurs if CURDESC_PTR and/or NXTDESC_PTR points to an invalid address. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Decode Errors.      1 - SG Decode Error detected. DMA Engine halts.  Note: This bit is not used and is fixed at 0 when AXI DMA is configured for Direct Register Mode. \n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "IOC_Irq": {
+                      "bit_offset": 12,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Complete",
+                      "description": "Interrupt on Complete. When set to 1 for Scatter/Gather Mode, indicates an interrupt event was generated on completion of a descriptor. This occurs for descriptors with the End of Frame (EOF) bit set. When set to 1 for Direct Register Mode, indicates an interrupt event was generated on completion of a transfer. If the corresponding bit is enabled in the MM2S_DMACR (IOC_IrqEn = 1) and if the interrupt threshold has been met, causes an interrupt out to be generated from the AXI DMA.      0 - No IOC Interrupt.      1 - IOC Interrupt detected.  Writing a 1 to this bit will clear it.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Dly_Irq": {
+                      "bit_offset": 13,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Delay",
+                      "description": "Interrupt on Delay. When set to 1, indicates an interrupt event was generated on delay timer time out. If the corresponding bit is enabled in the MM2S_DMACR (Dly_IrqEn = 1), an interrupt out is generated from the AXI DMA.      0 - No Delay Interrupt.      1 - Delay Interrupt detected. Note: This bit is not used and is fixed at 0 when AXI DMA is configured for Direct Register Mode. \n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Err_Irq": {
+                      "bit_offset": 14,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Error",
+                      "description": "Interrupt on Error. When set to 1, indicates an interrupt event was generated on error. If the corresponding bit is enabled in the MM2S_DMACR (Err_IrqEn = 1), an interrupt out is generated from the AXI DMA.\nWriting a 1 to this bit will clear it.   \n0 - No error Interrupt.   \n1 - Error interrupt detected.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQThresholdSts": {
+                      "bit_offset": 16,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Threshold Status",
+                      "description": "Interrupt Threshold Status. Indicates current interrupt threshold value.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "IRQDelaySts": {
+                      "bit_offset": 24,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Delay Time Status",
+                      "description": "Interrupt Delay Time Status. Indicates current interrupt delay time value.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    }
+                  }
+                },
+                "MM2S_CURDESC": {
+                  "address_offset": "0x08",
+                  "size": 32,
+                  "display_name": "MM2S DMA Current Descriptor Pointer Register",
+                  "description": "MM2S DMA Current Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Current_Descriptor_Pointer": {
+                      "bit_offset": 6,
+                      "bit_width": 26,
+                      "display_name": "Current Descriptor Pointer",
+                      "description": "Indicates the pointer of the current descriptor being worked on. This register must contain a pointer to a valid descriptor prior to writing the TAILDESC_PTR register. Otherwise, undefined results occur. When DMACR.RS is 1, CURDESC_PTR becomes Read Only (RO) and is used to fetch the first descriptor.\nWhen the DMA Engine is running (DMACR.RS=1), CURDESC_PTR registers are updated by AXI DMA to indicate the current descriptor being worked on.\nOn error detection, CURDESC_PTR is updated to reflect the descriptor associated with the detected error.\nNote: The register can only be written to by the CPU when the DMA Engine is Halted (DMACR.RS=0 and DMASR.Halted =1). At all other times, this register is Read Only (RO). Descriptors must be 16 word aligned, that is, 0x00, 0x40, 0x80 and others. Any other alignment has undefined results.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "MM2S_CURDESC_MSB": {
+                  "address_offset": "0x0C",
+                  "size": 32,
+                  "display_name": "MM2S DMA Current Descriptor Pointer Register",
+                  "description": "MM2S DMA Current Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Current_Descriptor_Pointer": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "display_name": "Current Descriptor Pointer",
+                      "description": "Indicates the pointer of the current descriptor being worked on. This register must contain a pointer to a valid descriptor prior to writing the TAILDESC_PTR register. Otherwise, undefined results occur. When DMACR.RS is 1, CURDESC_PTR becomes Read Only (RO) and is used to fetch the first descriptor.\nWhen the DMA Engine is running (DMACR.RS=1), CURDESC_PTR registers are updated by AXI DMA to indicate the current descriptor being worked on.\nOn error detection, CURDESC_PTR is updated to reflect the descriptor associated with the detected error.\nNote: The register can only be written to by the CPU when the DMA Engine is Halted (DMACR.RS=0 and DMASR.Halted =1). At all other times, this register is Read Only (RO). Descriptors must be 16 word aligned, that is, 0x00, 0x40, 0x80 and others. Any other alignment has undefined results.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "MM2S_TAILDESC": {
+                  "address_offset": "0x10",
+                  "size": 32,
+                  "display_name": "MM2S DMA Tail Descriptor Pointer Register",
+                  "description": "MM2S DMA Tail Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Tail_Descriptor_Pointer": {
+                      "bit_offset": 6,
+                      "bit_width": 26,
+                      "display_name": "Tail Descriptor Pointer",
+                      "description": [
+                      "Indicates the pause pointer in a descriptor chain. The AXI DMA SG Engine pauses descriptor fetching after completing operations on the descriptor whose current descriptor pointer matches the tail descriptor pointer.\nWhen AXI DMA Channel is not halted (DMASR.Halted = 0), a write by the CPU to the TAILDESC_PTR register causes the AXI DMA SG Engine to start fetching descriptors or restart if it was idle (DMASR.Idle = 1). If it was not idle, writing TAILDESC_PTR has no effect except to reposition the pause point.\nIf the AXI DMA Channel is halted (DMASR.Halted = 1 and DMACR.RS = 0), a write by the CPU to the TAILDESC_PTR register has no effect except to reposition the pause point.\nNote: The software must not move the tail pointer to a location that has not been updated. The software processes and reallocates all completed descriptors (Cmplted = 1), clears the completed bits and then moves the tail pointer. The software must move the pointer to the last descriptor it updated. Descriptors mu",
+                      "st be 16-word aligned, that is, 0x00, 0x40, 0x80, and so forth. Any other alignment has undefined results. \n"
+                      ],
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "MM2S_TAILDESC_MSB": {
+                  "address_offset": "0x14",
+                  "size": 32,
+                  "display_name": "MM2S DMA Tail Descriptor Pointer Register",
+                  "description": "MM2S DMA Tail Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Tail_Descriptor_Pointer": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "display_name": "Tail Descriptor Pointer",
+                      "description": [
+                      "Indicates the pause pointer in a descriptor chain. The AXI DMA SG Engine pauses descriptor fetching after completing operations on the descriptor whose current descriptor pointer matches the tail descriptor pointer.\nWhen AXI DMA Channel is not halted (DMASR.Halted = 0), a write by the CPU to the TAILDESC_PTR register causes the AXI DMA SG Engine to start fetching descriptors or restart if it was idle (DMASR.Idle = 1). If it was not idle, writing TAILDESC_PTR has no effect except to reposition the pause point.\nIf the AXI DMA Channel is halted (DMASR.Halted = 1 and DMACR.RS = 0), a write by the CPU to the TAILDESC_PTR register has no effect except to reposition the pause point.\nNote: The software must not move the tail pointer to a location that has not been updated. The software processes and reallocates all completed descriptors (Cmplted = 1), clears the completed bits and then moves the tail pointer. The software must move the pointer to the last descriptor it updated. Descriptors mu",
+                      "st be 16-word aligned, that is, 0x00, 0x40, 0x80, and so forth. Any other alignment has undefined results. \n"
+                      ],
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "SG_CTL": {
+                  "address_offset": "0x2C",
+                  "size": 32,
+                  "display_name": "Scatter/Gather User and Cache Control Register",
+                  "description": "Scatter/Gather User and Cache Control Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x03",
+                  "fields": {
+                    "SG_CACHE": {
+                      "bit_offset": 0,
+                      "bit_width": 4,
+                      "display_name": "Scatter/Gather Cache Control",
+                      "description": "Scatter/Gather Cache Control. Values written in this register reflect on the m_axi_sg_arcache and m_axi_sg_awcache signals of the M_AXI_SG interface.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "SG_USER": {
+                      "bit_offset": 8,
+                      "bit_width": 4,
+                      "display_name": "Scatter/Gather User Control",
+                      "description": "Scatter/Gather User Control. Values written in this register reflect on the m_axi_sg_aruser and m_axi_sg_awuser signals of the M_AXI_SG interface.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "S2MM_DMACR": {
+                  "address_offset": "0x30",
+                  "size": 32,
+                  "display_name": "S2MM DMA Control Register",
+                  "description": "S2MM DMA Control Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x10002",
+                  "fields": {
+                    "RS": {
+                      "bit_offset": 0,
+                      "bit_width": 1,
+                      "display_name": "Run/Stop Control",
+                      "description": "Run / Stop control for controlling running and stopping of the DMA channel.\n  0 - Stop, DMA stops when current (if any) DMA operations are complete. For Scatter / Gather Mode pending commands/transfers are flushed or completed. \n  AXI4-Stream outs are potentially terminated early. Descriptors in the update queue are allowed to finish updating to remote memory before engine halt.\n  For Direct Register mode pending commands/transfers are flushed or completed. AXI4-Stream outs are potentially terminated. Data integrity on S2MM AXI4 cannot be guaranteed.\n  The halted bit in the DMA Status register asserts to 1 when the DMA engine is halted. This bit is cleared by AXI DMA hardware when an error occurs. The CPU can also choose to clear this bit to stop DMA operations.\n  1 - Run, Start DMA operations. The halted bit in the DMA Status register deasserts to 0 when the DMA engine begins operations.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Reset": {
+                      "bit_offset": 2,
+                      "bit_width": 1,
+                      "display_name": "Soft Reset",
+                      "description": "Soft reset for resetting the AXI DMA core. Setting this bit to a 1 causes the AXI DMA to be reset. Reset is accomplished gracefully. Pending commands/transfers are flushed or completed.\nAXI4-Stream outs are terminated early, if necessary with associated TLAST. Setting either MM2S_DMACR.Reset = 1 or S2MM_DMACR.Reset = 1 resets the entire AXI DMA engine. After completion of a soft reset, all registers and bits are in the Reset State.      0 - Reset not in progress. Normal operation.      1 - Reset in progress\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Keyhole": {
+                      "bit_offset": 3,
+                      "bit_width": 1,
+                      "display_name": "Keyhole Write",
+                      "description": "Keyhole Write. Setting this bit to 1 causes AXI DMA to initiate S2MM writes (AXI4 Writes) in non-incrementing address mode (Fixed Address Burst transfer on AXI4). This bit can be modified when AXI DMA is in idle. When enabling Key hole operation the maximum burst length cannot be more than 16. This bit should not be set when DRE is enabled.\nThis bit is non functional when DMA is used in multichannel mode.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Cyclic_BD_Enable": {
+                      "bit_offset": 4,
+                      "bit_width": 1,
+                      "display_name": "Cyclic BD Enable",
+                      "description": "When set to 1, the DMA operates in Cyclic Buffer Descriptor (BD) mode without any user intervention. In this mode, the Scatter Gather module ignores the Completed bit of the BD. With this bit set, you can use the same BDs in cyclic manner without worrying about any stale descriptor errors.\nThis bit is non functional when DMA operates in Multichannel mode. or in Direct Register Mode\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IOC_IrqEn": {
+                      "bit_offset": 12,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Complete (IOC) Interrupt Enable",
+                      "description": "Interrupt on Complete (IOC) Interrupt Enable. When set to 1, allows Interrupt On Complete events to generate an interrupt out for descriptors with the Complete bit set.      0 - IOC Interrupt disabled      1 - IOC Interrupt enabled\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Dly_IrqEn": {
+                      "bit_offset": 13,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Delay Timer Interrupt Enable",
+                      "description": "Interrupt on Delay Timer Interrupt Enable. When set to 1, allows error events to generate an interrupt out.      0 - Delay Interrupt disabled      1 - Delay Interrupt enabled  Note: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Err_IrqEn": {
+                      "bit_offset": 14,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Error Interrupt Enable",
+                      "description": "Interrupt on Error Interrupt Enable. When set to 1, allows error events to generate an interrupt out.      0 - Error Interrupt disabled      1 - Error Interrupt enabled\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQThreshold": {
+                      "bit_offset": 16,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Threshold",
+                      "description": "Interrupt Threshold. This value is used for setting the interrupt threshold. When IOC interrupt events occur, an internal counter counts down from the Interrupt Threshold setting. When the count reaches zero, an interrupt out is generated by the DMA engine.\nNote: The minimum setting for the threshold is 0x01. A write of 0x00 to this register has no effect.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQDelay": {
+                      "bit_offset": 24,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Delay Time Out",
+                      "description": "Interrupt Delay Time Out. This value is used for setting the interrupt timeout value. The interrupt timeout mechanism causes the DMA engine to generate an interrupt after the delay time period has expired. Timer begins counting at the end of a packet and resets with receipt of a new packet or a timeout event occurs.\nNote: Setting this value to zero disables the delay timer interrupt.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "S2MM_DMASR": {
+                  "address_offset": "0x34",
+                  "size": 32,
+                  "display_name": "S2MM DMA Status Register",
+                  "description": "S2MM DMA Status Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x10000",
+                  "fields": {
+                    "Halted": {
+                      "bit_offset": 0,
+                      "bit_width": 1,
+                      "display_name": "DMA Channel Halted",
+                      "description": "DMA Channel Halted. Indicates the run/stop state of the DMA channel.      0 - DMA channel running.      1 - DMA channel halted.  For Scatter/Gather Mode this bit gets set when DMACR.RS = 0 and DMA and SG operations have halted. For Direct Register Mode this bit gets set when DMACR.RS = 0 and DMA operations have halted. There can be a lag of time between when DMACR.RS = 0 and when DMASR.Halted = 1 \nNote: When halted (RS= 0 and Halted = 1), writing to CURDESC_PTR or TAILDESC_PTR pointer registers has no effect on DMA operations when in Scatter Gather Mode. For Direct Register Mode, writing to the LENGTH register has no effect on DMA operations.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "Idle": {
+                      "bit_offset": 1,
+                      "bit_width": 1,
+                      "display_name": "DMA Channel Idle",
+                      "description": "DMA Channel Idle. Indicates the state of AXI DMA operations.\nFor Scatter / Gather Mode when IDLE indicates the SG Engine has reached the tail pointer for the associated channel and all queued descriptors have been processed. Writing to the tail pointer register automatically restarts DMA operations.\nFor Direct Register Mode when IDLE indicates the current transfer has completed.      0 - Not Idle.      1 - Idle.   Note: This bit is 0 when channel is halted (DMASR.Halted=1). This bit is also 0 prior to initial transfer when AXI DMA configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGIncld": {
+                      "bit_offset": 3,
+                      "bit_width": 1,
+                      "display_name": "SGIncld",
+                      "description": "Scatter Gather Engine Included. DMASR.SGIncld = 1 indicates the Scatter Gather engine is included and the AXI DMA is configured for Scatter Gather mode. DMASR.SGIncld = 0 indicates the Scatter Gather engine is excluded and the AXI DMA is configured for Direct Register Mode.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMAIntErr": {
+                      "bit_offset": 4,
+                      "bit_width": 1,
+                      "display_name": "DMA Internal Error",
+                      "description": "DMA Internal Error. This error occurs if the buffer length specified in the fetched descriptor is set to 0. Also, when in Scatter Gather Mode and using the status app length field, this error occurs when the Status AXI4-Stream packet RxLength field does not match the S2MM packet being received by the S_AXIS_S2MM interface. When Scatter Gather is disabled, this error is flagged if any error occurs during Memory write or if the incoming packet is bigger than what is specified in the DMA length register.\nThis error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No DMA Internal Errors      1 - DMA Internal Error detected.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMASlvErr": {
+                      "bit_offset": 5,
+                      "bit_width": 1,
+                      "display_name": "DMA Slave Error",
+                      "description": "DMA Slave Error. This error occurs if the slave read from the Memory Map interface issues a Slave Error. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No DMA Slave Errors.      1 - DMA Slave Error detected.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "DMADecErr": {
+                      "bit_offset": 6,
+                      "bit_width": 1,
+                      "display_name": "DMA Decode Error",
+                      "description": "DMA Decode Error. This error occurs if the address request points to an invalid address. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.     0 - No DMA Decode Errors.   1 - DMA Decode Error detected.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGIntErr": {
+                      "bit_offset": 8,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Internal Error",
+                      "description": "Scatter Gather Internal Error. This error occurs if a descriptor with the \"Complete bit\" already set is fetched. This indicates to the SG Engine that the descriptor is a tail descriptor. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Internal Errors.      1 - SG Internal Error detected.  Note: Applicable only when Scatter Gather is enabled. \n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGSlvErr": {
+                      "bit_offset": 9,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Slave Error",
+                      "description": "Scatter Gather Slave Error. This error occurs if the slave read from on the Memory Map interface issues a Slave error. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Slave Errors.      1 - SG Slave Error detected. DMA Engine halts. Note: Applicable only when Scatter Gather is enabled. \n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "SGDecErr": {
+                      "bit_offset": 10,
+                      "bit_width": 1,
+                      "display_name": "Scatter Gather Decode Error",
+                      "description": "Scatter Gather Decode Error. This error occurs if CURDESC_PTR and/or NXTDESC_PTR points to an invalid address. This error condition causes the AXI DMA to halt gracefully. The DMACR.RS bit is set to 0, and when the engine has completely shut down, the DMASR.Halted bit is set to 1.      0 - No SG Decode Errors.      1 - SG Decode Error detected. DMA Engine halts. Note: Applicable only when Scatter Gather is enabled. \n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "IOC_Irq": {
+                      "bit_offset": 12,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Complete",
+                      "description": "Interrupt on Complete. When set to 1 for Scatter/Gather Mode, indicates an interrupt event was generated on completion of a descriptor. This occurs for descriptors with the End of Frame (EOF) bit set. When set to 1 for Direct Register Mode, indicates an interrupt event was generated on completion of a transfer. If the corresponding bit in S2MM_DMACR is enabled (IOC_IrqEn = 1) and if the interrupt threshold has been met, causes an interrupt out to be generated from the AXI DMA.      0 - No IOC Interrupt.      1 - IOC Interrupt detected. Writing a 1 to this bit will clear it.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Dly_Irq": {
+                      "bit_offset": 13,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Delay",
+                      "description": "Interrupt on Delay. When set to 1, indicates an interrupt event was generated on delay timer time out. If the corresponding bit is enabled in the S2MM_DMACR (Dly_IrqEn = 1), an interrupt out is generated from the AXI DMA.      0 - No Delay Interrupt.      1 - Delay Interrupt detected.1 = IOC Interrupt detected. Writing a 1 to this bit will clear it. Note: Applicable only when Scatter Gather is enabled. \n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "Err_Irq": {
+                      "bit_offset": 14,
+                      "bit_width": 1,
+                      "display_name": "Interrupt on Error",
+                      "description": "Interrupt on Error. When set to 1, indicates an interrupt event was generated on error. If the corresponding bit is enabled in the S2MM_DMACR (Err_IrqEn = 1), an interrupt out is generated from the AXI DMA.\nWriting a 1 to this bit will clear it.      0 - No error Interrupt.      1 - Error interrupt detected.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    },
+                    "IRQThresholdSts": {
+                      "bit_offset": 16,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Threshold Status",
+                      "description": "Interrupt Threshold Status. Indicates current interrupt threshold value.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    },
+                    "IRQDelaySts": {
+                      "bit_offset": 24,
+                      "bit_width": 8,
+                      "display_name": "Interrupt Delay Time Status",
+                      "description": "Interrupt Delay Time Status. Indicates current interrupt delay time value.\nNote: Applicable only when Scatter Gather is enabled.\n",
+                      "is_volatile": true,
+                      "access": "read-only"
+                    }
+                  }
+                },
+                "S2MM_CURDESC": {
+                  "address_offset": "0x38",
+                  "size": 32,
+                  "display_name": "S2MM DMA Current Descriptor Pointer Register",
+                  "description": "S2MM DMA Current Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Current_Descriptor_Pointer": {
+                      "bit_offset": 6,
+                      "bit_width": 26,
+                      "display_name": "Current Descriptor Pointer",
+                      "description": "Indicates the pointer of the current descriptor being worked on. This register must contain a pointer to a valid descriptor prior to writing the TAILDESC_PTR register. Otherwise, undefined results occur. When DMACR.RS is 1, CURDESC_PTR becomes Read Only (RO) and is used to fetch the first descriptor.\nWhen the DMA Engine is running (DMACR.RS=1), CURDESC_PTR registers are updated by AXI DMA to indicate the current descriptor being worked on.\nOn error detection, CURDESC_PTR is updated to reflect the descriptor associated with the detected error.\nNote: The register can only be written to by the CPU when the DMA Engine is Halted (DMACR.RS=0 and DMASR.Halted =1). At all other times, this register is Read Only (RO). \nBuffer Descriptors must be 16 word aligned, that is, 0x00, 0x40, 0x80 and so forth. Any other alignment has undefined results.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "S2MM_CURDESC_MSB": {
+                  "address_offset": "0x3C",
+                  "size": 32,
+                  "display_name": "S2MM DMA Current Descriptor Pointer Register",
+                  "description": "S2MM DMA Current Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Current_Descriptor_Pointer": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "display_name": "Current Descriptor Pointer",
+                      "description": "Indicates the pointer of the current descriptor being worked on. This register must contain a pointer to a valid descriptor prior to writing the TAILDESC_PTR register. Otherwise, undefined results occur. When DMACR.RS is 1, CURDESC_PTR becomes Read Only (RO) and is used to fetch the first descriptor.\nWhen the DMA Engine is running (DMACR.RS=1), CURDESC_PTR registers are updated by AXI DMA to indicate the current descriptor being worked on.\nOn error detection, CURDESC_PTR is updated to reflect the descriptor associated with the detected error.\nNote: The register can only be written to by the CPU when the DMA Engine is Halted (DMACR.RS=0 and DMASR.Halted =1). At all other times, this register is Read Only (RO). Descriptors must be 16 word aligned, that is, 0x00, 0x40, 0x80 and others. Any other alignment has undefined results.\n",
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "S2MM_TAILDESC": {
+                  "address_offset": "0x40",
+                  "size": 32,
+                  "display_name": "S2MM DMA Tail Descriptor Pointer Register",
+                  "description": "S2MM DMA Tail Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Tail_Descriptor_Pointer": {
+                      "bit_offset": 6,
+                      "bit_width": 26,
+                      "display_name": "Tail Descriptor Pointer",
+                      "description": [
+                      "Indicates the pause pointer in a descriptor chain. The AXI DMA SG Engine pauses descriptor fetching after completing operations on the descriptor whose current descriptor pointer matches the tail descriptor pointer.\nWhen AXI DMA Channel is not halted (DMASR.Halted = 0), a write by the CPU to the TAILDESC_PTR register causes the AXI DMA SG Engine to start fetching descriptors or restart if it was idle (DMASR.Idle = 1). If it was not idle, writing TAILDESC_PTR has no effect except to reposition the pause point.\nIf the AXI DMA Channel DMACR.RS bit is set to 0 (DMASR.Halted = 1 and DMACR.RS = 0), a write by the CPU to the TAILDESC_PTR register has no effect except to reposition the pause point.\nNote: The software must not move the tail pointer to a location that has not been updated. The software processes and reallocates all completed descriptors (Cmplted = 1), clears the completed bits and then moves the tail pointer. The software must move the pointer to the last descriptor it updated.",
+                      " \nDescriptors must be 16-word aligned, that is, 0x00, 0x40, 0x80, and so forth. Any other alignment has undefined results. \n"
+                      ],
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                },
+                "S2MM_TAILDESC_MSB": {
+                  "address_offset": "0x44",
+                  "size": 32,
+                  "display_name": "S2MM DMA Tail Descriptor Pointer Register",
+                  "description": "S2MM DMA Tail Descriptor Pointer Register",
+                  "is_volatile": true,
+                  "access": "read-write",
+                  "reset_value": "0x0",
+                  "fields": {
+                    "Tail_Descriptor_Pointer": {
+                      "bit_offset": 0,
+                      "bit_width": 32,
+                      "display_name": "Tail Descriptor Pointer",
+                      "description": [
+                      "Indicates the pause pointer in a descriptor chain. The AXI DMA SG Engine pauses descriptor fetching after completing operations on the descriptor whose current descriptor pointer matches the tail descriptor pointer.\nWhen AXI DMA Channel is not halted (DMASR.Halted = 0), a write by the CPU to the TAILDESC_PTR register causes the AXI DMA SG Engine to start fetching descriptors or restart if it was idle (DMASR.Idle = 1). If it was not idle, writing TAILDESC_PTR has no effect except to reposition the pause point.\nIf the AXI DMA Channel is halted (DMASR.Halted = 1 and DMACR.RS = 0), a write by the CPU to the TAILDESC_PTR register has no effect except to reposition the pause point.\nNote: The software must not move the tail pointer to a location that has not been updated. The software processes and reallocates all completed descriptors (Cmplted = 1), clears the completed bits and then moves the tail pointer. The software must move the pointer to the last descriptor it updated. Descriptors mu",
+                      "st be 16-word aligned, that is, 0x00, 0x40, 0x80, and so forth. Any other alignment has undefined results. \n"
+                      ],
+                      "is_volatile": true,
+                      "access": "read-write"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

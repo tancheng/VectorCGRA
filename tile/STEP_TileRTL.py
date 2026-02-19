@@ -35,8 +35,6 @@ from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
 from ..tile.STEP_TileCrossbarRTL import STEP_TileCrossbarRTL
 
-
-
 class STEP_TileRTL(Component):
 
     def construct(s,
@@ -53,6 +51,7 @@ class STEP_TileRTL(Component):
         assert num_fu_inports == 3
         assert num_fu_outports == 1
         assert(num_tile_inports in [4,8])
+        assert(num_tile_outports in [4,8])
 
         # I/O Interfaces
         s.tile_in_data_port = [ InPort(DataType) for _ in range(num_tile_inports) ]
@@ -83,12 +82,11 @@ class STEP_TileRTL(Component):
         
         ####### Test Connections
         # TODO: @darrenl delete me
-        # DirectionType = mk_bits( clog2(num_tile_inports + 1))
+        DirectionType = mk_bits( clog2(num_tile_inports + 1))
     
-        # s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
-        # for i in range(num_tile_inports):
-        #     s.tile_in_test[i] //= s.tile_in_data_port[i]
-
+        s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+        for i in range(num_tile_inports):
+            s.tile_in_test[i] //= s.tile_in_data_port[i]
         #######
 
         # Wire Connections
@@ -121,7 +119,7 @@ class STEP_TileRTL(Component):
         @update
         def fu_in_port_ff():
             if s.reset:
-                s.tile_bitstream @= TileBitstreamType(0, 0, 0, 0, 0, 0, 0)
+                s.tile_bitstream @= TileBitstreamType(0, 0, 0, 0, 0, 0, 0, 0, 0)
             elif s.recv_tile_bitstream.val & s.recv_tile_bitstream.rdy:
                 s.tile_bitstream @= s.recv_tile_bitstream.msg
         
@@ -153,6 +151,8 @@ class STEP_TileRTL(Component):
                     s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] == s.tile_bitstream.const_val)
                 elif s.opt_type == OPT_MUL_CONST:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] * s.tile_bitstream.const_val
+                elif s.opt_type == OPT_LD:
+                    s.fu_out[i] @= s.crossbar.send_to_fu[0] + s.tile_bitstream.const_val # Add Base address to Mem Unit
 
                 # 2 ops
                 elif s.opt_type == OPT_ADD:

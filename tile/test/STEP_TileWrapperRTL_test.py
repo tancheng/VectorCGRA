@@ -50,16 +50,16 @@ class TestHarness(Component):
         # Configure sources - recv_from_cpu_pkt launches every cycle
         def delay_func(i):
             return 2 + 2*i
-        interval_delay = 7 + num_tile_cols
-        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i], 5, interval_delay) for i in range(num_tile_rows)]
+        interval_delay = 10 + num_tile_cols
+        s.data_in_pkts = [TestSrcRTL(DataType, data_in_msgs[i][j], 2, interval_delay) for i in range(num_tile_rows) for j in range(2)]
         s.fabric_bitstream = TestSrcRTL(CfgBitstreamType, full_bitstream_msgs, 0, interval_delay)
         s.pred_in_rf_pkts = [TestSrcRTL(Bits1, [Bits1(1)], 2, interval_delay) for _ in range(num_tiles)]
-        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(1)], delay_func(i), interval_delay) for i in range(num_tile_rows)]
+        s.pred_out_pkts = [TestSinkRTL(Bits1, [Bits1(1)], delay_func(i), interval_delay) for i in range(num_tile_rows * 2)]
         s.recv_from_rf_pred = [TestSrcRTL(Bits1, [Bits1(1)], 2, interval_delay) for _ in range(num_tiles)]
 
         # Configure sinks
         cmp_fn = lambda a, b : a == b
-        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i], 5, interval_delay, cmp_fn = cmp_fn) for i in range(num_tile_rows)]
+        s.data_out_pkts = [TestSinkRTL(DataType, data_out_msgs[i][j], 5, interval_delay, cmp_fn = cmp_fn) for i in range(num_tile_rows) for j in range(2)]
 
         s.dut = STEP_TileWrapperRTL(
                                 num_tile_cols,
@@ -78,24 +78,28 @@ class TestHarness(Component):
 
         # Connections
         for i in range(num_tile_rows):
-            s.dut.recv_west_data_port[i] //= s.data_in_pkts[i].send.msg
+            s.dut.recv_west_data_port[i] //= s.data_in_pkts[2*i].send.msg
+            s.dut.recv_east_data_port[i] //= s.data_in_pkts[2*i+1].send.msg
             s.data_in_pkts[i].send.rdy //= 1
             # Data connection
-            s.dut.send_east_data_port[i] //= s.data_out_pkts[i].recv.msg
-
+            s.dut.send_west_data_port[i] //= s.data_out_pkts[2*i].recv.msg
+            s.dut.send_east_data_port[i] //= s.data_out_pkts[2*i+1].recv.msg
+    
             # Predicate connections
-            s.dut.send_east_pred_port[i] //= s.pred_out_pkts[i].recv.msg
-            s.dut.send_east_pred_port[i] //= s.pred_out_pkts[i].recv.val
+            s.dut.send_west_pred_port[i] //= s.pred_out_pkts[2*i].recv.msg
+            s.dut.send_west_pred_port[i] //= s.pred_out_pkts[2*i].recv.val
+            s.dut.send_east_pred_port[i] //= s.pred_out_pkts[2*i+1].recv.msg
+            s.dut.send_east_pred_port[i] //= s.pred_out_pkts[2*i+1].recv.val
         for i in range(num_tiles):
             s.dut.recv_from_rf_pred[i] //= s.recv_from_rf_pred[i].send.msg
             s.recv_from_rf_pred[i].send.rdy //= 1
         s.dut.recv_fabric_bitstream //= s.fabric_bitstream.send
 
-        @update
-        def data_valid():
-            # Assume data is valid if > 0
-            for i in range(num_tile_rows):
-                s.data_out_pkts[i].recv.val @= s.dut.send_east_data_port[i] > 0
+        # @update
+        # def data_valid():
+        #     # Assume data is valid if > 0
+        #     for i in range(num_tile_rows):
+        #         s.data_out_pkts[i].recv.val @= s.dut.send_east_data_port[i] > 0
 
     def done(s):
         for i in range(s.num_tile_cols):
@@ -122,8 +126,8 @@ def init_param():
     num_iterations = 12
     num_regs = 16
     num_pred_regs = 16
-    num_tile_cols = 2
-    num_tile_rows = 2
+    num_tile_cols = 4
+    num_tile_rows = 4
     num_tiles = num_tile_cols * num_tile_rows
 
     DataType = mk_bits(8)
@@ -146,11 +150,7 @@ def init_param():
     CfgBitstreamType = mk_bitstream_pkt(num_tiles, TileBitstreamType)
 
     # Setup a row of PEs to do No op
-    no_op_row = [TileBitstreamType(
-            tile_in_route = [TilePortType(0), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0000),
-            tile_pred_route = TileOutType(0b0000),
-            opt_type = OPT_NAH) for _ in range(num_tile_cols)]
+    no_op_row = [TileBitstreamType(opt_type = OPT_NAH) for _ in range(num_tile_cols)]
     
     # Setup a row of PEs where only right has an add
     add_op_send_south_east_row = [TileBitstreamType(
@@ -159,7 +159,7 @@ def init_param():
             tile_pred_route = TileOutType(0b00000010),
             opt_type = OPT_ADD)] \
             + \
-            [TileBitstreamType(opt_type = OPT_NAH)]
+            [TileBitstreamType(opt_type = OPT_NAH)] * (num_tile_cols - 1)
 
     add_op_send_east_row = [TileBitstreamType(opt_type = OPT_NAH)] \
             + \
@@ -167,7 +167,13 @@ def init_param():
             tile_in_route = [TilePortType(PORT_NORTHWEST + 1), TilePortType(PORT_NORTHWEST + 1), TilePortType(0)],
             tile_out_route = TileOutType(0b00010000),
             tile_pred_route = TileOutType(0b00010000),
-            opt_type = OPT_ADD)]
+            opt_type = OPT_ADD)] \
+            + \
+            [TileBitstreamType(
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(PORT_WEST + 1), TilePortType(0)],
+            tile_out_route = TileOutType(0b00010000),
+            tile_pred_route = TileOutType(0b00010000),
+            opt_type = OPT_ADD)] * (num_tile_cols - 2)
     
 
     # Setup a row of PEs where only right has a mul
@@ -177,26 +183,48 @@ def init_param():
             tile_in_route = [TilePortType(PORT_NORTHWEST + 1), TilePortType(PORT_NORTHWEST + 1), TilePortType(0)],
             tile_out_route = TileOutType(0b00010000),
             tile_pred_route = TileOutType(0b00010000),
-            opt_type = OPT_MUL)]
+            opt_type = OPT_MUL)] \
+            + \
+            [TileBitstreamType(
+            tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(PORT_WEST + 1), TilePortType(0)],
+            tile_out_route = TileOutType(0b00010000),
+            tile_pred_route = TileOutType(0b00010000),
+            opt_type = OPT_MUL)] * (num_tile_cols - 2)
 
     # Full Bitstream Pkt
     full_bitstream_msgs = [
-        CfgBitstreamType(bitstream = (add_op_send_south_east_row + add_op_send_east_row)),
-        CfgBitstreamType(bitstream = (add_op_send_south_east_row + mul_op_send_east_row))
+        CfgBitstreamType(bitstream = (add_op_send_south_east_row + add_op_send_east_row + no_op_row * 2)),
+        CfgBitstreamType(bitstream = (add_op_send_south_east_row + mul_op_send_east_row + no_op_row * 2))
     ]
 
     data_in_msgs = [
-        # Row 0
-        [DataType(1), DataType(3)],
+        [
+            # Row 0 W
+            [DataType(1), DataType(3)],
+            # Row 0 E
+            []
+        ],
         # Row 1
-        [],
+        [[],[]],
+        # Row 2
+        [[],[]],
+        # Row 3
+        [[],[]],
     ]
 
     data_out_msgs = [
         # Row 0
-        [],
-        # Row 1
-        [DataType(4), DataType(36)],
+        [[],[]],
+        [
+            # Row 1 W
+            [DataType(4), DataType(36)],
+            # Row 1 E
+            []
+        ],
+        # Row 2
+        [[],[]],
+        # Row 3
+        [[],[]],
     ]
 
     th = TestHarness(

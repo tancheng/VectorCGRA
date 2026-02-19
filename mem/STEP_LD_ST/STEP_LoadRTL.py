@@ -28,7 +28,7 @@ class STEP_LoadRTL( Component ):
         s.outstanding_reqs = OutPort( clog2(queue_depth + 1) )
         
         # Tile tracking
-        s.tile_counter = Wire( clog2(MAX_THREAD_COUNT) )
+        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT) )
         s.tile_last_seen = OutPort( 1 )
         s.loads_in_tile = OutPort( clog2(queue_depth + 1) )  # Loads from current tile
         

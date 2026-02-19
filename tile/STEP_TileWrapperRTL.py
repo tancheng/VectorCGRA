@@ -20,7 +20,6 @@ from ..lib.opt_type import *
 from ..lib.util.common import *
 from ..tile.STEP_TileRTL import STEP_TileRTL
 
-
 class STEP_TileWrapperRTL(Component):
 
     def construct(s,
@@ -36,6 +35,7 @@ class STEP_TileWrapperRTL(Component):
                     OperationType,
                     RegAddrType,
                     PredRegAddrType,
+                    debug = False
                     ):
         assert(num_tile_inports == num_tile_outports)
         assert(num_tile_inports in [4,8])
@@ -45,8 +45,11 @@ class STEP_TileWrapperRTL(Component):
         # 
         # Current Architecture only has IO ports to Tiles on the East Side Only
         # in order to communicate with register file
-        s.recv_west_data_port = [ InPort(DataType) for _ in range(num_tile_rows) ]
+        s.recv_west_data_port = [ InPort(DataType) for _ in range(num_tile_rows * 2) ]
+        s.send_west_data_port = [ OutPort(DataType) for _ in range(num_tile_rows) ]
+        s.recv_east_data_port = [ InPort(DataType) for _ in range(num_tile_rows * 2) ]
         s.send_east_data_port = [ OutPort(DataType) for _ in range(num_tile_rows) ]
+        s.send_west_pred_port = [ OutPort(Bits1) for _ in range(num_tile_rows) ]
         s.send_east_pred_port = [ OutPort(Bits1) for _ in range(num_tile_rows) ]
         
         # South ST Connections
@@ -57,13 +60,13 @@ class STEP_TileWrapperRTL(Component):
         s.send_north_data_port = [ OutPort(DataType) for _ in range(num_tile_cols) ]
         s.send_north_pred_port = [ OutPort(Bits1) for _ in range(num_tile_cols) ]
 
-        # Bistream IO
-        s.recv_fabric_bitstream = RecvIfcRTL(BitStreamType)
-        s.bitstream_rdy = Wire(Bits1)
-
         # Predicate
         num_tiles = num_tile_cols * num_tile_rows
         s.recv_from_rf_pred = [ InPort(Bits1) for _ in range(num_tiles) ]
+
+        # Bistream IO
+        s.recv_tile_bitstreams = [InPort(TileBitstreamType) for _ in range(num_tiles)]
+        s.recv_tile_bitstreams_val = InPort(Bits1)
 
         # Fabric Declaration
         s.tiles = [[STEP_TileRTL(num_tile_inports,
@@ -78,27 +81,31 @@ class STEP_TileWrapperRTL(Component):
                                 ) for _ in range(num_tile_cols)] for _ in range(num_tile_rows)]
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
-        # check_row = 1
-        # check_col = 1
-        # s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
-        # s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
-        
-        # s.tile_bitstream_cmd = OutPort(OperationType)
-        # s.tile_bitstream_cmd //= s.tiles[check_row][check_col].tile_bitstream.opt_type
-        # s.tile_bitstream_loc = OutPort(Bits4)
-        # s.tile_bitstream_loc //= (s.tiles[check_row][check_col].tile_bitstream.tile_in_route[0])
-        # s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+        if debug:
+            check_row = 0
+            check_col = 1
+            s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
+            s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
+            
+            s.tile_bitstream_cmd = OutPort(OperationType)
+            s.tile_bitstream_cmd //= s.tiles[check_row][check_col].tile_bitstream.opt_type
+            s.tile_bitstream_loc = OutPort(Bits4)
+            s.tile_bitstream_loc //= (s.tiles[check_row][check_col].tile_bitstream.tile_in_route[0])
+            s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
 
-
-        # for i in range(num_fu_inports):
-        #     s.fu_in[i] //= s.tiles[check_row][check_col].fu_in[i]
-        # for i in range(num_fu_outports):
-        #     s.fu_out[i] //= s.tiles[check_row][check_col].fu_out[i]
-        # for i in range(num_tile_inports):
-        #     s.tile_in_test[i] //= s.tiles[check_row][check_col].tile_in_test[i]
-        
-        # s.tile_data_out = OutPort(DataType)
-        # s.tile_data_out //= s.tiles[check_row][check_col].tile_out_data_port[PORT_NORTHWEST]
+            for i in range(num_fu_inports):
+                s.fu_in[i] //= s.tiles[check_row][check_col].fu_in[i]
+            for i in range(num_fu_outports):
+                s.fu_out[i] //= s.tiles[check_row][check_col].fu_out[i]
+            for i in range(num_tile_inports):
+                s.tile_in_test[i] //= s.tiles[check_row][check_col].tile_in_test[i]
+            
+            s.tile_data_out = [OutPort(DataType) for _ in range(num_tile_outports)]
+            for i in range(num_tile_outports):
+                s.tile_data_out[i] //= s.tiles[check_row][check_col].tile_out_data_port[i]
+            s.tile_pred_out = [OutPort(1) for _ in range(num_tile_outports)]
+            for i in range(num_tile_outports):
+                s.tile_pred_out[i] //= s.tiles[check_row][check_col].tile_out_pred_port[i]
         #####
 
 
@@ -128,11 +135,11 @@ class STEP_TileWrapperRTL(Component):
                             if (num_tile_inports == 8):
                                 if j > 0:
                                     # South West tie off
-                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= DataType()
+                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= s.recv_west_data_port[2*i+1]
                                     s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
                                 if j < num_tile_cols - 1:
                                     # South East tie off
-                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= DataType()
+                                    s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= s.recv_east_data_port[2*i+1]
                                     s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
                 else:
                     # Connect North Ports to LD
@@ -158,7 +165,9 @@ class STEP_TileWrapperRTL(Component):
                     s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= s.tiles[i][j-1].tile_out_pred_port[PORT_EAST]
                     s.tiles[i][j].tile_out_pred_port[PORT_WEST] //= s.tiles[i][j-1].tile_in_pred_port[PORT_EAST]
                 else:
-                    s.tiles[i][j].tile_in_data_port[PORT_WEST] //= s.recv_west_data_port[i]
+                    s.tiles[i][j].tile_in_data_port[PORT_WEST] //= s.recv_west_data_port[2*i]
+                    s.tiles[i][j].tile_out_data_port[PORT_WEST] //= s.send_west_data_port[i]
+                    s.tiles[i][j].tile_out_pred_port[PORT_WEST] //= s.send_west_pred_port[i]
                     # Pred in will always be 1 as to fire. If predicated, will take its own rf predication
                     s.tiles[i][j].tile_in_pred_port[PORT_WEST] //= 1
                     # Tie off Diagonal Connections
@@ -167,13 +176,13 @@ class STEP_TileWrapperRTL(Component):
                         s.tiles[i][j].tile_in_data_port[PORT_NORTHWEST] //= DataType()
                         s.tiles[i][j].tile_in_pred_port[PORT_NORTHWEST] //= 0
                         # South West tie off
-                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= DataType()
+                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= s.recv_west_data_port[2*i+1]
                         s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
 
                 # Connect East Ports to fabric I/O
                 if j == num_tile_cols - 1:
-                    s.tiles[i][j].tile_in_data_port[PORT_EAST] //= DataType()
-                    s.tiles[i][j].tile_in_pred_port[PORT_EAST] //= 0
+                    s.tiles[i][j].tile_in_data_port[PORT_EAST] //= s.recv_east_data_port[2*i]
+                    s.tiles[i][j].tile_in_pred_port[PORT_EAST] //= 1
                     s.tiles[i][j].tile_out_data_port[PORT_EAST] //= s.send_east_data_port[i]
                     s.tiles[i][j].tile_out_pred_port[PORT_EAST] //= s.send_east_pred_port[i]
                     # Tie off Diagonal Connections
@@ -182,7 +191,7 @@ class STEP_TileWrapperRTL(Component):
                         s.tiles[i][j].tile_in_data_port[PORT_NORTHEAST] //= DataType()
                         s.tiles[i][j].tile_in_pred_port[PORT_NORTHEAST] //= 0
                         # South East tie off
-                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= DataType()
+                        s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= s.recv_east_data_port[2*i+1]
                         s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
                 
                 # Connect South Ports to Ld/St Unit
@@ -195,15 +204,6 @@ class STEP_TileWrapperRTL(Component):
         # Connect Tile Bitstreams    
         for i in range(num_tile_rows):
             for j in range(num_tile_cols):
-                s.tiles[i][j].recv_tile_bitstream.msg //= s.recv_fabric_bitstream.msg.bitstream[i * num_tile_cols + j]
-                s.tiles[i][j].recv_tile_bitstream.val //= s.recv_fabric_bitstream.val
+                s.tiles[i][j].recv_tile_bitstream.msg //= s.recv_tile_bitstreams[i * num_tile_cols + j]
+                s.tiles[i][j].recv_tile_bitstream.val //= s.recv_tile_bitstreams_val
                 s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]
-        
-        # Connect Fabric Bitstream Readiness
-        @update
-        def update_bitstream_readiness():
-            bitstream_rdy @= 1
-            for i in range(num_tile_rows):
-                for j in range(num_tile_cols):
-                    bitstream_rdy = bitstream_rdy & s.tiles[i][j].recv_tile_bitstream.rdy
-            s.recv_fabric_bitstream.rdy @= bitstream_rdy

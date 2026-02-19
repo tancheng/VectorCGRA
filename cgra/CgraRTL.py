@@ -177,9 +177,7 @@ class CgraRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank, width, height, cgra_topology,
-                      FuList = FuList)
-
-    
+                      FuList = FuList)    
 
     s.tiles.cgra_id //= s.cgra_id
 

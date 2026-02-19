@@ -30,8 +30,8 @@ class STEP_StoreRTL( Component ):
         s.store_queue_rdy //= s.store_queue.recv.rdy
         
         # Tile tracking
-        s.tile_counter = Wire( clog2(MAX_THREAD_COUNT) )
-        s.tile_last_seen = Wire( 1 )
+        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.tile_last_seen = OutPort( 1 )
         s.stores_in_tile = OutPort( clog2(queue_depth + 1) )  # Stores from current tile
         
         transfer_size_bits = clog2((DataType.nbits + 7) // 8)

@@ -1,0 +1,13 @@
+{
+  "design": {
+    "design_info": {
+      "boundary_crc": "0x0",
+      "gen_directory": "../../../../cgra_proj.gen/sources_1/bd/cgra_system",
+      "name": "cgra_system",
+      "rev_ctrl_bd_flag": "RevCtrlBdOff",
+      "synth_flow_mode": "Hierarchical",
+      "tool_version": "2025.1"
+    },
+    "design_tree": {}
+  }
+}
