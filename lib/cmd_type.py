@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 40
+NUM_CMDS = 43
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -50,21 +50,21 @@ CMD_CONFIG_LOOP_STEP                 = 30
 CMD_LEAF_COUNTER_COMPLETE            = 31
 
 # Affine Controller (AC) Configuration Commands (from CPU).
-CMD_AC_CONFIG_LOWER                  = 29  # Configures CCU lower_bound.
-CMD_AC_CONFIG_UPPER                  = 30  # Configures CCU upper_bound.
-CMD_AC_CONFIG_STEP                   = 31  # Configures CCU step.
-CMD_AC_CONFIG_CHILD_COUNT            = 32  # Configures child_complete_count.
-CMD_AC_CONFIG_TARGET                 = 33  # Configures target (tile_id, ctrl_addr, is_remote, cgra_id).
-CMD_AC_CONFIG_PARENT                 = 34  # Configures parent_ccu_id, is_root, is_relay.
-CMD_AC_LAUNCH                        = 35  # Launches AC (all CCUs enter RUNNING).
+CMD_AC_CONFIG_LOWER                  = 32  # Configures CCU lower_bound.
+CMD_AC_CONFIG_UPPER                  = 33  # Configures CCU upper_bound.
+CMD_AC_CONFIG_STEP                   = 34  # Configures CCU step.
+CMD_AC_CONFIG_CHILD_COUNT            = 35  # Configures child_complete_count.
+CMD_AC_CONFIG_TARGET                 = 36  # Configures target (tile_id, ctrl_addr, is_remote, cgra_id).
+CMD_AC_CONFIG_PARENT                 = 37  # Configures parent_ccu_id, is_root, is_relay.
+CMD_AC_LAUNCH                        = 38  # Launches AC (all CCUs enter RUNNING).
 
 # Affine Controller Inter-CGRA Sync Commands.
-CMD_AC_SYNC_VALUE                    = 36  # Parent AC → Child AC: sync current value.
-CMD_AC_CHILD_COMPLETE                = 37  # Child AC → Parent AC: child complete.
-CMD_AC_CHILD_RESET                   = 38  # Parent AC → Child AC: reset child.
+CMD_AC_SYNC_VALUE                    = 39  # Parent AC → Child AC: sync current value.
+CMD_AC_CHILD_COMPLETE                = 40  # Child AC → Parent AC: child complete.
+CMD_AC_CHILD_RESET                   = 41  # Parent AC → Child AC: reset child.
 
 # Affine Controller Status.
-CMD_AC_ALL_COMPLETE                  = 39  # AC → Controller: all loops complete.
+CMD_AC_ALL_COMPLETE                  = 42  # AC → Controller: all loops complete.
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
