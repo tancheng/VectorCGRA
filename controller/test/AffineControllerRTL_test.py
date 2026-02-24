@@ -321,3 +321,74 @@ def test_3_layer_loop():
                    src_config, src_from_tile, src_from_remote,
                    sink_to_tile, sink_to_remote)
   run_sim(th)
+
+
+#-------------------------------------------------------------------------
+# Test: Cross-CGRA 2-layer loop
+#
+#   for(i=0; i<3; i++) {            // CCU[0] on CGRA-0 (this AC)
+#     for(j=0; j<N; j++) body(i,j); // DCU on CGRA-1 (remote)
+#   }
+#
+#   CCU[0]: root, i=0..2, child_count=1
+#     target[0]: remote leaf DCU on CGRA-1 (shadow_only=0 → CMD_RESET)
+#     target[1]: local i-delivery DCU at ctrl_addr=0 (shadow_only=1)
+#
+#   Flow:
+#     Launch → CCU[0] RUNNING, i=0
+#     Remote DCU completes → CMD_AC_CHILD_COMPLETE via recv_from_remote
+#     i=1 → DISPATCHING → send reset to remote, shadow=1 to local
+#     Remote DCU completes → i=2 → dispatch → reset + shadow=2
+#     Remote DCU completes → i=3 >= 3 → COMPLETE (no dispatch)
+#-------------------------------------------------------------------------
+
+def test_cross_cgra_2_layer_loop():
+  src_config = [
+    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
+    # Target 0: remote leaf DCU on CGRA-1 (is_remote=1, shadow_only=0).
+    # predicate=1 (is_remote), data_addr=0 (no shadow_only bit).
+    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+                    DataType(mk_target_config(0, 0, shadow_only=False)[0].payload,
+                             1),  # predicate=1 → is_remote
+                    mk_target_config(0, 0, shadow_only=False)[1],
+                    CtrlType(0), 0),
+    # Target 1: local i-delivery DCU at ctrl_addr=0 (shadow_only=1).
+    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+                    *mk_target_config(0, 0, shadow_only=True), CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+                    DataType(mk_parent_payload(0, True), 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
+  ]
+
+  # No local tile events (inner loop is on remote CGRA).
+  src_from_tile = []
+
+  # 3 remote completions (one per i iteration).
+  src_from_remote = [
+    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+  ]
+
+  # Expected tile output: 2 shadow updates for i-delivery DCU (i=1, i=2).
+  # (No dispatch for i=3 since loop is complete.)
+  sink_to_tile = [
+    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 0),
+  ]
+
+  # Expected remote output: 2 reset commands for remote leaf DCU (i=1, i=2).
+  sink_to_remote = [
+    CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
+  ]
+
+  th = TestHarness(DataType, CtrlType, CgraPayloadType,
+                   num_ccus, max_targets, data_mem_size, ctrl_mem_size,
+                   num_tiles,
+                   src_config, src_from_tile, src_from_remote,
+                   sink_to_tile, sink_to_remote)
+  run_sim(th)

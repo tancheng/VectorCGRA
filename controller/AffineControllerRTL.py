@@ -202,8 +202,17 @@ class AffineControllerRTL(Component):
 
       # ----- Remote events -----
       if s.recv_from_remote.val:
-        s.remote_event_valid @= b1(1)
-        s.recv_from_remote.rdy @= b1(1)
+        if s.recv_from_remote.msg.cmd == CMD_AC_CHILD_COMPLETE:
+          # Only consume if a CCU is RUNNING to receive it.
+          has_running = b1(0)
+          for i in range(num_ccus):
+            if s.ccu_state[i] == StateType(CCU_STATE_RUNNING):
+              has_running = b1(1)
+          if has_running:
+            s.remote_event_valid @= b1(1)
+            s.recv_from_remote.rdy @= b1(1)
+        else:
+          s.recv_from_remote.rdy @= b1(1)
 
     # ===================================================================
     # Sequential Logic
