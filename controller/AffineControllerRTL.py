@@ -6,14 +6,19 @@ Affine Controller (AC) for managing outer loop counters in CGRA.
 
 Each AC contains configurable number of Configurable Counter Units (CCUs).
 CCUs form a DAG topology supporting:
-  - Multiple independent counter chains
-  - 1-to-N fanout (one CCU controls multiple CCUs)
-  - Cross-AC CCU chaining for logic CGRA fusion
+  - Multiple independent counter chains (e.g., 4+4 partition)
+  - 1-to-N fanout (one CCU controls multiple DCUs)
+  - Cross-AC CCU chaining for logic CGRA fusion via NoC
 
 CCU types:
-  - Root CCU: No parent, drives loop from scratch
-  - Relay CCU: Receives current value from remote parent AC
-  - Regular CCU: Has a local parent CCU
+  - Root CCU: No parent, drives the outermost loop
+  - Regular CCU: Has a local parent CCU in the DAG
+
+State machine: IDLE → RUNNING → DISPATCHING → RUNNING (loop)
+                                             → COMPLETE (done)
+
+When counter reaches upper_bound, the CCU goes COMPLETE without
+dispatching, to avoid generating stale completion events.
 
 Author : Shangkun Li
   Date : February 19, 2026
@@ -54,24 +59,20 @@ class AffineControllerRTL(Component):
     TargetIdxType = mk_bits(max(clog2(max_targets_per_ccu), 1))
 
     # ===== Interfaces =====
-    # Configuration from CPU (via Controller).
     s.recv_config = RecvIfcRTL(CgraPayloadType)
-
-    # From/To tile array ctrl ring (local DCU communication).
     s.recv_from_tile = RecvIfcRTL(CgraPayloadType)
     s.send_to_tile = SendIfcRTL(CgraPayloadType)
-
-    # Inter-AC communication (via Controller NoC).
     s.recv_from_remote = RecvIfcRTL(CgraPayloadType)
     s.send_to_remote = SendIfcRTL(CgraPayloadType)
-
-    # Status output.
     s.all_loops_complete = OutPort(1)
 
-    # ===== Per-CCU State Arrays =====
+    # ===== Per-CCU Registers =====
+    # Loop parameters (configured by CPU).
     s.ccu_lower_bound    = [Wire(DataType) for _ in range(num_ccus)]
     s.ccu_upper_bound    = [Wire(DataType) for _ in range(num_ccus)]
     s.ccu_step           = [Wire(DataType) for _ in range(num_ccus)]
+
+    # Runtime state.
     s.ccu_current_value  = [Wire(DataType) for _ in range(num_ccus)]
     s.ccu_state          = [Wire(StateType) for _ in range(num_ccus)]
 
@@ -89,28 +90,24 @@ class AffineControllerRTL(Component):
                               for _ in range(num_ccus)]
     s.ccu_target_cgra_ids  = [[Wire(CgraIdType) for _ in range(max_targets_per_ccu)]
                               for _ in range(num_ccus)]
+    # Shadow-only targets skip CMD_RESET_LEAF_COUNTER (1 cycle instead of 2).
+    s.ccu_target_shadow_only = [[Wire(1) for _ in range(max_targets_per_ccu)]
+                                for _ in range(num_ccus)]
 
     # Parent configuration.
     s.ccu_is_root        = [Wire(1) for _ in range(num_ccus)]
-    s.ccu_is_relay       = [Wire(1) for _ in range(num_ccus)]
     s.ccu_parent_ccu_id  = [Wire(CCUIdType) for _ in range(num_ccus)]
-    s.ccu_parent_is_remote = [Wire(1) for _ in range(num_ccus)]
-    s.ccu_parent_cgra_id = [Wire(CgraIdType) for _ in range(num_ccus)]
 
-    # Dispatch progress: which target we're sending to next.
+    # Dispatch progress.
     s.ccu_dispatch_idx = [Wire(TargetIdxType) for _ in range(num_ccus)]
-    # Dispatch sub-phase: 0 = send reset, 1 = send shadow value.
     s.ccu_dispatch_phase = [Wire(1) for _ in range(num_ccus)]
 
-    # Config target index for sequential target configuration.
+    # Config target write pointer.
     s.ccu_config_target_idx = [Wire(CountType) for _ in range(num_ccus)]
 
     # ===== Internal Control Signals =====
-    # Which CCU is currently being serviced for dispatch.
     s.active_dispatch_ccu = Wire(CCUIdType)
     s.has_active_dispatch = Wire(1)
-
-    # Signals for incoming events.
     s.config_cmd_valid = Wire(1)
     s.tile_event_valid = Wire(1)
     s.remote_event_valid = Wire(1)
@@ -122,7 +119,7 @@ class AffineControllerRTL(Component):
     @update
     def comb_logic():
 
-      # ----- Default output signals -----
+      # ----- Defaults -----
       s.recv_config.rdy @= b1(0)
       s.recv_from_tile.rdy @= b1(0)
       s.recv_from_remote.rdy @= b1(0)
@@ -130,12 +127,11 @@ class AffineControllerRTL(Component):
       s.send_to_tile.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0)
       s.send_to_remote.val @= b1(0)
       s.send_to_remote.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0)
-
       s.config_cmd_valid @= b1(0)
       s.tile_event_valid @= b1(0)
       s.remote_event_valid @= b1(0)
 
-      # ----- Compute all_loops_complete -----
+      # ----- all_loops_complete -----
       all_complete = b1(1)
       for i in range(num_ccus):
         if s.ccu_is_root[i] & (s.ccu_state[i] != StateType(CCU_STATE_COMPLETE)) & \
@@ -143,7 +139,7 @@ class AffineControllerRTL(Component):
           all_complete = b1(0)
       s.all_loops_complete @= all_complete
 
-      # ----- Find active dispatching CCU (round-robin / first-found) -----
+      # ----- Priority encoder: find first DISPATCHING CCU -----
       s.has_active_dispatch @= b1(0)
       s.active_dispatch_ccu @= CCUIdType(0)
       for i in range(num_ccus):
@@ -151,113 +147,76 @@ class AffineControllerRTL(Component):
           s.has_active_dispatch @= b1(1)
           s.active_dispatch_ccu @= CCUIdType(i)
 
-      # ============================================
-      # Priority 1: Handle DISPATCHING CCU outputs
-      # ============================================
+      # ----- Dispatch output generation -----
       if s.has_active_dispatch:
         ccu_id = s.active_dispatch_ccu
         tidx = s.ccu_dispatch_idx[ccu_id]
+        is_shadow_only = s.ccu_target_shadow_only[ccu_id][tidx]
+
+        # Determine which command to send.
+        # shadow_only targets: always send CMD_UPDATE_COUNTER_SHADOW_VALUE.
+        # normal targets: phase 0 = reset, phase 1 = shadow.
+        send_shadow = is_shadow_only | s.ccu_dispatch_phase[ccu_id]
+
+        if send_shadow:
+          out_cmd = CMD_UPDATE_COUNTER_SHADOW_VALUE
+          out_data = s.ccu_current_value[ccu_id]
+        else:
+          out_cmd = CMD_RESET_LEAF_COUNTER
+          out_data = DataType(0, 0)
 
         if s.ccu_target_is_remote[ccu_id][tidx]:
-          # Remote target: send via inter-AC interface.
-          if s.ccu_dispatch_phase[ccu_id] == b1(0):
-            # Phase 0: Send reset.
-            s.send_to_remote.val @= b1(1)
-            s.send_to_remote.msg @= CgraPayloadType(
-              CMD_AC_CHILD_RESET,
-              s.ccu_current_value[ccu_id],
-              0,
-              CtrlType(0),
-              s.ccu_target_ctrl_addrs[ccu_id][tidx]
-            )
-          else:
-            # Phase 1: Send value sync.
-            s.send_to_remote.val @= b1(1)
-            s.send_to_remote.msg @= CgraPayloadType(
-              CMD_AC_SYNC_VALUE,
-              s.ccu_current_value[ccu_id],
-              0,
-              CtrlType(0),
-              s.ccu_target_ctrl_addrs[ccu_id][tidx]
-            )
+          s.send_to_remote.val @= b1(1)
+          s.send_to_remote.msg @= CgraPayloadType(
+            out_cmd, out_data, 0, CtrlType(0),
+            s.ccu_target_ctrl_addrs[ccu_id][tidx])
         else:
-          # Local target: send via tile interface.
-          if s.ccu_dispatch_phase[ccu_id] == b1(0):
-            # Phase 0: Send CMD_RESET_LEAF_COUNTER.
-            s.send_to_tile.val @= b1(1)
-            s.send_to_tile.msg @= CgraPayloadType(
-              CMD_RESET_LEAF_COUNTER,
-              DataType(0, 0),
-              0,
-              CtrlType(0),
-              s.ccu_target_ctrl_addrs[ccu_id][tidx]
-            )
-          else:
-            # Phase 1: Send CMD_UPDATE_COUNTER_SHADOW_VALUE.
-            s.send_to_tile.val @= b1(1)
-            s.send_to_tile.msg @= CgraPayloadType(
-              CMD_UPDATE_COUNTER_SHADOW_VALUE,
-              s.ccu_current_value[ccu_id],
-              0,
-              CtrlType(0),
-              s.ccu_target_ctrl_addrs[ccu_id][tidx]
-            )
+          s.send_to_tile.val @= b1(1)
+          s.send_to_tile.msg @= CgraPayloadType(
+            out_cmd, out_data, 0, CtrlType(0),
+            s.ccu_target_ctrl_addrs[ccu_id][tidx])
 
-      # ==========================================
-      # Priority 2: Handle configuration commands
-      # ==========================================
+      # ----- Configuration commands -----
       if s.recv_config.val:
         s.config_cmd_valid @= b1(1)
         s.recv_config.rdy @= b1(1)
 
-      # ====================================================
-      # Priority 3: Handle DCU completion from tile ctrl ring
-      # ====================================================
+      # ----- Tile events (DCU completion) -----
       if s.recv_from_tile.val:
         if s.recv_from_tile.msg.cmd == CMD_LEAF_COUNTER_COMPLETE:
-          # Only consume the event if a CCU in RUNNING state can match it.
-          incoming_ctrl_addr_comb = s.recv_from_tile.msg.ctrl_addr
+          incoming_ca = s.recv_from_tile.msg.ctrl_addr
           can_match = b1(0)
           for i in range(num_ccus):
             if s.ccu_state[i] == StateType(CCU_STATE_RUNNING):
               for t in range(max_targets_per_ccu):
                 if (zext(TargetIdxType(t), CountType) < s.ccu_num_targets[i]) & \
                    (~s.ccu_target_is_remote[i][t]) & \
-                   (s.ccu_target_ctrl_addrs[i][t] == incoming_ctrl_addr_comb):
+                   (s.ccu_target_ctrl_addrs[i][t] == incoming_ca):
                   can_match = b1(1)
           if can_match:
             s.tile_event_valid @= b1(1)
             s.recv_from_tile.rdy @= b1(1)
-          # If no match, leave rdy=0 to apply backpressure.
         else:
-          # Unknown tile event, consume and discard.
           s.recv_from_tile.rdy @= b1(1)
 
-      # ============================================
-      # Priority 4: Handle remote AC messages
-      # ============================================
+      # ----- Remote events -----
       if s.recv_from_remote.val:
         s.remote_event_valid @= b1(1)
         s.recv_from_remote.rdy @= b1(1)
 
     # ===================================================================
-    # Sequential Logic: CCU State Updates
+    # Sequential Logic
     # ===================================================================
 
     @update_ff
     def update_ccu_ff():
-      """Consolidated sequential logic for CCU config + state machine."""
       if s.reset:
         for i in range(num_ccus):
-          # Config state.
           s.ccu_lower_bound[i] <<= DataType(0, 0)
           s.ccu_upper_bound[i] <<= DataType(0, 0)
           s.ccu_step[i] <<= DataType(0, 0)
           s.ccu_is_root[i] <<= b1(0)
-          s.ccu_is_relay[i] <<= b1(0)
           s.ccu_parent_ccu_id[i] <<= CCUIdType(0)
-          s.ccu_parent_is_remote[i] <<= b1(0)
-          s.ccu_parent_cgra_id[i] <<= CgraIdType(0)
           s.ccu_child_complete_count[i] <<= CountType(0)
           s.ccu_num_targets[i] <<= CountType(0)
           s.ccu_config_target_idx[i] <<= CountType(0)
@@ -266,14 +225,14 @@ class AffineControllerRTL(Component):
             s.ccu_target_ctrl_addrs[i][t] <<= CtrlAddrType(0)
             s.ccu_target_is_remote[i][t] <<= b1(0)
             s.ccu_target_cgra_ids[i][t] <<= CgraIdType(0)
-          # Runtime state.
+            s.ccu_target_shadow_only[i][t] <<= b1(0)
           s.ccu_state[i] <<= StateType(CCU_STATE_IDLE)
           s.ccu_current_value[i] <<= DataType(0, 0)
           s.ccu_received_complete_count[i] <<= CountType(0)
           s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
           s.ccu_dispatch_phase[i] <<= b1(0)
       else:
-        # ===== Handle configuration commands from CPU =====
+        # ===== Configuration =====
         if s.config_cmd_valid:
           ccu_idx = s.recv_config.msg.ctrl_addr
 
@@ -296,11 +255,15 @@ class AffineControllerRTL(Component):
             s.ccu_target_ctrl_addrs[ccu_idx][tidx] <<= \
                 CtrlAddrType(s.recv_config.msg.data.payload[0:clog2(ctrl_mem_size)])
             s.ccu_target_tile_ids[ccu_idx][tidx] <<= \
-                TileIdType(s.recv_config.msg.data.payload[clog2(ctrl_mem_size):clog2(ctrl_mem_size)+clog2(num_tiles+1)])
+                TileIdType(s.recv_config.msg.data.payload[
+                  clog2(ctrl_mem_size):clog2(ctrl_mem_size)+clog2(num_tiles+1)])
             s.ccu_target_is_remote[ccu_idx][tidx] <<= \
                 s.recv_config.msg.data.predicate
             s.ccu_target_cgra_ids[ccu_idx][tidx] <<= \
                 trunc(s.recv_config.msg.data_addr, CgraIdType)
+            # shadow_only encoded in the MSB of data_addr.
+            s.ccu_target_shadow_only[ccu_idx][tidx] <<= \
+                s.recv_config.msg.data_addr[clog2(data_mem_size)-1]
             s.ccu_config_target_idx[ccu_idx] <<= tidx + CountType(1)
             s.ccu_num_targets[ccu_idx] <<= tidx + CountType(1)
 
@@ -309,24 +272,17 @@ class AffineControllerRTL(Component):
                 CCUIdType(s.recv_config.msg.data.payload[0:max(clog2(num_ccus),1)])
             s.ccu_is_root[ccu_idx] <<= \
                 s.recv_config.msg.data.payload[max(clog2(num_ccus),1)]
-            s.ccu_is_relay[ccu_idx] <<= \
-                s.recv_config.msg.data.payload[max(clog2(num_ccus),1)+1]
-            s.ccu_parent_is_remote[ccu_idx] <<= \
-                s.recv_config.msg.data.predicate
-            s.ccu_parent_cgra_id[ccu_idx] <<= \
-                trunc(s.recv_config.msg.data_addr, CgraIdType)
 
           elif s.recv_config.msg.cmd == CMD_AC_LAUNCH:
-            # Launch: all configured CCUs enter RUNNING.
             for i in range(num_ccus):
-              if s.ccu_is_root[i] | s.ccu_is_relay[i]:
+              if (s.ccu_num_targets[i] != CountType(0)) | s.ccu_is_root[i]:
                 s.ccu_state[i] <<= StateType(CCU_STATE_RUNNING)
                 s.ccu_current_value[i] <<= s.ccu_lower_bound[i]
                 s.ccu_received_complete_count[i] <<= CountType(0)
                 s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
                 s.ccu_dispatch_phase[i] <<= b1(0)
 
-        # ===== Handle DISPATCHING progress =====
+        # ===== Dispatch progress =====
         if s.has_active_dispatch:
           ccu_id = s.active_dispatch_ccu
           tidx = s.ccu_dispatch_idx[ccu_id]
@@ -338,25 +294,37 @@ class AffineControllerRTL(Component):
             sent = s.send_to_tile.val & s.send_to_tile.rdy
 
           if sent:
-            if s.ccu_dispatch_phase[ccu_id] == b1(0):
+            # For shadow_only targets: single phase, move to next target.
+            # For normal targets: phase 0→1, then phase 1→next target.
+            is_so = s.ccu_target_shadow_only[ccu_id][tidx]
+            advance_target = is_so | s.ccu_dispatch_phase[ccu_id]
+
+            if ~advance_target:
+              # Normal target, phase 0 done → phase 1.
               s.ccu_dispatch_phase[ccu_id] <<= b1(1)
             else:
+              # Shadow done (or phase 1 done) → next target.
               s.ccu_dispatch_phase[ccu_id] <<= b1(0)
               next_idx = s.ccu_dispatch_idx[ccu_id] + TargetIdxType(1)
 
               if zext(next_idx, CountType) >= s.ccu_num_targets[ccu_id]:
+                # All targets dispatched → back to RUNNING.
                 s.ccu_dispatch_idx[ccu_id] <<= TargetIdxType(0)
+                s.ccu_state[ccu_id] <<= StateType(CCU_STATE_RUNNING)
                 s.ccu_received_complete_count[ccu_id] <<= CountType(0)
-
-                if s.ccu_current_value[ccu_id].payload >= \
-                   s.ccu_upper_bound[ccu_id].payload:
-                  s.ccu_state[ccu_id] <<= StateType(CCU_STATE_COMPLETE)
-                else:
-                  s.ccu_state[ccu_id] <<= StateType(CCU_STATE_RUNNING)
+                # Reset all child CCUs (those whose parent is this CCU).
+                for c in range(num_ccus):
+                  if (~s.ccu_is_root[c]) & \
+                     (s.ccu_parent_ccu_id[c] == trunc(ccu_id, CCUIdType)):
+                    s.ccu_state[c] <<= StateType(CCU_STATE_RUNNING)
+                    s.ccu_current_value[c] <<= s.ccu_lower_bound[c]
+                    s.ccu_received_complete_count[c] <<= CountType(0)
+                    s.ccu_dispatch_idx[c] <<= TargetIdxType(0)
+                    s.ccu_dispatch_phase[c] <<= b1(0)
               else:
                 s.ccu_dispatch_idx[ccu_id] <<= next_idx
 
-        # ===== Handle tile events (CMD_LEAF_COUNTER_COMPLETE) =====
+        # ===== Tile events (DCU completion) =====
         if s.tile_event_valid:
           incoming_ctrl_addr = s.recv_from_tile.msg.ctrl_addr
           for i in range(num_ccus):
@@ -369,46 +337,56 @@ class AffineControllerRTL(Component):
                   s.ccu_received_complete_count[i] <<= new_count
 
                   if new_count >= s.ccu_child_complete_count[i]:
-                    s.ccu_current_value[i] <<= DataType(
+                    new_val = DataType(
                       s.ccu_current_value[i].payload + s.ccu_step[i].payload,
-                      b1(1)
-                    )
-                    s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
-                    s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-                    s.ccu_dispatch_phase[i] <<= b1(0)
+                      b1(1))
+                    s.ccu_current_value[i] <<= new_val
+                    # Check if loop is done BEFORE dispatching.
+                    if new_val.payload >= s.ccu_upper_bound[i].payload:
+                      # Loop complete. No dispatch needed.
+                      s.ccu_state[i] <<= StateType(CCU_STATE_COMPLETE)
+                      # Notify parent CCU internally.
+                      if ~s.ccu_is_root[i]:
+                        parent = s.ccu_parent_ccu_id[i]
+                        p_count = s.ccu_received_complete_count[parent] + CountType(1)
+                        s.ccu_received_complete_count[parent] <<= p_count
+                        if p_count >= s.ccu_child_complete_count[parent]:
+                          p_new_val = DataType(
+                            s.ccu_current_value[parent].payload + \
+                            s.ccu_step[parent].payload, b1(1))
+                          s.ccu_current_value[parent] <<= p_new_val
+                          if p_new_val.payload >= s.ccu_upper_bound[parent].payload:
+                            s.ccu_state[parent] <<= StateType(CCU_STATE_COMPLETE)
+                          else:
+                            s.ccu_state[parent] <<= StateType(CCU_STATE_DISPATCHING)
+                            s.ccu_dispatch_idx[parent] <<= TargetIdxType(0)
+                            s.ccu_dispatch_phase[parent] <<= b1(0)
+                    else:
+                      # More iterations. Dispatch reset+shadow to targets.
+                      s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
+                      s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
+                      s.ccu_dispatch_phase[i] <<= b1(0)
 
-        # ===== Handle remote AC events =====
+        # ===== Remote events =====
         if s.remote_event_valid:
           remote_cmd = s.recv_from_remote.msg.cmd
-          remote_ccu_idx = s.recv_from_remote.msg.ctrl_addr
-
-          if remote_cmd == CMD_AC_SYNC_VALUE:
-            s.ccu_current_value[remote_ccu_idx] <<= s.recv_from_remote.msg.data
-            s.ccu_state[remote_ccu_idx] <<= StateType(CCU_STATE_DISPATCHING)
-            s.ccu_dispatch_idx[remote_ccu_idx] <<= TargetIdxType(0)
-            s.ccu_dispatch_phase[remote_ccu_idx] <<= b1(0)
-
-          elif remote_cmd == CMD_AC_CHILD_COMPLETE:
+          if remote_cmd == CMD_AC_CHILD_COMPLETE:
+            # Remote child completion (from DCU on another CGRA).
             for i in range(num_ccus):
               if s.ccu_state[i] == StateType(CCU_STATE_RUNNING):
                 new_count = s.ccu_received_complete_count[i] + CountType(1)
                 s.ccu_received_complete_count[i] <<= new_count
-
                 if new_count >= s.ccu_child_complete_count[i]:
-                  s.ccu_current_value[i] <<= DataType(
+                  new_val = DataType(
                     s.ccu_current_value[i].payload + s.ccu_step[i].payload,
-                    b1(1)
-                  )
-                  s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
-                  s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-                  s.ccu_dispatch_phase[i] <<= b1(0)
-
-          elif remote_cmd == CMD_AC_CHILD_RESET:
-            s.ccu_current_value[remote_ccu_idx] <<= \
-                s.ccu_lower_bound[remote_ccu_idx]
-            s.ccu_received_complete_count[remote_ccu_idx] <<= CountType(0)
-            s.ccu_state[remote_ccu_idx] <<= StateType(CCU_STATE_RUNNING)
-
+                    b1(1))
+                  s.ccu_current_value[i] <<= new_val
+                  if new_val.payload >= s.ccu_upper_bound[i].payload:
+                    s.ccu_state[i] <<= StateType(CCU_STATE_COMPLETE)
+                  else:
+                    s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
+                    s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
+                    s.ccu_dispatch_phase[i] <<= b1(0)
 
   def line_trace(s):
     states = ['IDLE', 'RUN', 'DISP', 'DONE']
@@ -418,9 +396,9 @@ class AffineControllerRTL(Component):
       if st != CCU_STATE_IDLE:
         traces.append(
           f'CCU[{i}]:{states[st]}|'
-          f'val={s.ccu_current_value[i].payload}/'
+          f'v={s.ccu_current_value[i].payload}/'
           f'{s.ccu_upper_bound[i].payload}|'
-          f'rcv={s.ccu_received_complete_count[i]}/'
+          f'r={s.ccu_received_complete_count[i]}/'
           f'{s.ccu_child_complete_count[i]}'
         )
     if not traces:
