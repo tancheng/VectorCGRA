@@ -149,14 +149,12 @@ def test_basic_2_layer_loop():
 
   src_from_remote = []
 
-  # After 1st completion: i=1, dispatch reset+shadow=1 (i<3 so dispatch)
-  # After 2nd completion: i=2, dispatch reset+shadow=2 (i<3 so dispatch)
+  # After 1st completion: i=1, dispatch reset to leaf DCU (1 cycle)
+  # After 2nd completion: i=2, dispatch reset (1 cycle)
   # After 3rd completion: i=3 >= 3, COMPLETE (no dispatch)
   sink_to_tile = [
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 0),
   ]
 
   sink_to_remote = []
@@ -200,13 +198,11 @@ def test_sibling_barrier():
 
   src_from_remote = []
 
-  # After i=0 both complete: i=1, dispatch to target0 and target1
+  # After i=0 both complete: i=1, dispatch reset to both leaf targets
   # After i=1 both complete: i=2 >= 2, COMPLETE (no dispatch)
   sink_to_tile = [
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 1),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 1),
   ]
 
   sink_to_remote = []
@@ -286,35 +282,32 @@ def test_3_layer_loop():
 
   src_from_remote = []
 
-  # Expected output to tile:
-  # shadow_only targets (delivery DCUs) get only CMD_UPDATE_COUNTER_SHADOW_VALUE.
-  # leaf targets get CMD_RESET + CMD_UPDATE.
+  # Expected output to tile (single-phase dispatch):
+  # leaf target (k-DCU @ctrl_addr=0) → CMD_RESET_LEAF_COUNTER
+  # shadow target (j-delivery @ctrl_addr=2) → CMD_UPDATE_COUNTER_SHADOW_VALUE
+  # shadow target (i-delivery @ctrl_addr=1) → CMD_UPDATE_COUNTER_SHADOW_VALUE
   #
-  # CCU[1] targets: [0]=k-DCU(leaf), [1]=j-delivery(shadow_only)
-  # CCU[0] targets: [0]=i-delivery(shadow_only)
+  # CCU[1] targets: [0]=k-DCU(reset), [1]=j-delivery(shadow)
+  # CCU[0] targets: [0]=i-delivery(shadow)
 
   sink_to_tile = [
-    # i=0, j=0→1: CCU[1] dispatches (target0: reset+shadow, target1: shadow only)
+    # i=0, j=0→1: CCU[1] dispatches (reset k-DCU, shadow j=1)
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 2),
 
     # i=0, j=1→2: CCU[1] dispatches
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 2),
 
-    # i=0→1: CCU[0] dispatches (shadow_only to i-delivery)
+    # i=0→1: CCU[0] dispatches (shadow i=1 to i-delivery)
     CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 1),
 
     # i=1, j=0→1: CCU[1] dispatches
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(1, 1), 0, CtrlType(0), 2),
 
     # i=1, j=1→2: CCU[1] dispatches
     CgraPayloadType(CMD_RESET_LEAF_COUNTER, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 0),
     CgraPayloadType(CMD_UPDATE_COUNTER_SHADOW_VALUE, DataType(2, 1), 0, CtrlType(0), 2),
 
     # i=1, j=2→3: CCU[1] COMPLETE, CCU[0] i=2 >= 2 → COMPLETE (no dispatch)

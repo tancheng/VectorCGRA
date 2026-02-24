@@ -20,6 +20,10 @@ State machine: IDLE → RUNNING → DISPATCHING → RUNNING (loop)
 When counter reaches upper_bound, the CCU goes COMPLETE without
 dispatching, to avoid generating stale completion events.
 
+Each target is dispatched in a single cycle:
+  - shadow_only targets: CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU)
+  - normal targets:      CMD_RESET_LEAF_COUNTER (leaf DCU)
+
 Author : Shangkun Li
   Date : February 19, 2026
 """
@@ -90,7 +94,8 @@ class AffineControllerRTL(Component):
                               for _ in range(num_ccus)]
     s.ccu_target_cgra_ids  = [[Wire(CgraIdType) for _ in range(max_targets_per_ccu)]
                               for _ in range(num_ccus)]
-    # Shadow-only targets skip CMD_RESET_LEAF_COUNTER (1 cycle instead of 2).
+    # shadow_only=1: send CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU).
+    # shadow_only=0: send CMD_RESET_LEAF_COUNTER (leaf DCU).
     s.ccu_target_shadow_only = [[Wire(1) for _ in range(max_targets_per_ccu)]
                                 for _ in range(num_ccus)]
 
@@ -98,9 +103,8 @@ class AffineControllerRTL(Component):
     s.ccu_is_root        = [Wire(1) for _ in range(num_ccus)]
     s.ccu_parent_ccu_id  = [Wire(CCUIdType) for _ in range(num_ccus)]
 
-    # Dispatch progress.
+    # Dispatch progress: which target index we are sending to.
     s.ccu_dispatch_idx = [Wire(TargetIdxType) for _ in range(num_ccus)]
-    s.ccu_dispatch_phase = [Wire(1) for _ in range(num_ccus)]
 
     # Config target write pointer.
     s.ccu_config_target_idx = [Wire(CountType) for _ in range(num_ccus)]
@@ -147,18 +151,14 @@ class AffineControllerRTL(Component):
           s.has_active_dispatch @= b1(1)
           s.active_dispatch_ccu @= CCUIdType(i)
 
-      # ----- Dispatch output generation -----
+      # ----- Dispatch output generation (1 cycle per target) -----
       if s.has_active_dispatch:
         ccu_id = s.active_dispatch_ccu
         tidx = s.ccu_dispatch_idx[ccu_id]
-        is_shadow_only = s.ccu_target_shadow_only[ccu_id][tidx]
 
-        # Determine which command to send.
-        # shadow_only targets: always send CMD_UPDATE_COUNTER_SHADOW_VALUE.
-        # normal targets: phase 0 = reset, phase 1 = shadow.
-        send_shadow = is_shadow_only | s.ccu_dispatch_phase[ccu_id]
-
-        if send_shadow:
+        # shadow_only → CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU)
+        # normal      → CMD_RESET_LEAF_COUNTER (leaf DCU)
+        if s.ccu_target_shadow_only[ccu_id][tidx]:
           out_cmd = CMD_UPDATE_COUNTER_SHADOW_VALUE
           out_data = s.ccu_current_value[ccu_id]
         else:
@@ -191,6 +191,7 @@ class AffineControllerRTL(Component):
               for t in range(max_targets_per_ccu):
                 if (zext(TargetIdxType(t), CountType) < s.ccu_num_targets[i]) & \
                    (~s.ccu_target_is_remote[i][t]) & \
+                   (~s.ccu_target_shadow_only[i][t]) & \
                    (s.ccu_target_ctrl_addrs[i][t] == incoming_ca):
                   can_match = b1(1)
           if can_match:
@@ -230,7 +231,6 @@ class AffineControllerRTL(Component):
           s.ccu_current_value[i] <<= DataType(0, 0)
           s.ccu_received_complete_count[i] <<= CountType(0)
           s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-          s.ccu_dispatch_phase[i] <<= b1(0)
       else:
         # ===== Configuration =====
         if s.config_cmd_valid:
@@ -280,9 +280,8 @@ class AffineControllerRTL(Component):
                 s.ccu_current_value[i] <<= s.ccu_lower_bound[i]
                 s.ccu_received_complete_count[i] <<= CountType(0)
                 s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-                s.ccu_dispatch_phase[i] <<= b1(0)
 
-        # ===== Dispatch progress =====
+        # ===== Dispatch progress (1 cycle per target) =====
         if s.has_active_dispatch:
           ccu_id = s.active_dispatch_ccu
           tidx = s.ccu_dispatch_idx[ccu_id]
@@ -294,35 +293,23 @@ class AffineControllerRTL(Component):
             sent = s.send_to_tile.val & s.send_to_tile.rdy
 
           if sent:
-            # For shadow_only targets: single phase, move to next target.
-            # For normal targets: phase 0→1, then phase 1→next target.
-            is_so = s.ccu_target_shadow_only[ccu_id][tidx]
-            advance_target = is_so | s.ccu_dispatch_phase[ccu_id]
+            next_idx = s.ccu_dispatch_idx[ccu_id] + TargetIdxType(1)
 
-            if ~advance_target:
-              # Normal target, phase 0 done → phase 1.
-              s.ccu_dispatch_phase[ccu_id] <<= b1(1)
+            if zext(next_idx, CountType) >= s.ccu_num_targets[ccu_id]:
+              # All targets dispatched → back to RUNNING.
+              s.ccu_dispatch_idx[ccu_id] <<= TargetIdxType(0)
+              s.ccu_state[ccu_id] <<= StateType(CCU_STATE_RUNNING)
+              s.ccu_received_complete_count[ccu_id] <<= CountType(0)
+              # Reset all child CCUs (those whose parent is this CCU).
+              for c in range(num_ccus):
+                if (~s.ccu_is_root[c]) & \
+                   (s.ccu_parent_ccu_id[c] == trunc(ccu_id, CCUIdType)):
+                  s.ccu_state[c] <<= StateType(CCU_STATE_RUNNING)
+                  s.ccu_current_value[c] <<= s.ccu_lower_bound[c]
+                  s.ccu_received_complete_count[c] <<= CountType(0)
+                  s.ccu_dispatch_idx[c] <<= TargetIdxType(0)
             else:
-              # Shadow done (or phase 1 done) → next target.
-              s.ccu_dispatch_phase[ccu_id] <<= b1(0)
-              next_idx = s.ccu_dispatch_idx[ccu_id] + TargetIdxType(1)
-
-              if zext(next_idx, CountType) >= s.ccu_num_targets[ccu_id]:
-                # All targets dispatched → back to RUNNING.
-                s.ccu_dispatch_idx[ccu_id] <<= TargetIdxType(0)
-                s.ccu_state[ccu_id] <<= StateType(CCU_STATE_RUNNING)
-                s.ccu_received_complete_count[ccu_id] <<= CountType(0)
-                # Reset all child CCUs (those whose parent is this CCU).
-                for c in range(num_ccus):
-                  if (~s.ccu_is_root[c]) & \
-                     (s.ccu_parent_ccu_id[c] == trunc(ccu_id, CCUIdType)):
-                    s.ccu_state[c] <<= StateType(CCU_STATE_RUNNING)
-                    s.ccu_current_value[c] <<= s.ccu_lower_bound[c]
-                    s.ccu_received_complete_count[c] <<= CountType(0)
-                    s.ccu_dispatch_idx[c] <<= TargetIdxType(0)
-                    s.ccu_dispatch_phase[c] <<= b1(0)
-              else:
-                s.ccu_dispatch_idx[ccu_id] <<= next_idx
+              s.ccu_dispatch_idx[ccu_id] <<= next_idx
 
         # ===== Tile events (DCU completion) =====
         if s.tile_event_valid:
@@ -332,6 +319,7 @@ class AffineControllerRTL(Component):
               for t in range(max_targets_per_ccu):
                 if (zext(TargetIdxType(t), CountType) < s.ccu_num_targets[i]) & \
                    (~s.ccu_target_is_remote[i][t]) & \
+                   (~s.ccu_target_shadow_only[i][t]) & \
                    (s.ccu_target_ctrl_addrs[i][t] == incoming_ctrl_addr):
                   new_count = s.ccu_received_complete_count[i] + CountType(1)
                   s.ccu_received_complete_count[i] <<= new_count
@@ -360,18 +348,15 @@ class AffineControllerRTL(Component):
                           else:
                             s.ccu_state[parent] <<= StateType(CCU_STATE_DISPATCHING)
                             s.ccu_dispatch_idx[parent] <<= TargetIdxType(0)
-                            s.ccu_dispatch_phase[parent] <<= b1(0)
                     else:
-                      # More iterations. Dispatch reset+shadow to targets.
+                      # More iterations. Dispatch to targets.
                       s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
                       s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-                      s.ccu_dispatch_phase[i] <<= b1(0)
 
         # ===== Remote events =====
         if s.remote_event_valid:
           remote_cmd = s.recv_from_remote.msg.cmd
           if remote_cmd == CMD_AC_CHILD_COMPLETE:
-            # Remote child completion (from DCU on another CGRA).
             for i in range(num_ccus):
               if s.ccu_state[i] == StateType(CCU_STATE_RUNNING):
                 new_count = s.ccu_received_complete_count[i] + CountType(1)
@@ -386,7 +371,6 @@ class AffineControllerRTL(Component):
                   else:
                     s.ccu_state[i] <<= StateType(CCU_STATE_DISPATCHING)
                     s.ccu_dispatch_idx[i] <<= TargetIdxType(0)
-                    s.ccu_dispatch_phase[i] <<= b1(0)
 
   def line_trace(s):
     states = ['IDLE', 'RUN', 'DISP', 'DONE']
