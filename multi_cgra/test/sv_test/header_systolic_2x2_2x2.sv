@@ -1,8 +1,8 @@
-function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b make_intra_cgra_pkt
+function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d make_intra_cgra_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [31:0] data_payload,
   input logic       data_predicate,
   input logic [6:0] data_addr,
@@ -10,7 +10,7 @@ function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b mak
   input logic [1:0] src_cgra_id = 2'd2,
   input logic [1:0] dst_cgra_id = 2'd2
 );
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b pkt;
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -112,11 +112,11 @@ ADD 10 10 31
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b make_intra_cgra_config_pkt
+function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d make_intra_cgra_config_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][2:0] routing_xbar_outport,
@@ -129,7 +129,7 @@ function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b mak
   input logic [1:0] src_cgra_id = 2'd2,
   input logic [1:0] dst_cgra_id = 2'd2
 );
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b pkt;
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -194,11 +194,11 @@ function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b mak
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b make_intra_cgra_config_pkt_w_data
+function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d make_intra_cgra_config_pkt_w_data
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][2:0] routing_xbar_outport,
@@ -214,7 +214,7 @@ function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b mak
   input logic [1:0] src_cgra_id = 2'd2,
   input logic [1:0] dst_cgra_id = 2'd2
 );
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b pkt;
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -283,7 +283,7 @@ function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b mak
   return pkt;
 endfunction
 
-function automatic logic [185-1:0] logic_pkt (IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b p);
+function automatic logic [186-1:0] logic_pkt (IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -318,8 +318,8 @@ function automatic logic [185-1:0] logic_pkt (IntraCgraPacket_4_2x2_4_8_2_CgraPa
 endfunction
 
 
-function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b unpack_pkt (logic [181-1:0] v, int printHex = 1, int ph0, logic [181-1:0] ph1, int ph2, int ph3);
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__9456a5d94ae50a8b p;
+function automatic IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d unpack_pkt (logic [182-1:0] v, int printHex = 1, int ph0, logic [182-1:0] ph1, int ph2, int ph3);
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__23265230afd8a14d p;
   integer file_handle;
   // Use a running index from LSB upward for clarity
   int i = 0;

@@ -12,11 +12,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -52,11 +52,11 @@ typedef struct packed {
   logic [7:0] opaque;
   logic [0:0] vc_id;
   MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr__d9140faa89010e06 payload;
-} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed;
+} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__377cfca417046add;
 */
 /*
 typedef struct packed {
-  logic [4:0] cmd;
+  logic [5:0] cmd;
   CgraData_32_1_1_1__payload_32__predicate_1__bypass_1__delay_1 data;
   logic [6:0] data_addr;
   CGRAConfig_7_4_2_4_4_3__49d22cda396bec88 ctrl;
