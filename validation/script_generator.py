@@ -9,6 +9,39 @@ Author : Bohan Cui
   Date : Feb 25, 2026
 """
 
+### Usage:
+# 1. create factory instance with the types 
+# (for the spec of the types, please refer to e.g. cgra/test/CgraRTL_fir_test.py)
+# ```
+# script_factory = ScriptFactory(
+#     path = the_input_yaml,
+#     CtrlType = your_CtrlType,
+#     IntraCgraPktType = your_IntraCgraPktType,
+#     CgraPayloadType = your_CgraPayloadType,
+#     TileInType = your_TileInType,
+#     FuOutType = your_FuOutType,
+#     CMD_CONFIG_input = your_CMD_CONFIG_input,
+#     FuInType = your_FuInType,
+#     ii = your_ii,
+#     loop_times = your_loop_times,
+#     CMD_CONST_input = your_CMD_CONST_input,
+#     CMD_CONFIG_COUNT_PER_ITER_input = your_CMD_CONFIG_COUNT_PER_ITER_input,
+#     CMD_CONFIG_TOTAL_CTRL_COUNT_input = your_CMD_CONFIG_TOTAL_CTRL_COUNT_input,
+#     CMD_CONFIG_PROLOGUE_FU_input = your_CMD_CONFIG_PROLOGUE_FU_input,
+#     CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input = your_CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_input,
+#     CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input = your_CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input,
+#     CMD_LAUNCH_input = your_CMD_LAUNCH_input,
+#     DataType = your_DataType,
+#     B1Type = your_B1Type,
+#     B2Type = your_B2Type,
+#     RegIdxType = your_RegIdxType,
+#     CtrlAddrType = your_CtrlAddrType,
+#     DataAddrType = your_DataAddrType,
+# )
+# ```
+# 2. make the packets
+# pkts = script_factory.makeVectorCGRAPkts()
+
 import sys
 import os
 import yaml
