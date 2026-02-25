@@ -2,9 +2,9 @@
 ==========================================================================
 dummy.py
 ==========================================================================
-Dummy types for the ScriptFactory, they can take place of the real types 
-used in the VectorCGRA. And when you print the generated packets with these
-dummy types, you will get the string representation of the packets.
+Dummy types of CGRA packets, used for standalone testing of ScriptFactory. 
+They will/should be replaced by the real types when being used in the 
+VectorCGRA pymtl tests.
 
 Author : Bohan Cui
   Date : Feb 25, 2026
