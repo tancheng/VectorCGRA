@@ -12,11 +12,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__377cfca417046add recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__377cfca417046add send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -52,11 +52,11 @@ typedef struct packed {
   logic [7:0] opaque;
   logic [0:0] vc_id;
   MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr__d9140faa89010e06 payload;
-} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed;
+} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__377cfca417046add;
 */
 /*
 typedef struct packed {
-  logic [4:0] cmd;
+  logic [5:0] cmd;
   CgraData_32_1_1_1__payload_32__predicate_1__bypass_1__delay_1 data;
   logic [6:0] data_addr;
   CGRAConfig_7_4_2_4_4_3__49d22cda396bec88 ctrl;
@@ -252,7 +252,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
       .src(5'd0),
       .dst(5'd1),
-      .cmd(5'd8),                 // CMD_CONFIG_COUNT_PER_ITER = 8
+      .cmd(6'd8),                 // CMD_CONFIG_COUNT_PER_ITER = 8
       .operation(7'd0),
       .fu_in_code('{default:3'd0}),
       .routing_xbar_outport('{default:3'd0}),
@@ -270,7 +270,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd7),             // CMD_CONFIG_TOTAL_CTRL_COUNT = 7
+          .cmd(6'd7),             // CMD_CONFIG_TOTAL_CTRL_COUNT = 7
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
@@ -288,7 +288,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),             // CMD_CONFIG = 3
+          .cmd(6'd3),             // CMD_CONFIG = 3
           .operation(7'd1),       // OPT_NAH 1
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{default:3'd0}),
@@ -306,7 +306,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd16),       // OPT_GRT_PRED = 16
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0, 3'd0, 3'd1, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -325,7 +325,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd35),
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
@@ -344,7 +344,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd1),
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
@@ -363,7 +363,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd4),
+          .cmd(6'd4),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
@@ -382,7 +382,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd4),
+          .cmd(6'd4),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
@@ -401,7 +401,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd6),
+          .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
@@ -420,7 +420,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd6),
+          .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd2}),
@@ -439,7 +439,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd5),
+          .cmd(6'd5),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
@@ -458,7 +458,7 @@ typedef struct packed {
     recv_from_cpu_pkt__msg = make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd0),
+          .cmd(6'd0),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
@@ -480,7 +480,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd13), // CMD_CONST
+        .cmd(6'd13), // CMD_CONST
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -500,7 +500,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd8), // CMD_CONFIG_COUNT_PER_ITER
+        .cmd(6'd8), // CMD_CONFIG_COUNT_PER_ITER
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -520,7 +520,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd7), // CMD_CONFIG_TOTAL_CTRL_COUNT
+        .cmd(6'd7), // CMD_CONFIG_TOTAL_CTRL_COUNT
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -540,7 +540,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd1), // OPT_NAH
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         // reverse of [0,0,0,0,0,0,0,0] is itself
@@ -564,7 +564,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd25), // OPT_ADD_CONST
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -586,7 +586,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd12), // OPT_LD
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -609,7 +609,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd7), // OPT_MUL
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -629,7 +629,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd0), // CMD_LAUNCH
+        .cmd(6'd0), // CMD_LAUNCH
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -652,7 +652,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -672,7 +672,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -692,7 +692,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -713,7 +713,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -733,7 +733,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -755,7 +755,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd46),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -777,7 +777,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd11),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -797,7 +797,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -820,7 +820,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -840,7 +840,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -860,7 +860,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -880,7 +880,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -902,7 +902,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd32),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd4, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -924,7 +924,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd25),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -947,7 +947,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd12),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd2}), // Hand-coded.
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -967,7 +967,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -989,7 +989,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd6),
+        .cmd(6'd6),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd3}),
@@ -1009,7 +1009,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1032,7 +1032,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1052,7 +1052,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1072,7 +1072,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1094,7 +1094,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1117,7 +1117,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd25),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1137,7 +1137,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1161,7 +1161,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd16),
         .fu_in_code('{3'd0, 3'd0, 3'd1, 3'd2}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd2, 3'd0, 3'd0, 3'd0, 3'd0}),
@@ -1181,7 +1181,7 @@ typedef struct packed {
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),

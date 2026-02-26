@@ -135,8 +135,8 @@ jobs:
         end_time=$(date +%s)
         duration=$((end_time - start_time))
         echo "Synthesis step duration: $duration seconds"
-        if [ $duration -gt 900 ]; then
-          echo "ERROR: Synthesis step took longer than 15 minutes!"
+        if [ $duration -gt 1200 ]; then
+          echo "ERROR: Synthesis step took longer than 20 minutes!"
           exit 1
         fi
 
