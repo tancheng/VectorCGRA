@@ -4,7 +4,7 @@ AffineControllerRTL.py
 ==========================================================================
 Affine Controller (AC) for managing outer loop counters in CGRA.
 
-Each AC contains configurable number of Configurable Counter Units (CCUs).
+Each AC contains parameterizable number of Configurable Counter Units (CCUs).
 CCUs form a DAG topology supporting:
   - Multiple independent counter chains (e.g., 4+4 partition)
   - 1-to-N fanout (one CCU controls multiple DCUs)

@@ -32,8 +32,8 @@ class TestHarness(Component):
     s.src_from_remote = TestSrcRTL(CgraPayloadType, src_from_remote)
 
     cmp_fn = lambda a, b: (a.cmd == b.cmd) and \
-                           (a.data.payload == b.data.payload) and \
-                           (a.ctrl_addr == b.ctrl_addr)
+                          (a.data.payload == b.data.payload) and \
+                          (a.ctrl_addr == b.ctrl_addr)
 
     s.sink_to_tile = TestSinkRTL(CgraPayloadType, sink_to_tile, cmp_fn=cmp_fn)
     s.sink_to_remote = TestSinkRTL(CgraPayloadType, sink_to_remote, cmp_fn=cmp_fn)
