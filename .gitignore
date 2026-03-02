@@ -38,3 +38,4 @@ vivado_vector_cgra/
 **/.Xil/
 **/cgra_proj*/
 *.tcl
+**/vivado_output/
