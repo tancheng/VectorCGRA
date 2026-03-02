@@ -36,3 +36,5 @@ vivado_vector_cgra/
 *.jou
 *.str
 **/.Xil/
+**/cgra_proj*/
+*.tcl
