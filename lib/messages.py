@@ -395,7 +395,8 @@ def mk_cfg_metadata_pkt(
                         prefix="CfgMetadataPkt"):
     
     ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
-    CfgIdType = mk_bits(clog2(MAX_BITSTREAM_SIZE))
+    CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
+    CmdType = mk_bits(max(1, NUM_CMDS))
 
     new_name = f"{prefix}_{num_rd_ports}_{num_wr_ports}"
 
@@ -404,12 +405,14 @@ def mk_cfg_metadata_pkt(
 
     field_dict = {}
     # TODO @darrenl pred_tile_valid is whether the immediate rf predicate is 0 or 1. should be address instead
+    field_dict['cmd'] = CmdType
     field_dict['pred_tile_valid'] = [Bits1 for _ in range(num_tiles)]
     field_dict['ld_enable'] = [Bits1 for _ in range(num_ld_ports)]
     field_dict['st_enable'] = [Bits1 for _ in range(num_st_ports)]
     field_dict['ld_reg_addr'] = [RegAddrType for _ in range(num_ld_ports)]
     field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_ports)]
     field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['in_tid_enable'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['tokenizer_cfg'] = CfgTokenizerType
@@ -473,13 +476,7 @@ def mk_bitstream_pkt(num_tiles,
     new_name = f"{prefix}_n_tiles_{num_tiles}"
 
     def str_func(s):
-        out_str = ''
-        for i in range(num_tiles):
-            if i != 0:
-                out_str += '-'
-            out_str += str(s.bitstream[i])
-            
-        return f"BitstreamPkt: bitstream:{out_str}\n"
+        return f"BitstreamPkt: bitstream\n"
 
     field_dict = {}
     field_dict['bitstream'] = [TileBitstreamType for _ in range(num_tiles)]
@@ -546,6 +543,7 @@ def mk_tile_bitstream_pkt(
                             num_tile_outports,
                             num_fu_inports,
                             num_fu_outports,
+                            TileIdType,
                             OperationType,
                             DataType,
                             RegAddrType,
@@ -558,6 +556,7 @@ def mk_tile_bitstream_pkt(
 
     TilePortType = mk_bits( clog2(num_tile_inports + 1) )
     TileOutType = mk_bits( num_tile_outports )
+    ShiftAmountType = mk_bits( clog2(SHIFT_REGISTER_SIZE) )
 
     # Tile routing:
     # 4 i/os, [No op, N, S, W, E]
@@ -571,9 +570,12 @@ def mk_tile_bitstream_pkt(
     # field_dict['tile_out_route'] = [TilePortType(1)]
     
     field_dict = {}
+    field_dict['tile_id'] = TileIdType
     field_dict['tile_in_route'] = [TilePortType for _ in range(num_fu_inports)]
     field_dict['tile_out_route'] = TileOutType
     field_dict['tile_pred_route'] = TileOutType
+    field_dict['tile_out_shift_amounts'] = [ShiftAmountType for _ in range(num_tile_outports)]
+    field_dict['tile_fwd_route'] = [TileOutType for _ in range(num_tile_inports)]
     field_dict['const_val'] = DataType
     field_dict['pred_fwd_route'] = TilePortType
     field_dict['pred_gen'] = Bits1

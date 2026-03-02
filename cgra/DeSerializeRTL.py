@@ -12,7 +12,6 @@ from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
 
-
 class DeSerializeRTL(Component):
   def construct(s, OutputType, input_width=32):
         

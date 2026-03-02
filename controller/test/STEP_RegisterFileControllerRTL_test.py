@@ -12,6 +12,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..STEP_RegisterFileControllerRTL import STEP_RegisterFileControllerRTL
+from ...lib.util.bram_translate import translate_design_with_bram
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.basic.TimedWriteSource import TimedWriteSource
@@ -50,7 +51,7 @@ class TestHarness(Component):
         ld_data_delay = wr_data_delay + 1
         ld_data_end_delay = ld_data_delay + max([len(recv_ld_data_msgs) for i in range(num_ld_ports)])
         s.recv_wr_data = [TestSrcRTL(RegDataType, recv_wr_data_msgs[i], wr_data_delay) for i in range(num_wr_ports)]
-        s.recv_cfg_from_ctrl = TriggeredConfigSource(CfgMetadataType, recv_cfg_from_ctrl_msgs)
+        s.recv_cfg_from_ctrl = TriggeredConfigSource(CfgMetadataType, recv_cfg_from_ctrl_msgs, False)
         s.recv_ld_data = [TestSrcRTL(RegDataType, recv_ld_data_msgs[i], ld_data_delay) for i in range(num_ld_ports)]
         s.recv_ld_data_id = [TestSrcRTL(mk_bits(clog2(MAX_THREAD_COUNT)), recv_ld_data_id_msgs[i], ld_data_delay) for i in range(num_ld_ports)]
         s.recv_ld_st_complete = TestSrcRTL(Bits1, [1], ld_data_end_delay)
@@ -131,27 +132,34 @@ def init_param():
 
     RegDataType = mk_bits(8)
     num_consts = 1
-    num_tiles = 4
+    num_tile_cols = 4
+    num_tile_rows = 4
+    num_tiles = num_tile_cols * num_tile_rows
     num_banks = 4
-    num_rd_ports = 4
-    num_wr_ports = 4
-    num_ld_ports = 2
-    num_st_ports = 2
+    num_rd_ports = num_tile_rows * 2
+    num_wr_ports = num_tile_rows * 2
+    num_ld_ports = num_tile_cols // 2
+    num_st_ports = num_tile_cols // 2
     num_registers = 16
     thread_count = 2
     num_pred_registers = 16
     ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+    num_taker_ports = num_rd_ports
+    num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
 
     DataType = mk_bits(8)
     OperationType = mk_bits( clog2(NUM_OPTS) )
     RegAddrType = mk_bits(clog2(num_registers))
     PredAddrType = mk_bits( clog2(num_pred_registers) )
 
-    PredMathType = mk_pred_math_pkt(PredAddrType,
-                                    DataType,
-                                    OperationType
-                                )
-    
+    PortRouteType = mk_bits( num_returner_ports )
+    PortDelayType = mk_bits( clog2(num_tiles) )
+    CfgTokenizerType = mk_cfg_tokenizer_pkt(num_taker_ports,
+                                            num_returner_ports,
+                                            num_tiles,
+                                            PortRouteType,
+                                            PortDelayType
+                                            )
 
     CfgMetadataType = mk_cfg_metadata_pkt(num_tiles,
                                             num_consts,
@@ -162,28 +170,30 @@ def init_param():
                                             DataType,
                                             RegAddrType,
                                             PredAddrType,
-                                            PredMathType,
+                                            CfgTokenizerType,
                                         )
 
     # Inputs into dut
     recv_cfg_from_ctrl_msgs = [
-        CfgMetadataType(in_regs = [RegAddrType(i) for i in range(num_rd_ports)],
-                        in_regs_val = [b1(1), b1(1), b1(0), b1(0)],
+        CfgMetadataType(cmd = CMD_CONFIG,
+                        in_regs = [RegAddrType(i) for i in range(num_rd_ports)],
+                        in_regs_val = [b1(0), b1(1)] * 2 + [b1(0)] * (num_rd_ports - 4),
                         out_regs = [RegAddrType(i) for i in range(num_wr_ports)],
-                        out_regs_val = [b1(0), b1(1), b1(0), b1(0)],
+                        out_regs_val = [b1(0)] * 3 + [b1(1)] + [b1(0)] * (num_wr_ports - 4),
                         ld_enable = [b1(0), b1(1)],
-                        st_enable = [b1(1), b1(0)],
-                        ld_reg_addr = [RegAddrType(2), RegAddrType(0)],
+                        st_enable = [b1(0), b1(0)],
+                        ld_reg_addr = [RegAddrType(0), RegAddrType(1)],
                         cfg_id = 0,
                         br_id = 1,
                         start_cfg = 1,
                         end_cfg = 0,
                         thread_count = thread_count
                         ),
-        CfgMetadataType(in_regs = [RegAddrType(i) for i in range(num_rd_ports)],
-                        in_regs_val = [b1(1), b1(1), b1(0), b1(0)],
+        CfgMetadataType(cmd = CMD_CONFIG,
+                        in_regs = [RegAddrType(i) for i in range(num_rd_ports)],
+                        in_regs_val = [b1(0), b1(1)] * 2 + [b1(0)] * (num_rd_ports - 4),
                         out_regs = [RegAddrType(i) for i in range(num_wr_ports)],
-                        out_regs_val = [b1(0), b1(0), b1(0), b1(0)],
+                        out_regs_val = [b1(0)] * num_wr_ports,
                         ld_enable = [b1(0), b1(0)],
                         st_enable = [b1(0), b1(0)],
                         cfg_id = 1,
@@ -191,30 +201,31 @@ def init_param():
                         start_cfg = 0,
                         end_cfg = 1,
                         thread_count = thread_count
-                        ),
+                        )
     ]
 
+    # From Fabric to RF Controller
     recv_wr_data = [
-        # Write data for reg addr 0
-        [], 
-        # Write data for reg addr 1
-        [RegDataType(1), RegDataType(2)],
-        # Write data for reg addr 2
-        [],
-        # Write data for reg addr 3
-        []
+        # Row 0
+        [], [],
+        # Row 1
+        [], [RegDataType(1), RegDataType(2)],
+        # Row 2
+        [], [],
+        # Row 3
+        [], [],
     ]
 
     # Outputs of dut
     send_rd_data = [
-        # Read data for reg addr 0
-        [RegDataType(0),RegDataType(0), RegDataType(5),RegDataType(7)], 
-        # Read data for reg addr 1
-        [RegDataType(0),RegDataType(0), RegDataType(1), RegDataType(2)],
-        # Read data for reg addr 2
-        [],
-        # Read data for reg addr 3
-        []
+        # Row 0
+        [], [RegDataType(0), RegDataType(0), RegDataType(0), RegDataType(5),RegDataType(7)], 
+        # Row 1
+        [], [RegDataType(0), RegDataType(0), RegDataType(0), RegDataType(1), RegDataType(2)],
+        # Row 2
+        [], [],
+        # Row 3
+        [], [],
     ]
 
     recv_ld_data = [
@@ -224,7 +235,7 @@ def init_param():
 
     recv_ld_data_id = [
         [],
-        [ThreadCountType(0), ThreadCountType(1)],
+        [ThreadCountType(i) for i in range(thread_count)],
     ]
 
     send_cfg_done = [1] * len(recv_cfg_from_ctrl_msgs)
@@ -253,6 +264,7 @@ def test_simple(cmdline_opts):
     th = init_param()
     
     th.elaborate()
+    # translate_design_with_bram(th.dut, add_bram_attrs=True)
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])

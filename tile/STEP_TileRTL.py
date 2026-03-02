@@ -35,11 +35,10 @@ from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
 from ..tile.STEP_TileCrossbarRTL import STEP_TileCrossbarRTL
 
-
-
 class STEP_TileRTL(Component):
 
     def construct(s,
+                    id,
                     num_tile_inports,
                     num_tile_outports,
                     num_fu_inports,
@@ -48,11 +47,14 @@ class STEP_TileRTL(Component):
                     TileBitstreamType,
                     OperationType,
                     RegAddrType,
-                    PredRegAddrType
+                    PredRegAddrType,
+                    debug = False
                 ):
         assert num_fu_inports == 3
         assert num_fu_outports == 1
         assert(num_tile_inports in [4,8])
+        assert(num_tile_outports in [4,8])
+        s.id = id
 
         # I/O Interfaces
         s.tile_in_data_port = [ InPort(DataType) for _ in range(num_tile_inports) ]
@@ -60,14 +62,22 @@ class STEP_TileRTL(Component):
         s.tile_in_pred_port = [ InPort(Bits1) for _ in range(num_tile_inports) ]
         s.tile_out_pred_port = [ OutPort(Bits1) for _ in range(num_tile_outports) ]
         s.recv_tile_bitstream = RecvIfcRTL(TileBitstreamType)
-        s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
-        s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
+        s.recv_tile_bitstream.rdy //= 1
+        if debug:
+            s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
+            s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
+        else:
+            s.fu_in = [ Wire(DataType) for _ in range(num_fu_inports) ]
+            s.fu_out = [ Wire(DataType) for _ in range(num_fu_outports) ]
         
         # Predicate interfaces - one for each direction (North, South, West, East)
         s.tile_in_pred_port_rf = InPort(Bits1)  # Predicate from register file
 
         # Internal bitstream
-        s.tile_bitstream = OutPort(TileBitstreamType)
+        if debug:
+            s.tile_bitstream = OutPort(TileBitstreamType)
+        else:
+            s.tile_bitstream = Wire(TileBitstreamType)
         s.opt_type = Wire(OperationType)
         s.opt_type //= s.tile_bitstream.opt_type
 
@@ -83,12 +93,23 @@ class STEP_TileRTL(Component):
         
         ####### Test Connections
         # TODO: @darrenl delete me
-        # DirectionType = mk_bits( clog2(num_tile_inports + 1))
-    
-        # s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
-        # for i in range(num_tile_inports):
-        #     s.tile_in_test[i] //= s.tile_in_data_port[i]
-
+        if debug:
+            DirectionType = mk_bits( clog2(num_tile_inports + 1))
+            TileIdType = mk_bits(clog2(16))
+        
+            s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+            for i in range(num_tile_inports):
+                s.tile_in_test[i] //= s.tile_in_data_port[i]
+            s.ingest_new_bitstream = OutPort(Bits1)
+            s.id_matched = OutPort(Bits1)
+            s.id_received = OutPort(TileIdType)
+            @update
+            def new_bitstream():
+                s.ingest_new_bitstream @= 0
+                if (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
+                    s.ingest_new_bitstream @= 1
+                s.id_matched @= s.recv_tile_bitstream.msg.tile_id == s.id
+                s.id_received @= s.recv_tile_bitstream.msg.tile_id
         #######
 
         # Wire Connections
@@ -112,18 +133,13 @@ class STEP_TileRTL(Component):
         s.crossbar.pred_in_rf //= s.tile_in_pred_port_rf
 
         @update
-        def update_port_readiness():
-            if s.reset:
-                s.recv_tile_bitstream.rdy @= 0
-            else:
-                s.recv_tile_bitstream.rdy @= 1
-
-        @update
         def fu_in_port_ff():
             if s.reset:
-                s.tile_bitstream @= TileBitstreamType(0, 0, 0, 0, 0, 0, 0)
-            elif s.recv_tile_bitstream.val & s.recv_tile_bitstream.rdy:
+                s.tile_bitstream @= 0
+            elif (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
                 s.tile_bitstream @= s.recv_tile_bitstream.msg
+            else:
+                s.tile_bitstream @= s.tile_bitstream
         
         @update
         def perform_alu_op():
@@ -153,6 +169,8 @@ class STEP_TileRTL(Component):
                     s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] == s.tile_bitstream.const_val)
                 elif s.opt_type == OPT_MUL_CONST:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] * s.tile_bitstream.const_val
+                elif s.opt_type == OPT_LD:
+                    s.fu_out[i] @= s.crossbar.send_to_fu[0] + s.tile_bitstream.const_val # Add Base address to Mem Unit
 
                 # 2 ops
                 elif s.opt_type == OPT_ADD:

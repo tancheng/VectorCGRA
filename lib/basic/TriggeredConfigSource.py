@@ -9,7 +9,7 @@ from pymtl3.stdlib.primitive import RegisterFile
 #-------------------------------------------------------------------------
 class TriggeredConfigSource(Component):
    
-    def construct(s, CfgMetadataType, msgs):
+    def construct(s, CfgMetadataType, msgs, reset_each_time = True):
         s.send = SendIfcRTL(CfgMetadataType)
         s.msgs = msgs
         s.idx = Wire( mk_bits(clog2(max(4, len(msgs) + 1))))
@@ -20,8 +20,9 @@ class TriggeredConfigSource(Component):
         
         @update_ff
         def up_first_msg_sent():
-            s.send.msg <<= CfgMetadataType()
             s.send.val <<= 0
+            if reset_each_time:
+                s.send.msg <<= CfgMetadataType()
             if s.reset:
                 s.first_msg_sent <<= 0
                 s.idx_limit <<= len(msgs)

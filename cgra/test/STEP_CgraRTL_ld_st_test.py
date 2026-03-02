@@ -3,7 +3,9 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..STEP_CgraRTL import STEP_CgraRTL
-from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiStSourceRTL
+from ..CgraTrackedPktChunked import CgraTrackedPktChunked
+from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiLdSourceTriggeredRTL, AxiStSourceRTL, AxiStSourceTriggeredRTL
+from ...lib.basic.SourceTriggeredRTL import SourceTriggeredRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
@@ -14,8 +16,8 @@ from ...lib.opt_type import *
 # Test harness
 #-------------------------------------------------------------------------
 # Global Parameters. Fixed for now TODO @darrenl
-num_tile_inports = 4
-num_tile_outports = 4
+num_tile_inports = 8
+num_tile_outports = 8
 num_fu_inports = 3
 num_fu_outports = 1
 num_register_banks = 2
@@ -24,11 +26,11 @@ num_pred_registers = 16
 
 class TestHarness(Component):
     def construct(s,
-            # Types
-            CpuPktType,
-            CfgType,
-            CfgBitstreamType,
+            # Top Level Pkt Types
             CfgMetadataType,
+            CfgBitstreamType,
+
+            # Configuration Types
             CfgTokenizerType,
             TileBitstreamType,
             OperationType,
@@ -43,29 +45,29 @@ class TestHarness(Component):
             num_st_ports,
             
             #  Messages
-            cpu_to_cgra_msgs,
-            cgra_to_cpu_msgs
+            cpu_to_cgra_bitstream_msgs,
+            cpu_to_cgra_metadata_msgs
             ):
         # Configure for done comparison
         s.num_ld_ports = num_ld_ports
         s.num_st_ports = num_st_ports
+        s.num_tiles = num_tile_cols * num_tile_rows
 
         # Configure Sources
-        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[5]*2]
-        st_axi_msgs = [[] for _ in range(num_st_ports - 1)] + [[1]*2]
-        s.cpu_to_cgra_pkts = TestSrcRTL(CpuPktType, cpu_to_cgra_msgs)
-        s.ld_axi_pkts = [AxiLdSourceRTL(DataType, ld_axi_msgs[i], num_empty=0, initial_delay=12) for i in range(num_ld_ports)]
-        s.st_axi_pkts = [AxiStSourceRTL(DataType, st_axi_msgs[i], initial_delay=40) for i in range(num_st_ports)]
+        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[5,5,5,5]]
+        st_counts = [0, 1]
+        s.cpu_to_cgra_metadata_pkts = TestSrcRTL(CfgMetadataType, cpu_to_cgra_metadata_msgs)
+        s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(TileBitstreamType, cpu_to_cgra_bitstream_msgs, chunk_size=s.num_tiles, delay=1)
+        s.ld_axi_pkts = [AxiLdSourceTriggeredRTL(DataType, ld_axi_msgs[i]) for i in range(num_ld_ports)]
+        s.st_axi_pkts = [AxiStSourceTriggeredRTL(DataType, st_counts[i]) for i in range(num_st_ports)]
 
         # Configure Sinks
         cmp_fn = lambda a, b : a == b
-        s.cgra_to_cpu_pkts = TestSinkRTL(CpuPktType, cgra_to_cpu_msgs)
+        s.cgra_to_cpu_signal = TestSinkRTL(Bits1, [1])
 
         s.dut = STEP_CgraRTL(
-            CpuPktType,
-            CfgType,
-            CfgBitstreamType,
             CfgMetadataType,
+            CfgBitstreamType,
             CfgTokenizerType,
             TileBitstreamType,
             OperationType,
@@ -77,6 +79,7 @@ class TestHarness(Component):
             num_register_banks,
             num_registers,
             num_pred_registers,
+            debug = True
         )
 
         # Axi Interfaces
@@ -86,8 +89,11 @@ class TestHarness(Component):
             s.dut.st_axi[i] //= s.st_axi_pkts[i].send
 
         # CPU Interfaces
-        s.dut.recv_from_cpu_pkt //= s.cpu_to_cgra_pkts.send
-        s.dut.send_to_cpu_pkt //= s.cgra_to_cpu_pkts.recv
+        s.dut.recv_from_cpu_metadata_pkt //= s.cpu_to_cgra_metadata_pkts.send
+        s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.msg
+        s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.val
+        s.dut.recv_from_cpu_bitstream_pkt //= s.cpu_to_cgra_bitstream_pkts.send
+        s.dut.pc_req_trigger //= s.cpu_to_cgra_bitstream_pkts.trigger_in
 
     def done(s):
         for i in range(s.num_ld_ports):
@@ -96,7 +102,7 @@ class TestHarness(Component):
         for i in range(s.num_st_ports):
             if not s.st_axi_pkts[i].done():
                 return False
-        return s.cpu_to_cgra_pkts.done() and s.cgra_to_cpu_pkts.done()
+        return s.cpu_to_cgra_bitstream_pkts.done() and s.cpu_to_cgra_metadata_pkts.done() and s.cgra_to_cpu_signal.done()
 
     def line_trace(s):
         return s.dut.line_trace()
@@ -110,8 +116,8 @@ def init_param():
     num_tile_rows = 4
     assert(num_tile_cols % 2 == 0) # Ensure even number of columns for LD/ST ports
     num_tiles = num_tile_cols * num_tile_rows
-    num_rd_ports = num_tile_rows
-    num_wr_ports = num_tile_rows
+    num_rd_ports = num_tile_rows * 2 * 2
+    num_wr_ports = num_tile_rows * 2
     num_ld_ports = num_tile_cols // 2
     num_st_ports = num_tile_cols // 2
     num_consts = 4
@@ -120,11 +126,13 @@ def init_param():
     num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
 
     DataType = mk_bits(8)
+    TileIdType = mk_bits( clog2(num_tiles) )
     OperationType = mk_bits( clog2(NUM_OPTS) )
     TilePortType = mk_bits( clog2(num_tile_inports + 1) ) # +1 for no connection
     TileOutType = mk_bits( num_tile_outports )
     RegAddrType = mk_bits( clog2(num_registers) )
     PredAddrType = mk_bits( clog2(num_pred_registers) )
+    ShiftAmountType = mk_bits( clog2(SHIFT_REGISTER_SIZE) )
 
     PortRouteType = mk_bits( num_returner_ports )
     PortDelayType = mk_bits( clog2(num_tiles) )
@@ -139,6 +147,7 @@ def init_param():
                                                 num_tile_outports,
                                                 num_fu_inports,
                                                 num_fu_outports,
+                                                TileIdType,
                                                 OperationType,
                                                 DataType,
                                                 RegAddrType,
@@ -158,75 +167,121 @@ def init_param():
                                             PredAddrType,
                                             CfgTokenizerType,
                                         )
-    CfgType = mk_cfg_pkt(CfgBitstreamType, CfgMetadataType)
-
-    CpuPktType = mk_cpu_pkt(CfgType)
 
     # Setup a row of PEs to do No op
-    no_op_row = [TileBitstreamType(
-            opt_type = OPT_NAH) for _ in range(num_tile_cols)]
+    def genNoOpFromOffset(offset, length):
+        return [TileBitstreamType(
+            tile_id = TileIdType(offset + i),
+            opt_type = OPT_NAH) for i in range(length)]
 
     load_row = [TileBitstreamType(
+            tile_id = TileIdType(i),
             tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0001),
-            tile_pred_route= TileOutType(0b0001),
-            const_val = DataType(0),
-            opt_type = OPT_ADD_CONST) for _ in range(num_tile_cols - 2)] \
+            tile_out_route = TileOutType(0b00010000),
+            tile_pred_route= TileOutType(0b00010000),
+            const_val = DataType(0x1),
+            opt_type = OPT_ADD_CONST) for i in range(num_tile_cols - 2)] \
             + \
             [TileBitstreamType(
+            tile_id = TileIdType(num_tile_cols-2),
             tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b1000),
-            tile_pred_route= TileOutType(0b1000),
+            tile_out_route = TileOutType(0b10000000),
+            tile_pred_route= TileOutType(0b10000000),
             const_val = DataType(0x10),
             opt_type = OPT_ADD_CONST)] \
             + \
-            [TileBitstreamType(
-            tile_in_route = [TilePortType(0), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0000),
-            tile_pred_route= TileOutType(0b0000),
-            const_val = DataType(0x10),
-            opt_type = OPT_NAH)]
+            [TileBitstreamType(tile_id = TileIdType(num_tile_cols-1), opt_type = OPT_NAH)]
 
     mul_row = [TileBitstreamType(
+            tile_id = TileIdType(i + num_tile_cols*2),
             tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0001),
-            tile_pred_route= TileOutType(0b0001),
+            tile_out_route = TileOutType(0b00010000),
+            tile_pred_route= TileOutType(0b00010000),
             const_val = DataType(0),
-            opt_type = OPT_ADD_CONST) for _ in range(num_tile_cols - 1)] \
+            opt_type = OPT_ADD_CONST) for i in range(num_tile_cols - 1)] \
             + \
             [TileBitstreamType(
+            tile_id = TileIdType(num_tile_cols*3-1),
             tile_in_route = [TilePortType(PORT_WEST + 1), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0101),
-            tile_pred_route= TileOutType(0b0101),
+            tile_out_shift_amounts = [ShiftAmountType(0)] * 3 + [ShiftAmountType(1)] + [ShiftAmountType(0)] * (num_tile_outports - 4),
+            tile_out_route = TileOutType(0b01010000),
+            tile_pred_route= TileOutType(0b01010000),
             const_val = DataType(3),
             opt_type = OPT_MUL_CONST)]
 
     # TODO: @darrenl OPT_PAS still needs some type of trigger and can't be valid for all clock cycles
     # Above comment is changed and handled the tokenizer
     store_row = [TileBitstreamType(
-            opt_type = OPT_NAH) for _ in range(num_tile_cols - 2)] \
+            tile_id = TileIdType(num_tile_cols*3+i),
+            opt_type = OPT_NAH) for i in range(num_tile_cols - 2)] \
             + \
             [TileBitstreamType(
+            tile_id = TileIdType(num_tile_cols*3+num_tile_cols-2),
             tile_in_route = [TilePortType(0), TilePortType(0), TilePortType(0)],
-            tile_out_route = TileOutType(0b0100),
-            tile_pred_route= TileOutType(0b0100),
+            tile_out_route = TileOutType(0b01000000),
+            tile_pred_route= TileOutType(0b01000000),
             const_val = DataType(0x10),
             opt_type = OPT_PAS)] \
             + \
             [TileBitstreamType(
+            tile_id = TileIdType(num_tile_cols*3+num_tile_cols-1),
             tile_in_route = [TilePortType(PORT_NORTH + 1), TilePortType(PORT_NORTH + 1), TilePortType(0)],
-            tile_out_route = TileOutType(0b0101),
-            tile_pred_route= TileOutType(0b0101),
+            tile_out_route = TileOutType(0b01010000),
+            tile_pred_route= TileOutType(0b01010000),
             opt_type = OPT_ADD)]
 
     ### Full Bitstream Pkt ###
     bitstreams = [
-        CfgBitstreamType(bitstream=(load_row + no_op_row * (num_tile_rows - 1))),
-        CfgBitstreamType(bitstream=(no_op_row * (num_tile_rows - 2) + mul_row + store_row))
+        load_row + genNoOpFromOffset(num_tile_cols, num_tile_cols * (num_tile_rows - 1)),
+        genNoOpFromOffset(0, num_tile_cols * (num_tile_rows - 2)) + mul_row + store_row,
+        load_row + genNoOpFromOffset(num_tile_cols, num_tile_cols * (num_tile_rows - 1)),
     ]
+
+    # Funnel individual tile pkts
+    cpu_to_cgra_bitstream_msgs = []
+    for bitstream in bitstreams:
+        cpu_to_cgra_bitstream_msgs += list(reversed(bitstream))
 
     ### Tokenizer Cfg Pkt ###
     cfg_tokenizer_pkt = [
+        CfgTokenizerType(token_route_sink_enable=
+            [PortRouteType(0b0100) if i == 0 else PortRouteType(0) for i in range(num_rd_ports)],
+            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
+                + \
+                [PortDelayType(0), PortDelayType(num_tile_cols - 1)]
+                + \
+                [PortDelayType(0) for _ in range(num_st_ports)]
+        ),
+        CfgTokenizerType(token_route_sink_enable=[
+                # Row 0
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                # Row 1
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                # Row 2
+                PortRouteType(0b1010001),
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                # Row 3
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+                PortRouteType(0),
+            ],
+            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports - 3)] \
+                + \
+                [PortDelayType(num_tile_cols + 1), PortDelayType(0), PortDelayType(num_tile_cols + 1)]
+                + \
+                [PortDelayType(0) for _ in range(num_ld_ports)]
+                + \
+                [PortDelayType(0), PortDelayType(num_tile_cols + 2)]
+        ),
         CfgTokenizerType(token_route_sink_enable=
             [PortRouteType(0b0100) if i == 0 else PortRouteType(0) for i in range(num_rd_ports)],
             token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports)] \
@@ -235,30 +290,18 @@ def init_param():
                 + \
                 [PortDelayType(0) for _ in range(num_st_ports)]
         ),
-        CfgTokenizerType(token_route_sink_enable=[
-                PortRouteType(0),
-                PortRouteType(0),
-                PortRouteType(0b110001),
-                PortRouteType(0),
-            ],
-            token_route_delay_to_sink=[PortDelayType(0) for _ in range(num_wr_ports - 2)] \
-                + \
-                [PortDelayType(num_tile_cols), PortDelayType(num_tile_cols + 1)]
-                + \
-                [PortDelayType(0) for _ in range(num_ld_ports)]
-                + \
-                [PortDelayType(0), PortDelayType(num_tile_cols + 2)]
-        )
     ]
 
     ### Inputs into dut ###
-    cfg_metadata = [
+    cpu_to_cgra_metadata_msgs = [
         CfgMetadataType(
+                        cmd = CMD_CONFIG,
                         pred_tile_valid = [b1(1) for _ in range(num_tiles)],
-                        in_regs = [RegAddrType(0) for _ in range(num_tile_cols)],
-                        in_regs_val = [b1(1)] + [b1(0) for _ in range(num_tile_cols - 1)],
-                        out_regs = [RegAddrType(0) for _ in range(num_tile_cols)],
-                        out_regs_val = [b1(0) for _ in range(num_tile_cols)],
+                        in_regs = [RegAddrType(0) for _ in range(num_rd_ports)],
+                        in_regs_val = [b1(1)] + [b1(0) for _ in range(num_rd_ports - 1)],
+                        in_tid_enable = [b1(1)] + [b1(0) for _ in range(num_rd_ports - 1)],
+                        out_regs = [RegAddrType(0) for _ in range(num_wr_ports)],
+                        out_regs_val = [b1(0) for _ in range(num_wr_ports)],
                         ld_enable = [b1(0) for _ in range(num_ld_ports - 1)] + [b1(1)],
                         ld_reg_addr = [RegAddrType(0) for _ in range(num_ld_ports)],
                         tokenizer_cfg = cfg_tokenizer_pkt[0],
@@ -269,38 +312,45 @@ def init_param():
                         end_cfg = 0,
                     ),
         CfgMetadataType(
+                        cmd = CMD_CONFIG,
                         pred_tile_valid = [b1(1) for _ in range(num_tiles)],
-                        in_regs = [RegAddrType(0) for _ in range(num_tile_cols)],
-                        in_regs_val = [b1(0) for _ in range(num_tile_cols - 2)] + [b1(1), b1(0)],
-                        out_regs = [RegAddrType(i) for i in range(num_tile_cols)],
-                        out_regs_val = [b1(0) for _ in range(num_tile_cols - 2)] + [b1(1)] * 2,
+                        in_regs = [RegAddrType(0) for _ in range(num_rd_ports)],
+                        in_regs_val = [b1(0) for _ in range(num_rd_ports - 8)] + [b1(1), b1(0)] + [b1(0), b1(0)] * 3,
+                        out_regs = [RegAddrType(i) for i in range(num_wr_ports)],
+                        out_regs_val = [b1(0) for _ in range(num_wr_ports - 4)] + [b1(0), b1(1), b1(0), b1(1)],
                         st_enable = [b1(0) for _ in range(num_st_ports - 1)] + [b1(1)],
                         tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 1,
+                        br_id = 2,
+                        thread_count = thread_count,
+                        start_cfg = 0,
+                        end_cfg = 0,
+                    ),
+        CfgMetadataType(
+                        cmd = CMD_CONFIG,
+                        pred_tile_valid = [b1(1) for _ in range(num_tiles)],
+                        in_regs = [RegAddrType(0) for _ in range(num_rd_ports)],
+                        in_regs_val = [b1(1)] + [b1(0) for _ in range(num_rd_ports - 1)],
+                        out_regs = [RegAddrType(0) for _ in range(num_wr_ports)],
+                        out_regs_val = [b1(0) for _ in range(num_wr_ports)],
+                        ld_enable = [b1(0) for _ in range(num_ld_ports - 1)] + [b1(1)],
+                        ld_reg_addr = [RegAddrType(0) for _ in range(num_ld_ports)],
+                        tokenizer_cfg = cfg_tokenizer_pkt[2],
+                        cfg_id = 2,
                         br_id = 0,
                         thread_count = thread_count,
                         start_cfg = 0,
                         end_cfg = 1,
                     ),
+        CfgMetadataType(cmd = CMD_LAUNCH),
     ]
 
-    # Ensure same # Bitstreams and Cfg Metadata
-    assert(len(bitstreams) == len(cfg_metadata))
-
-    cpu_to_cgra_msgs = [CpuPktType(cmd=CMD_CONFIG, cfg=CfgType(bitstream=bitstreams[i], 
-                                metadata=cfg_metadata[i])) for i in range(len(bitstreams))] \
-            + \
-            [CpuPktType(cmd=CMD_LAUNCH, cfg = CfgType(
-                bitstream = CfgBitstreamType(),
-                metadata = CfgMetadataType()))]
-    
-    cgra_to_cpu_msgs = [CpuPktType(cmd=CMD_COMPLETE)]
-
-    th = TestHarness(# Types
-                        CpuPktType,
-                        CfgType,
-                        CfgBitstreamType,
+    th = TestHarness(
+                        # Top Level Pkt Types
                         CfgMetadataType,
+                        CfgBitstreamType,
+
+                        # Configuration Types
                         CfgTokenizerType,
                         TileBitstreamType,
                         OperationType,
@@ -315,8 +365,8 @@ def init_param():
                         num_st_ports,
                         
                         #  Messages
-                        cpu_to_cgra_msgs,
-                        cgra_to_cpu_msgs
+                        cpu_to_cgra_bitstream_msgs,
+                        cpu_to_cgra_metadata_msgs
                         )
     return th
 

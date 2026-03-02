@@ -6,7 +6,7 @@ from ...lib.basic.AxiInterface import SendAxiReadLoadAddrIfcRTL, SendAxiReadStor
                             RecvAxiLoadIfcRTL, RecvAxiStoreIfcRTL
 
 class STEP_LoadStoreRTL( Component ):
-    def construct(s, DataType, num_ports=1, queue_depth=8):
+    def construct(s, DataType, num_ports=1, queue_depth=8, debug=False):
         ###### Interface #####
         s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ports)]
         s.ld_ifc = [RecvAxiLoadIfcRTL(DataType) for _ in range(num_ports)]
@@ -32,23 +32,30 @@ class STEP_LoadStoreRTL( Component ):
         s.st_units = [STEP_StoreRTL(DataType) for _ in range(num_ports)]
 
         #### DEBUG
-        s.ld_complete = [OutPort(1) for _ in range(num_ports)]
-        s.st_complete = [OutPort(1) for _ in range(num_ports)]
-        s.outstanding_reqs = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
-        s.loads_in_tile = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
-        s.store_queue_rdy = [OutPort(1) for _ in range(num_ports)]
-        s.outstanding_stores = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
-        s.stores_in_tile = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
-        s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ports)]
-        for i in range(num_ports):
-            s.ld_complete[i] //= s.ld_units[i].o_tile_complete
-            s.st_complete[i] //= s.st_units[i].o_tile_complete
-            s.outstanding_reqs[i] //= s.ld_units[i].outstanding_reqs
-            s.loads_in_tile[i] //= s.ld_units[i].loads_in_tile
-            s.store_queue_rdy[i] //= s.st_units[i].store_queue_rdy
-            s.outstanding_stores[i] //= s.st_units[i].outstanding_stores
-            s.stores_in_tile[i] //= s.st_units[i].stores_in_tile
-            s.ld_tile_last_seen[i] //= s.ld_units[i].tile_last_seen
+        if debug:
+            s.ld_complete = [OutPort(1) for _ in range(num_ports)]
+            s.st_complete = [OutPort(1) for _ in range(num_ports)]
+            s.outstanding_reqs = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
+            s.loads_in_tile = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
+            s.loads_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ports)]
+            s.store_queue_rdy = [OutPort(1) for _ in range(num_ports)]
+            s.outstanding_stores = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
+            s.stores_in_tile = [OutPort( clog2(queue_depth + 1) ) for _ in range(num_ports)]
+            s.store_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ports)]
+            s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ports)]
+            s.st_tile_last_seen = [OutPort(1) for _ in range(num_ports)]
+            for i in range(num_ports):
+                s.ld_complete[i] //= s.ld_units[i].o_tile_complete
+                s.st_complete[i] //= s.st_units[i].o_tile_complete
+                s.outstanding_reqs[i] //= s.ld_units[i].outstanding_reqs
+                s.loads_in_tile[i] //= s.ld_units[i].loads_in_tile
+                s.loads_tile_counter[i] //= s.ld_units[i].tile_counter
+                s.store_queue_rdy[i] //= s.st_units[i].store_queue_rdy
+                s.outstanding_stores[i] //= s.st_units[i].outstanding_stores
+                s.stores_in_tile[i] //= s.st_units[i].stores_in_tile
+                s.store_tile_counter[i] //= s.st_units[i].tile_counter
+                s.ld_tile_last_seen[i] //= s.ld_units[i].tile_last_seen
+                s.st_tile_last_seen[i] //= s.st_units[i].tile_last_seen
         ####
         
         ###### Wire Connections #########

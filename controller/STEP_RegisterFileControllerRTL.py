@@ -2,6 +2,7 @@ from pymtl3 import *
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL, SendIfcRTL
 from pymtl3.stdlib.primitive import Reg
 from ..mem.register_cluster.STEP_RegisterFileRTL import STEP_RegisterFileRTL
+from ..mem.register_cluster.STEP_RegisterFileFullBankRTL import STEP_RegisterFileFullBankRTL
 from ..lib.messages import *
 from ..lib.opt_type import *
 from ..lib.util.common import *
@@ -25,14 +26,19 @@ class STEP_RegisterFileControllerRTL( Component ):
         # -------------------------------------------------------------------------
         # Submodules
         # -------------------------------------------------------------------------
+        print("total read ports", num_rd_ports)
 
-        s.register_file = STEP_RegisterFileRTL(
-            RegDataType, RegAddrType,
-            num_reg_banks=num_banks,
-            num_rd_ports=num_rd_ports,
-            num_wr_ports=num_wr_ports + num_ld_ports,
-            num_registers_per_reg_bank=num_registers // num_banks
-        )
+        # s.register_file = STEP_RegisterFileRTL(
+        #     RegDataType, RegAddrType,
+        #     num_reg_banks=num_banks,
+        #     num_rd_ports=num_rd_ports,
+        #     num_wr_ports=num_wr_ports + num_ld_ports,
+        #     num_registers_per_reg_bank=num_registers // num_banks
+        # )
+        s.register_file = STEP_RegisterFileFullBankRTL(RegDataType, RegAddrType, num_registers,
+                num_rd_ports=num_rd_ports,
+                num_wr_ports=num_wr_ports + num_ld_ports,
+                num_registers_per_reg_bank=MAX_THREAD_COUNT)
 
         # External ifcs
         s.recv_cfg_from_ctrl = RecvIfcRTL( CfgMetadataType )   # from main ctrl
@@ -58,10 +64,15 @@ class STEP_RegisterFileControllerRTL( Component ):
             s.send_tile_preds[i] //= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
 
         # Helpful observability (optional)
+        # Debug Flags TODO: @darrenl to delete
         MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
         s.expected_count_o   = OutPort( MaxThreadType )
         s.rd_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
         s.wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
+        s.wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
+        s.ld_addr            = [ OutPort(RegAddrType) for _ in range(num_ld_ports) ]
+        for i in range(num_ld_ports):
+            s.ld_addr[i] //= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
 
         # Ld/St Unit Configuration
         s.send_thread_count //= s.recv_cfg_from_ctrl.msg.thread_count
@@ -85,6 +96,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Latched configuration (stable during RUN)
         s.rd_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.rd_addr_valcfg = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.tid_enabled    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.wr_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.wr_addr_valcfg = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.expected_count = Wire( MaxThreadType )
@@ -105,6 +117,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_addr_cfg_n    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.wr_addr_cfg_n    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.expected_count_n = Wire( MaxThreadType )
+
+        #TODO: @darrenl delete me debug statements
+        for i in range(num_wr_ports):
+            s.wr_addr_valcfg_o[i] //= s.wr_addr_valcfg_n[i]
 
         # -------------------------------------------------------------------------
         # Static connections to regfile data channels
@@ -131,7 +147,6 @@ class STEP_RegisterFileControllerRTL( Component ):
         for i in range(num_rd_ports):
             s.register_file.rd_addr[i].msg //= s.rd_addr_cfg[i]
             s.register_file.rd_addr[i].val //= s.rd_enable[i]
-            s.rd_data[i]               //= s.register_file.rd_data[i]
 
         for i in range(num_wr_ports):
             s.register_file.wr_addr[i].msg //= s.wr_addr_cfg[i]
@@ -148,6 +163,17 @@ class STEP_RegisterFileControllerRTL( Component ):
             s.register_file.wr_thread_idx[i + num_wr_ports] //= s.ld_data_id[i]
 
         # -------------------------------------------------------------------------
+        # Assign output data as register or tid for counts
+        # -------------------------------------------------------------------------
+        @update
+        def comb_output_data():
+            for i in range(num_rd_ports):
+                if s.tid_enabled[i]:
+                    s.rd_data[i] @= s.rd_count[i][0:RegDataType.nbits]
+                else:
+                    s.rd_data[i] @= s.register_file.rd_data[i]
+
+        # -------------------------------------------------------------------------
         # Ready/valid for external ifcs (single-writer comb)
         # -------------------------------------------------------------------------
 
@@ -161,7 +187,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # -------------------------------------------------------------------------
 
         s.fabric_complete = OutPort( 1 )
-        s.fabric_done = OutPort( 1)
+        s.fabric_done = OutPort( 1 )
         s.rd_regs_complete = OutPort( num_rd_ports )
         s.wr_regs_complete = OutPort( num_wr_ports )
 
@@ -214,8 +240,11 @@ class STEP_RegisterFileControllerRTL( Component ):
 
                 # Token defaults
                 s.tile_token_take[i] @= 0
-                s.tile_token_return[i] @= 0
             for i in range(num_wr_ports):
+                # Token default
+                s.tile_token_return[i] @= 0
+
+                # Address
                 s.wr_count_n[i] @= s.wr_count[i]
                 s.wr_addr_valcfg_n[i] @= s.wr_addr_valcfg[i]
                 s.wr_addr_cfg_n[i] @= s.wr_addr_cfg[i]
@@ -230,6 +259,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_count_n[i] @= MaxThreadType(0)
                         s.rd_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                         s.rd_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs[i]
+                        s.tid_enabled[i] @= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
                     for i in range(num_wr_ports):
                         s.wr_count_n[i] @= MaxThreadType(0)
                         s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i]

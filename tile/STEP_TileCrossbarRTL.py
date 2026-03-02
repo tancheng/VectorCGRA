@@ -33,8 +33,7 @@ from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
 from ..rf.RegisterRTL import RegisterRTL
-
-
+from ..tile.STEP_TileShiftRegisterBankRTL import STEP_TileShiftRegisterBankRTL
 
 class STEP_TileCrossbarRTL(Component):
 
@@ -78,6 +77,24 @@ class STEP_TileCrossbarRTL(Component):
 
         s.output_used = Wire(Bits1)
 
+        ##### Shift Register instantiation #####
+        s.shift_data_register = STEP_TileShiftRegisterBankRTL(num_tile_outports, DataType)
+        s.tile_preshift_out_data_port = [ Wire(DataType) for _ in range(num_tile_outports) ]
+        s.shift_pred_register = STEP_TileShiftRegisterBankRTL(num_tile_outports, Bits1)
+        s.tile_preshift_out_pred_port = [ Wire(Bits1) for _ in range(num_tile_outports) ]
+
+        for i in range(num_tile_outports):
+            # Data Shift
+            s.shift_data_register.data_in[i] //= s.tile_preshift_out_data_port[i]
+            s.shift_data_register.shift_amount_in[i] //= s.tile_bitstream.tile_out_shift_amounts[i]
+            s.tile_out_data_port[i] //= s.shift_data_register.data_out[i]
+
+            # Pred Shift
+            s.shift_pred_register.data_in[i] //= s.tile_preshift_out_pred_port[i]
+            s.shift_pred_register.shift_amount_in[i] //= s.tile_bitstream.tile_out_shift_amounts[i]
+            s.tile_out_pred_port[i] //= s.shift_pred_register.data_out[i]
+
+        # Logic
         @update
         def update_pred_in_rf():
             if s.reset:
@@ -109,16 +126,18 @@ class STEP_TileCrossbarRTL(Component):
             
             for i in range(num_tile_outports):
                 if s.tile_bitstream.tile_pred_route[i]:
-                    s.tile_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.pred_out_value
+                    s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.pred_out_value
                 else:
-                    s.tile_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= 0
+                    s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= 0
+                    for in_port in range(num_tile_inports):
+                        if s.tile_bitstream.tile_fwd_route[in_port][i]:
+                            s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_pred_port[AbsoluteTileOutPortType(in_port)]
 
         @update
         def update_fu_out_routing():
             # Default Ports:
             for i in range(num_fu_inports):
                 s.send_to_fu[i] @= DataType()
-            
 
             # Handle forwarding logic when predicates are false
             if ~((s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH)):
@@ -130,22 +149,28 @@ class STEP_TileCrossbarRTL(Component):
                     else:
                         s.send_to_fu[i] @= DataType()
 
-        @update_ff
+        @update
         def update_data_port_out():
             # Default port
             for i in range(num_tile_outports):
-                s.tile_out_data_port[i] <<= DataType()
+                s.tile_preshift_out_data_port[i] @= DataType()
 
             # Handle forwarding logic when predicates are false
             if (s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH):
                 # Forward input data that matches write address, or any data if different addr type
                 for i in range(num_tile_outports):
                     if s.tile_bitstream.tile_out_route[i]:
-                        s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] <<= s.tile_in_data_port[AbsoluteTileOutPortType(s.should_forward - 1)]
+                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_data_port[AbsoluteTileOutPortType(s.should_forward - 1)]      
             else:
                 # Route FU output to tile outputs
                 # TODO: @darrenl currently assuming only 1 fu outport
                 if (s.tile_bitstream.opt_type != OPT_NAH):
                     for i in range(num_tile_outports):
                         if s.tile_bitstream.tile_out_route[i]:
-                            s.tile_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] <<= s.recv_from_fu[0]
+                            s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.recv_from_fu[0]
+            
+            # Fwd any remaining logic
+            for i in range(num_tile_inports):
+                for j in range(num_tile_outports):
+                    if s.tile_bitstream.tile_fwd_route[i][j]:
+                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - j - 1)] @= s.tile_in_data_port[AbsoluteTileOutPortType(i)]

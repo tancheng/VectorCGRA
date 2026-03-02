@@ -16,13 +16,11 @@ from ..lib.util.common import *
 
 class STEP_CgraRTL(Component):
     def construct(s,
-            # CPU Type
-            CpuPktType,
+            # Top Level Pkt Types
+            CfgMetadataType,
+            CfgBitstreamType,
 
             # Configuration Types
-            CfgType,
-            CfgBitstreamType,
-            CfgMetadataType,
             CfgTokenizerType,
             TileBitstreamType,
             OperationType,
@@ -40,16 +38,17 @@ class STEP_CgraRTL(Component):
             num_register_banks = 2,
             num_registers = 16,
             num_pred_registers = 16,
+            debug = True
         ):
         
         # Default CGRA Parameters
         num_tiles = num_tile_cols * num_tile_rows
-        num_tile_inports = 4
-        num_tile_outports = 4
+        num_tile_inports = 8
+        num_tile_outports = 8
         num_fu_inports = 3
         num_fu_outports = 1
-        num_rd_ports = num_tile_rows
-        num_wr_ports = num_tile_rows
+        num_rd_ports = num_tile_rows * 2 * 2
+        num_wr_ports = num_tile_rows * 2
         num_ld_ports = num_tile_cols // 2
         num_st_ports = num_tile_cols // 2
         ld_st_queue_depth = 8
@@ -60,25 +59,26 @@ class STEP_CgraRTL(Component):
 
         # Additional Type
         AxiAddrType = mk_bits( AXI_ADDR_BITWIDTH )
+        BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
 
         # CGRA Top-Level IOs
-        s.recv_from_cpu_pkt = RecvIfcRTL(CpuPktType)
-        s.send_to_cpu_pkt = SendIfcRTL(CpuPktType)
-        s.send_to_cpu_pkt_last = OutPort(Bits1)
+        s.recv_from_cpu_bitstream_pkt = RecvIfcRTL(TileBitstreamType)
+        s.recv_from_cpu_metadata_pkt = RecvIfcRTL(CfgMetadataType)
+        s.send_to_cpu_done = OutPort(Bits1)
+        s.pc_req_trigger = OutPort(Bits1)
+        s.pc_req = OutPort(BitstreamAddrType)
 
-        @update
-        def update_last_pkt():
-            s.send_to_cpu_pkt_last @= 0
-            if s.send_to_cpu_pkt.val & (s.send_to_cpu_pkt.msg.cmd == CMD_COMPLETE):
-                s.send_to_cpu_pkt_last @= 1
+        s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
+        s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
 
         # Instantiate Components
         s.core_controller = STEP_ControllerRTL(
-            CpuPktType,
             CfgBitstreamType,
-            CfgType,
             CfgMetadataType,
-            CfgTokenizerType
+            CfgTokenizerType,
+            TileBitstreamType,
+            num_tiles,
+            debug
         )
 
         s.rf_controller = STEP_RegisterFileControllerRTL(
@@ -87,9 +87,9 @@ class STEP_CgraRTL(Component):
             RegAddrType,
             PredRegAddrType,
             CfgMetadataType,
-            num_register_banks,
             num_ld_ports,
             num_st_ports,
+            num_register_banks,
             num_rd_ports,
             num_wr_ports,
             num_registers,
@@ -99,7 +99,8 @@ class STEP_CgraRTL(Component):
         s.ld_st_unit = STEP_LoadStoreRTL(
             DataType,
             num_ports=num_tile_cols // 2,
-            queue_depth=ld_st_queue_depth
+            queue_depth=ld_st_queue_depth,
+            debug=debug
         )
 
         s.tile_fabric = STEP_TileWrapperRTL(
@@ -115,6 +116,7 @@ class STEP_CgraRTL(Component):
             OperationType,
             RegAddrType,
             PredRegAddrType,
+            debug
         )
 
         s.tokenizer = STEP_TokenizerControllerRTL(
@@ -129,11 +131,14 @@ class STEP_CgraRTL(Component):
 
         ### Wire Connections ###
         ##### Core Controller Connections
-        s.core_controller.recv_from_cpu_pkt //= s.recv_from_cpu_pkt # cpu -> core
-        s.core_controller.send_to_cpu_pkt //= s.send_to_cpu_pkt # core -> cpu
+        s.core_controller.recv_from_cpu_bitstream_pkt //= s.recv_from_cpu_bitstream_pkt
+        s.core_controller.recv_from_cpu_metadata_pkt //= s.recv_from_cpu_metadata_pkt # cpu -> core
+        s.core_controller.send_to_cpu_done //= s.send_to_cpu_done # core -> cpu
+        s.core_controller.pc_req_trigger //= s.pc_req_trigger # core -> cpu
+        s.core_controller.pc_req //= s.pc_req # core -> cpu
         
         ##### Core Controller & Fabric Connections
-        s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_fabric_bitstream # core -> fabric
+        s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
@@ -143,9 +148,15 @@ class STEP_CgraRTL(Component):
         for i in range(num_tiles):
             s.rf_controller.send_tile_preds[i] //= s.tile_fabric.recv_from_rf_pred[i] # rf -> fabric
         for i in range(num_tile_rows):
-            s.rf_controller.rd_data[i] //= s.tile_fabric.recv_west_data_port[i] # rf -> fabric
-            s.rf_controller.wr_data[i] //= s.tile_fabric.send_east_data_port[i] # fabric -> rf
-            s.rf_controller.recv_pred_port[i] //= s.tile_fabric.send_east_pred_port[i] # fabric -> rf
+            rd_base_idx = 4 * i
+            s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
+            s.rf_controller.wr_data[2*i] //= s.tile_fabric.send_west_data_port[i] # fabric -> rf
+            s.rf_controller.wr_data[2*i+1] //= s.tile_fabric.send_east_data_port[i] # fabric -> rf
+            s.rf_controller.recv_pred_port[2*i] //= s.tile_fabric.send_west_pred_port[i] # fabric -> rf
+            s.rf_controller.recv_pred_port[2*i+1] //= s.tile_fabric.send_east_pred_port[i] # fabric -> rf
         
         ##### RF Controller & Load/Store Connections
         for i in range(num_tile_cols // 2):
@@ -163,7 +174,6 @@ class STEP_CgraRTL(Component):
             # Predicates
             s.ld_st_unit.ld_tile_pred[i] //= s.tile_fabric.send_north_pred_port[i*2] # fabric -> ld/st
             s.ld_st_unit.st_tile_pred[i] //= s.tile_fabric.send_south_pred_port[i*2] # fabric -> ld/st
-
 
             # Data and Control Store - SOUTH ONLY
             s.ld_st_unit.st_ifc[i].i_data //= s.tile_fabric.send_south_data_port[i*2+1] # fabric -> ld/st
@@ -193,11 +203,9 @@ class STEP_CgraRTL(Component):
         
         ##### Load/Store External Connections
         # Load Axis
-        s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
         for i in range(num_ld_ports):
             s.ld_axi[i] //= s.ld_st_unit.ld_axi[i]
         # Store Axis
-        s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
         for i in range(num_st_ports):
             s.st_axi[i] //= s.ld_st_unit.st_axi[i]
 
@@ -207,14 +215,15 @@ class STEP_CgraRTL(Component):
         ###### Tokenizer & Rf
         for i in range(num_taker_ports):
             s.tokenizer.token_take[i] //= s.rf_controller.tile_token_take[i] # rf -> tokenizer
+            s.tokenizer.token_avail[i] //= s.rf_controller.tile_token_avail[i] # tokenizer -> rf
+        for i in range(num_wr_ports):
             s.tokenizer.token_return[i] //= s.rf_controller.tile_token_return[i] # rf -> tokenizer [initial slots]
             s.tokenizer.token_shifter_out[i] //= s.rf_controller.tile_token_shifter_out[i] # tokenizer -> rf
-            s.tokenizer.token_avail[i] //= s.rf_controller.tile_token_avail[i] # tokenizer -> rf
-        
+
         ##### Tokenizer & Ld/St Connections
-        for i in range(num_taker_ports, num_returner_ports - num_ld_ports):
-            s.tokenizer.token_return[i] //= s.ld_st_unit.ld_token_return[i - num_taker_ports]
-            s.tokenizer.token_return[i + num_ld_ports] //= s.ld_st_unit.st_token_return[i - num_taker_ports]
+        for i in range(num_wr_ports, num_returner_ports - num_ld_ports):
+            s.tokenizer.token_return[i] //= s.ld_st_unit.ld_token_return[i - num_wr_ports]
+            s.tokenizer.token_return[i + num_ld_ports] //= s.ld_st_unit.st_token_return[i - num_wr_ports]
 
         for i in range(num_ld_ports):
             # Data and Control Load - North ONLY
@@ -225,93 +234,186 @@ class STEP_CgraRTL(Component):
             s.tokenizer.token_shifter_out[i + num_wr_ports + num_ld_ports] //= s.ld_st_unit.st_ifc[i].i_req # tokenizer -> ld/st
 
         #### Test Connections ###
-        # TODO @darrenl to remove
-        # Cfg Tests
-        s.cc_cfg_to_tiles = OutPort(CfgBitstreamType)
-        s.cc_cfg_to_tiles_val = OutPort(Bits1)
-        s.cc_cfg_to_rf = OutPort(CfgMetadataType)
-        s.cc_cfg_to_rf_val = OutPort(Bits1)
-        s.cc_cfg_to_rf_rdy = OutPort(Bits1)
+        if debug:
+            # TODO @darrenl to remove
+            # Cfg Tests
+            BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
+            s.cc_cfg_to_tiles = OutPort(TileBitstreamType)
+            s.cc_cfg_to_tiles_val = OutPort(Bits1)
+            s.cc_cfg_to_rf = OutPort(CfgMetadataType)
+            s.cc_cfg_to_rf_val = OutPort(Bits1)
+            s.cc_cfg_to_rf_rdy = OutPort(Bits1)
+            s.cc_cfg_raddr = OutPort(BitstreamAddrType)
+            s.cc_pc_next = OutPort(BitstreamAddrType)
+            s.cc_pc = OutPort(BitstreamAddrType)
+            s.cc_state = OutPort(mk_bits(2))
+            TileCountType = mk_bits(clog2(num_tiles))
+            s.cc_tiles_seen = OutPort( TileCountType )
+            s.cc_pc_started = OutPort( Bits1 )
+            s.cc_pc_done = OutPort( Bits1 )
+            s.cc_last_pc = OutPort( Bits1 )
 
-        s.cc_cfg_to_tiles //= s.core_controller.send_cfg_to_tiles.msg
-        s.cc_cfg_to_tiles_val //= s.core_controller.send_cfg_to_tiles.val
-        s.cc_cfg_to_rf //= s.core_controller.send_cfg_to_rf.msg
-        s.cc_cfg_to_rf_val //= s.core_controller.send_cfg_to_rf.val
-        s.cc_cfg_to_rf_rdy //= s.rf_controller.recv_cfg_from_ctrl.rdy
+            s.cc_cfg_to_tiles //= s.core_controller.send_cfg_to_tiles.msg
+            s.cc_cfg_to_tiles_val //= s.core_controller.send_cfg_to_tiles.val
+            s.cc_cfg_to_rf //= s.core_controller.send_cfg_to_rf.msg
+            s.cc_cfg_to_rf_val //= s.core_controller.send_cfg_to_rf.val
+            s.cc_cfg_to_rf_rdy //= s.rf_controller.recv_cfg_from_ctrl.rdy
+            s.cc_cfg_raddr //= s.core_controller.cfg_mem_raddr
+            s.cc_pc_next //= s.core_controller.pc_next
+            s.cc_pc //= s.core_controller.pc
+            s.cc_state //= s.core_controller.state
+            s.cc_tiles_seen //= s.core_controller.tile_bitstreams_seen
+            s.cc_pc_started //= s.core_controller.pc_started
+            s.cc_pc_done //= s.core_controller.pc_done
+            s.cc_last_pc //= s.core_controller.last_pc
 
-        
-        # Ld St Test
-        s.ld_st_complete = OutPort(Bits1)
-        s.ld_st_complete //= s.ld_st_unit.ld_st_complete
-        s.ld_complete = [OutPort(1) for _ in range(num_ld_ports)]
-        s.st_complete = [OutPort(1) for _ in range(num_st_ports)]
-        s.ld_pred_in = [OutPort(1) for _ in range(num_ld_ports)]
-        for i in range(num_ld_ports):
-            s.ld_complete[i] //= s.ld_st_unit.ld_complete[i]
-            s.ld_pred_in[i] //= s.tile_fabric.send_north_pred_port[i*2]
-        for i in range(num_st_ports):
-            s.st_complete[i] //= s.ld_st_unit.st_complete[i]
-        s.outstanding_reqs = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-        s.loads_in_tile     = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-        s.store_queue_rdy   = [ OutPort(1) for _ in range(num_ld_ports) ]
-        s.outstanding_stores= [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-        s.stores_in_tile    = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-        for i in range(num_ld_ports):
-            s.outstanding_reqs[i] //= s.ld_st_unit.outstanding_reqs[i]
-            s.loads_in_tile[i] //= s.ld_st_unit.loads_in_tile[i]
-            s.store_queue_rdy[i] //= s.ld_st_unit.store_queue_rdy[i]
-            s.outstanding_stores[i] //= s.ld_st_unit.outstanding_stores[i]
-            s.stores_in_tile[i] //= s.ld_st_unit.stores_in_tile[i]
-        s.recv_ld_st_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
-        s.recv_ld_st_thread_count //= s.rf_controller.send_thread_count
-        s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ld_ports)]
-        for i in range(num_ld_ports):
-            s.ld_tile_last_seen[i] //= s.ld_st_unit.ld_tile_last_seen[i]
-        s.st_i_req = [OutPort(1) for _ in range(num_st_ports)]
-        s.st_i_data = [OutPort(DataType) for _ in range(num_st_ports)]
-        s.st_i_addr = [OutPort(AxiAddrType) for _ in range(num_st_ports)]
-        for i in range(num_st_ports):
-            s.st_i_req[i] //= s.tokenizer.token_shifter_out[num_taker_ports + i] # fabric -> ld/st
-            s.st_i_data[i] //= s.tile_fabric.send_south_data_port[i*2+1] # fabric -> ld/st
-        @update
-        def test_st_addr():
+            # Memory predicates
+            s.tile_north_preds = [OutPort(1) for _ in range(num_tile_cols)]
+            s.tile_south_preds = [OutPort(1) for _ in range(num_tile_cols)]
+            s.tile_north_data = [OutPort(DataType) for _ in range(num_tile_cols)]
+            s.tile_south_data = [OutPort(DataType) for _ in range(num_tile_cols)]
+            for i in range(num_tile_cols):
+                s.tile_north_preds[i] //= s.tile_fabric.send_north_pred_port[i]
+                s.tile_south_preds[i] //= s.tile_fabric.send_south_pred_port[i]
+                s.tile_north_data[i] //= s.tile_fabric.send_north_data_port[i]
+                s.tile_south_data[i] //= s.tile_fabric.send_south_data_port[i]
+            
+            # Ld St Test
+            s.ld_enable = [OutPort(Bits1) for _ in range(num_ld_ports)]
+            s.st_enable = [OutPort(Bits1) for _ in range(num_st_ports)]
+            s.ld_st_complete = OutPort(Bits1)
+            s.ld_st_complete //= s.ld_st_unit.ld_st_complete
+            s.ld_complete = [OutPort(1) for _ in range(num_ld_ports)]
+            s.st_complete = [OutPort(1) for _ in range(num_st_ports)]
+            s.ld_pred_in = [OutPort(1) for _ in range(num_ld_ports)]
+            s.ld_data_in = [OutPort(DataType) for _ in range(num_ld_ports)]
+            for i in range(num_ld_ports):
+                s.ld_complete[i] //= s.ld_st_unit.ld_complete[i]
+                s.ld_pred_in[i] //= s.tile_fabric.send_north_pred_port[i*2]
+                s.ld_data_in[i] //= s.tile_fabric.send_north_data_port[i*2]
+                s.ld_enable[i] //= s.rf_controller.ld_enable[i]
             for i in range(num_st_ports):
-                s.st_i_addr[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2]) 
+                s.st_enable[i] //= s.rf_controller.st_enable[i]
+                s.st_complete[i] //= s.ld_st_unit.st_complete[i]
+            s.lds_outstanding = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.lds_in_tile     = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.lds_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
+            s.sts_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
+            s.store_queue_rdy   = [ OutPort(1) for _ in range(num_ld_ports) ]
+            s.sts_outstanding= [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.stores_in_tile    = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.ld_i_req = [OutPort(1) for _ in range(num_ld_ports)]
+            s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ld_ports)]
+            s.st_tile_last_seen = [OutPort(1) for _ in range(num_st_ports)]
+            for i in range(num_ld_ports):
+                s.lds_outstanding[i] //= s.ld_st_unit.outstanding_reqs[i]
+                s.lds_in_tile[i] //= s.ld_st_unit.loads_in_tile[i]
+                s.lds_tile_counter[i] //= s.ld_st_unit.loads_tile_counter[i]
+                s.store_queue_rdy[i] //= s.ld_st_unit.store_queue_rdy[i]
+                s.sts_outstanding[i] //= s.ld_st_unit.outstanding_stores[i]
+                s.stores_in_tile[i] //= s.ld_st_unit.stores_in_tile[i]
+                s.ld_tile_last_seen[i] //= s.ld_st_unit.ld_tile_last_seen[i]
+                s.ld_i_req[i] //= s.tokenizer.token_shifter_out[num_wr_ports + i] # fabric -> ld/st
+            s.recv_ld_st_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
+            s.recv_ld_st_thread_count //= s.rf_controller.send_thread_count
+            s.st_i_req = [OutPort(1) for _ in range(num_st_ports)]
+            s.st_i_data = [OutPort(DataType) for _ in range(num_st_ports)]
+            s.st_i_addr = [OutPort(AxiAddrType) for _ in range(num_st_ports)]
+            for i in range(num_st_ports):
+                s.st_i_req[i] //= s.tokenizer.token_shifter_out[num_wr_ports + num_ld_ports + i] # fabric -> ld/st
+                s.st_i_data[i] //= s.tile_fabric.send_south_data_port[i*2+1] # fabric -> ld/st
+                s.st_tile_last_seen[i] //= s.ld_st_unit.st_tile_last_seen[i]
+                s.sts_tile_counter[i] //= s.ld_st_unit.store_tile_counter[i]
+            @update
+            def test_st_addr():
+                for i in range(num_st_ports):
+                    s.st_i_addr[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2]) 
 
-        # RF Controller Test
-        s.rf_cfg_done = OutPort(Bits1)
-        s.rf_cfg_done //= s.rf_controller.cfg_done
-        s.rf_fabric_done = OutPort(Bits1)
-        s.rf_fabric_done //= s.rf_controller.fabric_done
-        s.rf_fabric_complete = OutPort(Bits1)
-        s.rf_fabric_complete //= s.rf_controller.fabric_complete
+            # RF Controller Test
+            s.rf_state_n = OutPort(1)
+            s.rf_state_n //= s.rf_controller.state_n
+            s.rf_cfg_done = OutPort(Bits1)
+            s.rf_cfg_done //= s.rf_controller.cfg_done
+            s.rf_fabric_done = OutPort(Bits1)
+            s.rf_fabric_done //= s.rf_controller.fabric_done
+            s.rf_fabric_complete = OutPort(Bits1)
+            s.rf_fabric_complete //= s.rf_controller.fabric_complete
+            s.rf_expected_count = OutPort( clog2(MAX_THREAD_COUNT) )
+            s.rf_expected_count //= s.rf_controller.expected_count_o
+            MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
+            s.rf_rd_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
+            s.rf_wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
+            s.rf_wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
+            for i in range(num_rd_ports):
+                s.rf_rd_counts_o[i] //= s.rf_controller.rd_counts_o[i]
+            for i in range(num_wr_ports):
+                s.rf_wr_counts_o[i] //= s.rf_controller.wr_counts_o[i]
+                s.rf_wr_addr_valcfg_o[i] //= s.rf_controller.wr_addr_valcfg_o[i]
 
-        # RF & Fabric Test
-        s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
-        for i in range(num_rd_ports):
-            s.rf_to_fabric_msg[i] //= s.rf_controller.rd_data[i]
-        s.rf_from_fabric_msg = [ OutPort(DataType) for _ in range(num_wr_ports)]
-        for i in range(num_wr_ports):
-            s.rf_from_fabric_msg[i] //= s.tile_fabric.send_east_data_port[i]
+            # RF & Fabric Test
+            s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
+            for i in range(num_rd_ports):
+                s.rf_to_fabric_msg[i] //= s.rf_controller.rd_data[i]
+            s.rf_from_fabric_msg = [ OutPort(DataType) for _ in range(num_wr_ports)]
+            for i in range(num_wr_ports // 2):
+                s.rf_from_fabric_msg[2*i] //= s.tile_fabric.send_west_data_port[i]
+                s.rf_from_fabric_msg[2*i + 1] //= s.tile_fabric.send_east_data_port[i]
 
-        # Fabric Tests
-        # s.tiles_in_pred_from_rf = [ OutPort(1) for _ in range(num_tiles) ]
-        # for i in range(num_tiles):
-        #     s.tiles_in_pred_from_rf[i] //= s.tile_fabric.recv_from_rf_pred[i]
-        s.tiles_north_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
-        for i in range(num_tile_cols):
-            s.tiles_north_pred_out[i] //= s.tile_fabric.send_north_pred_port[i]
-        s.tiles_south_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
-        for i in range(num_tile_cols):
-            s.tiles_south_pred_out[i] //= s.tile_fabric.send_south_pred_port[i]
+            # Fabric Tests
+            # s.tiles_in_pred_from_rf = [ OutPort(1) for _ in range(num_tiles) ]
+            # for i in range(num_tiles):
+            #     s.tiles_in_pred_from_rf[i] //= s.tile_fabric.recv_from_rf_pred[i]
+            s.tiles_north_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
+            for i in range(num_tile_cols):
+                s.tiles_north_pred_out[i] //= s.tile_fabric.send_north_pred_port[i]
+            s.tiles_south_pred_out = [ OutPort(1) for _ in range(num_tile_cols) ]
+            for i in range(num_tile_cols):
+                s.tiles_south_pred_out[i] //= s.tile_fabric.send_south_pred_port[i]
 
-        # Tokenizer Tests
-        s.tokenizer_shifter_out = [ OutPort(1) for _ in range(num_returner_ports) ]
-        s.tokenizer_count = [ OutPort(mk_bits(clog2(num_tokens + 1))) for _ in range(num_returner_ports) ]
-        for i in range(num_returner_ports):
-            s.tokenizer_shifter_out[i] //= s.tokenizer.token_shifter_out[i]
-            s.tokenizer_count[i] //= s.tokenizer.tokenizer_count[i]
+            # Tokenizer Tests
+            s.tokenizer_shifter_out = [ OutPort(1) for _ in range(num_returner_ports) ]
+            s.tokenizer_count = [ OutPort(mk_bits(clog2(num_tokens + 1))) for _ in range(num_returner_ports) ]
+            for i in range(num_returner_ports):
+                s.tokenizer_shifter_out[i] //= s.tokenizer.token_shifter_out[i]
+                s.tokenizer_count[i] //= s.tokenizer.tokenizer_count[i]
 
-        s.tokenizer_token_take = [ OutPort(1) for _ in range(num_taker_ports) ]
-        for i in range(num_taker_ports):
-            s.tokenizer_token_take[i] //= s.rf_controller.tile_token_take[i]
+            s.tokenizer_token_take = [ OutPort(1) for _ in range(num_taker_ports) ]
+            for i in range(num_taker_ports):
+                s.tokenizer_token_take[i] //= s.rf_controller.tile_token_take[i]
+            
+            # CHECK SPECIFIC TILE
+            s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
+            s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
+            
+            s.tile_bitstream_cmd = OutPort(OperationType)
+            s.tile_bitstream_cmd //= s.tile_fabric.tile_bitstream_cmd
+            s.tile_bitstream_in_route = OutPort(Bits4)
+            s.tile_bitstream_in_route //= s.tile_fabric.tile_bitstream_in_route
+            s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+            s.tile_new_bitstream_val = OutPort(Bits1)
+            s.tile_new_bitstream_val //= s.tile_fabric.tile_new_bitstream_val
+            s.tile_new_bitstream_ingested = OutPort(Bits1)
+            s.tile_new_bitstream_ingested //= s.tile_fabric.tile_new_bitstream_ingested
+            TileIdType = mk_bits(clog2(num_tile_rows * num_tile_cols))
+            s.tile_new_bitstream_tile_id = OutPort(TileIdType)
+            s.tile_new_bitstream_tile_id //= s.tile_fabric.tile_new_bitstream_tile_id
+            s.tile_id_matched = OutPort(Bits1)
+            s.tile_id_matched //= s.tile_fabric.tile_id_matched
+            s.tile_wrapper_id_matched = OutPort(Bits1)
+            s.tile_wrapper_id_matched //= s.tile_fabric.tile_wrapper_id_matched
+            s.tile_id_received = OutPort(TileIdType)
+            s.tile_id_received //= s.tile_fabric.tile_id_received
+
+            for i in range(num_fu_inports):
+                s.fu_in[i] //= s.tile_fabric.fu_in[i]
+            for i in range(num_fu_outports):
+                s.fu_out[i] //= s.tile_fabric.fu_out[i]
+            for i in range(num_tile_inports):
+                s.tile_in_test[i] //= s.tile_fabric.tile_in_test[i]
+            
+            s.tile_data_out = [OutPort(DataType) for _ in range(num_tile_outports)]
+            for i in range(num_tile_outports):
+                s.tile_data_out[i] //= s.tile_fabric.tile_data_out[i]
+            s.tile_pred_out = [OutPort(1) for _ in range(num_tile_outports)]
+            for i in range(num_tile_outports):
+                s.tile_pred_out[i] //= s.tile_fabric.tile_pred_out[i]

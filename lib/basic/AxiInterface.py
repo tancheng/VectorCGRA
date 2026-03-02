@@ -17,7 +17,7 @@ class SendAxiReadLoadAddrIfcRTL( Interface ):
         s.id    = OutPort( clog2(MAX_THREAD_COUNT) )   # Transaction ID
 
         # REQUIRED AXI Data Channel  
-        s.data   = InPort( DataType.nbits )  # Loaded data
+        s.data   = InPort( DataType )  # Loaded data
         s.data_valid  = InPort( 1 )    # Data valid
         s.data_ready  = OutPort( 1 )   # Ready to receive data
 
@@ -38,10 +38,10 @@ class SendAxiReadStoreAddrIfcRTL( Interface ):
         s.len   = OutPort( 8 )   # Burst length 
         s.size  = OutPort( 3 )   # Transfer size, because 2^4 can be 128
         s.burst = OutPort( 2 )   # Burst type
-        s.id    = OutPort( 1 )   # Transaction ID
+        s.id    = OutPort( clog2(MAX_THREAD_COUNT) )   # Transaction ID
 
         # REQUIRED AXI Data Channel  
-        s.data   = OutPort( DataType.nbits )  # Loaded data
+        s.data   = OutPort( DataType )  # Loaded data
         s.data_valid  = OutPort( 1 )    # Data valid
         s.data_ready  = OutPort( 1 )   # Ready to receive data
 
@@ -69,7 +69,7 @@ class RecvAxiReadLoadAddrIfcRTL( Interface ):
         s.id    = InPort( clog2(MAX_THREAD_COUNT) )   # Transaction ID
 
         # REQUIRED AXI Data Channel  
-        s.data        = OutPort( DataType.nbits )  # Loaded data
+        s.data        = OutPort( DataType )  # Loaded data
         s.data_valid  = OutPort( 1 )    # Data valid
         s.data_ready  = InPort( 1 )   # Ready to receive data
 
@@ -92,10 +92,10 @@ class RecvAxiReadStoreAddrIfcRTL( Interface ):
         s.len   = InPort( 8 )   # Burst length 
         s.size  = InPort( 3 )   # Transfer size, because 2^4 can be 128
         s.burst = InPort( 2 )   # Burst type
-        s.id    = InPort( 1 )   # Transaction ID
+        s.id    = InPort( clog2(MAX_THREAD_COUNT) )   # Transaction ID
 
         # REQUIRED AXI Data Channel  
-        s.data        = InPort( DataType.nbits )  # Loaded data
+        s.data        = InPort( DataType )  # Loaded data
         s.data_valid  = InPort( 1 )    # Data valid
         s.data_ready  = InPort( 1 )   # Ready to receive data
 
@@ -112,7 +112,7 @@ class RecvAxiStoreIfcRTL( Interface ):
     def construct( s, DataType ):
         # Load unit interface
         s.i_addr = InPort( AXI_ADDR_BITWIDTH )                 # Store Address
-        s.i_data = InPort( DataType.nbits )     # Store Data
+        s.i_data = InPort( DataType )     # Store Data
         s.i_req = InPort( 1 )                   # Request Store
         s.o_rdy = OutPort( 1 )                   # Ready to receive store request
         s.o_done = OutPort( 1 )                 # Complete
@@ -123,6 +123,6 @@ class RecvAxiLoadIfcRTL( Interface ):
         s.i_addr = InPort( AXI_ADDR_BITWIDTH )                 # Load Address
         s.i_req = InPort( 1 )                   # Request Load
         s.o_rdy = OutPort( 1 )                   # Ready to receive load request
-        s.o_data = OutPort( DataType.nbits )    # Loaded Data
+        s.o_data = OutPort( DataType )    # Loaded Data
         s.o_done = OutPort( 1 )                 # Complete
         s.o_data_id = OutPort( clog2(MAX_THREAD_COUNT) ) # Thread Id associated w/ Data

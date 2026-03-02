@@ -70,7 +70,7 @@ class STEP_TokenizerControllerRTL(Component):
             for i in range(num_taker_ports):
                 s.token_avail[i] @= 1
                 for j in range(num_returner_ports):
-                    if s.tokenizer_cfg.token_route_sink_enable[i][Bits3(num_returner_ports - j - 1)]:
+                    if s.tokenizer_cfg.token_route_sink_enable[i][Bits4(num_returner_ports - j - 1)]:
                         s.token_avail[i] @= s.token_avail[i] & s.tokenizers[j].token_avail
             
             # Token take default
@@ -80,5 +80,5 @@ class STEP_TokenizerControllerRTL(Component):
             # Token ake logic
             for i in range(num_taker_ports):
                 for j in range(num_returner_ports):
-                    if s.tokenizer_cfg.token_route_sink_enable[i][Bits3(num_returner_ports - j - 1)]:
+                    if s.tokenizer_cfg.token_route_sink_enable[i][Bits4(num_returner_ports - j - 1)]:
                         s.tokenizers[j].token_take @= s.token_take[i]

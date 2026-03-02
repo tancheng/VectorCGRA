@@ -38,10 +38,13 @@ MAX_THREAD_COUNT = 512
 MAX_PRED_MATH = 4
 
 # Constant for maximum bitstream count
-MAX_BITSTREAM_SIZE = 30
+MAX_BITSTREAM_COUNT = 30
 
 # Axi Address Bitwidth
 AXI_ADDR_BITWIDTH = 44
+
+# Shift Register Max Size
+SHIFT_REGISTER_SIZE = 4
 
 # Constant for prologue max count.
 PROLOGUE_MAX_COUNT = 7
