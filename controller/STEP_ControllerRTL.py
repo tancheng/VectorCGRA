@@ -19,20 +19,26 @@ class STEP_ControllerRTL(Component):
                 CfgTokenizerType,
                 TileBitstreamType,
                 num_tiles,
-                bitstream_cnt = 1,
                 debug = False
                 ):
     BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
-    bitstream_break_interval = num_tiles // bitstream_cnt
     
     # CPU ports
-    s.recv_from_cpu_bitstream_pkt = [RecvIfcRTL(CfgBitstreamType) for _ in range(bitstream_cnt)]
+    s.recv_from_cpu_bitstream_pkt = RecvIfcRTL(TileBitstreamType)
     s.recv_from_cpu_metadata_pkt = RecvIfcRTL(CfgMetadataType)
     s.send_to_cpu_done = OutPort(Bits1)
+    s.pc_req_trigger = OutPort(Bits1)
+    s.pc_req = OutPort(BitstreamAddrType)
+
+    # Fabric Pkts Counts
+    TileCountType = mk_bits(clog2(num_tiles))
+    if debug:
+        s.tile_bitstreams_seen = OutPort( TileCountType )
+    else:
+        s.tile_bitstreams_seen = Wire( TileCountType )
     
     # PE Fabric ports
-    s.send_cfg_to_tiles = [OutPort(TileBitstreamType) for _ in range(num_tiles)]
-    s.send_cfg_to_tiles_val = OutPort(Bits1)
+    s.send_cfg_to_tiles = SendIfcRTL(TileBitstreamType)
     
     # RF ports
     s.send_cfg_to_rf = SendIfcRTL(CfgMetadataType)
@@ -54,6 +60,7 @@ class STEP_ControllerRTL(Component):
         s.pc_done = Wire(Bits1)
         s.pc_next = Wire(BitstreamAddrType)
         s.last_pc = Wire(Bits1)
+    s.pc_req //= s.pc
     
     # New register for maintaining current cfg_mem read address
     s.cfg_mem_raddr_reg = Wire(BitstreamAddrType)
@@ -64,69 +71,54 @@ class STEP_ControllerRTL(Component):
     
     # State machine for handling memory read delays
     s.STATE_IDLE = 0
-    s.STATE_SENDING_NEXT_CFG = 1
+    s.STATE_WAITING_NEXT_CFG = 1
+    s.STATE_SENDING_NEXT_CFG = 2
     s.state = OutPort(mk_bits(2))
     
     # Internal Cfg mem
     s.cfg_mem_metadata = STEP_BRAMRTL(CfgMetadataType, MAX_BITSTREAM_COUNT, rd_ports=1,
                             wr_ports=1)
-    s.cfg_mem_tile_bitstreams = [STEP_BRAMRTL(TileBitstreamType, MAX_BITSTREAM_COUNT, rd_ports=1,
-                            wr_ports=1) for _ in range(num_tiles)]
 
-    #THE ISSUE IS HERE WHERE WE USED TO USE REGISTER FILE AND NOW WE INCUR AN ADDITIONAL CYCLE DELAY?
-
-    s.cfg_if = OutPort(b1)
     s.cfg_metadata_rd = OutPort(CfgMetadataType)
     s.cfg_metadata_rd //= s.cfg_mem_metadata.rdata
     
     # Connect the read address register to the actual cfg_mem read address
     s.cfg_mem_metadata.raddr //= s.cfg_mem_raddr_reg
-    for i in range(num_tiles):
-        s.cfg_mem_tile_bitstreams[i].raddr //= s.cfg_mem_raddr_reg
-    
-    @update
-    def tester():
-        s.cfg_if @= s.rf_cfg_done & s.pc_started & ~s.pc_done
 
     @update
     def update_ready():
         # Ready signal should be combinational
-        for i in range(bitstream_cnt):
-            s.recv_from_cpu_bitstream_pkt[i].rdy @= s.state == s.STATE_IDLE  # Always ready to accept commands
         s.recv_from_cpu_metadata_pkt.rdy @= s.state == s.STATE_IDLE  # Always ready to accept commands
+        s.recv_from_cpu_bitstream_pkt.rdy @= 1
+
+    @update
+    def update_scan_chain():
+        s.send_cfg_to_tiles.msg @= 0
+        s.send_cfg_to_tiles.val @= 0
+        if s.recv_from_cpu_bitstream_pkt.val:
+            s.send_cfg_to_tiles.msg @= s.recv_from_cpu_bitstream_pkt.msg
+            s.send_cfg_to_tiles.val @= 1
 
     @update_ff
     def update_controller():
         # Default values for cfg_mem write interface
-        for i in range(num_tiles):
-            s.cfg_mem_tile_bitstreams[i].waddr <<= BitstreamAddrType()
-            s.cfg_mem_tile_bitstreams[i].wdata <<= TileBitstreamType(0,0,0,0,0,0,0,0,0)
-            s.cfg_mem_tile_bitstreams[i].wen <<= 0
         s.cfg_mem_metadata.waddr <<= BitstreamAddrType()
-        s.cfg_mem_metadata.wdata <<= CfgMetadataType(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+        s.cfg_mem_metadata.wdata <<= 0
         s.cfg_mem_metadata.wen <<= 0
         
         # Default interface values
-        s.send_cfg_to_tiles_val <<= 0
         s.send_cfg_to_rf.val <<= 0
         s.send_cfg_to_tokenizer.val <<= 0
         s.send_to_cpu_done <<= 0
+        s.pc_req_trigger <<= 0
         # Return to idle state
         s.state <<= s.STATE_IDLE
         
         # State machine logic
         if s.state == s.STATE_IDLE:
             # Handle CPU commands
-            if s.recv_from_cpu_bitstream_pkt[0].val & s.recv_from_cpu_bitstream_pkt[0].rdy \
-                    & s.recv_from_cpu_metadata_pkt.val & s.recv_from_cpu_metadata_pkt.rdy:
+            if s.recv_from_cpu_metadata_pkt.val & s.recv_from_cpu_metadata_pkt.rdy:
                 if s.recv_from_cpu_metadata_pkt.msg.cmd == CMD_CONFIG:
-                    
-                    for i in range(bitstream_cnt):
-                        for j in range(bitstream_break_interval):
-                            idx = i*bitstream_break_interval + j
-                            s.cfg_mem_tile_bitstreams[idx].waddr <<= s.recv_from_cpu_metadata_pkt.msg.cfg_id
-                            s.cfg_mem_tile_bitstreams[idx].wdata <<= s.recv_from_cpu_bitstream_pkt[i].msg.bitstream[j]
-                            s.cfg_mem_tile_bitstreams[idx].wen <<= 1
                     s.cfg_mem_metadata.waddr <<= s.recv_from_cpu_metadata_pkt.msg.cfg_id
                     s.cfg_mem_metadata.wdata <<= s.recv_from_cpu_metadata_pkt.msg
                     s.cfg_mem_metadata.wen <<= 1
@@ -137,7 +129,8 @@ class STEP_ControllerRTL(Component):
                     # Update the read address register
                     s.pc_started <<= 1
                     s.pc_done <<= 0
-                    s.state <<= s.STATE_SENDING_NEXT_CFG
+                    s.state <<= s.STATE_WAITING_NEXT_CFG
+                    s.pc_req_trigger <<= 1
             
             # Handle RF configuration completion
             elif s.rf_cfg_done & s.pc_started & ~s.pc_done:
@@ -147,14 +140,20 @@ class STEP_ControllerRTL(Component):
                     s.send_to_cpu_done <<= 1
                 else:
                     # Update the read address register for next configuration
-                    s.state <<= s.STATE_SENDING_NEXT_CFG
+                    s.state <<= s.STATE_WAITING_NEXT_CFG
                     s.pc <<= s.pc_next
+                    s.pc_req_trigger <<= 1
+        elif s.state == s.STATE_WAITING_NEXT_CFG:
+            if s.recv_from_cpu_bitstream_pkt.val:
+                s.tile_bitstreams_seen <<= s.tile_bitstreams_seen + TileCountType(1)
+            if s.tile_bitstreams_seen >= num_tiles - 1:
+                s.state <<= s.STATE_SENDING_NEXT_CFG
+                s.tile_bitstreams_seen <<= 0
+            else:
+                s.state <<= s.STATE_WAITING_NEXT_CFG
         
         elif s.state == s.STATE_SENDING_NEXT_CFG:
             # Now the memory data is available, send the configuration
-            for i in range(num_tiles):
-                s.send_cfg_to_tiles[i] <<= s.cfg_mem_tile_bitstreams[i].rdata
-            s.send_cfg_to_tiles_val <<= 1
             s.send_cfg_to_rf.msg <<= s.cfg_mem_metadata.rdata
             s.send_cfg_to_rf.val <<= 1
             s.send_cfg_to_tokenizer.msg <<= s.cfg_mem_metadata.rdata.tokenizer_cfg

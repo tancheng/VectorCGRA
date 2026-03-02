@@ -412,6 +412,7 @@ def mk_cfg_metadata_pkt(
     field_dict['ld_reg_addr'] = [RegAddrType for _ in range(num_ld_ports)]
     field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_ports)]
     field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['in_tid_enable'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['tokenizer_cfg'] = CfgTokenizerType
@@ -542,6 +543,7 @@ def mk_tile_bitstream_pkt(
                             num_tile_outports,
                             num_fu_inports,
                             num_fu_outports,
+                            TileIdType,
                             OperationType,
                             DataType,
                             RegAddrType,
@@ -568,6 +570,7 @@ def mk_tile_bitstream_pkt(
     # field_dict['tile_out_route'] = [TilePortType(1)]
     
     field_dict = {}
+    field_dict['tile_id'] = TileIdType
     field_dict['tile_in_route'] = [TilePortType for _ in range(num_fu_inports)]
     field_dict['tile_out_route'] = TileOutType
     field_dict['tile_pred_route'] = TileOutType

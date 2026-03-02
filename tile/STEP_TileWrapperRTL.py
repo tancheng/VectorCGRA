@@ -18,7 +18,8 @@ from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
-from ..tile.STEP_TileRTL import STEP_TileRTL
+from .STEP_TileRTL import STEP_TileRTL
+from .STEP_ScanChainRTL import STEP_ScanChainRTL
 
 class STEP_TileWrapperRTL(Component):
 
@@ -65,34 +66,63 @@ class STEP_TileWrapperRTL(Component):
         s.recv_from_rf_pred = [ InPort(Bits1) for _ in range(num_tiles) ]
 
         # Bistream IO
-        s.recv_tile_bitstreams = [InPort(TileBitstreamType) for _ in range(num_tiles)]
-        s.recv_tile_bitstreams_val = InPort(Bits1)
+        s.recv_tile_bitstreams = RecvIfcRTL(TileBitstreamType)
 
         # Fabric Declaration
-        s.tiles = [[STEP_TileRTL(num_tile_inports,
-                                num_tile_outports,
-                                num_fu_inports,
-                                num_fu_outports,
-                                DataType,
-                                TileBitstreamType,
-                                OperationType,
-                                RegAddrType,
-                                PredRegAddrType,
-                                ) for _ in range(num_tile_cols)] for _ in range(num_tile_rows)]
+        s.tiles = [[STEP_TileRTL(
+                                id=i*num_tile_cols + j,
+                                num_tile_inports=num_tile_inports,
+                                num_tile_outports=num_tile_outports,
+                                num_fu_inports=num_fu_inports,
+                                num_fu_outports=num_fu_outports,
+                                DataType=DataType,
+                                TileBitstreamType=TileBitstreamType,
+                                OperationType=OperationType,
+                                RegAddrType=RegAddrType,
+                                PredRegAddrType=PredRegAddrType,
+                                debug=debug
+                                ) for j in range(num_tile_cols)] for i in range(num_tile_rows)]
+        
+        # Scan Chain Declaration
+        s.scan_chain = STEP_ScanChainRTL(TileBitstreamType, num_tiles)
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
         if debug:
+            TileIdType = mk_bits(clog2(num_tile_rows * num_tile_cols))
             check_row = 0
-            check_col = 1
+            check_col = 0
+            check_tile_id = check_row * num_tile_cols + check_col
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
             s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
             
             s.tile_bitstream_cmd = OutPort(OperationType)
             s.tile_bitstream_cmd //= s.tiles[check_row][check_col].tile_bitstream.opt_type
-            s.tile_bitstream_loc = OutPort(Bits4)
-            s.tile_bitstream_loc //= (s.tiles[check_row][check_col].tile_bitstream.tile_in_route[0])
+            s.tile_bitstream_in_route = OutPort(Bits4)
+            s.tile_bitstream_in_route //= (s.tiles[check_row][check_col].tile_bitstream.tile_in_route[0])
             s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+            s.tile_new_bitstream_ingested = OutPort(Bits1)
+            s.tile_new_bitstream_ingested //= s.tiles[check_row][check_col].ingest_new_bitstream
+            s.tile_id_matched = OutPort(Bits1)
+            s.tile_id_matched //= s.tiles[check_row][check_col].id_matched
+            s.tile_id_received = OutPort(TileIdType)
+            s.tile_id_received //= s.tiles[check_row][check_col].id_received
 
+            # Snake like scanchain
+            # IE
+            #  0 1 2
+            #  5 4 3
+            #  6 7 8
+            scan_col = check_col if check_row % 2 == 0 else num_tile_cols - check_col - 1
+            s.tile_new_bitstream_tile_id = OutPort(TileIdType)
+            s.tile_new_bitstream_tile_id //= s.scan_chain.scan_pts[check_row*num_tile_rows + scan_col].tile_id
+            s.tile_new_bitstream_val = OutPort(Bits1)
+            s.tile_new_bitstream_val //= s.scan_chain.scan_pts_val[check_row*num_tile_rows + scan_col]
+            s.tile_wrapper_id_matched = OutPort(Bits1)
+            @update
+            def check_id():
+                s.tile_wrapper_id_matched @= s.scan_chain.scan_pts[check_row*num_tile_rows + scan_col].tile_id == check_tile_id
+
+            # More tests
             for i in range(num_fu_inports):
                 s.fu_in[i] //= s.tiles[check_row][check_col].fu_in[i]
             for i in range(num_fu_outports):
@@ -108,7 +138,24 @@ class STEP_TileWrapperRTL(Component):
                 s.tile_pred_out[i] //= s.tiles[check_row][check_col].tile_out_pred_port[i]
         #####
 
+        # Bitstream Scan Chain Connection
+        for i in range(num_tile_rows):
+            sj = 0 if i % 2 == 0 else num_tile_cols - 1
+            ej = num_tile_cols if i % 2 == 0 else -1
+            stride = 1 if i % 2 == 0 else -1
+            scan_col = 0
+            for j in range(sj, ej, stride):
+                s.scan_chain.scan_pts[i*num_tile_cols + scan_col] //= s.tiles[i][j].recv_tile_bitstream.msg
+                s.scan_chain.scan_pts_val[i*num_tile_cols + scan_col] //= s.tiles[i][j].recv_tile_bitstream.val
+                scan_col += 1
+        s.scan_chain.scan_in //= s.recv_tile_bitstreams
+        
+        # Connect RF Predicates
+        for i in range(num_tile_rows):
+            for j in range(num_tile_cols):
+                s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]
 
+        # Fabric Internal Connections
         for i in range(num_tile_rows):
             for j in range(num_tile_cols):
                 if i > 0:
@@ -202,8 +249,8 @@ class STEP_TileWrapperRTL(Component):
                     s.tiles[i][j].tile_out_pred_port[PORT_SOUTH] //= s.send_south_pred_port[j]
 
         # Connect Tile Bitstreams    
-        for i in range(num_tile_rows):
-            for j in range(num_tile_cols):
-                s.tiles[i][j].recv_tile_bitstream.msg //= s.recv_tile_bitstreams[i * num_tile_cols + j]
-                s.tiles[i][j].recv_tile_bitstream.val //= s.recv_tile_bitstreams_val
-                s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]
+        # for i in range(num_tile_rows):
+        #     for j in range(num_tile_cols):
+        #         s.tiles[i][j].recv_tile_bitstream.msg //= s.recv_tile_bitstreams[i * num_tile_cols + j]
+        #         s.tiles[i][j].recv_tile_bitstream.val //= s.recv_tile_bitstreams_val
+        #         s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]

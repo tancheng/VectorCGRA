@@ -62,10 +62,12 @@ def generateCPUPktFromJSON(json_path):
     PredAddrType = mk_bits(clog2(cgra_def['num_pred_registers']))
     ShiftAmountType = mk_bits( clog2(SHIFT_REGISTER_SIZE) )
     TilePortType = mk_bits( clog2(cgra_def['num_tile_inports'] + 1) ) # +1 for no connection
+    TileIdType = mk_bits( clog2(cgra_def['num_tiles']) )
     TileBitstreamType = mk_tile_bitstream_pkt(cgra_def['num_tile_inports'],
                                                 cgra_def['num_tile_outports'],
                                                 cgra_def['num_fu_inports'],
                                                 cgra_def['num_fu_outports'],
+                                                TileIdType,
                                                 OperationType,
                                                 DataType,
                                                 RegAddrType,
@@ -113,6 +115,17 @@ def generateCPUPktFromJSON(json_path):
             token_route_delay_to_sink=[PortDelayType(delay) for delay in pkt['metadata']['tokenizer']['token_route_delay_to_sink']]
         )
 
+        # Sanitize input regs
+        in_regs = []
+        in_tid = []
+        for reg in pkt['metadata']['in_regs']:
+            if reg == 'tid':
+                in_regs.append(0)
+                in_tid.append(1)
+            else:
+                in_regs.append(reg)
+                in_tid.append(0)
+
         # Metadata Pkt
         cfg_metadata_pkt = CfgMetadataType(
             cmd = CMD_CONFIG,
@@ -120,8 +133,9 @@ def generateCPUPktFromJSON(json_path):
             ld_enable = [Bits1(bit) for bit in pkt['metadata']['ld_enable']],
             st_enable = [Bits1(bit) for bit in pkt['metadata']['st_enable']],
             ld_reg_addr = [RegAddrType(bit) for bit in pkt['metadata']['ld_reg_addr']],
-            in_regs = [RegAddrType(bit) for bit in pkt['metadata']['in_regs']],
+            in_regs = [RegAddrType(bit) for bit in in_regs],
             in_regs_val = [Bits1(bit) for bit in pkt['metadata']['in_regs_val']],
+            in_tid_enable = [Bits1(bit) for bit in in_tid],
             out_regs = [RegAddrType(bit) for bit in pkt['metadata']['out_regs']],
             out_regs_val = [Bits1(bit) for bit in pkt['metadata']['out_regs_val']],
             tokenizer_cfg = cfg_tokenizer_pkt,
@@ -133,12 +147,14 @@ def generateCPUPktFromJSON(json_path):
         )
 
         # Tile Bitstream Pkts
-        tile_bitstream_pkts = []
+        tile_bitstream_pkts = {}
         for tile in pkt['bitstream'].values():
+            tile_id = TileIdType(tile['id'])
             if tile['opt_type'] == 'OPT_NAH':
-                tile_bitstream_pkts.append(TileBitstreamType(
+                tile_bitstream_pkts[tile['id']] = TileBitstreamType(
+                    tile_id = tile_id,
                     opt_type = OPT_NAH
-                ))
+                )
             else:
                 tile_in_route = []
                 tile_out_route = '0' * cgra_def['num_tile_outports']
@@ -169,7 +185,8 @@ def generateCPUPktFromJSON(json_path):
                     pred_fwd_route = TilePortEnum[tile['pred_fwd_route']].value
 
                 # Append Tile Bitstream Pkt
-                tile_bitstream_pkts.append(TileBitstreamType(
+                tile_bitstream_pkts[tile['id']] = TileBitstreamType(
+                    tile_id = tile_id,
                     tile_in_route = tile_in_route,
                     tile_out_route = int(tile_out_route, 2),
                     tile_out_shift_amounts = tile_out_shift_amounts,
@@ -178,18 +195,27 @@ def generateCPUPktFromJSON(json_path):
                     pred_fwd_route = pred_fwd_route,
                     pred_gen = tile['pred_gen'],
                     opt_type = eval(tile['opt_type'])
-                ))
+                )
         
+        # No Longer needed
         # Cfg Bitstream Pkt
-        cfg_bitstream_pkt = CfgBitstreamType(bitstream = tile_bitstream_pkts)
+        # cfg_bitstream_pkt = CfgBitstreamType(bitstream = tile_bitstream_pkts)
 
         # Full CPU Pkt
         cpu_metadata_pkt.append(cfg_metadata_pkt)
-        cpu_bitstream_pkt.append(cfg_bitstream_pkt)
-    
+        bitstream_pkts_before_reverse = []
+        for i in range(cgra_def['num_tile_rows']):
+            row = [
+                tile_bitstream_pkts[i*cgra_def['num_tile_cols'] + j]
+                for j in range(cgra_def['num_tile_cols'])
+            ]
+
+            bitstream_pkts_before_reverse += row[::-1] if i % 2 == 1 else row
+        cpu_bitstream_pkt += bitstream_pkts_before_reverse[::-1]
+
     # Append the launch pkt
     cpu_metadata_pkt.append(CfgMetadataType(cmd = CMD_LAUNCH))
-    cpu_bitstream_pkt.append(CfgBitstreamType())
+    # cpu_bitstream_pkt.append(CfgBitstreamType())
 
     #####################
     # Ld Pkts
@@ -211,7 +237,7 @@ def generateCPUPktFromJSON(json_path):
             if st_enable:
                 st_pkts[index] += 1  # Dummy st pkt
 
-    expected_cpu_pkts = [CfgMetadataType(cmd=CMD_COMPLETE)]
+    expected_cpu_pkts = [1]
     
     return cgra_def, cpu_metadata_pkt, cpu_bitstream_pkt, ld_pkts, st_pkts, expected_cpu_pkts
         

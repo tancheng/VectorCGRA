@@ -3,7 +3,8 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..STEP_CgraRTL import STEP_CgraRTL
-from ...lib.basic.AxiSourceRTL import AxiLdSourceTriggeredRTL, AxiStSourceTriggeredRTL
+from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiLdSourceTriggeredRTL, AxiStSourceRTL, AxiStSourceTriggeredRTL
+from ...lib.basic.SourceTriggeredRTL import SourceTriggeredRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.util.pkt_helper import generateCPUPktFromJSON
@@ -22,13 +23,13 @@ class TestHarness(Component):
 
         # Configure Sources
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(cgra_def['CfgMetadataType'], cpu_metadata_pkts)
-        s.cpu_to_cgra_bitstream_pkts = TestSrcRTL(cgra_def['CfgBitstreamType'], cpu_bitstream_pkts)
+        s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(cgra_def['TileBitstreamType'], cpu_bitstream_pkts, chunk_size=cgra_def['num_tiles'], delay=1)
         s.ld_axi_pkts = [AxiLdSourceTriggeredRTL(cgra_def['DataType'], ld_pkts[i]) for i in range(cgra_def['num_ld_ports'])]
         s.st_axi_pkts = [AxiStSourceTriggeredRTL(cgra_def['DataType'], st_pkts[i]) for i in range(cgra_def['num_st_ports'])]
 
         # Configure Sinks
         cmp_fn = lambda a, b : a == b
-        s.cgra_to_cpu_metadata_pkts = TestSinkRTL(cgra_def['CfgMetadataType'], expected_cpu_pkts)
+        s.cgra_to_cpu_signal = TestSinkRTL(Bits1, expected_cpu_pkts)
 
         s.dut = STEP_CgraRTL(
             cgra_def['CfgMetadataType'],
@@ -44,6 +45,7 @@ class TestHarness(Component):
             cgra_def['num_register_banks'],
             cgra_def['num_registers'],
             cgra_def['num_pred_registers'],
+            debug=True
         )
 
         # Axi Interfaces
@@ -55,16 +57,18 @@ class TestHarness(Component):
         # CPU Interfaces
         s.dut.recv_from_cpu_metadata_pkt //= s.cpu_to_cgra_metadata_pkts.send
         s.dut.recv_from_cpu_bitstream_pkt //= s.cpu_to_cgra_bitstream_pkts.send
-        s.dut.send_to_cpu_metadata_pkt //= s.cgra_to_cpu_metadata_pkts.recv
+        s.dut.pc_req_trigger //= s.cpu_to_cgra_bitstream_pkts.trigger_in
+        s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.msg
+        s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.val
 
     def done(s):
-        # for i in range(s.cgra_def['num_ld_ports']):
-        #     if not s.ld_axi_pkts[i].done():
-        #         return False
-        # for i in range(s.cgra_def['num_st_ports']):
-        #     if not s.st_axi_pkts[i].done():
-        #         return False
-        return s.cpu_to_cgra_bitstream_pkts.done() and s.cpu_to_cgra_metadata_pkts.done() and s.cgra_to_cpu_metadata_pkts.done()
+        for i in range(s.cgra_def['num_ld_ports']):
+            if not s.ld_axi_pkts[i].done():
+                return False
+        for i in range(s.cgra_def['num_st_ports']):
+            if not s.st_axi_pkts[i].done():
+                return False
+        return s.cpu_to_cgra_bitstream_pkts.done() and s.cpu_to_cgra_metadata_pkts.done() and s.cgra_to_cpu_signal.done()
 
     def line_trace(s):
         return s.dut.line_trace()

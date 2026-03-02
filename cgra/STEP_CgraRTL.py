@@ -19,7 +19,6 @@ class STEP_CgraRTL(Component):
             # Top Level Pkt Types
             CfgMetadataType,
             CfgBitstreamType,
-            CfgFullBitstreamType,
 
             # Configuration Types
             CfgTokenizerType,
@@ -39,7 +38,6 @@ class STEP_CgraRTL(Component):
             num_register_banks = 2,
             num_registers = 16,
             num_pred_registers = 16,
-            bitstream_cnt = 1,
             debug = True
         ):
         
@@ -61,11 +59,17 @@ class STEP_CgraRTL(Component):
 
         # Additional Type
         AxiAddrType = mk_bits( AXI_ADDR_BITWIDTH )
+        BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
 
         # CGRA Top-Level IOs
-        s.recv_from_cpu_bitstream_pkt = [RecvIfcRTL(CfgBitstreamType) for _ in range(bitstream_cnt)]
+        s.recv_from_cpu_bitstream_pkt = RecvIfcRTL(TileBitstreamType)
         s.recv_from_cpu_metadata_pkt = RecvIfcRTL(CfgMetadataType)
         s.send_to_cpu_done = OutPort(Bits1)
+        s.pc_req_trigger = OutPort(Bits1)
+        s.pc_req = OutPort(BitstreamAddrType)
+
+        s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
+        s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
 
         # Instantiate Components
         s.core_controller = STEP_ControllerRTL(
@@ -74,7 +78,6 @@ class STEP_CgraRTL(Component):
             CfgTokenizerType,
             TileBitstreamType,
             num_tiles,
-            bitstream_cnt,
             debug
         )
 
@@ -109,7 +112,7 @@ class STEP_CgraRTL(Component):
             num_fu_outports,
             DataType,
             TileBitstreamType,
-            CfgFullBitstreamType,
+            CfgBitstreamType,
             OperationType,
             RegAddrType,
             PredRegAddrType,
@@ -128,15 +131,14 @@ class STEP_CgraRTL(Component):
 
         ### Wire Connections ###
         ##### Core Controller Connections
-        for i in range(bitstream_cnt):
-            s.core_controller.recv_from_cpu_bitstream_pkt[i] //= s.recv_from_cpu_bitstream_pkt[i] # cpu -> core
+        s.core_controller.recv_from_cpu_bitstream_pkt //= s.recv_from_cpu_bitstream_pkt
         s.core_controller.recv_from_cpu_metadata_pkt //= s.recv_from_cpu_metadata_pkt # cpu -> core
         s.core_controller.send_to_cpu_done //= s.send_to_cpu_done # core -> cpu
+        s.core_controller.pc_req_trigger //= s.pc_req_trigger # core -> cpu
+        s.core_controller.pc_req //= s.pc_req # core -> cpu
         
         ##### Core Controller & Fabric Connections
-        for i in range(num_tiles):
-            s.core_controller.send_cfg_to_tiles[i] //= s.tile_fabric.recv_tile_bitstreams[i] # core -> fabric
-        s.core_controller.send_cfg_to_tiles_val //= s.tile_fabric.recv_tile_bitstreams_val # core -> fabric
+        s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
@@ -201,11 +203,9 @@ class STEP_CgraRTL(Component):
         
         ##### Load/Store External Connections
         # Load Axis
-        s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
         for i in range(num_ld_ports):
             s.ld_axi[i] //= s.ld_st_unit.ld_axi[i]
         # Store Axis
-        s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_st_ports)]
         for i in range(num_st_ports):
             s.st_axi[i] //= s.ld_st_unit.st_axi[i]
 
@@ -238,6 +238,7 @@ class STEP_CgraRTL(Component):
             # TODO @darrenl to remove
             # Cfg Tests
             BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
+            s.cc_cfg_to_tiles = OutPort(TileBitstreamType)
             s.cc_cfg_to_tiles_val = OutPort(Bits1)
             s.cc_cfg_to_rf = OutPort(CfgMetadataType)
             s.cc_cfg_to_rf_val = OutPort(Bits1)
@@ -245,15 +246,26 @@ class STEP_CgraRTL(Component):
             s.cc_cfg_raddr = OutPort(BitstreamAddrType)
             s.cc_pc_next = OutPort(BitstreamAddrType)
             s.cc_pc = OutPort(BitstreamAddrType)
+            s.cc_state = OutPort(mk_bits(2))
+            TileCountType = mk_bits(clog2(num_tiles))
+            s.cc_tiles_seen = OutPort( TileCountType )
+            s.cc_pc_started = OutPort( Bits1 )
+            s.cc_pc_done = OutPort( Bits1 )
+            s.cc_last_pc = OutPort( Bits1 )
 
-            s.cc_cfg_to_tiles_val //= s.core_controller.send_cfg_to_tiles_val
+            s.cc_cfg_to_tiles //= s.core_controller.send_cfg_to_tiles.msg
+            s.cc_cfg_to_tiles_val //= s.core_controller.send_cfg_to_tiles.val
             s.cc_cfg_to_rf //= s.core_controller.send_cfg_to_rf.msg
             s.cc_cfg_to_rf_val //= s.core_controller.send_cfg_to_rf.val
             s.cc_cfg_to_rf_rdy //= s.rf_controller.recv_cfg_from_ctrl.rdy
             s.cc_cfg_raddr //= s.core_controller.cfg_mem_raddr
             s.cc_pc_next //= s.core_controller.pc_next
             s.cc_pc //= s.core_controller.pc
-
+            s.cc_state //= s.core_controller.state
+            s.cc_tiles_seen //= s.core_controller.tile_bitstreams_seen
+            s.cc_pc_started //= s.core_controller.pc_started
+            s.cc_pc_done //= s.core_controller.pc_done
+            s.cc_last_pc //= s.core_controller.last_pc
 
             # Memory predicates
             s.tile_north_preds = [OutPort(1) for _ in range(num_tile_cols)]
@@ -318,6 +330,8 @@ class STEP_CgraRTL(Component):
                     s.st_i_addr[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2]) 
 
             # RF Controller Test
+            s.rf_state_n = OutPort(1)
+            s.rf_state_n //= s.rf_controller.state_n
             s.rf_cfg_done = OutPort(Bits1)
             s.rf_cfg_done //= s.rf_controller.cfg_done
             s.rf_fabric_done = OutPort(Bits1)
@@ -373,9 +387,22 @@ class STEP_CgraRTL(Component):
             
             s.tile_bitstream_cmd = OutPort(OperationType)
             s.tile_bitstream_cmd //= s.tile_fabric.tile_bitstream_cmd
-            s.tile_bitstream_loc = OutPort(Bits4)
-            s.tile_bitstream_loc //= s.tile_fabric.tile_bitstream_loc
+            s.tile_bitstream_in_route = OutPort(Bits4)
+            s.tile_bitstream_in_route //= s.tile_fabric.tile_bitstream_in_route
             s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+            s.tile_new_bitstream_val = OutPort(Bits1)
+            s.tile_new_bitstream_val //= s.tile_fabric.tile_new_bitstream_val
+            s.tile_new_bitstream_ingested = OutPort(Bits1)
+            s.tile_new_bitstream_ingested //= s.tile_fabric.tile_new_bitstream_ingested
+            TileIdType = mk_bits(clog2(num_tile_rows * num_tile_cols))
+            s.tile_new_bitstream_tile_id = OutPort(TileIdType)
+            s.tile_new_bitstream_tile_id //= s.tile_fabric.tile_new_bitstream_tile_id
+            s.tile_id_matched = OutPort(Bits1)
+            s.tile_id_matched //= s.tile_fabric.tile_id_matched
+            s.tile_wrapper_id_matched = OutPort(Bits1)
+            s.tile_wrapper_id_matched //= s.tile_fabric.tile_wrapper_id_matched
+            s.tile_id_received = OutPort(TileIdType)
+            s.tile_id_received //= s.tile_fabric.tile_id_received
 
             for i in range(num_fu_inports):
                 s.fu_in[i] //= s.tile_fabric.fu_in[i]

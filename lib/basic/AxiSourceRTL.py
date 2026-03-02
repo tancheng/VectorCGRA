@@ -75,6 +75,7 @@ class AxiLdSourceTriggeredRTL( Component ):
 
         # Interface
         s.send = RecvAxiReadLoadAddrIfcRTL( DataType )
+        s.complete = OutPort(Bits1)
 
         # Local storage
         s.msgs = deepcopy( msgs )
@@ -140,6 +141,10 @@ class AxiLdSourceTriggeredRTL( Component ):
                     s.msg_idx    += 1
             if s.q_id.send.val:
                 s.loaded_idx += 1
+        
+        @update
+        def done_state():
+            s.complete @= s.loaded_idx >= len(s.msgs)
 
     def done( s ):
         return s.loaded_idx >= len( s.msgs )
@@ -204,6 +209,7 @@ class AxiStSourceTriggeredRTL( Component ):
 
         # Interface
         s.send = RecvAxiReadStoreAddrIfcRTL( DataType )
+        s.complete = OutPort(Bits1)
         
         # Thread Id
         s.idx = 0
@@ -251,6 +257,10 @@ class AxiStSourceTriggeredRTL( Component ):
             if s.send.resp_valid:
                 # Increment counter
                 s.idx += 1
+        
+        @update
+        def done_state():
+            s.complete @= s.idx >= s.num_total_stores
 
     def done( s ):
         return s.idx >= s.num_total_stores

@@ -26,6 +26,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # -------------------------------------------------------------------------
         # Submodules
         # -------------------------------------------------------------------------
+        print("total read ports", num_rd_ports)
 
         # s.register_file = STEP_RegisterFileRTL(
         #     RegDataType, RegAddrType,
@@ -95,6 +96,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Latched configuration (stable during RUN)
         s.rd_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.rd_addr_valcfg = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.tid_enabled    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.wr_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.wr_addr_valcfg = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.expected_count = Wire( MaxThreadType )
@@ -145,7 +147,6 @@ class STEP_RegisterFileControllerRTL( Component ):
         for i in range(num_rd_ports):
             s.register_file.rd_addr[i].msg //= s.rd_addr_cfg[i]
             s.register_file.rd_addr[i].val //= s.rd_enable[i]
-            s.rd_data[i]               //= s.register_file.rd_data[i]
 
         for i in range(num_wr_ports):
             s.register_file.wr_addr[i].msg //= s.wr_addr_cfg[i]
@@ -162,6 +163,17 @@ class STEP_RegisterFileControllerRTL( Component ):
             s.register_file.wr_thread_idx[i + num_wr_ports] //= s.ld_data_id[i]
 
         # -------------------------------------------------------------------------
+        # Assign output data as register or tid for counts
+        # -------------------------------------------------------------------------
+        @update
+        def comb_output_data():
+            for i in range(num_rd_ports):
+                if s.tid_enabled[i]:
+                    s.rd_data[i] @= s.rd_count[i][0:RegDataType.nbits]
+                else:
+                    s.rd_data[i] @= s.register_file.rd_data[i]
+
+        # -------------------------------------------------------------------------
         # Ready/valid for external ifcs (single-writer comb)
         # -------------------------------------------------------------------------
 
@@ -175,7 +187,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # -------------------------------------------------------------------------
 
         s.fabric_complete = OutPort( 1 )
-        s.fabric_done = OutPort( 1)
+        s.fabric_done = OutPort( 1 )
         s.rd_regs_complete = OutPort( num_rd_ports )
         s.wr_regs_complete = OutPort( num_wr_ports )
 
@@ -247,6 +259,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_count_n[i] @= MaxThreadType(0)
                         s.rd_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                         s.rd_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs[i]
+                        s.tid_enabled[i] @= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
                     for i in range(num_wr_ports):
                         s.wr_count_n[i] @= MaxThreadType(0)
                         s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
