@@ -48,7 +48,8 @@ class STEP_TileRTL(Component):
                     OperationType,
                     RegAddrType,
                     PredRegAddrType,
-                    debug = False
+                    debug = False,
+                    enable_double_buffering = False
                 ):
         assert num_fu_inports == 3
         assert num_fu_outports == 1
@@ -63,6 +64,24 @@ class STEP_TileRTL(Component):
         s.tile_out_pred_port = [ OutPort(Bits1) for _ in range(num_tile_outports) ]
         s.recv_tile_bitstream = RecvIfcRTL(TileBitstreamType)
         s.recv_tile_bitstream.rdy //= 1
+        s.cfg_active_sel_w = Wire(Bits1)
+        s.cfg_load_sel_w = Wire(Bits1)
+        s.cfg_swap_w = Wire(Bits1)
+        if enable_double_buffering:
+            s.cfg_active_sel = InPort(Bits1)
+            s.cfg_load_sel = InPort(Bits1)
+            s.cfg_swap = InPort(Bits1)
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= s.cfg_active_sel
+                s.cfg_load_sel_w @= s.cfg_load_sel
+                s.cfg_swap_w @= s.cfg_swap
+        else:
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= Bits1(0)
+                s.cfg_load_sel_w @= Bits1(0)
+                s.cfg_swap_w @= Bits1(0)
         if debug:
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
             s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
@@ -80,6 +99,8 @@ class STEP_TileRTL(Component):
             s.tile_bitstream = Wire(TileBitstreamType)
         s.opt_type = Wire(OperationType)
         s.opt_type //= s.tile_bitstream.opt_type
+        s.tile_bitstream_bank0 = Wire(TileBitstreamType)
+        s.tile_bitstream_bank1 = Wire(TileBitstreamType)
 
         ##### Crossbar instantiation #####
         s.crossbar = STEP_TileCrossbarRTL(num_tile_inports,
@@ -132,14 +153,23 @@ class STEP_TileRTL(Component):
         # Connect register file predicate
         s.crossbar.pred_in_rf //= s.tile_in_pred_port_rf
 
-        @update
-        def fu_in_port_ff():
+        @update_ff
+        def cfg_banks():
             if s.reset:
-                s.tile_bitstream @= 0
+                s.tile_bitstream_bank0 <<= 0
+                s.tile_bitstream_bank1 <<= 0
             elif (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
-                s.tile_bitstream @= s.recv_tile_bitstream.msg
+                if s.cfg_load_sel_w == Bits1(0):
+                    s.tile_bitstream_bank0 <<= s.recv_tile_bitstream.msg
+                else:
+                    s.tile_bitstream_bank1 <<= s.recv_tile_bitstream.msg
+
+        @update
+        def select_active_cfg():
+            if s.cfg_active_sel_w == Bits1(0):
+                s.tile_bitstream @= s.tile_bitstream_bank0
             else:
-                s.tile_bitstream @= s.tile_bitstream
+                s.tile_bitstream @= s.tile_bitstream_bank1
         
         @update
         def perform_alu_op():

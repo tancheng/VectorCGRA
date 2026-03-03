@@ -94,6 +94,7 @@ class STEP_CgraRTL(Component):
             num_wr_ports,
             num_registers,
             num_pred_registers,
+            True,
         )
         
         s.ld_st_unit = STEP_LoadStoreRTL(
@@ -116,7 +117,8 @@ class STEP_CgraRTL(Component):
             OperationType,
             RegAddrType,
             PredRegAddrType,
-            debug
+            debug,
+            True,
         )
 
         s.tokenizer = STEP_TokenizerControllerRTL(
@@ -126,23 +128,36 @@ class STEP_CgraRTL(Component):
             num_ld_ports,
             num_st_ports,
             num_tokens,
-            max_delay
+            max_delay,
+            True,
         )
 
         ### Wire Connections ###
+        s.cfg_active_sel = Wire(Bits1)
+        s.cfg_load_sel = Wire(Bits1)
+        s.cfg_swap = Wire(Bits1)
         ##### Core Controller Connections
         s.core_controller.recv_from_cpu_bitstream_pkt //= s.recv_from_cpu_bitstream_pkt
         s.core_controller.recv_from_cpu_metadata_pkt //= s.recv_from_cpu_metadata_pkt # cpu -> core
         s.core_controller.send_to_cpu_done //= s.send_to_cpu_done # core -> cpu
         s.core_controller.pc_req_trigger //= s.pc_req_trigger # core -> cpu
         s.core_controller.pc_req //= s.pc_req # core -> cpu
+        s.cfg_active_sel //= s.core_controller.cfg_active_sel
+        s.cfg_load_sel //= s.core_controller.cfg_load_sel
+        s.cfg_swap //= s.core_controller.cfg_swap
         
         ##### Core Controller & Fabric Connections
         s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
+        s.tile_fabric.cfg_active_sel //= s.cfg_active_sel
+        s.tile_fabric.cfg_load_sel //= s.cfg_load_sel
+        s.tile_fabric.cfg_swap //= s.cfg_swap
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
         s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
+        s.rf_controller.cfg_active_sel //= s.cfg_active_sel
+        s.rf_controller.cfg_load_sel //= s.cfg_load_sel
+        s.rf_controller.cfg_swap //= s.cfg_swap
 
         ##### RF Controller & Fabric Connections
         for i in range(num_tiles):
@@ -211,6 +226,9 @@ class STEP_CgraRTL(Component):
 
         ###### Tokenizer & Core Controller
         s.core_controller.send_cfg_to_tokenizer //= s.tokenizer.recv_cfg_from_ctrl
+        s.tokenizer.cfg_active_sel //= s.cfg_active_sel
+        s.tokenizer.cfg_load_sel //= s.cfg_load_sel
+        s.tokenizer.cfg_swap //= s.cfg_swap
 
         ###### Tokenizer & Rf
         for i in range(num_taker_ports):

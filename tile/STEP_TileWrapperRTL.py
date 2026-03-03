@@ -36,7 +36,8 @@ class STEP_TileWrapperRTL(Component):
                     OperationType,
                     RegAddrType,
                     PredRegAddrType,
-                    debug = False
+                    debug = False,
+                    enable_double_buffering = False
                     ):
         assert(num_tile_inports == num_tile_outports)
         assert(num_tile_inports in [4,8])
@@ -67,6 +68,24 @@ class STEP_TileWrapperRTL(Component):
 
         # Bistream IO
         s.recv_tile_bitstreams = RecvIfcRTL(TileBitstreamType)
+        s.cfg_active_sel_w = Wire(Bits1)
+        s.cfg_load_sel_w = Wire(Bits1)
+        s.cfg_swap_w = Wire(Bits1)
+        if enable_double_buffering:
+            s.cfg_active_sel = InPort(Bits1)
+            s.cfg_load_sel = InPort(Bits1)
+            s.cfg_swap = InPort(Bits1)
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= s.cfg_active_sel
+                s.cfg_load_sel_w @= s.cfg_load_sel
+                s.cfg_swap_w @= s.cfg_swap
+        else:
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= Bits1(0)
+                s.cfg_load_sel_w @= Bits1(0)
+                s.cfg_swap_w @= Bits1(0)
 
         # Fabric Declaration
         s.tiles = [[STEP_TileRTL(
@@ -80,7 +99,8 @@ class STEP_TileWrapperRTL(Component):
                                 OperationType=OperationType,
                                 RegAddrType=RegAddrType,
                                 PredRegAddrType=PredRegAddrType,
-                                debug=debug
+                                debug=debug,
+                                enable_double_buffering=enable_double_buffering
                                 ) for j in range(num_tile_cols)] for i in range(num_tile_rows)]
         
         # Scan Chain Declaration
@@ -154,6 +174,10 @@ class STEP_TileWrapperRTL(Component):
         for i in range(num_tile_rows):
             for j in range(num_tile_cols):
                 s.tiles[i][j].tile_in_pred_port_rf //= s.recv_from_rf_pred[i * num_tile_cols + j]
+                if enable_double_buffering:
+                    s.tiles[i][j].cfg_active_sel //= s.cfg_active_sel_w
+                    s.tiles[i][j].cfg_load_sel //= s.cfg_load_sel_w
+                    s.tiles[i][j].cfg_swap //= s.cfg_swap_w
 
         # Fabric Internal Connections
         for i in range(num_tile_rows):

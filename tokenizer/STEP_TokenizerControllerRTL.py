@@ -11,7 +11,8 @@ class STEP_TokenizerControllerRTL(Component):
             num_ld_ports,
             num_st_ports,
             num_tokens,
-            max_delay
+            max_delay,
+            enable_double_buffering = False
         ):
         """
         token-based tokenizer component
@@ -33,8 +34,29 @@ class STEP_TokenizerControllerRTL(Component):
 
         # Cfg Specific
         s.recv_cfg_from_ctrl = RecvIfcRTL(TokenizerCfgType)
-        s.recv_cfg_from_ctrl.rdy //= 1
+        s.cfg_active_sel_w = Wire(Bits1)
+        s.cfg_load_sel_w = Wire(Bits1)
+        s.cfg_swap_w = Wire(Bits1)
+        if enable_double_buffering:
+            s.cfg_active_sel = InPort(Bits1)
+            s.cfg_load_sel = InPort(Bits1)
+            s.cfg_swap = InPort(Bits1)
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= s.cfg_active_sel
+                s.cfg_load_sel_w @= s.cfg_load_sel
+                s.cfg_swap_w @= s.cfg_swap
+        else:
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= Bits1(0)
+                s.cfg_load_sel_w @= Bits1(0)
+                s.cfg_swap_w @= Bits1(0)
         s.tokenizer_cfg = Wire(TokenizerCfgType)
+        s.tokenizer_cfg_bank0 = Wire(TokenizerCfgType)
+        s.tokenizer_cfg_bank1 = Wire(TokenizerCfgType)
+        s.cfg_bank_valid0 = Wire(Bits1)
+        s.cfg_bank_valid1 = Wire(Bits1)
 
         # Instantiate Tokenizers
         s.tokenizers = [ STEP_TokenizerRTL(num_tokens, max_delay) for _ in range(num_returner_ports) ]
@@ -57,11 +79,36 @@ class STEP_TokenizerControllerRTL(Component):
 
         # Save Cfg States
         @update
+        def cfg_ready():
+            s.recv_cfg_from_ctrl.rdy @= Bits1(1)
+
+        @update_ff
         def update_tokenizer_cfg():
             if s.reset:
-                s.tokenizer_cfg @= TokenizerCfgType(0, 0)
-            elif s.recv_cfg_from_ctrl.val:
-                s.tokenizer_cfg @= s.recv_cfg_from_ctrl.msg
+                s.tokenizer_cfg_bank0 <<= TokenizerCfgType(0, 0)
+                s.tokenizer_cfg_bank1 <<= TokenizerCfgType(0, 0)
+                s.cfg_bank_valid0 <<= 0
+                s.cfg_bank_valid1 <<= 0
+            else:
+                if s.cfg_swap_w:
+                    if s.cfg_load_sel_w == Bits1(0):
+                        s.cfg_bank_valid0 <<= 0
+                    else:
+                        s.cfg_bank_valid1 <<= 0
+                if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy:
+                    if s.cfg_load_sel_w == Bits1(0):
+                        s.tokenizer_cfg_bank0 <<= s.recv_cfg_from_ctrl.msg
+                        s.cfg_bank_valid0 <<= 1
+                    else:
+                        s.tokenizer_cfg_bank1 <<= s.recv_cfg_from_ctrl.msg
+                        s.cfg_bank_valid1 <<= 1
+
+        @update
+        def select_active_cfg():
+            if s.cfg_active_sel_w == Bits1(0):
+                s.tokenizer_cfg @= s.tokenizer_cfg_bank0
+            else:
+                s.tokenizer_cfg @= s.tokenizer_cfg_bank1
         
         # And all requested token returns together
         @update

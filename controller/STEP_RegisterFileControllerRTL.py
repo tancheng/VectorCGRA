@@ -20,7 +20,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     num_rd_ports=2,
                     num_wr_ports=2,
                     num_registers=16,
-                    num_pred_registers = 16
+                    num_pred_registers = 16,
+                    enable_double_buffering = False
                     ):
 
         # -------------------------------------------------------------------------
@@ -47,6 +48,24 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.cfg_done           = OutPort( 1 )                # level-true when RUN complete this cycle
         s.recv_pred_port = [ InPort(1) for _ in range(num_wr_ports)]
         s.send_tile_preds = [ OutPort(Bits1) for _ in range(num_tiles)]
+        s.cfg_active_sel_w = Wire(Bits1)
+        s.cfg_load_sel_w = Wire(Bits1)
+        s.cfg_swap_w = Wire(Bits1)
+        if enable_double_buffering:
+            s.cfg_active_sel = InPort(Bits1)
+            s.cfg_load_sel = InPort(Bits1)
+            s.cfg_swap = InPort(Bits1)
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= s.cfg_active_sel
+                s.cfg_load_sel_w @= s.cfg_load_sel
+                s.cfg_swap_w @= s.cfg_swap
+        else:
+            @update
+            def cfg_select_wires():
+                s.cfg_active_sel_w @= Bits1(0)
+                s.cfg_load_sel_w @= Bits1(0)
+                s.cfg_swap_w @= Bits1(0)
         s.send_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
         s.ld_enable = [OutPort(1) for _ in range(num_ld_ports)]
         s.st_enable = [OutPort(1) for _ in range(num_st_ports)]
@@ -59,9 +78,16 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.tile_token_avail = [ InPort(1) for _ in range(num_rd_ports) ]
         s.tile_token_shifter_out = [ InPort(1) for _ in range(num_wr_ports) ]
 
-        # TODO: @darrenl actually implement the logic
-        for i in range(num_tiles):
-            s.send_tile_preds[i] //= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
+        s.pred_tile_valid_active = [ Wire(Bits1) for _ in range(num_tiles) ]
+        s.pred_tile_valid_bank0 = [ Wire(Bits1) for _ in range(num_tiles) ]
+        s.pred_tile_valid_bank1 = [ Wire(Bits1) for _ in range(num_tiles) ]
+        s.cfg_bank_valid0 = Wire(Bits1)
+        s.cfg_bank_valid1 = Wire(Bits1)
+
+        @update
+        def select_predicates():
+            for i in range(num_tiles):
+                s.send_tile_preds[i] @= s.pred_tile_valid_active[i]
 
         # Helpful observability (optional)
         # Debug Flags TODO: @darrenl to delete
@@ -71,15 +97,22 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
         s.wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
         s.ld_addr            = [ OutPort(RegAddrType) for _ in range(num_ld_ports) ]
-        for i in range(num_ld_ports):
-            s.ld_addr[i] //= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
 
         # Ld/St Unit Configuration
-        s.send_thread_count //= s.recv_cfg_from_ctrl.msg.thread_count
+        s.ld_enable_active = [ Wire(Bits1) for _ in range(num_ld_ports) ]
+        s.st_enable_active = [ Wire(Bits1) for _ in range(num_st_ports) ]
+        s.ld_reg_addr_active = [ Wire(RegAddrType) for _ in range(num_ld_ports) ]
+        s.ld_enable_bank0 = [ Wire(Bits1) for _ in range(num_ld_ports) ]
+        s.ld_enable_bank1 = [ Wire(Bits1) for _ in range(num_ld_ports) ]
+        s.st_enable_bank0 = [ Wire(Bits1) for _ in range(num_st_ports) ]
+        s.st_enable_bank1 = [ Wire(Bits1) for _ in range(num_st_ports) ]
+        s.ld_reg_addr_bank0 = [ Wire(RegAddrType) for _ in range(num_ld_ports) ]
+        s.ld_reg_addr_bank1 = [ Wire(RegAddrType) for _ in range(num_ld_ports) ]
         for i in range(num_ld_ports):
-            s.ld_enable[i] //= s.recv_cfg_from_ctrl.msg.ld_enable[i]
+            s.ld_enable[i] //= s.ld_enable_active[i]
+            s.ld_addr[i] //= s.ld_reg_addr_active[i]
         for i in range(num_st_ports):
-            s.st_enable[i] //= s.recv_cfg_from_ctrl.msg.st_enable[i]
+            s.st_enable[i] //= s.st_enable_active[i]
 
         # -------------------------------------------------------------------------
         # FSM + config registers
@@ -100,10 +133,23 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.wr_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.wr_addr_valcfg = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.expected_count = Wire( MaxThreadType )
+        s.rd_addr_cfg_bank0    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
+        s.rd_addr_cfg_bank1    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
+        s.rd_addr_valcfg_bank0 = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.rd_addr_valcfg_bank1 = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.tid_enabled_bank0    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.tid_enabled_bank1    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.wr_addr_cfg_bank0    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
+        s.wr_addr_cfg_bank1    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
+        s.wr_addr_valcfg_bank0 = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
+        s.wr_addr_valcfg_bank1 = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
+        s.expected_count_bank0 = Wire( MaxThreadType )
+        s.expected_count_bank1 = Wire( MaxThreadType )
 
         s.rd_addr_o = [ OutPort(RegAddrType) for _ in range(num_rd_ports)]
         for i in range(num_rd_ports):
             s.rd_addr_o[i] //= s.rd_addr_cfg[i]
+        s.send_thread_count //= s.expected_count
 
         # Counters (increment on handshakes)
         s.rd_count = [ Wire(MaxThreadType) for _ in range(num_rd_ports) ]
@@ -116,6 +162,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.wr_addr_valcfg_n = [ OutPort(Bits1) for _ in range(num_wr_ports) ]
         s.rd_addr_cfg_n    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.wr_addr_cfg_n    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
+        s.tid_enabled_n    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.expected_count_n = Wire( MaxThreadType )
 
         #TODO: @darrenl delete me debug statements
@@ -179,8 +226,79 @@ class STEP_RegisterFileControllerRTL( Component ):
 
         @update
         def comb_ready_valid():
-            # Accept new config only when IDLE
-            s.recv_cfg_from_ctrl.rdy @= Bits1( s.state == ST_IDLE )
+            s.recv_cfg_from_ctrl.rdy @= Bits1(1)
+
+        @update_ff
+        def cfg_bank_ff():
+            if s.reset:
+                s.cfg_bank_valid0 <<= 0
+                s.cfg_bank_valid1 <<= 0
+                s.expected_count_bank0 <<= MaxThreadType(0)
+                s.expected_count_bank1 <<= MaxThreadType(0)
+                for i in range(num_rd_ports):
+                    s.rd_addr_cfg_bank0[i] <<= RegAddrType(0)
+                    s.rd_addr_cfg_bank1[i] <<= RegAddrType(0)
+                    s.rd_addr_valcfg_bank0[i] <<= Bits1(0)
+                    s.rd_addr_valcfg_bank1[i] <<= Bits1(0)
+                    s.tid_enabled_bank0[i] <<= Bits1(0)
+                    s.tid_enabled_bank1[i] <<= Bits1(0)
+                for i in range(num_wr_ports):
+                    s.wr_addr_cfg_bank0[i] <<= RegAddrType(0)
+                    s.wr_addr_cfg_bank1[i] <<= RegAddrType(0)
+                    s.wr_addr_valcfg_bank0[i] <<= Bits1(0)
+                    s.wr_addr_valcfg_bank1[i] <<= Bits1(0)
+                for i in range(num_tiles):
+                    s.pred_tile_valid_bank0[i] <<= Bits1(0)
+                    s.pred_tile_valid_bank1[i] <<= Bits1(0)
+                for i in range(num_ld_ports):
+                    s.ld_enable_bank0[i] <<= Bits1(0)
+                    s.ld_enable_bank1[i] <<= Bits1(0)
+                    s.ld_reg_addr_bank0[i] <<= RegAddrType(0)
+                    s.ld_reg_addr_bank1[i] <<= RegAddrType(0)
+                for i in range(num_st_ports):
+                    s.st_enable_bank0[i] <<= Bits1(0)
+                    s.st_enable_bank1[i] <<= Bits1(0)
+            else:
+                if s.cfg_swap_w:
+                    if s.cfg_load_sel_w == Bits1(0):
+                        s.cfg_bank_valid0 <<= 0
+                    else:
+                        s.cfg_bank_valid1 <<= 0
+                if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy:
+                    if s.cfg_load_sel_w == Bits1(0):
+                        s.cfg_bank_valid0 <<= 1
+                        s.expected_count_bank0 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        for i in range(num_rd_ports):
+                            s.rd_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
+                            s.rd_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
+                            s.tid_enabled_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
+                        for i in range(num_wr_ports):
+                            s.wr_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_regs[i]
+                            s.wr_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
+                        for i in range(num_tiles):
+                            s.pred_tile_valid_bank0[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
+                        for i in range(num_ld_ports):
+                            s.ld_enable_bank0[i] <<= s.recv_cfg_from_ctrl.msg.ld_enable[i]
+                            s.ld_reg_addr_bank0[i] <<= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
+                        for i in range(num_st_ports):
+                            s.st_enable_bank0[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
+                    else:
+                        s.cfg_bank_valid1 <<= 1
+                        s.expected_count_bank1 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        for i in range(num_rd_ports):
+                            s.rd_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
+                            s.rd_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
+                            s.tid_enabled_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
+                        for i in range(num_wr_ports):
+                            s.wr_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_regs[i]
+                            s.wr_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
+                        for i in range(num_tiles):
+                            s.pred_tile_valid_bank1[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
+                        for i in range(num_ld_ports):
+                            s.ld_enable_bank1[i] <<= s.recv_cfg_from_ctrl.msg.ld_enable[i]
+                            s.ld_reg_addr_bank1[i] <<= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
+                        for i in range(num_st_ports):
+                            s.st_enable_bank1[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
 
         # -------------------------------------------------------------------------
         # Completion check (comb)
@@ -237,6 +355,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.rd_count_n[i] @= s.rd_count[i]
                 s.rd_addr_valcfg_n[i] @= s.rd_addr_valcfg[i]
                 s.rd_addr_cfg_n[i] @= s.rd_addr_cfg[i]
+                s.tid_enabled_n[i] @= s.tid_enabled[i]
 
                 # Token defaults
                 s.tile_token_take[i] @= 0
@@ -253,13 +372,13 @@ class STEP_RegisterFileControllerRTL( Component ):
             # State transitions
             if s.state == ST_IDLE:
                 # Handshake to start configuration
-                if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy:
+                if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w):
                     s.state_n @= ST_RUN
                     for i in range(num_rd_ports):
                         s.rd_count_n[i] @= MaxThreadType(0)
                         s.rd_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                         s.rd_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs[i]
-                        s.tid_enabled[i] @= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
+                        s.tid_enabled_n[i] @= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
                     for i in range(num_wr_ports):
                         s.wr_count_n[i] @= MaxThreadType(0)
                         s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
@@ -296,28 +415,85 @@ class STEP_RegisterFileControllerRTL( Component ):
                 for i in range(num_rd_ports):
                     s.rd_addr_cfg[i]    <<= RegAddrType(0)
                     s.rd_addr_valcfg[i] <<= Bits1(0)
+                    s.tid_enabled[i]    <<= Bits1(0)
                     s.rd_count[i]       <<= MaxThreadType(0)
                 for i in range(num_wr_ports):
                     s.wr_addr_cfg[i]    <<= RegAddrType(0)
                     s.wr_addr_valcfg[i] <<= Bits1(0)
                     s.wr_count[i]       <<= MaxThreadType(0)
+                for i in range(num_tiles):
+                    s.pred_tile_valid_active[i] <<= Bits1(0)
+                for i in range(num_ld_ports):
+                    s.ld_enable_active[i] <<= Bits1(0)
+                    s.ld_reg_addr_active[i] <<= RegAddrType(0)
+                for i in range(num_st_ports):
+                    s.st_enable_active[i] <<= Bits1(0)
 
             else:
-                # Advance state
-                s.state <<= s.state_n
+                if s.cfg_swap_w:
+                    s.state <<= ST_RUN
+                    if s.cfg_active_sel_w == Bits1(0):
+                        s.expected_count <<= s.expected_count_bank0
+                        for i in range(num_rd_ports):
+                            s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank0[i]
+                            s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank0[i]
+                            s.tid_enabled[i] <<= s.tid_enabled_bank0[i]
+                            s.rd_count[i] <<= MaxThreadType(0)
+                        for i in range(num_wr_ports):
+                            s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank0[i]
+                            s.wr_addr_valcfg[i] <<= s.wr_addr_valcfg_bank0[i]
+                            s.wr_count[i] <<= MaxThreadType(0)
+                        for i in range(num_tiles):
+                            s.pred_tile_valid_active[i] <<= s.pred_tile_valid_bank0[i]
+                        for i in range(num_ld_ports):
+                            s.ld_enable_active[i] <<= s.ld_enable_bank0[i]
+                            s.ld_reg_addr_active[i] <<= s.ld_reg_addr_bank0[i]
+                        for i in range(num_st_ports):
+                            s.st_enable_active[i] <<= s.st_enable_bank0[i]
+                    else:
+                        s.expected_count <<= s.expected_count_bank1
+                        for i in range(num_rd_ports):
+                            s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank1[i]
+                            s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank1[i]
+                            s.tid_enabled[i] <<= s.tid_enabled_bank1[i]
+                            s.rd_count[i] <<= MaxThreadType(0)
+                        for i in range(num_wr_ports):
+                            s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank1[i]
+                            s.wr_addr_valcfg[i] <<= s.wr_addr_valcfg_bank1[i]
+                            s.wr_count[i] <<= MaxThreadType(0)
+                        for i in range(num_tiles):
+                            s.pred_tile_valid_active[i] <<= s.pred_tile_valid_bank1[i]
+                        for i in range(num_ld_ports):
+                            s.ld_enable_active[i] <<= s.ld_enable_bank1[i]
+                            s.ld_reg_addr_active[i] <<= s.ld_reg_addr_bank1[i]
+                        for i in range(num_st_ports):
+                            s.st_enable_active[i] <<= s.st_enable_bank1[i]
+                else:
+                    # Advance state
+                    s.state <<= s.state_n
 
-                # Update counters
-                for i in range(num_rd_ports):
-                    s.rd_count[i] <<= s.rd_count_n[i]
-                    s.rd_addr_cfg[i] <<= s.rd_addr_cfg_n[i]
-                    s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_n[i]
+                    # Update counters/config
+                    for i in range(num_rd_ports):
+                        s.rd_count[i] <<= s.rd_count_n[i]
+                        s.rd_addr_cfg[i] <<= s.rd_addr_cfg_n[i]
+                        s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_n[i]
+                        s.tid_enabled[i] <<= s.tid_enabled_n[i]
 
-                for i in range(num_wr_ports):
-                    s.wr_count[i] <<= s.wr_count_n[i]
-                    s.wr_addr_cfg[i] <<= s.wr_addr_cfg_n[i]
-                    s.wr_addr_valcfg[i] <<= s.wr_addr_valcfg_n[i]
+                    for i in range(num_wr_ports):
+                        s.wr_count[i] <<= s.wr_count_n[i]
+                        s.wr_addr_cfg[i] <<= s.wr_addr_cfg_n[i]
+                        s.wr_addr_valcfg[i] <<= s.wr_addr_valcfg_n[i]
 
-                s.expected_count <<= s.expected_count_n
+                    s.expected_count <<= s.expected_count_n
+
+                    if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE):
+                        for i in range(num_tiles):
+                            s.pred_tile_valid_active[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
+                        for i in range(num_ld_ports):
+                            s.ld_enable_active[i] <<= s.recv_cfg_from_ctrl.msg.ld_enable[i]
+                            s.ld_reg_addr_active[i] <<= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
+                        for i in range(num_st_ports):
+                            s.st_enable_active[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
 
         # -------------------------------------------------------------------------
         # Outputs derived from registered state (single-writer comb)
