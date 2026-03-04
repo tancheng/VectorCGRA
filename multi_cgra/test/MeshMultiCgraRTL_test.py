@@ -1932,7 +1932,7 @@ def initialize_test_harness(cmdline_opts,
 
     expected_complete_sink_out_pkg = \
         [
-            IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1)
+            IntraCgraPktType(src = 1, dst = 4, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1)
         ]
     expected_mem_sink_out_pkt = \
         [
