@@ -64,9 +64,10 @@ class STEP_TileRTL(Component):
         s.tile_out_pred_port = [ OutPort(Bits1) for _ in range(num_tile_outports) ]
         s.recv_tile_bitstream = RecvIfcRTL(TileBitstreamType)
         s.recv_tile_bitstream.rdy //= 1
-        s.cfg_active_sel_w = Wire(Bits1)
-        s.cfg_load_sel_w = Wire(Bits1)
-        s.cfg_swap_w = Wire(Bits1)
+        s.cfg_active_sel_w = Wire(1)
+        s.cfg_load_sel_w = Wire(1)
+        s.cfg_swap_w = Wire(1)
+        s.cfg_load_rst = InPort(1)
         if enable_double_buffering:
             s.cfg_active_sel = InPort(Bits1)
             s.cfg_load_sel = InPort(Bits1)
@@ -158,6 +159,11 @@ class STEP_TileRTL(Component):
             if s.reset:
                 s.tile_bitstream_bank0 <<= 0
                 s.tile_bitstream_bank1 <<= 0
+            if s.cfg_load_rst:
+                if s.cfg_load_sel_w == Bits1(0):
+                    s.tile_bitstream_bank0 <<= 0
+                else:
+                    s.tile_bitstream_bank1 <<= 0
             elif (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
                 if s.cfg_load_sel_w == Bits1(0):
                     s.tile_bitstream_bank0 <<= s.recv_tile_bitstream.msg

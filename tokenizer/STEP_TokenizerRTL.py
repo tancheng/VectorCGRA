@@ -14,10 +14,11 @@ class STEP_TokenizerRTL(Component):
         """
         
         # Interface
-        s.token_take = InPort(Bits1)      # Signal to take a token
-        s.token_return = InPort(Bits1)
+        s.token_take = InPort(1)      # Signal to take a token
+        s.token_return = InPort(1)
         s.token_shifter_out = OutPort(1)
         s.token_avail = OutPort(1)
+        s.cfg_swap = InPort(1)
         
         DelayIdxType = mk_bits( clog2(max_delay) )
         s.token_shifter = OutPort( max_delay )
@@ -27,7 +28,10 @@ class STEP_TokenizerRTL(Component):
 
         @update
         def update_shifter_out():
-            s.token_shifter_out @= s.token_shifter[DelayIdxType(max_delay - 1) - s.token_delay + 1]
+            if s.cfg_swap:
+                s.token_shifter_out @= 0
+            else:
+                s.token_shifter_out @= s.token_shifter[DelayIdxType(max_delay - 1) - s.token_delay + 1]
         
         @update
         def update_shifter_n():
@@ -43,6 +47,8 @@ class STEP_TokenizerRTL(Component):
         def update_token():
             if s.reset:
                 s.token_count <<= num_tokens
+                s.token_shifter <<= 0
+            if s.cfg_swap:
                 s.token_shifter <<= 0
             else:
                 s.token_shifter <<= s.token_shifter >> 1

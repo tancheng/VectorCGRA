@@ -406,6 +406,7 @@ def mk_cfg_metadata_pkt(
     field_dict = {}
     # TODO @darrenl pred_tile_valid is whether the immediate rf predicate is 0 or 1. should be address instead
     field_dict['cmd'] = CmdType
+    field_dict['tile_load_count'] = mk_bits(clog2(num_tiles+1))
     field_dict['pred_tile_valid'] = [Bits1 for _ in range(num_tiles)]
     field_dict['ld_enable'] = [Bits1 for _ in range(num_ld_ports)]
     field_dict['st_enable'] = [Bits1 for _ in range(num_st_ports)]
@@ -415,12 +416,25 @@ def mk_cfg_metadata_pkt(
     field_dict['in_tid_enable'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
+    field_dict['out_pred_regs'] = [PredAddrType for _ in range(num_wr_ports)]
+    field_dict['out_pred_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['tokenizer_cfg'] = CfgTokenizerType
     field_dict['cfg_id'] = CfgIdType
     field_dict['br_id'] = CfgIdType
     field_dict['thread_count'] = ThreadCountType
     field_dict['start_cfg'] = Bits1
     field_dict['end_cfg'] = Bits1
+    # Branching / predication control
+    field_dict['branch_en'] = Bits1
+    field_dict['pred_reg_id'] = PredAddrType
+    field_dict['branch_true_cfg_id'] = CfgIdType
+    field_dict['branch_false_cfg_id'] = CfgIdType
+    field_dict['reconverge_cfg_id'] = CfgIdType
+    # Loop control
+    field_dict['loop_en'] = Bits1
+    field_dict['loop_start_cfg_id'] = CfgIdType
+    field_dict['loop_exit_cfg_id'] = CfgIdType
+    field_dict['loop_max'] = ThreadCountType
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}
@@ -658,4 +672,3 @@ def mk_controller_noc_xbar_pkt(InterCgraPktType,
     },
     namespace = {'__str__': str_func}
   )
-

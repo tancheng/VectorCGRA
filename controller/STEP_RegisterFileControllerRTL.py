@@ -48,6 +48,9 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.cfg_done           = OutPort( 1 )                # level-true when RUN complete this cycle
         s.recv_pred_port = [ InPort(1) for _ in range(num_wr_ports)]
         s.send_tile_preds = [ OutPort(Bits1) for _ in range(num_tiles)]
+        s.pred_any_true = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
+        s.pred_any_false = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
+        s.pred_complete = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
         s.cfg_active_sel_w = Wire(Bits1)
         s.cfg_load_sel_w = Wire(Bits1)
         s.cfg_swap_w = Wire(Bits1)
@@ -84,10 +87,28 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.cfg_bank_valid0 = Wire(Bits1)
         s.cfg_bank_valid1 = Wire(Bits1)
 
+        # Predicate register file (summary only)
+        PredCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+        s.pred_count = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
+        s.pred_expected = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
+        s.pred_any_true_reg = [ Wire(Bits1) for _ in range(num_pred_registers) ]
+        s.pred_any_false_reg = [ Wire(Bits1) for _ in range(num_pred_registers) ]
+        s.active_pred_reg = Wire(PredAddrType)
+        s.active_branch_en = Wire(Bits1)
+        num_tile_rows_local = num_wr_ports // 2
+        num_tile_cols_local = num_tiles // num_tile_rows_local
+
         @update
         def select_predicates():
             for i in range(num_tiles):
                 s.send_tile_preds[i] @= s.pred_tile_valid_active[i]
+
+        @update
+        def pred_reduce():
+            for r in range(num_pred_registers):
+                s.pred_any_true[r] @= s.pred_any_true_reg[r]
+                s.pred_any_false[r] @= s.pred_any_false_reg[r]
+                s.pred_complete[r] @= (s.pred_count[r] >= s.pred_expected[r]) & (s.pred_expected[r] > 0)
 
         # Helpful observability (optional)
         # Debug Flags TODO: @darrenl to delete
@@ -139,6 +160,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_addr_valcfg_bank1 = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.tid_enabled_bank0    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.tid_enabled_bank1    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.pred_reg_bank0       = Wire(PredAddrType)
+        s.pred_reg_bank1       = Wire(PredAddrType)
+        s.branch_en_bank0      = Wire(Bits1)
+        s.branch_en_bank1      = Wire(Bits1)
         s.wr_addr_cfg_bank0    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.wr_addr_cfg_bank1    = [ Wire(RegAddrType) for _ in range(num_wr_ports) ]
         s.wr_addr_valcfg_bank0 = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
@@ -235,6 +260,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.cfg_bank_valid1 <<= 0
                 s.expected_count_bank0 <<= MaxThreadType(0)
                 s.expected_count_bank1 <<= MaxThreadType(0)
+                s.pred_reg_bank0 <<= PredAddrType(0)
+                s.pred_reg_bank1 <<= PredAddrType(0)
+                s.branch_en_bank0 <<= Bits1(0)
+                s.branch_en_bank1 <<= Bits1(0)
                 for i in range(num_rd_ports):
                     s.rd_addr_cfg_bank0[i] <<= RegAddrType(0)
                     s.rd_addr_cfg_bank1[i] <<= RegAddrType(0)
@@ -268,6 +297,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     if s.cfg_load_sel_w == Bits1(0):
                         s.cfg_bank_valid0 <<= 1
                         s.expected_count_bank0 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        s.pred_reg_bank0 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
+                        s.branch_en_bank0 <<= s.recv_cfg_from_ctrl.msg.branch_en
                         for i in range(num_rd_ports):
                             s.rd_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
                             s.rd_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
@@ -285,6 +316,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     else:
                         s.cfg_bank_valid1 <<= 1
                         s.expected_count_bank1 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        s.pred_reg_bank1 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
+                        s.branch_en_bank1 <<= s.recv_cfg_from_ctrl.msg.branch_en
                         for i in range(num_rd_ports):
                             s.rd_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
                             s.rd_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
@@ -412,6 +445,8 @@ class STEP_RegisterFileControllerRTL( Component ):
             if s.reset:
                 s.state           <<= ST_IDLE
                 s.expected_count  <<= MaxThreadType(0)
+                s.active_pred_reg <<= PredAddrType(0)
+                s.active_branch_en <<= Bits1(0)
                 for i in range(num_rd_ports):
                     s.rd_addr_cfg[i]    <<= RegAddrType(0)
                     s.rd_addr_valcfg[i] <<= Bits1(0)
@@ -434,6 +469,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.state <<= ST_RUN
                     if s.cfg_active_sel_w == Bits1(0):
                         s.expected_count <<= s.expected_count_bank0
+                        s.active_pred_reg <<= s.pred_reg_bank0
+                        s.active_branch_en <<= s.branch_en_bank0
                         for i in range(num_rd_ports):
                             s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank0[i]
                             s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank0[i]
@@ -452,6 +489,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.st_enable_active[i] <<= s.st_enable_bank0[i]
                     else:
                         s.expected_count <<= s.expected_count_bank1
+                        s.active_pred_reg <<= s.pred_reg_bank1
+                        s.active_branch_en <<= s.branch_en_bank1
                         for i in range(num_rd_ports):
                             s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank1[i]
                             s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank1[i]
@@ -487,6 +526,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.expected_count <<= s.expected_count_n
 
                     if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE):
+                        s.active_pred_reg <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
+                        s.active_branch_en <<= s.recv_cfg_from_ctrl.msg.branch_en
                         for i in range(num_tiles):
                             s.pred_tile_valid_active[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
                         for i in range(num_ld_ports):
@@ -494,6 +535,45 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.ld_reg_addr_active[i] <<= s.recv_cfg_from_ctrl.msg.ld_reg_addr[i]
                         for i in range(num_st_ports):
                             s.st_enable_active[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
+
+        # -------------------------------------------------------------------------
+        # Predicate register file update
+        # -------------------------------------------------------------------------
+        @update_ff
+        def pred_rf_ff():
+            if s.reset:
+                for r in range(num_pred_registers):
+                    s.pred_count[r] <<= PredCountType(0)
+                    s.pred_expected[r] <<= PredCountType(0)
+                    s.pred_any_true_reg[r] <<= Bits1(0)
+                    s.pred_any_false_reg[r] <<= Bits1(0)
+                # No per-tid storage; only summary bits
+            else:
+                cfg_start = s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE)
+                # Clear predicate register on config start
+                if cfg_start & s.recv_cfg_from_ctrl.msg.branch_en:
+                    reg = s.recv_cfg_from_ctrl.msg.pred_reg_id
+                    s.pred_count[reg] <<= PredCountType(0)
+                    s.pred_expected[reg] <<= PredCountType(s.recv_cfg_from_ctrl.msg.thread_count)
+                    s.pred_any_true_reg[reg] <<= Bits1(0)
+                    s.pred_any_false_reg[reg] <<= Bits1(0)
+                elif cfg_start:
+                    # Not a branch config; clear expected so controller doesn't wait
+                    reg = s.recv_cfg_from_ctrl.msg.pred_reg_id
+                    s.pred_expected[reg] <<= PredCountType(0)
+                # Capture predicate bits while active branch config is running
+                if s.state == ST_RUN:
+                    reg = s.active_pred_reg
+                    for i in range(num_wr_ports):
+                        row = i >> 1
+                        col = 0 if (i & 1) == 0 else (num_tile_cols_local - 1)
+                        tile_idx = row * num_tile_cols_local + col
+                        if (s.pred_expected[reg] > 0):
+                            if s.pred_count[reg] < s.pred_expected[reg]:
+                                s.pred_count[reg] <<= s.pred_count[reg] + PredCountType(1)
+                            pred_val = Bits1(s.wr_data[i])
+                            s.pred_any_true_reg[reg] <<= s.pred_any_true_reg[reg] | pred_val
+                            s.pred_any_false_reg[reg] <<= s.pred_any_false_reg[reg] | ~pred_val
 
         # -------------------------------------------------------------------------
         # Outputs derived from registered state (single-writer comb)

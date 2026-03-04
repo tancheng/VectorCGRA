@@ -76,6 +76,7 @@ class STEP_TokenizerControllerRTL(Component):
             s.tokenizer_cfg.token_route_delay_to_sink[i] //= s.tokenizers[i].token_delay
             s.token_return[i] //= s.tokenizers[i].token_return
             s.token_shifter_out[i] //= s.tokenizers[i].token_shifter_out
+            s.cfg_swap //= s.tokenizers[i].cfg_swap
 
         # Save Cfg States
         @update

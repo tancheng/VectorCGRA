@@ -16,8 +16,11 @@ from pymtl3 import *
 # Needs to be updated once more operations are added/supported.
 NUM_OPTS = 64
 
-OPT_START                 = Bits6( 0  )
-OPT_NAH                   = Bits6( 1  )
+# Original before STEP
+# OPT_START                 = Bits6( 0  )
+# OPT_NAH                   = Bits6( 1  )
+OPT_START                 = Bits6( 1  )
+OPT_NAH                   = Bits6( 0  )
 OPT_PAS                   = Bits6( 31 )
 OPT_ADD                   = Bits6( 2  )
 OPT_ADD_CONST             = Bits6( 25 )

@@ -60,12 +60,15 @@ class STEP_CgraRTL(Component):
         # Additional Type
         AxiAddrType = mk_bits( AXI_ADDR_BITWIDTH )
         BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
+        TileCountType = mk_bits(clog2(num_tiles + 1))
 
         # CGRA Top-Level IOs
         s.recv_from_cpu_bitstream_pkt = RecvIfcRTL(TileBitstreamType)
         s.recv_from_cpu_metadata_pkt = RecvIfcRTL(CfgMetadataType)
         s.send_to_cpu_done = OutPort(Bits1)
         s.pc_req_trigger = OutPort(Bits1)
+        s.pc_req_trigger_count = OutPort(TileCountType)
+        s.pc_req_trigger_complete = InPort(1)
         s.pc_req = OutPort(BitstreamAddrType)
 
         s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ld_ports)]
@@ -78,6 +81,7 @@ class STEP_CgraRTL(Component):
             CfgTokenizerType,
             TileBitstreamType,
             num_tiles,
+            num_pred_registers,
             debug
         )
 
@@ -133,24 +137,44 @@ class STEP_CgraRTL(Component):
         )
 
         ### Wire Connections ###
-        s.cfg_active_sel = Wire(Bits1)
-        s.cfg_load_sel = Wire(Bits1)
-        s.cfg_swap = Wire(Bits1)
+        if debug:
+            s.cfg_active_sel = OutPort(Bits1)
+            s.cfg_load_sel = OutPort(Bits1)
+            s.cfg_swap = OutPort(Bits1)
+        else:
+            s.cfg_active_sel = Wire(Bits1)
+            s.cfg_load_sel = OutPort(Bits1)
+            s.cfg_swap = Wire(Bits1)
         ##### Core Controller Connections
         s.core_controller.recv_from_cpu_bitstream_pkt //= s.recv_from_cpu_bitstream_pkt
         s.core_controller.recv_from_cpu_metadata_pkt //= s.recv_from_cpu_metadata_pkt # cpu -> core
         s.core_controller.send_to_cpu_done //= s.send_to_cpu_done # core -> cpu
         s.core_controller.pc_req_trigger //= s.pc_req_trigger # core -> cpu
         s.core_controller.pc_req //= s.pc_req # core -> cpu
+        s.core_controller.pc_req_trigger_count //= s.pc_req_trigger_count # core -> cpu
+        s.core_controller.pc_req_trigger_complete //= s.pc_req_trigger_complete # core -> cpu
         s.cfg_active_sel //= s.core_controller.cfg_active_sel
         s.cfg_load_sel //= s.core_controller.cfg_load_sel
         s.cfg_swap //= s.core_controller.cfg_swap
+        s.cfg_load_sel_ff = Wire(1)
+        s.cfg_load_rst = Wire(1)
+
+        @update_ff
+        def update_cfg_load_rst():
+            s.cfg_load_rst <<= 0
+            if s.cfg_load_sel & ~s.cfg_load_sel_ff:
+                s.cfg_load_rst <<= 1
+            elif ~s.cfg_load_sel & s.cfg_load_sel_ff:
+                s.cfg_load_rst <<= 1
+            
+            s.cfg_load_sel_ff <<= s.cfg_load_sel
         
         ##### Core Controller & Fabric Connections
         s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
         s.tile_fabric.cfg_active_sel //= s.cfg_active_sel
         s.tile_fabric.cfg_load_sel //= s.cfg_load_sel
         s.tile_fabric.cfg_swap //= s.cfg_swap
+        s.cfg_load_rst //= s.tile_fabric.cfg_load_rst # core -> fabric
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
@@ -158,6 +182,10 @@ class STEP_CgraRTL(Component):
         s.rf_controller.cfg_active_sel //= s.cfg_active_sel
         s.rf_controller.cfg_load_sel //= s.cfg_load_sel
         s.rf_controller.cfg_swap //= s.cfg_swap
+        for i in range(num_pred_registers):
+            s.core_controller.pred_any_true[i] //= s.rf_controller.pred_any_true[i]
+            s.core_controller.pred_any_false[i] //= s.rf_controller.pred_any_false[i]
+            s.core_controller.pred_complete[i] //= s.rf_controller.pred_complete[i]
 
         ##### RF Controller & Fabric Connections
         for i in range(num_tiles):
@@ -225,10 +253,10 @@ class STEP_CgraRTL(Component):
             s.st_axi[i] //= s.ld_st_unit.st_axi[i]
 
         ###### Tokenizer & Core Controller
-        s.core_controller.send_cfg_to_tokenizer //= s.tokenizer.recv_cfg_from_ctrl
-        s.tokenizer.cfg_active_sel //= s.cfg_active_sel
-        s.tokenizer.cfg_load_sel //= s.cfg_load_sel
-        s.tokenizer.cfg_swap //= s.cfg_swap
+        s.core_controller.send_cfg_to_tokenizer //= s.tokenizer.recv_cfg_from_ctrl # cc -> tokenizer
+        s.tokenizer.cfg_active_sel //= s.cfg_active_sel # cc -> tokenizer
+        s.tokenizer.cfg_load_sel //= s.cfg_load_sel # cc -> tokenizer
+        s.tokenizer.cfg_swap //= s.cfg_swap # cc -> tokenizer
 
         ###### Tokenizer & Rf
         for i in range(num_taker_ports):
@@ -265,7 +293,6 @@ class STEP_CgraRTL(Component):
             s.cc_pc_next = OutPort(BitstreamAddrType)
             s.cc_pc = OutPort(BitstreamAddrType)
             s.cc_state = OutPort(mk_bits(2))
-            TileCountType = mk_bits(clog2(num_tiles))
             s.cc_tiles_seen = OutPort( TileCountType )
             s.cc_pc_started = OutPort( Bits1 )
             s.cc_pc_done = OutPort( Bits1 )
