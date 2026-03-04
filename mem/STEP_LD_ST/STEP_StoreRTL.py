@@ -75,6 +75,7 @@ class STEP_StoreRTL( Component ):
             s.store_queue.recv.val @= s.store_ifc.i_req & s.store_queue.recv.rdy & s.i_tile_pred
             s.store_queue.recv.msg.addr @= s.store_ifc.i_addr
             s.store_queue.recv.msg.data @= s.store_ifc.i_data
+            s.store_queue.recv.msg.id @= s.tile_counter - 1
 
             s.store_ifc.o_rdy @= s.store_queue.recv.rdy
             
@@ -104,7 +105,7 @@ class STEP_StoreRTL( Component ):
             s.axi.len      @= 0         # Single beat transfer
             s.axi.size     @= transfer_size_bits
             s.axi.burst    @= 1         # INCR burst type
-            s.axi.id       @= 0         # Transaction ID = 0
+            s.axi.id       @= s.store_queue.send.msg.id
             
             # Dequeue address when both sides are ready
             s.store_queue.send.rdy @= s.axi.addr_rdy

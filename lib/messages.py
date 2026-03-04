@@ -543,10 +543,12 @@ def mk_st_req_pkt(DataType,
         return f"StReqPkt: bitstream:\n"
 
     AddrType = mk_bits( AXI_ADDR_BITWIDTH )
+    IdType = mk_bits( clog2(MAX_THREAD_COUNT) )
 
     field_dict = {}
     field_dict['addr'] = AddrType
     field_dict['data'] = DataType
+    field_dict['id']   = IdType
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}

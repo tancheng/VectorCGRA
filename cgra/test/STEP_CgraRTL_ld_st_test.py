@@ -55,7 +55,7 @@ class TestHarness(Component):
         s.num_tiles = num_tile_cols * num_tile_rows
 
         # Configure Sources
-        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[5 for _ in range(thread_count * 2)]]
+        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[i for i in range(thread_count * 2)]]
         st_counts = [0, 1]
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(CfgMetadataType, cpu_to_cgra_metadata_msgs)
         s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(TileBitstreamType, cpu_to_cgra_bitstream_msgs, s.num_tiles, delay=1)
