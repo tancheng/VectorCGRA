@@ -24,6 +24,8 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
+  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 in bits (217).
+  // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
   logic [217-1:0] pkt_queue [$];
 
   initial
