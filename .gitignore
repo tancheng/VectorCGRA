@@ -11,6 +11,11 @@ ucli.key
 # Verilog generated
 *.v
 *.v.cases
+*_v.cpp*
+*.v*
+*_v.so*
+*_v.py*
+*.json.*
 
 # C++ generated
 *.cpp
