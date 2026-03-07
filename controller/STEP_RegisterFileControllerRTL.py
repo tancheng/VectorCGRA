@@ -345,7 +345,9 @@ class STEP_RegisterFileControllerRTL( Component ):
         @update
         def comb_output_data():
             for i in range(num_rd_ports):
-                if s.tid_enabled[i]:
+                if ~s.rd_addr_valcfg[i]:
+                    s.rd_data[i] @= RegDataType(0)
+                elif s.tid_enabled[i]:
                     s.rd_data[i] @= s.current_issue_tid[0:RegDataType.nbits]
                 else:
                     s.rd_data[i] @= s.register_file.rd_data[i]
