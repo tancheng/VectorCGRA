@@ -14,6 +14,7 @@ Author : Cheng Tan
   Date : Nov 26, 2024
 """
 
+from pymtl3 import trunc
 from ..fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ..fu.single.AdderRTL import AdderRTL
 from ..fu.single.BranchRTL import BranchRTL
@@ -109,7 +110,8 @@ class STEP_TileCrossbarRTL(Component):
             s.pred_in_val @= 1
             for i in range(num_fu_inports):
                 if s.tile_bitstream.tile_in_route[i] > 0:
-                    input_idx = AbsoluteTileInPortType(s.tile_bitstream.tile_in_route[i] - 1)
+                    input_idx = trunc( s.tile_bitstream.tile_in_route[i] - 1,
+                                       AbsoluteTileInPortType.nbits )
                     if ~s.tile_in_pred_port[input_idx]:
                         s.pred_in_val @= 0
             
@@ -143,7 +145,8 @@ class STEP_TileCrossbarRTL(Component):
             if ~((s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH)):
                 # Normal operation - send to FU based on configuration
                 for i in range(num_fu_inports):
-                    tile_port_idx = AbsoluteTileInPortType(s.tile_bitstream.tile_in_route[i] - 1)
+                    tile_port_idx = trunc( s.tile_bitstream.tile_in_route[i] - 1,
+                                           AbsoluteTileInPortType.nbits )
                     if s.tile_bitstream.tile_in_route[i] != 0:
                         s.send_to_fu[i] @= s.tile_in_data_port[tile_port_idx]
                     else:

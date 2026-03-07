@@ -55,4 +55,3 @@ PROLOGUE_MAX_COUNT = 7
 # and command signal from inter-tile, i.e., intra-cgra, ring) and 1
 # outport (only allow one request be sent out per cycle).
 CONTROLLER_CROSSBAR_INPORTS = 5
-

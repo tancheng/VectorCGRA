@@ -99,6 +99,7 @@ class STEP_CgraRTL(Component):
             num_registers,
             num_pred_registers,
             True,
+            debug,
         )
         
         s.ld_st_unit = STEP_LoadStoreRTL(
@@ -156,18 +157,11 @@ class STEP_CgraRTL(Component):
         s.cfg_active_sel //= s.core_controller.cfg_active_sel
         s.cfg_load_sel //= s.core_controller.cfg_load_sel
         s.cfg_swap //= s.core_controller.cfg_swap
-        s.cfg_load_sel_ff = Wire(1)
         s.cfg_load_rst = Wire(1)
 
         @update_ff
         def update_cfg_load_rst():
-            s.cfg_load_rst <<= 0
-            if s.cfg_load_sel & ~s.cfg_load_sel_ff:
-                s.cfg_load_rst <<= 1
-            elif ~s.cfg_load_sel & s.cfg_load_sel_ff:
-                s.cfg_load_rst <<= 1
-            
-            s.cfg_load_sel_ff <<= s.cfg_load_sel
+            s.cfg_load_rst <<= s.core_controller.send_cfg_to_rf.val & s.core_controller.send_cfg_to_rf.rdy
         
         ##### Core Controller & Fabric Connections
         s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
@@ -179,9 +173,12 @@ class STEP_CgraRTL(Component):
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
         s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
+        s.core_controller.rf_cfg_ready //= s.rf_controller.fabric_done # rf -> core
+        s.core_controller.rf_dep_mode //= s.rf_controller.dep_mode_out # rf -> core
         s.rf_controller.cfg_active_sel //= s.cfg_active_sel
         s.rf_controller.cfg_load_sel //= s.cfg_load_sel
         s.rf_controller.cfg_swap //= s.cfg_swap
+        s.rf_controller.cfg_dep_start //= s.core_controller.rf_dep_start
         for i in range(num_pred_registers):
             s.core_controller.pred_any_true[i] //= s.rf_controller.pred_any_true[i]
             s.core_controller.pred_any_false[i] //= s.rf_controller.pred_any_false[i]
@@ -202,14 +199,44 @@ class STEP_CgraRTL(Component):
             s.rf_controller.recv_pred_port[2*i+1] //= s.tile_fabric.send_east_pred_port[i] # fabric -> rf
         
         ##### RF Controller & Load/Store Connections
+        s.ld_req_accepted = [Wire(Bits1) for _ in range(num_ld_ports)]
+        s.st_req_accepted = [Wire(Bits1) for _ in range(num_st_ports)]
         for i in range(num_tile_cols // 2):
             s.rf_controller.ld_enable[i]        //= s.ld_st_unit.ld_enable[i] # rf -> ld/st
             s.rf_controller.st_enable[i]        //= s.ld_st_unit.st_enable[i] # rf -> ld/st
+            s.rf_controller.ld_issue_tid[i]     //= s.ld_st_unit.ld_issue_tid[i] # rf -> ld/st
+            s.rf_controller.st_issue_tid[i]     //= s.ld_st_unit.st_issue_tid[i] # rf -> ld/st
             s.rf_controller.ld_data[i]          //= s.ld_st_unit.ld_ifc[i].o_data # ld/st -> rf
             s.rf_controller.ld_data_valid[i]    //= s.ld_st_unit.ld_ifc[i].o_done # ld/st -> rf
             s.rf_controller.ld_data_id[i]       //= s.ld_st_unit.ld_ifc[i].o_data_id # ld/st -> rf
+            s.rf_controller.ld_req_accepted[i]  //= s.ld_req_accepted[i]
+            s.rf_controller.st_req_accepted[i]  //= s.st_req_accepted[i]
         s.rf_controller.send_thread_count //= s.ld_st_unit.thread_count # rf -> ld/st
         s.rf_controller.ld_st_complete //= s.ld_st_unit.ld_st_complete # ld/st -> rf
+        s.rf_controller.mem_ready_mask_bank0 //= s.ld_st_unit.mem_ready_mask_bank0
+        s.rf_controller.mem_ready_mask_bank1 //= s.ld_st_unit.mem_ready_mask_bank1
+        s.rf_controller.mem_complete_mask_bank0 //= s.ld_st_unit.mem_complete_mask_bank0
+        s.rf_controller.mem_complete_mask_bank1 //= s.ld_st_unit.mem_complete_mask_bank1
+        s.rf_controller.mem_release_valid //= s.ld_st_unit.ld_release_valid
+        s.rf_controller.mem_release_tid //= s.ld_st_unit.ld_release_tid
+        s.rf_controller.mem_release_take //= s.ld_st_unit.release_take
+        s.rf_controller.cfg_thread_count_bank0 //= s.ld_st_unit.cfg_thread_count_bank0
+        s.rf_controller.cfg_thread_count_bank1 //= s.ld_st_unit.cfg_thread_count_bank1
+        s.rf_controller.cfg_bank_has_load0 //= s.ld_st_unit.cfg_bank_has_load0
+        s.rf_controller.cfg_bank_has_load1 //= s.ld_st_unit.cfg_bank_has_load1
+        s.rf_controller.cfg_bank_has_store0 //= s.ld_st_unit.cfg_bank_has_store0
+        s.rf_controller.cfg_bank_has_store1 //= s.ld_st_unit.cfg_bank_has_store1
+
+        s.ld_st_unit.cfg_active_sel //= s.cfg_active_sel
+        s.ld_st_unit.cfg_load_sel //= s.cfg_load_sel
+        s.ld_st_unit.cfg_load_rst //= s.cfg_load_rst
+
+        @update
+        def update_ld_st_accepts():
+            for i in range(num_ld_ports):
+                s.ld_req_accepted[i] @= s.ld_st_unit.ld_ifc[i].i_req & s.ld_st_unit.ld_ifc[i].o_rdy & s.rf_controller.ld_enable[i]
+            for i in range(num_st_ports):
+                s.st_req_accepted[i] @= s.ld_st_unit.st_ifc[i].i_req & s.ld_st_unit.st_ifc[i].o_rdy & s.rf_controller.st_enable[i]
 
         ##### Load/Store & Fabric Connections
         for i in range(num_tile_cols // 2):
@@ -239,10 +266,11 @@ class STEP_CgraRTL(Component):
         def update_ld_st_fabric():
             for i in range(num_ld_ports):
                 # NORTH Load ONLY - Addr at Even tile columns
-                s.north_addr_wire[i] @= AxiAddrType(s.tile_fabric.send_north_data_port[i*2]) # ld/st -> fabric
+                # widen narrow data flits into full AXI address width
+                s.north_addr_wire[i] @= zext( s.tile_fabric.send_north_data_port[i*2], AxiAddrType.nbits ) # ld/st -> fabric
 
                 # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
-                s.south_addr_wire[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2]) # ld/st -> fabric
+                s.south_addr_wire[i] @= zext( s.tile_fabric.send_south_data_port[i*2], AxiAddrType.nbits ) # ld/st -> fabric
         
         ##### Load/Store External Connections
         # Load Axis
@@ -340,13 +368,13 @@ class STEP_CgraRTL(Component):
             for i in range(num_st_ports):
                 s.st_enable[i] //= s.rf_controller.st_enable[i]
                 s.st_complete[i] //= s.ld_st_unit.st_complete[i]
-            s.lds_outstanding = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-            s.lds_in_tile     = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.lds_outstanding = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
+            s.lds_in_tile     = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
             s.lds_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
             s.sts_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
             s.store_queue_rdy   = [ OutPort(1) for _ in range(num_ld_ports) ]
-            s.sts_outstanding= [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
-            s.stores_in_tile    = [ OutPort( clog2(ld_st_queue_depth + 1) ) for _ in range(num_ld_ports) ]
+            s.sts_outstanding= [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
+            s.stores_in_tile    = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
             s.ld_i_req = [OutPort(1) for _ in range(num_ld_ports)]
             s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ld_ports)]
             s.st_tile_last_seen = [OutPort(1) for _ in range(num_st_ports)]
@@ -372,7 +400,7 @@ class STEP_CgraRTL(Component):
             @update
             def test_st_addr():
                 for i in range(num_st_ports):
-                    s.st_i_addr[i] @= AxiAddrType(s.tile_fabric.send_south_data_port[i*2]) 
+                    s.st_i_addr[i] @= zext( s.tile_fabric.send_south_data_port[i*2], AxiAddrType.nbits )
 
             # RF Controller Test
             s.rf_state_n = OutPort(1)
@@ -383,18 +411,18 @@ class STEP_CgraRTL(Component):
             s.rf_fabric_done //= s.rf_controller.fabric_done
             s.rf_fabric_complete = OutPort(Bits1)
             s.rf_fabric_complete //= s.rf_controller.fabric_complete
-            s.rf_expected_count = OutPort( clog2(MAX_THREAD_COUNT) )
-            s.rf_expected_count //= s.rf_controller.expected_count_o
-            MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
-            s.rf_rd_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
-            s.rf_wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
-            s.rf_wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
+            s.rf_rd_addr_valcfg_n  = [OutPort(Bits1)         for _ in range(num_rd_ports)]
+            s.rf_rd_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_rd_ports)]
+            s.rf_wr_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_wr_ports)]
+            s.rf_rd_count_n = [OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_rd_ports)]
             for i in range(num_rd_ports):
-                s.rf_rd_counts_o[i] //= s.rf_controller.rd_counts_o[i]
+                s.rf_rd_addr_valcfg_n[i] //= s.rf_controller.rd_addr_valcfg_n[i]
+                s.rf_rd_addr_cfg_n[i] //= s.rf_controller.rd_addr_cfg_n[i]
+                s.rf_rd_count_n[i] //= s.rf_controller.rd_count_n[i]
             for i in range(num_wr_ports):
-                s.rf_wr_counts_o[i] //= s.rf_controller.wr_counts_o[i]
-                s.rf_wr_addr_valcfg_o[i] //= s.rf_controller.wr_addr_valcfg_o[i]
+                s.rf_wr_addr_cfg_n[i] //= s.rf_controller.wr_addr_cfg_n[i]
 
+            
             # RF & Fabric Test
             s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
             for i in range(num_rd_ports):
@@ -462,3 +490,7 @@ class STEP_CgraRTL(Component):
             s.tile_pred_out = [OutPort(1) for _ in range(num_tile_outports)]
             for i in range(num_tile_outports):
                 s.tile_pred_out[i] //= s.tile_fabric.tile_pred_out[i]
+
+    def line_trace(s):
+        # Minimal trace to satisfy tests; can be extended with key state.
+        return ""

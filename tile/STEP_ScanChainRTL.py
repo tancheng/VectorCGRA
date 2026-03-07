@@ -22,7 +22,7 @@ class STEP_ScanChainRTL(Component):
             if s.reset:
                 for i in range(scan_cnt):
                     s.scan_pts_val[i] <<= 0
-                    s.scan_pts[i] <<= 0
+                    s.scan_pts[i] <<= s.scan_pts[i]
             else:
                 for i in range(scan_cnt - 1):
                     s.scan_pts_val[i+1] <<= s.scan_pts_val[i]

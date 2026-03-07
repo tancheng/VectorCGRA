@@ -39,16 +39,19 @@ class STEP_RegisterFileFullBankRTL(Component):
     # Handle Connections
     @update
     def update_register_access():
-        # Set Default State
+        # Keep the synchronous BRAM outputs visible even after the request pulse drops.
         for i in range(num_rd_ports):
-            s.rd_data[i] @= 0
-        for i in range(num_wr_ports):
-            s.reg_bank[s.wr_addr[i].msg].wen @= 0
+            s.rd_data[i] @= s.reg_bank[s.rd_addr[i].msg].rdata
+        for i in range(num_registers):
+            s.reg_bank[i].wen @= 0
+        if s.reset:
+            for i in range(num_rd_ports):
+                s.reg_bank[s.rd_addr[i].msg].raddr @= 0
 
         # Handle read ports
         for i in range(num_rd_ports):
-            s.reg_bank[s.rd_addr[i].msg].raddr @= s.rd_thread_idx[i]
-            s.rd_data[i] @= s.reg_bank[s.rd_addr[i].msg].rdata
+            if s.rd_addr[i].val:
+                s.reg_bank[s.rd_addr[i].msg].raddr @= s.rd_thread_idx[i]
 
         # Handle write ports
         for i in range(num_wr_ports):

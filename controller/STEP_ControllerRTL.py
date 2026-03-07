@@ -38,6 +38,7 @@ class STEP_ControllerRTL(Component):
     s.cfg_active_sel = OutPort(1)
     s.cfg_load_sel = OutPort(1)
     s.cfg_swap = OutPort(1)
+    s.rf_dep_start = OutPort(1)
 
     # Fabric Pkts Counts
     if debug:
@@ -57,6 +58,8 @@ class STEP_ControllerRTL(Component):
     
     # Internal Ports
     s.rf_cfg_done = InPort(1)
+    s.rf_cfg_ready = InPort(1)
+    s.rf_dep_mode = InPort(1)
     s.pred_any_true = [ InPort(1) for _ in range(num_pred_registers) ]
     s.pred_any_false = [ InPort(1) for _ in range(num_pred_registers) ]
     s.pred_complete = [ InPort(1) for _ in range(num_pred_registers) ]
@@ -70,7 +73,7 @@ class STEP_ControllerRTL(Component):
         s.pred_any_false_sel @= Bits1(0)
         s.pred_complete_sel @= Bits1(0)
         for i in range(num_pred_registers):
-            if s.active_meta.pred_reg_id == PredRegType(i):
+            if s.active_meta.pred_reg_id == i:
                 s.pred_any_true_sel @= s.pred_any_true[i]
                 s.pred_any_false_sel @= s.pred_any_false[i]
                 s.pred_complete_sel @= s.pred_complete[i]
@@ -135,6 +138,7 @@ class STEP_ControllerRTL(Component):
     s.cfg_send_pending = Wire(1)
     s.prefetch_inflight = Wire(1)
     s.rf_done_pending = Wire(1)
+    s.rf_wait_for_busy = Wire(1)
     s.branch_active = Wire(1)
     s.branch_need_false = Wire(1)
     s.branch_phase = Wire(1)
@@ -158,13 +162,14 @@ class STEP_ControllerRTL(Component):
 
     @update
     def shadow_read():
-        s.cfg_mem_shadow_rdata @= 0
-        s.br_id_by_load_pc @= BitstreamAddrType(0)
-        s.end_cfg_by_load_pc @= Bits1(0)
-        s.br_id_by_next_pc @= BitstreamAddrType(0)
-        s.end_cfg_by_next_pc @= Bits1(0)
-        s.tile_load_by_load_pc @= TileCountType(0)
-        s.tile_load_by_next_pc @= TileCountType(0)
+        # Use shadow entry zero as the default to keep the block translatable.
+        s.cfg_mem_shadow_rdata @= s.cfg_mem_shadow[0]
+        s.br_id_by_load_pc @= s.br_id_shadow[0]
+        s.end_cfg_by_load_pc @= s.end_cfg_shadow[0]
+        s.br_id_by_next_pc @= s.br_id_shadow[0]
+        s.end_cfg_by_next_pc @= s.end_cfg_shadow[0]
+        s.tile_load_by_load_pc @= s.tile_load_shadow[0]
+        s.tile_load_by_next_pc @= s.tile_load_shadow[0]
         for i in range(MAX_BITSTREAM_COUNT):
             if s.load_pc == BitstreamAddrType(i):
                 s.cfg_mem_shadow_rdata @= s.cfg_mem_shadow[i]
@@ -178,19 +183,16 @@ class STEP_ControllerRTL(Component):
 
     @update
     def update_scan_chain():
-        s.send_cfg_to_tiles.msg @= 0
-        s.send_cfg_to_tiles.val @= 0
-        if s.recv_from_cpu_bitstream_pkt.val:
-            s.send_cfg_to_tiles.msg @= s.recv_from_cpu_bitstream_pkt.msg
-            s.send_cfg_to_tiles.val @= 1
+        s.send_cfg_to_tiles.msg @= s.recv_from_cpu_bitstream_pkt.msg
+        s.send_cfg_to_tiles.val @= s.recv_from_cpu_bitstream_pkt.val
 
     s.pc_req_trigger_count //= s.load_tile_count
     
     @update_ff
     def update_controller():
         # Default values for cfg_mem write interface
-        s.cfg_mem_metadata.waddr <<= BitstreamAddrType()
-        s.cfg_mem_metadata.wdata <<= 0
+        s.cfg_mem_metadata.waddr <<= s.cfg_mem_raddr_reg
+        s.cfg_mem_metadata.wdata <<= s.recv_from_cpu_metadata_pkt.msg
         s.cfg_mem_metadata.wen <<= 0
 
         # Default interface values
@@ -199,6 +201,7 @@ class STEP_ControllerRTL(Component):
         s.send_to_cpu_done <<= s.send_to_cpu_done_reg
         s.pc_req_trigger <<= 0
         s.cfg_swap <<= 0
+        s.rf_dep_start <<= 0
 
         s.cfg_active_sel <<= s.active_bank
         s.cfg_load_sel <<= s.load_bank_reg
@@ -221,9 +224,9 @@ class STEP_ControllerRTL(Component):
             s.load_bank_reg <<= 0
             s.load_pc <<= BitstreamAddrType(0)
             s.next_pc <<= BitstreamAddrType(0)
-            s.active_meta <<= 0
-            s.next_meta <<= 0
-            s.load_meta <<= 0
+            s.active_meta <<= s.active_meta
+            s.next_meta <<= s.next_meta
+            s.load_meta <<= s.load_meta
             s.active_meta_valid <<= 0
             s.next_ready <<= 0
             s.load_tiles_done <<= 0
@@ -233,6 +236,7 @@ class STEP_ControllerRTL(Component):
             s.cfg_send_pending <<= 0
             s.prefetch_inflight <<= 0
             s.rf_done_pending <<= 0
+            s.rf_wait_for_busy <<= 0
             s.rf_active <<= 0
             s.branch_active <<= 0
             s.branch_need_false <<= 0
@@ -245,12 +249,15 @@ class STEP_ControllerRTL(Component):
             s.tile_bitstreams_seen <<= TileCountType(0)
             s.send_to_cpu_done_reg <<= 0
             for i in range(MAX_BITSTREAM_COUNT):
-                s.cfg_mem_shadow[i] <<= 0
+                s.cfg_mem_shadow[i] <<= s.cfg_mem_shadow[i]
                 s.br_id_shadow[i] <<= BitstreamAddrType(0)
                 s.end_cfg_shadow[i] <<= Bits1(0)
                 s.tile_load_shadow[i] <<= TileCountType(0)
         else:
-            # Track RF completion and clear RF activity when a cfg finishes
+            if s.rf_wait_for_busy & ~s.rf_cfg_done:
+                s.rf_wait_for_busy <<= 0
+            # Latch full completion so a demand-loaded next config can start
+            # even if rf_cfg_done deasserts before the load finishes.
             if s.rf_cfg_done & s.pc_started & ~s.pc_done:
                 s.rf_done_pending <<= 1
                 s.rf_active <<= 0
@@ -314,7 +321,8 @@ class STEP_ControllerRTL(Component):
                     s.load_tiles_done <<= 0
                     s.load_tile_count_next <<= s.load_meta.tile_load_count
                     s.prefetch_inflight <<= 0
-                elif ((~s.active_meta_valid) | s.rf_done_pending) & ~s.rf_active:
+                elif ((~s.active_meta_valid) | s.rf_done_pending | s.rf_cfg_done) \
+                     & (~s.rf_active | s.rf_cfg_done):
                     # Active-bank load complete: start config when allowed
                     s.send_cfg_to_rf.msg <<= s.load_meta
                     s.send_cfg_to_rf.val <<= 1
@@ -324,10 +332,11 @@ class STEP_ControllerRTL(Component):
                     s.load_tiles_done <<= 0
                     s.prefetch_inflight <<= 0
                     s.rf_active <<= 1
+                    s.rf_wait_for_busy <<= 1
                     s.active_meta <<= s.load_meta
                     s.active_meta_valid <<= 1
                     s.pc <<= s.load_pc
-                    s.last_pc <<= Bits1(s.load_pc == s.last_cfg_id)
+                    s.last_pc <<= s.load_pc == s.last_cfg_id
                     s.pc_next <<= s.load_pc + BitstreamAddrType(1)
                     s.load_tile_count_next <<= s.load_meta.tile_load_count
                     s.rf_done_pending <<= 0
@@ -335,10 +344,15 @@ class STEP_ControllerRTL(Component):
             # Issue prefetch for predicted pc (static br_id) while current cfg executes.
             # Use the shadowed tile count for the target pc so pc_req_trigger_count matches
             # the config being prefetched.
+            # Keep using the demand-load fallback until speculative prefetch is
+            # reconciled with the new per-thread readiness tracking.
             if s.pc_started & ~s.pc_done & s.rf_active & ~s.last_pc \
                & ~s.prefetch_inflight & ~s.next_ready & ~s.load_inflight \
                & ~s.meta_req_pending & ~s.rf_done_pending \
-               & ~s.active_meta.branch_en & ~s.active_meta.loop_en:
+               & ~s.active_meta.branch_en & ~s.active_meta.loop_en \
+               & ~s.cfg_swap \
+               & ~s.rf_cfg_ready \
+               & ~s.rf_dep_mode:
                 s.pc_req_trigger <<= 1
                 s.load_bank_reg <<= ~s.active_bank
                 s.load_bank <<= ~s.active_bank
@@ -355,13 +369,13 @@ class STEP_ControllerRTL(Component):
                 s.prefetch_inflight <<= 1
 
             # Completion / swap / branch / loop
-            if s.rf_done_pending & s.pc_started & ~s.pc_done:
-                if s.last_pc | Bits1(s.pc == s.last_cfg_id):
+            if (s.rf_done_pending | s.rf_cfg_ready) & s.pc_started & ~s.pc_done:
+                if (s.last_pc | (s.pc == s.last_cfg_id)) & s.rf_cfg_done & ~s.rf_wait_for_busy:
                     s.pc_started <<= 0
                     s.pc_done <<= 1
                     s.send_to_cpu_done_reg <<= 1
                     s.rf_done_pending <<= 0
-                elif s.branch_active:
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.branch_active:
                     # Branch sequence in progress: run false branch if needed, else reconverge
                     if s.branch_need_false & ~s.branch_phase:
                         next_cfg = s.branch_false_cfg
@@ -371,7 +385,7 @@ class STEP_ControllerRTL(Component):
                         s.branch_active <<= 0
                         s.branch_need_false <<= 0
                         s.branch_phase <<= 0
-                    if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid & ~s.load_tiles_done:
+                    if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
                         s.pc_req_trigger <<= 1
                         s.load_bank_reg <<= s.active_bank
                         s.load_bank <<= s.active_bank
@@ -386,7 +400,7 @@ class STEP_ControllerRTL(Component):
                         s.meta_req_pending <<= 1
                         s.cfg_mem_raddr_reg <<= next_cfg
                         s.prefetch_inflight <<= 0
-                elif s.active_meta.branch_en:
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.active_meta.branch_en:
                     if s.pred_complete_sel:
                         # Conservative branch execution: evaluate both paths before reconvergence.
                         any_true = Bits1(1)
@@ -398,12 +412,15 @@ class STEP_ControllerRTL(Component):
                         if any_true:
                             next_cfg = s.active_meta.branch_true_cfg_id
                             s.branch_need_false <<= any_false
-                            s.branch_phase <<= Bits1(0) if any_false else Bits1(1)
+                            if any_false:
+                                s.branch_phase <<= 0
+                            else:
+                                s.branch_phase <<= 1
                         else:
                             next_cfg = s.active_meta.branch_false_cfg_id
                             s.branch_need_false <<= Bits1(0)
                             s.branch_phase <<= Bits1(1)
-                        if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid & ~s.load_tiles_done:
+                        if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
                             s.pc_req_trigger <<= 1
                             s.load_bank_reg <<= s.active_bank
                             s.load_bank <<= s.active_bank
@@ -418,14 +435,14 @@ class STEP_ControllerRTL(Component):
                             s.meta_req_pending <<= 1
                             s.cfg_mem_raddr_reg <<= next_cfg
                             s.prefetch_inflight <<= 0
-                elif s.active_meta.loop_en:
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.active_meta.loop_en:
                     if s.loop_counter + LoopCountType(1) < s.active_meta.loop_max:
                         next_cfg = s.active_meta.loop_start_cfg_id
                         s.loop_counter <<= s.loop_counter + LoopCountType(1)
                     else:
                         next_cfg = s.active_meta.loop_exit_cfg_id
                         s.loop_counter <<= LoopCountType(0)
-                    if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid & ~s.load_tiles_done:
+                    if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
                         s.pc_req_trigger <<= 1
                         s.load_bank_reg <<= s.active_bank
                         s.load_bank <<= s.active_bank
@@ -440,26 +457,23 @@ class STEP_ControllerRTL(Component):
                         s.meta_req_pending <<= 1
                         s.cfg_mem_raddr_reg <<= next_cfg
                         s.prefetch_inflight <<= 0
-                elif s.next_ready:
-                    if s.send_cfg_to_rf.rdy & s.send_cfg_to_tokenizer.rdy & ~s.rf_active:
-                        s.send_cfg_to_rf.msg <<= s.next_meta
-                        s.send_cfg_to_rf.val <<= 1
-                        s.send_cfg_to_tokenizer.msg <<= s.next_meta.tokenizer_cfg
-                        s.send_cfg_to_tokenizer.val <<= 1
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.next_ready:
                     s.cfg_swap <<= 1
+                    s.rf_dep_start <<= s.rf_cfg_ready & ~s.rf_cfg_done
                     # Present the post-swap active bank in the same cycle as cfg_swap
                     s.cfg_active_sel <<= ~s.active_bank
                     s.active_bank <<= ~s.active_bank
                     s.pc <<= s.next_pc
                     s.active_meta <<= s.next_meta
                     s.active_meta_valid <<= 1
-                    s.last_pc <<= Bits1(s.next_pc == s.last_cfg_id)
+                    s.last_pc <<= s.next_pc == s.last_cfg_id
                     s.pc_next <<= s.next_pc + BitstreamAddrType(1)
                     s.load_tile_count_next <<= s.next_meta.tile_load_count
                     s.next_ready <<= 0
                     s.rf_done_pending <<= 0
                     s.rf_active <<= 1
-                elif ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid & ~s.load_tiles_done:
+                    s.rf_wait_for_busy <<= 1
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
                     # Fallback: demand-load next config if prefetch not ready
                     s.pc_req_trigger <<= 1
                     s.load_bank_reg <<= s.active_bank

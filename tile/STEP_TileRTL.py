@@ -157,13 +157,13 @@ class STEP_TileRTL(Component):
         @update_ff
         def cfg_banks():
             if s.reset:
-                s.tile_bitstream_bank0 <<= 0
-                s.tile_bitstream_bank1 <<= 0
+                s.tile_bitstream_bank0 <<= s.tile_bitstream_bank0
+                s.tile_bitstream_bank1 <<= s.tile_bitstream_bank1
             if s.cfg_load_rst:
                 if s.cfg_load_sel_w == Bits1(0):
-                    s.tile_bitstream_bank0 <<= 0
+                    s.tile_bitstream_bank0 <<= s.tile_bitstream_bank0
                 else:
-                    s.tile_bitstream_bank1 <<= 0
+                    s.tile_bitstream_bank1 <<= s.tile_bitstream_bank1
             elif (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
                 if s.cfg_load_sel_w == Bits1(0):
                     s.tile_bitstream_bank0 <<= s.recv_tile_bitstream.msg

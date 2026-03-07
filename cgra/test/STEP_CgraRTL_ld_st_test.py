@@ -4,7 +4,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
 
 from ..STEP_CgraRTL import STEP_CgraRTL
 from ..CgraTrackedPktChunked import CgraTrackedPktChunked
-from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiLdSourceTriggeredRTL, AxiStSourceRTL, AxiStSourceTriggeredRTL
+from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiLdSourceTriggeredRTL, AxiStSourceRTL, AxiStSourceTriggeredMatchRTL
 from ...lib.basic.SourceTriggeredRTL import SourceTriggeredRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
@@ -56,11 +56,11 @@ class TestHarness(Component):
 
         # Configure Sources
         ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[i for i in range(thread_count * 2)]]
-        st_counts = [0, 1]
+        st_counts = [[], [2*i*3 for i in range(thread_count)]]
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(CfgMetadataType, cpu_to_cgra_metadata_msgs)
         s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(TileBitstreamType, cpu_to_cgra_bitstream_msgs, s.num_tiles, delay=1)
-        s.ld_axi_pkts = [AxiLdSourceTriggeredRTL(DataType, ld_axi_msgs[i]) for i in range(num_ld_ports)]
-        s.st_axi_pkts = [AxiStSourceTriggeredRTL(DataType, st_counts[i]) for i in range(num_st_ports)]
+        s.ld_axi_pkts = [AxiLdSourceTriggeredRTL(DataType, ld_axi_msgs[i], delay=10) for i in range(num_ld_ports)]
+        s.st_axi_pkts = [AxiStSourceTriggeredMatchRTL(DataType, st_counts[i], delay = 40) for i in range(num_st_ports)]
 
         # Configure Sinks
         cmp_fn = lambda a, b : a == b
