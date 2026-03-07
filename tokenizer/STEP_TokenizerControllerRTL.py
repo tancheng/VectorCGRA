@@ -76,7 +76,7 @@ class STEP_TokenizerControllerRTL(Component):
             s.tokenizer_cfg.token_route_delay_to_sink[i] //= s.tokenizers[i].token_delay
             s.token_return[i] //= s.tokenizers[i].token_return
             s.token_shifter_out[i] //= s.tokenizers[i].token_shifter_out
-            s.cfg_swap //= s.tokenizers[i].cfg_swap
+            s.tokenizers[i].cfg_swap //= s.cfg_swap_w
 
         # Save Cfg States
         @update
@@ -130,3 +130,7 @@ class STEP_TokenizerControllerRTL(Component):
                 for j in range(num_returner_ports):
                     if s.tokenizer_cfg.token_route_sink_enable[i][Bits4(num_returner_ports - j - 1)]:
                         s.tokenizers[j].token_take @= s.token_take[i]
+
+    def line_trace(s):
+        active_tokens = ",".join(str(int(tok.token_count)) for tok in s.tokenizers[:4])
+        return f"cfgswap:{int(s.cfg_swap_w)} toks:[{active_tokens}]"

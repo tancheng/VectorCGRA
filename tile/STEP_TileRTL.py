@@ -186,15 +186,15 @@ class STEP_TileRTL(Component):
 
                 # Comparators
                 elif s.opt_type == OPT_LT:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] < s.crossbar.send_to_fu[1])
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] < s.crossbar.send_to_fu[1], DataType.nbits)
                 elif s.opt_type == OPT_GTE:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] >= s.crossbar.send_to_fu[1])
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] >= s.crossbar.send_to_fu[1], DataType.nbits)
                 elif s.opt_type == OPT_GT:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] > s.crossbar.send_to_fu[1])
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] > s.crossbar.send_to_fu[1], DataType.nbits)
                 elif s.opt_type == OPT_LTE:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] <= s.crossbar.send_to_fu[1])
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] <= s.crossbar.send_to_fu[1], DataType.nbits)
                 elif s.opt_type == OPT_EQ:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] == s.crossbar.send_to_fu[1])
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] == s.crossbar.send_to_fu[1], DataType.nbits)
                 
                 # Constant Ops
                 elif s.opt_type == OPT_ADD_CONST:
@@ -202,7 +202,7 @@ class STEP_TileRTL(Component):
                 elif s.opt_type == OPT_SUB_CONST:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] - s.tile_bitstream.const_val
                 elif s.opt_type == OPT_EQ_CONST:
-                    s.fu_out[i] @= DataType(s.crossbar.send_to_fu[0] == s.tile_bitstream.const_val)
+                    s.fu_out[i] @= zext(s.crossbar.send_to_fu[0] == s.tile_bitstream.const_val, DataType.nbits)
                 elif s.opt_type == OPT_MUL_CONST:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] * s.tile_bitstream.const_val
                 elif s.opt_type == OPT_LD:

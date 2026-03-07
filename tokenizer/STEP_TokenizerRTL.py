@@ -31,7 +31,15 @@ class STEP_TokenizerRTL(Component):
             if s.cfg_swap:
                 s.token_shifter_out @= 0
             else:
-                s.token_shifter_out @= s.token_shifter[DelayIdxType(max_delay - 1) - s.token_delay + 1]
+                # Preserve the historical positive-delay timing used by the
+                # load/store benchmarks, but fix the zero-delay case so it no
+                # longer wraps around to the tail of the shift register.
+                if s.token_delay == DelayIdxType(0):
+                    s.token_shifter_out @= s.token_shifter[DelayIdxType(max_delay - 1)]
+                else:
+                    s.token_shifter_out @= (
+                        s.token_shifter[DelayIdxType(max_delay - 1) - s.token_delay + DelayIdxType(1)]
+                    )
         
         @update
         def update_shifter_n():
@@ -62,5 +70,8 @@ class STEP_TokenizerRTL(Component):
                     s.token_count <<= s.token_count - 1
 
 
-        def line_trace(s):
-            return f"tokens:{s.tokens_avail} pending:{s.pending_refreshes} counter:{s.refresh_counter} take:{s.token_take} valid:{s.token_valid}"
+    def line_trace(s):
+        return (
+            f"count:{int(s.token_count)} take:{int(s.token_take)} "
+            f"ret:{int(s.token_return)} out:{int(s.token_shifter_out)}"
+        )

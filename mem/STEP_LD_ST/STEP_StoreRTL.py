@@ -143,7 +143,7 @@ class STEP_StoreRTL( Component ):
             # Always ready to receive responses when we have outstanding stores
             s.axi.resp_ready @= s.outstanding_stores > 0
             s.store_ifc.o_done @= s.axi.resp_valid & s.axi.resp_ready
-            s.o_done_tid @= s.resp_counter
+            s.o_done_tid @= s.axi.resp_id if s.store_ifc.o_done else 0
             s.o_done_bank @= s.bank_queue.send.msg if s.store_ifc.o_done else Bits1(0)
             s.bank_queue.send.rdy @= s.store_ifc.o_done
             

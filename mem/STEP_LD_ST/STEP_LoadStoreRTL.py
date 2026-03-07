@@ -141,6 +141,15 @@ class STEP_LoadStoreRTL( Component ):
                         if ~mem_dispatch_val1:
                             mem_dispatch_val1 = Bits1(1)
                             mem_dispatch_tid1 = s.ld_issue_tid[i]
+                    if ~(s.ld_enable[i] & s.ld_tile_pred[i]):
+                        if s.ld_units[i].issue_bank == Bits1(0):
+                            if ~ld_done_val0:
+                                ld_done_val0 = Bits1(1)
+                                ld_done_tid0 = s.ld_issue_tid[i]
+                        else:
+                            if ~ld_done_val1:
+                                ld_done_val1 = Bits1(1)
+                                ld_done_tid1 = s.ld_issue_tid[i]
                 if s.st_ifc[i].i_req & s.st_ifc[i].o_rdy:
                     if s.st_units[i].issue_bank == Bits1(0):
                         if ~mem_dispatch_val0:
@@ -150,6 +159,15 @@ class STEP_LoadStoreRTL( Component ):
                         if ~mem_dispatch_val1:
                             mem_dispatch_val1 = Bits1(1)
                             mem_dispatch_tid1 = s.st_issue_tid[i]
+                    if ~(s.st_enable[i] & s.st_tile_pred[i]):
+                        if s.st_units[i].issue_bank == Bits1(0):
+                            if ~st_done_val0:
+                                st_done_val0 = Bits1(1)
+                                st_done_tid0 = s.st_issue_tid[i]
+                        else:
+                            if ~st_done_val1:
+                                st_done_val1 = Bits1(1)
+                                st_done_tid1 = s.st_issue_tid[i]
                 if s.ld_ifc[i].o_done:
                     if s.ld_units[i].o_data_bank == Bits1(0):
                         if ~ld_done_val0:

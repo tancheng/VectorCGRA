@@ -20,11 +20,18 @@ from ...lib.basic.val_rdy.queues import NormalQueueRTL
 
 class SourceTriggeredRTL( Component ):
 
-    def construct( s, DataType, msgs, max_trigger_count, delay = 1 ):
+    def construct( s, DataType, msgs, max_trigger_count=None, delay=1, chunk_size=None ):
+
+        if chunk_size is not None:
+            max_trigger_count = chunk_size
+        if max_trigger_count is None:
+            max_trigger_count = len(msgs)
 
         # Interface
-        TriggerCountType = mk_bits(clog2(max_trigger_count + 1))
-        MsgCountType = mk_bits(len(msgs))
+        count_nbits = max(1, clog2(max_trigger_count + 1))
+        msg_idx_nbits = max(1, clog2(len(msgs) + 1), count_nbits)
+        TriggerCountType = mk_bits(count_nbits)
+        MsgCountType = mk_bits(msg_idx_nbits)
         s.send = SendIfcRTL( DataType )
         s.trigger_in = InPort(1)
         s.trigger_count = InPort( TriggerCountType )
@@ -55,16 +62,24 @@ class SourceTriggeredRTL( Component ):
 
         @update
         def update_next_cnt_state():
-            s.trigger_complete_idx @= s.trigger_start_idx + zext(s.trigger_count, MsgCountType.nbits)
+            trigger_count_ext = zext(s.trigger_count, MsgCountType.nbits)
+            s.trigger_complete_idx @= s.trigger_start_idx + trigger_count_ext
             s.msg_idx_n @= s.msg_idx + 1
             s.loaded_idx_n @= s.loaded_idx + 1
+
+        @update
+        def update_trigger_complete():
+            s.trigger_complete @= (
+                s.q_data.send.val
+                & (s.loaded_idx_n == s.trigger_complete_idx)
+                & (s.trigger_complete_idx > s.trigger_start_idx)
+            )
 
         # Sequential enqueue
         @update_ff
         def up_src():
             # Defaults
             s.q_data.recv.val <<= 0
-            s.trigger_complete <<= 0
 
             if s.reset:
                 s.msg_idx    <<= 0
@@ -83,11 +98,11 @@ class SourceTriggeredRTL( Component ):
                         s.q_data.recv.val <<= 1
                         s.msg_idx    <<= s.msg_idx_n
                         if s.msg_idx_n == s.trigger_complete_idx:
-                            s.trigger_complete <<= 1
                             s.state <<= IDLE_STATE
-                            s.trigger_start_idx <<= s.msg_idx_n
             if s.q_data.send.val:
                 s.loaded_idx <<= s.loaded_idx_n
+                if s.loaded_idx_n == s.trigger_complete_idx:
+                    s.trigger_start_idx <<= s.loaded_idx_n
         
         # Debug states
         @update
@@ -148,4 +163,3 @@ class SourceChunkTriggeredRTL( Component ):
 
     def done( s ):
         return s.loaded_idx >= len( s.msgs )
-
