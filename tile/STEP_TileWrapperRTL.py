@@ -39,6 +39,8 @@ class STEP_TileWrapperRTL(Component):
                     debug = False,
                     enable_double_buffering = False
                     ):
+        TileIdType = mk_bits(clog2(num_tile_cols * num_tile_rows))
+        TileCountType = mk_bits(clog2(num_tile_cols * num_tile_rows + 1))
         assert(num_tile_inports == num_tile_outports)
         assert(num_tile_inports in [4,8])
         # Tile ID
@@ -68,7 +70,8 @@ class STEP_TileWrapperRTL(Component):
 
         # Bistream IO
         s.recv_tile_bitstreams = RecvIfcRTL(TileBitstreamType)
-        s.cfg_load_rst = InPort(1)
+        s.cfg_bank_commit = InPort(1)
+        s.cfg_packets_applied = OutPort(TileCountType)
         s.cfg_active_sel_w = Wire(1)
         s.cfg_load_sel_w = Wire(1)
         s.cfg_swap_w = Wire(1)
@@ -109,7 +112,6 @@ class STEP_TileWrapperRTL(Component):
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
         if debug:
-            TileIdType = mk_bits(clog2(num_tile_rows * num_tile_cols))
             check_row = 0
             check_col = 0
             check_tile_id = check_row * num_tile_cols + check_col
@@ -170,6 +172,15 @@ class STEP_TileWrapperRTL(Component):
                 s.scan_chain.scan_pts_val[i*num_tile_cols + scan_col] //= s.tiles[i][j].recv_tile_bitstream.val
                 scan_col += 1
         s.scan_chain.scan_in //= s.recv_tile_bitstreams
+
+        @update
+        def count_cfg_packet_applies():
+            applied = TileCountType(0)
+            for row in range(num_tile_rows):
+                for col in range(num_tile_cols):
+                    if s.tiles[row][col].cfg_packet_applied:
+                        applied = applied + TileCountType(1)
+            s.cfg_packets_applied @= applied
         
         # Connect RF Predicates
         for i in range(num_tile_rows):
@@ -183,7 +194,7 @@ class STEP_TileWrapperRTL(Component):
         # Connect Fabric Bitstream Rst
         for i in range(num_tile_rows):
             for j in range(num_tile_cols):
-                s.tiles[i][j].cfg_load_rst //= s.cfg_load_rst
+                s.tiles[i][j].cfg_bank_commit //= s.cfg_bank_commit
 
         # Fabric Internal Connections
         for i in range(num_tile_rows):

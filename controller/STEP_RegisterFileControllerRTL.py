@@ -469,8 +469,8 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Completion check (comb)
         # -------------------------------------------------------------------------
 
-        s.fabric_complete = OutPort( 1 )
-        s.fabric_done = OutPort( 1 )
+        s.cfg_writeback_complete = OutPort( 1 )
+        s.cfg_issue_ready = OutPort( 1 )
         s.rd_regs_complete = OutPort( num_rd_ports )
         s.wr_regs_complete = OutPort( num_wr_ports )
 
@@ -500,7 +500,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         @update
         def comb_completion():
             # Default cfg
-            s.fabric_complete @= Bits1(0)
+            s.cfg_writeback_complete @= Bits1(0)
             # Only check completion when in RUN state
             if s.state == ST_RUN:
                 # Check read ports
@@ -513,7 +513,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     else:
                         s.wr_regs_complete[i] @= Bits1(1)
 
-                s.fabric_complete @= reduce_and(s.wr_regs_complete) & (s.expected_count > MaxThreadType(0))
+                s.cfg_writeback_complete @= reduce_and(s.wr_regs_complete) & (s.expected_count > MaxThreadType(0))
         
         # -------------------------------------------------------------------------
         # Next-state & counters (single comb writer)
@@ -832,7 +832,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 & s.dep_mode
                 & (s.issue_count < s.expected_count)
             )
-            s.fabric_done @= fabric_ready
+            s.cfg_issue_ready @= fabric_ready
             s.cfg_ready_for_next @= fabric_ready
             s.dep_mode_out @= dep_release_pending
             s.cfg_done @= Bits1(

@@ -39,12 +39,13 @@ class STEP_ControllerRTL(Component):
     s.cfg_load_sel = OutPort(1)
     s.cfg_swap = OutPort(1)
     s.rf_dep_start = OutPort(1)
+    s.fabric_cfg_packets_applied = InPort(TileCountType)
 
     # Fabric Pkts Counts
     if debug:
-        s.tile_bitstreams_seen = OutPort( TileCountType )
+        s.cfg_packets_injected_count = OutPort( TileCountType )
     else:
-        s.tile_bitstreams_seen = Wire( TileCountType )
+        s.cfg_packets_injected_count = Wire( TileCountType )
     
     # PE Fabric ports
     s.send_cfg_to_tiles = SendIfcRTL(TileBitstreamType)
@@ -58,7 +59,7 @@ class STEP_ControllerRTL(Component):
     
     # Internal Ports
     s.rf_cfg_done = InPort(1)
-    s.rf_cfg_ready = InPort(1)
+    s.rf_cfg_issue_ready = InPort(1)
     s.rf_dep_mode = InPort(1)
     s.pred_any_true = [ InPort(1) for _ in range(num_pred_registers) ]
     s.pred_any_false = [ InPort(1) for _ in range(num_pred_registers) ]
@@ -146,8 +147,8 @@ class STEP_ControllerRTL(Component):
     s.active_meta_valid = Wire(1)
     s.load_meta_valid = Wire(1)
     s.next_ready = Wire(1)
-    s.load_tiles_done = Wire(1)
-    s.load_cfg_done = Wire(1)
+    s.fabric_cfg_load_done = Wire(1)
+    s.cfg_packets_injection_done = Wire(1)
     s.load_inflight = Wire(1)
     s.meta_req_pending = Wire(1)
     s.cfg_send_pending = Wire(1)
@@ -170,7 +171,7 @@ class STEP_ControllerRTL(Component):
     s.send_to_cpu_done_reg = Wire(1)
     s.load_tile_count = Wire(TileCountType)
     s.load_tile_count_next = Wire(TileCountType)
-    s.scan_drain_count = Wire(TileCountType)
+    s.cfg_packets_applied_count = Wire(TileCountType)
     s.cfg_to_rf_msg = Wire(CfgMetadataType)
     s.cfg_to_tokenizer_msg = Wire(CfgTokenizerType)
     num_pred_tiles = len(s.cfg_to_rf_msg.pred_tile_valid)
@@ -335,7 +336,7 @@ class STEP_ControllerRTL(Component):
         s.state <<= Bits2(1) if (s.pc_started & ~s.pc_done) else Bits2(0)
 
         # Handshake / readiness helpers
-        load_ready = s.load_meta_valid & s.load_tiles_done
+        load_ready = s.load_meta_valid & s.fabric_cfg_load_done
         send_rdy = s.send_cfg_to_rf.rdy & s.send_cfg_to_tokenizer.rdy
         cfg_complete_event = s.rf_done_pending | s.rf_cfg_done
 
@@ -357,8 +358,8 @@ class STEP_ControllerRTL(Component):
             s.load_meta <<= s.load_meta
             s.active_meta_valid <<= 0
             s.next_ready <<= 0
-            s.load_tiles_done <<= 0
-            s.load_cfg_done <<= 0
+            s.fabric_cfg_load_done <<= 0
+            s.cfg_packets_injection_done <<= 0
             s.load_inflight <<= 0
             s.meta_req_pending <<= 0
             s.cfg_send_pending <<= 0
@@ -378,8 +379,8 @@ class STEP_ControllerRTL(Component):
             s.load_thread_count_override_valid <<= Bits1(0)
             s.loop_counter <<= LoopCountType(0)
             s.cfg_mem_raddr_reg <<= BitstreamAddrType(0)
-            s.tile_bitstreams_seen <<= TileCountType(0)
-            s.scan_drain_count <<= TileCountType(0)
+            s.cfg_packets_injected_count <<= TileCountType(0)
+            s.cfg_packets_applied_count <<= TileCountType(0)
             s.send_to_cpu_done_reg <<= 0
             for i in range(MAX_BITSTREAM_COUNT):
                 s.cfg_mem_shadow[i] <<= s.cfg_mem_shadow[i]
@@ -392,7 +393,7 @@ class STEP_ControllerRTL(Component):
             # Overlap non-branch memory configs once all memory requests are
             # issued. The next config then consumes per-thread completions from
             # the inactive bank in dep-mode as they arrive.
-            if s.rf_cfg_ready & ~s.rf_wait_for_busy & s.pc_started & ~s.pc_done \
+            if s.rf_cfg_issue_ready & ~s.rf_wait_for_busy & s.pc_started & ~s.pc_done \
                & (s.active_meta_has_load | s.active_meta_has_store) \
                & ~s.branch_active \
                & ~s.active_meta.branch_en & ~s.active_meta.loop_en:
@@ -427,28 +428,41 @@ class STEP_ControllerRTL(Component):
                         s.load_bank <<= s.active_bank
                         s.load_pc <<= s.pc
                         s.load_inflight <<= 1
-                        s.tile_bitstreams_seen <<= TileCountType(0)
-                        s.scan_drain_count <<= TileCountType(0)
+                        s.cfg_packets_injected_count <<= TileCountType(0)
+                        s.cfg_packets_applied_count <<= TileCountType(0)
                         s.load_thread_count_override_valid <<= Bits1(0)
-                        s.load_tiles_done <<= 0
-                        s.load_cfg_done <<= 0
+                        s.fabric_cfg_load_done <<= 0
+                        s.cfg_packets_injection_done <<= 0
                         s.load_meta_valid <<= 0
                         s.cfg_send_pending <<= 0
                         s.meta_req_pending <<= 1
                         s.cfg_mem_raddr_reg <<= s.pc
+                        if s.load_tile_count == TileCountType(0):
+                            s.load_inflight <<= 0
+                            s.fabric_cfg_load_done <<= 1
+                            s.cfg_packets_injection_done <<= 1
 
-            # A load is only complete after the last injected bitstream has
-            # drained through the full scan chain and reached its target tile.
-            if s.scan_drain_count > TileCountType(0):
-                s.scan_drain_count <<= s.scan_drain_count - TileCountType(1)
-                if s.scan_drain_count == TileCountType(1):
-                    s.load_tiles_done <<= 1
-                    s.load_inflight <<= 0
+            # Track the current fabric load by counting injected packets and
+            # counting packets that reach their target tile in the scan chain.
+            cfg_packets_injected = s.cfg_packets_injected_count
+            cfg_packets_applied = s.cfg_packets_applied_count
+            cfg_injection_done = s.cfg_packets_injection_done
 
-            # Tile stream tracking for the current load.
-            if s.load_inflight & s.recv_from_cpu_bitstream_pkt.val:
+            if s.load_inflight & s.send_cfg_to_tiles.val & s.send_cfg_to_tiles.rdy:
+                cfg_packets_injected = s.cfg_packets_injected_count + TileCountType(1)
+                s.cfg_packets_injected_count <<= cfg_packets_injected
+
+            if s.load_inflight:
+                cfg_packets_applied = s.cfg_packets_applied_count + s.fabric_cfg_packets_applied
+                s.cfg_packets_applied_count <<= cfg_packets_applied
                 if s.pc_req_trigger_complete:
-                    s.scan_drain_count <<= TileCountType(num_tiles)
+                    cfg_injection_done = Bits1(1)
+                    s.cfg_packets_injection_done <<= Bits1(1)
+                if cfg_injection_done \
+                   & (cfg_packets_injected == s.load_tile_count) \
+                   & (cfg_packets_applied == cfg_packets_injected):
+                    s.fabric_cfg_load_done <<= 1
+                    s.load_inflight <<= 0
 
             # Metadata read response (BRAM raddr registered + sync read => two-cycle latency)
             if s.meta_req_pending:
@@ -468,7 +482,7 @@ class STEP_ControllerRTL(Component):
                     s.next_pc <<= s.load_pc
                     s.next_ready <<= 1
                     s.load_meta_valid <<= 0
-                    s.load_tiles_done <<= 0
+                    s.fabric_cfg_load_done <<= 0
                     s.load_tile_count_next <<= s.load_meta.tile_load_count
                     s.prefetch_inflight <<= 0
                 elif (~s.rf_active) | s.rf_done_pending | s.rf_cfg_done:
@@ -478,7 +492,7 @@ class STEP_ControllerRTL(Component):
                     s.send_cfg_to_tokenizer.msg <<= s.cfg_to_tokenizer_msg
                     s.send_cfg_to_tokenizer.val <<= 1
                     s.load_meta_valid <<= 0
-                    s.load_tiles_done <<= 0
+                    s.fabric_cfg_load_done <<= 0
                     s.prefetch_inflight <<= 0
                     s.rf_active <<= 1
                     s.rf_wait_for_busy <<= 1
@@ -501,7 +515,7 @@ class STEP_ControllerRTL(Component):
                & ~s.branch_active \
                & ~s.active_meta.branch_en & ~s.active_meta.loop_en \
                & ~s.cfg_swap \
-               & ~s.rf_cfg_ready \
+               & ~s.rf_cfg_issue_ready \
                & ~s.rf_dep_mode:
                 s.pc_req_trigger <<= 1
                 s.load_bank_reg <<= ~s.active_bank
@@ -509,19 +523,23 @@ class STEP_ControllerRTL(Component):
                 s.load_pc <<= s.pc_next
                 s.load_inflight <<= 1
                 s.load_tile_count <<= s.tile_load_by_next_pc
-                s.tile_bitstreams_seen <<= TileCountType(0)
-                s.scan_drain_count <<= TileCountType(0)
+                s.cfg_packets_injected_count <<= TileCountType(0)
+                s.cfg_packets_applied_count <<= TileCountType(0)
                 s.load_thread_count_override_valid <<= Bits1(0)
-                s.load_tiles_done <<= 0
-                s.load_cfg_done <<= 0
+                s.fabric_cfg_load_done <<= 0
+                s.cfg_packets_injection_done <<= 0
                 s.load_meta_valid <<= 0
                 s.cfg_send_pending <<= 0
                 s.meta_req_pending <<= 1
                 s.cfg_mem_raddr_reg <<= s.pc_next
                 s.prefetch_inflight <<= 1
+                if s.tile_load_by_next_pc == TileCountType(0):
+                    s.load_inflight <<= 0
+                    s.fabric_cfg_load_done <<= 1
+                    s.cfg_packets_injection_done <<= 1
 
             # Completion / swap / branch / loop
-            if (s.rf_done_pending | s.rf_cfg_ready) & ~s.rf_active & s.pc_started & ~s.pc_done \
+            if (s.rf_done_pending | s.rf_cfg_issue_ready) & ~s.rf_active & s.pc_started & ~s.pc_done \
                & ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid \
                & ~s.rf_wait_for_busy & ~(load_ready & send_rdy):
                 if (s.last_pc | (s.pc == s.last_cfg_id)) & cfg_complete_event & ~s.rf_wait_for_busy:
@@ -562,13 +580,17 @@ class STEP_ControllerRTL(Component):
                             s.meta_req_pending <<= 1
                             s.cfg_mem_raddr_reg <<= next_cfg
                         s.load_inflight <<= 1
-                        s.tile_bitstreams_seen <<= TileCountType(0)
-                        s.scan_drain_count <<= TileCountType(0)
-                        s.load_tiles_done <<= 0
-                        s.load_cfg_done <<= 0
+                        s.cfg_packets_injected_count <<= TileCountType(0)
+                        s.cfg_packets_applied_count <<= TileCountType(0)
+                        s.fabric_cfg_load_done <<= 0
+                        s.cfg_packets_injection_done <<= 0
                         s.load_meta_valid <<= 0
                         s.prefetch_inflight <<= 0
                         s.rf_done_pending <<= 0
+                        if next_tile_count == TileCountType(0):
+                            s.load_inflight <<= 0
+                            s.fabric_cfg_load_done <<= 1
+                            s.cfg_packets_injection_done <<= 1
                 elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.active_meta.branch_en \
                      & (s.pc == s.active_meta.cfg_id) & cfg_complete_event:
                     if s.pred_complete_sel:
@@ -605,15 +627,19 @@ class STEP_ControllerRTL(Component):
                             s.load_tile_count <<= next_tile_count
                             s.pc <<= next_cfg
                             s.load_inflight <<= 1
-                            s.tile_bitstreams_seen <<= TileCountType(0)
-                            s.scan_drain_count <<= TileCountType(0)
-                            s.load_tiles_done <<= 0
-                            s.load_cfg_done <<= 0
+                            s.cfg_packets_injected_count <<= TileCountType(0)
+                            s.cfg_packets_applied_count <<= TileCountType(0)
+                            s.fabric_cfg_load_done <<= 0
+                            s.cfg_packets_injection_done <<= 0
                             s.load_meta_valid <<= 0
                             s.meta_req_pending <<= 1
                             s.cfg_mem_raddr_reg <<= next_cfg
                             s.prefetch_inflight <<= 0
                             s.rf_done_pending <<= 0
+                            if next_tile_count == TileCountType(0):
+                                s.load_inflight <<= 0
+                                s.fabric_cfg_load_done <<= 1
+                                s.cfg_packets_injection_done <<= 1
                 elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.active_meta.loop_en \
                      & cfg_complete_event:
                     if s.loop_counter + LoopCountType(1) < s.active_meta.loop_max:
@@ -632,19 +658,23 @@ class STEP_ControllerRTL(Component):
                         s.load_tile_count <<= next_tile_count
                         s.pc <<= next_cfg
                         s.load_inflight <<= 1
-                        s.tile_bitstreams_seen <<= TileCountType(0)
-                        s.scan_drain_count <<= TileCountType(0)
+                        s.cfg_packets_injected_count <<= TileCountType(0)
+                        s.cfg_packets_applied_count <<= TileCountType(0)
                         s.load_thread_count_override_valid <<= Bits1(0)
-                        s.load_tiles_done <<= 0
-                        s.load_cfg_done <<= 0
+                        s.fabric_cfg_load_done <<= 0
+                        s.cfg_packets_injection_done <<= 0
                         s.load_meta_valid <<= 0
                         s.meta_req_pending <<= 1
                         s.cfg_mem_raddr_reg <<= next_cfg
                         s.prefetch_inflight <<= 0
                         s.rf_done_pending <<= 0
+                        if next_tile_count == TileCountType(0):
+                            s.load_inflight <<= 0
+                            s.fabric_cfg_load_done <<= 1
+                            s.cfg_packets_injection_done <<= 1
                 elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.next_ready:
                     s.cfg_swap <<= 1
-                    s.rf_dep_start <<= s.rf_cfg_ready & ~s.rf_cfg_done
+                    s.rf_dep_start <<= s.rf_cfg_issue_ready & ~s.rf_cfg_done
                     # Present the post-swap active bank in the same cycle as cfg_swap
                     s.cfg_active_sel <<= ~s.active_bank
                     s.active_bank <<= ~s.active_bank
@@ -666,13 +696,17 @@ class STEP_ControllerRTL(Component):
                     s.load_pc <<= s.pc_next
                     s.load_tile_count <<= s.tile_load_by_next_pc
                     s.load_inflight <<= 1
-                    s.tile_bitstreams_seen <<= TileCountType(0)
-                    s.scan_drain_count <<= TileCountType(0)
+                    s.cfg_packets_injected_count <<= TileCountType(0)
+                    s.cfg_packets_applied_count <<= TileCountType(0)
                     s.load_thread_count_override_valid <<= Bits1(0)
-                    s.load_tiles_done <<= 0
-                    s.load_cfg_done <<= 0
+                    s.fabric_cfg_load_done <<= 0
+                    s.cfg_packets_injection_done <<= 0
                     s.load_meta_valid <<= 0
                     s.meta_req_pending <<= 1
                     s.cfg_mem_raddr_reg <<= s.pc_next
                     s.prefetch_inflight <<= 0
                     s.rf_done_pending <<= 0
+                    if s.tile_load_by_next_pc == TileCountType(0):
+                        s.load_inflight <<= 0
+                        s.fabric_cfg_load_done <<= 1
+                        s.cfg_packets_injection_done <<= 1

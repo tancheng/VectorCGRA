@@ -157,23 +157,24 @@ class STEP_CgraRTL(Component):
         s.cfg_active_sel //= s.core_controller.cfg_active_sel
         s.cfg_load_sel //= s.core_controller.cfg_load_sel
         s.cfg_swap //= s.core_controller.cfg_swap
-        s.cfg_load_rst = Wire(1)
+        s.cfg_bank_commit = Wire(1)
 
         @update_ff
-        def update_cfg_load_rst():
-            s.cfg_load_rst <<= s.core_controller.send_cfg_to_rf.val & s.core_controller.send_cfg_to_rf.rdy
+        def update_cfg_bank_commit():
+            s.cfg_bank_commit <<= s.core_controller.send_cfg_to_rf.val & s.core_controller.send_cfg_to_rf.rdy
         
         ##### Core Controller & Fabric Connections
         s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
+        s.core_controller.fabric_cfg_packets_applied //= s.tile_fabric.cfg_packets_applied
         s.tile_fabric.cfg_active_sel //= s.cfg_active_sel
         s.tile_fabric.cfg_load_sel //= s.cfg_load_sel
         s.tile_fabric.cfg_swap //= s.cfg_swap
-        s.cfg_load_rst //= s.tile_fabric.cfg_load_rst # core -> fabric
+        s.cfg_bank_commit //= s.tile_fabric.cfg_bank_commit # core -> fabric
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
         s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
-        s.core_controller.rf_cfg_ready //= s.rf_controller.fabric_done # rf -> core
+        s.core_controller.rf_cfg_issue_ready //= s.rf_controller.cfg_issue_ready # rf -> core
         s.core_controller.rf_dep_mode //= s.rf_controller.dep_mode_out # rf -> core
         s.rf_controller.cfg_active_sel //= s.cfg_active_sel
         s.rf_controller.cfg_load_sel //= s.cfg_load_sel
@@ -231,7 +232,7 @@ class STEP_CgraRTL(Component):
 
         s.ld_st_unit.cfg_active_sel //= s.cfg_active_sel
         s.ld_st_unit.cfg_load_sel //= s.cfg_load_sel
-        s.ld_st_unit.cfg_load_rst //= s.cfg_load_rst
+        s.ld_st_unit.cfg_bank_commit //= s.cfg_bank_commit
 
         @update
         def update_ld_st_accepts():
@@ -342,7 +343,7 @@ class STEP_CgraRTL(Component):
             s.cc_pc_next = OutPort(BitstreamAddrType)
             s.cc_pc = OutPort(BitstreamAddrType)
             s.cc_state = OutPort(mk_bits(2))
-            s.cc_tiles_seen = OutPort( TileCountType )
+            s.cc_cfg_packets_injected = OutPort( TileCountType )
             s.cc_pc_started = OutPort( Bits1 )
             s.cc_pc_done = OutPort( Bits1 )
             s.cc_last_pc = OutPort( Bits1 )
@@ -356,7 +357,7 @@ class STEP_CgraRTL(Component):
             s.cc_pc_next //= s.core_controller.pc_next
             s.cc_pc //= s.core_controller.pc
             s.cc_state //= s.core_controller.state
-            s.cc_tiles_seen //= s.core_controller.tile_bitstreams_seen
+            s.cc_cfg_packets_injected //= s.core_controller.cfg_packets_injected_count
             s.cc_pc_started //= s.core_controller.pc_started
             s.cc_pc_done //= s.core_controller.pc_done
             s.cc_last_pc //= s.core_controller.last_pc
@@ -428,10 +429,10 @@ class STEP_CgraRTL(Component):
             s.rf_state_n //= s.rf_controller.state_n
             s.rf_cfg_done = OutPort(Bits1)
             s.rf_cfg_done //= s.rf_controller.cfg_done
-            s.rf_fabric_done = OutPort(Bits1)
-            s.rf_fabric_done //= s.rf_controller.fabric_done
-            s.rf_fabric_complete = OutPort(Bits1)
-            s.rf_fabric_complete //= s.rf_controller.fabric_complete
+            s.rf_cfg_issue_ready = OutPort(Bits1)
+            s.rf_cfg_issue_ready //= s.rf_controller.cfg_issue_ready
+            s.rf_cfg_writeback_complete = OutPort(Bits1)
+            s.rf_cfg_writeback_complete //= s.rf_controller.cfg_writeback_complete
             s.rf_rd_addr_valcfg_n  = [OutPort(Bits1)         for _ in range(num_rd_ports)]
             s.rf_rd_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_rd_ports)]
             s.rf_wr_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_wr_ports)]

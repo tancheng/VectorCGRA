@@ -64,10 +64,11 @@ class STEP_TileRTL(Component):
         s.tile_out_pred_port = [ OutPort(Bits1) for _ in range(num_tile_outports) ]
         s.recv_tile_bitstream = RecvIfcRTL(TileBitstreamType)
         s.recv_tile_bitstream.rdy //= 1
+        s.cfg_packet_applied = OutPort(Bits1)
         s.cfg_active_sel_w = Wire(1)
         s.cfg_load_sel_w = Wire(1)
         s.cfg_swap_w = Wire(1)
-        s.cfg_load_rst = InPort(1)
+        s.cfg_bank_commit = InPort(1)
         if enable_double_buffering:
             s.cfg_active_sel = InPort(Bits1)
             s.cfg_load_sel = InPort(Bits1)
@@ -83,6 +84,12 @@ class STEP_TileRTL(Component):
                 s.cfg_active_sel_w @= Bits1(0)
                 s.cfg_load_sel_w @= Bits1(0)
                 s.cfg_swap_w @= Bits1(0)
+        @update
+        def cfg_packet_applied_update():
+            s.cfg_packet_applied @= Bits1(
+                (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val
+            )
+
         if debug:
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
             s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
@@ -127,9 +134,7 @@ class STEP_TileRTL(Component):
             s.id_received = OutPort(TileIdType)
             @update
             def new_bitstream():
-                s.ingest_new_bitstream @= 0
-                if (s.recv_tile_bitstream.msg.tile_id == s.id) & s.recv_tile_bitstream.val:
-                    s.ingest_new_bitstream @= 1
+                s.ingest_new_bitstream @= s.cfg_packet_applied
                 s.id_matched @= s.recv_tile_bitstream.msg.tile_id == s.id
                 s.id_received @= s.recv_tile_bitstream.msg.tile_id
         #######
@@ -159,7 +164,7 @@ class STEP_TileRTL(Component):
             if s.reset:
                 s.tile_bitstream_bank0 <<= s.tile_bitstream_bank0
                 s.tile_bitstream_bank1 <<= s.tile_bitstream_bank1
-            if s.cfg_load_rst:
+            if s.cfg_bank_commit:
                 if s.cfg_load_sel_w == Bits1(0):
                     s.tile_bitstream_bank0 <<= s.tile_bitstream_bank0
                 else:

@@ -28,7 +28,7 @@ class STEP_LoadStoreRTL( Component ):
         s.thread_count = InPort( clog2(MAX_THREAD_COUNT) )
         s.cfg_active_sel = InPort(Bits1)
         s.cfg_load_sel = InPort(Bits1)
-        s.cfg_load_rst = InPort(Bits1)
+        s.cfg_bank_commit = InPort(Bits1)
         s.release_take = InPort(1)
         s.cfg_thread_count_bank0 = InPort(clog2(MAX_THREAD_COUNT))
         s.cfg_thread_count_bank1 = InPort(clog2(MAX_THREAD_COUNT))
@@ -112,7 +112,7 @@ class STEP_LoadStoreRTL( Component ):
         def drive_scoreboards():
             clear_bank0 = Bits1(0)
             clear_bank1 = Bits1(0)
-            if s.cfg_load_rst:
+            if s.cfg_bank_commit:
                 if s.cfg_load_sel == Bits1(0):
                     clear_bank0 = Bits1(1)
                 else:
