@@ -297,6 +297,8 @@ def init_param():
                         start_cfg = 0,
                         end_cfg = 0,
                         branch_en = b1(1),
+                        branch_has_else = b1(1),
+                        branch_backedge_sel = b2(2),
                         pred_reg_id = PredAddrType(0),
                         branch_true_cfg_id = 2,
                         branch_false_cfg_id = 0,

@@ -32,6 +32,8 @@ class STEP_LoadStoreRTL( Component ):
         s.release_take = InPort(1)
         s.cfg_thread_count_bank0 = InPort(clog2(MAX_THREAD_COUNT))
         s.cfg_thread_count_bank1 = InPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_mask_bank0 = InPort(MaskType)
+        s.cfg_thread_mask_bank1 = InPort(MaskType)
         s.cfg_bank_has_load0 = InPort(Bits1)
         s.cfg_bank_has_load1 = InPort(Bits1)
         s.cfg_bank_has_store0 = InPort(Bits1)
@@ -107,6 +109,8 @@ class STEP_LoadStoreRTL( Component ):
 
         s.cfg_thread_count_bank0 //= s.scoreboards[0].thread_count
         s.cfg_thread_count_bank1 //= s.scoreboards[1].thread_count
+        s.cfg_thread_mask_bank0 //= s.scoreboards[0].thread_mask
+        s.cfg_thread_mask_bank1 //= s.scoreboards[1].thread_mask
 
         @update
         def drive_scoreboards():

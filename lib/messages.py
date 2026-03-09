@@ -426,6 +426,8 @@ def mk_cfg_metadata_pkt(
     field_dict['end_cfg'] = Bits1
     # Branching / predication control
     field_dict['branch_en'] = Bits1
+    field_dict['branch_has_else'] = Bits1
+    field_dict['branch_backedge_sel'] = mk_bits(2)
     field_dict['pred_reg_id'] = PredAddrType
     field_dict['branch_true_cfg_id'] = CfgIdType
     field_dict['branch_false_cfg_id'] = CfgIdType

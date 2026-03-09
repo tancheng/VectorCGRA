@@ -130,6 +130,14 @@ class AxiLdSourceTriggeredRTL( Component ):
                 # count completed outputs
                 if s.valid_pipe[delay]:
                     s.loaded_idx <<= s.loaded_idx + 1
+                
+                # If overflow in msg_idx, raise error
+                if (len(s.msgs) > 0) & (~(s.loaded_idx == 0)) & (s.loaded_idx >= len(s.msgs) + 1):
+                    raise PyMTLTestSinkError(
+                        f'Test sink {s} has msg_idx out of range!\n'
+                        f'Msg Index (Hex)      : {s.loaded_idx}\n'
+                        f'Number of msgs (Dec) : {len(s.msgs) + 1}\n'
+                    )
         
     def done( s ):
         return s.loaded_idx >= len(s.msgs)
@@ -339,6 +347,14 @@ class AxiStSourceTriggeredMatchRTL( Component ):
                 # count completed outputs
                 if s.valid_pipe[delay]:
                     s.idx <<= s.idx + 1
+
+                # If overflow in msg_idx, raise error
+                if (len(s.msgs) > 0) & (~(s.msg_idx == 0)) & (s.msg_idx >= s.num_total_stores + 1):
+                    raise PyMTLTestSinkError(
+                        f'Test sink {s} has msg_idx out of range!\n'
+                        f'Msg Index (Hex)      : {s.msg_idx}\n'
+                        f'Number of msgs (Dec) : {s.num_total_stores + 1}\n'
+                    )
 
     def done( s ):
         return s.idx >= s.num_total_stores

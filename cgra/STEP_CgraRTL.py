@@ -158,10 +158,7 @@ class STEP_CgraRTL(Component):
         s.cfg_load_sel //= s.core_controller.cfg_load_sel
         s.cfg_swap //= s.core_controller.cfg_swap
         s.cfg_bank_commit = Wire(1)
-
-        @update_ff
-        def update_cfg_bank_commit():
-            s.cfg_bank_commit <<= s.core_controller.send_cfg_to_rf.val & s.core_controller.send_cfg_to_rf.rdy
+        s.cfg_bank_commit //= s.core_controller.cfg_bank_commit
         
         ##### Core Controller & Fabric Connections
         s.core_controller.send_cfg_to_tiles //= s.tile_fabric.recv_tile_bitstreams # core -> fabric
@@ -173,6 +170,7 @@ class STEP_CgraRTL(Component):
 
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
+        s.core_controller.send_cfg_to_rf_thread_mask //= s.rf_controller.recv_cfg_thread_mask
         s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
         s.core_controller.rf_cfg_issue_ready //= s.rf_controller.cfg_issue_ready # rf -> core
         s.core_controller.rf_dep_mode //= s.rf_controller.dep_mode_out # rf -> core
@@ -186,16 +184,24 @@ class STEP_CgraRTL(Component):
             s.core_controller.pred_complete[i] //= s.rf_controller.pred_complete[i]
             s.core_controller.pred_true_count[i] //= s.rf_controller.pred_true_count[i]
             s.core_controller.pred_false_count[i] //= s.rf_controller.pred_false_count[i]
+            s.core_controller.pred_true_mask[i] //= s.rf_controller.pred_true_mask[i]
+            s.core_controller.pred_false_mask[i] //= s.rf_controller.pred_false_mask[i]
 
         ##### RF Controller & Fabric Connections
         for i in range(num_tiles):
             s.rf_controller.send_tile_preds[i] //= s.tile_fabric.recv_from_rf_pred[i] # rf -> fabric
         for i in range(num_tile_rows):
             rd_base_idx = 4 * i
-            s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
-            s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
-            s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
-            s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
+            if i % 2 == 0:
+                s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
+            else:
+                s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
+                s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
             s.rf_controller.wr_data[2*i] //= s.tile_fabric.send_west_data_port[i] # fabric -> rf
             s.rf_controller.wr_data[2*i+1] //= s.tile_fabric.send_east_data_port[i] # fabric -> rf
             s.rf_controller.recv_pred_port[2*i] //= s.tile_fabric.send_west_pred_port[i] # fabric -> rf
@@ -225,6 +231,8 @@ class STEP_CgraRTL(Component):
         s.rf_controller.mem_release_take //= s.ld_st_unit.release_take
         s.rf_controller.cfg_thread_count_bank0 //= s.ld_st_unit.cfg_thread_count_bank0
         s.rf_controller.cfg_thread_count_bank1 //= s.ld_st_unit.cfg_thread_count_bank1
+        s.rf_controller.cfg_thread_mask_bank0 //= s.ld_st_unit.cfg_thread_mask_bank0
+        s.rf_controller.cfg_thread_mask_bank1 //= s.ld_st_unit.cfg_thread_mask_bank1
         s.rf_controller.cfg_bank_has_load0 //= s.ld_st_unit.cfg_bank_has_load0
         s.rf_controller.cfg_bank_has_load1 //= s.ld_st_unit.cfg_bank_has_load1
         s.rf_controller.cfg_bank_has_store0 //= s.ld_st_unit.cfg_bank_has_store0

@@ -57,6 +57,9 @@ class STEP_TokenizerRTL(Component):
                 s.token_count <<= num_tokens
                 s.token_shifter <<= 0
             if s.cfg_swap:
+                # Tokenizer state is shared across config banks, so a bank swap
+                # must restart credits for the newly active config.
+                s.token_count <<= num_tokens
                 s.token_shifter <<= 0
             else:
                 s.token_shifter <<= s.token_shifter >> 1
