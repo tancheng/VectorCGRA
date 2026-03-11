@@ -25,13 +25,14 @@ class STEP_LoadStoreRTL( Component ):
         s.st_issue_tid = [InPort(TidType) for _ in range(num_ports)]
         s.st_token_return = [OutPort(1) for _ in range(num_ports)]
 
-        s.thread_count = InPort( clog2(MAX_THREAD_COUNT) )
         s.cfg_active_sel = InPort(Bits1)
         s.cfg_load_sel = InPort(Bits1)
         s.cfg_bank_commit = InPort(Bits1)
         s.release_take = InPort(1)
-        s.cfg_thread_count_bank0 = InPort(clog2(MAX_THREAD_COUNT))
-        s.cfg_thread_count_bank1 = InPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_min_bank0 = InPort(TidType)
+        s.cfg_thread_max_bank0 = InPort(TidType)
+        s.cfg_thread_min_bank1 = InPort(TidType)
+        s.cfg_thread_max_bank1 = InPort(TidType)
         s.cfg_thread_mask_bank0 = InPort(MaskType)
         s.cfg_thread_mask_bank1 = InPort(MaskType)
         s.cfg_bank_has_load0 = InPort(Bits1)
@@ -57,6 +58,7 @@ class STEP_LoadStoreRTL( Component ):
         s.ld_units = [STEP_LoadRTL(DataType) for _ in range(num_ports)]
         s.st_units = [STEP_StoreRTL(DataType) for _ in range(num_ports)]
         s.scoreboards = [STEP_LdStScoreboardRTL() for _ in range(2)]
+        s.active_thread_span = Wire(TidType)
 
         #### DEBUG
         if debug:
@@ -95,7 +97,7 @@ class STEP_LoadStoreRTL( Component ):
             s.cfg_active_sel //= s.ld_units[i].issue_bank
             s.ld_enable[i] //= s.ld_units[i].enable
             s.ld_token_return[i] //= s.ld_units[i].token_return
-            s.thread_count //= s.ld_units[i].thread_count
+            s.active_thread_span //= s.ld_units[i].thread_span
             
             # Store Unit connections
             s.st_axi[i] //= s.st_units[i].axi
@@ -105,12 +107,36 @@ class STEP_LoadStoreRTL( Component ):
             s.cfg_active_sel //= s.st_units[i].issue_bank
             s.st_enable[i] //= s.st_units[i].enable
             s.st_token_return[i] //= s.st_units[i].token_return
-            s.thread_count //= s.st_units[i].thread_count
+            s.active_thread_span //= s.st_units[i].thread_span
 
-        s.cfg_thread_count_bank0 //= s.scoreboards[0].thread_count
-        s.cfg_thread_count_bank1 //= s.scoreboards[1].thread_count
+        s.cfg_thread_min_bank0 //= s.scoreboards[0].thread_count_min
+        s.cfg_thread_max_bank0 //= s.scoreboards[0].thread_count_max
+        s.cfg_thread_min_bank1 //= s.scoreboards[1].thread_count_min
+        s.cfg_thread_max_bank1 //= s.scoreboards[1].thread_count_max
         s.cfg_thread_mask_bank0 //= s.scoreboards[0].thread_mask
         s.cfg_thread_mask_bank1 //= s.scoreboards[1].thread_mask
+
+        @update
+        def drive_active_thread_span():
+            active_mask = s.cfg_thread_mask_bank0
+            active_min = s.cfg_thread_min_bank0
+            active_max = s.cfg_thread_max_bank0
+            if s.cfg_active_sel == Bits1(1):
+                active_mask = s.cfg_thread_mask_bank1
+                active_min = s.cfg_thread_min_bank1
+                active_max = s.cfg_thread_max_bank1
+
+            active_span = TidType(0)
+            if active_mask != MaskType(0):
+                for tid in range(MAX_THREAD_COUNT):
+                    if active_mask[tid]:
+                        active_span = active_span + TidType(1)
+            else:
+                for tid in range(MAX_THREAD_COUNT):
+                    tid_bits = TidType(tid)
+                    if (tid_bits >= active_min) & (tid_bits < active_max):
+                        active_span = active_span + TidType(1)
+            s.active_thread_span @= active_span
 
         @update
         def drive_scoreboards():

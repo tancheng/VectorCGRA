@@ -64,7 +64,15 @@ OPT_FINC                  = Bits6( 40 )
 OPT_FMUL                  = Bits6( 41 )
 OPT_FMUL_CONST            = Bits6( 42 )
 
-OPT_VEC_ADD          = Bits6( 50 )
+# OPT_VEC_ADD          = Bits6( 50 )
+# OPT_VEC_INC          = Bits6( 51 )
+# OPT_VEC_ADD_CONST    = Bits6( 52 )
+# OPT_VEC_SUB          = Bits6( 53 )
+# OPT_VEC_SUB_CONST    = Bits6( 54 )
+# OPT_VEC_MUL          = Bits6( 55 )
+# OPT_VEC_REDUCE_ADD   = Bits6( 56 )
+# OPT_VEC_REDUCE_MUL   = Bits6( 57 )
+OPT_LT_CONST          = Bits6( 50 )
 OPT_VEC_INC          = Bits6( 51 )
 OPT_VEC_ADD_CONST    = Bits6( 52 )
 OPT_VEC_SUB          = Bits6( 53 )
@@ -123,7 +131,7 @@ OPT_SYMBOL_DICT = {
   OPT_FMUL           : "(f*)",
   OPT_FMUL_CONST     : "(f*')",
 
-  OPT_VEC_ADD         : "(v1+)",
+  OPT_LT_CONST        : "(?<cst)",
   OPT_VEC_INC         : "(v1++)",
   OPT_VEC_ADD_CONST   : "(v1+')",
   OPT_VEC_SUB         : "(v1-)",
@@ -131,6 +139,14 @@ OPT_SYMBOL_DICT = {
   OPT_VEC_MUL         : "(v1*)",
   OPT_VEC_REDUCE_ADD  : "(vall+)",
   OPT_VEC_REDUCE_MUL  : "(vall*)",
+#   OPT_VEC_ADD         : "(v1+)",
+#   OPT_VEC_INC         : "(v1++)",
+#   OPT_VEC_ADD_CONST   : "(v1+')",
+#   OPT_VEC_SUB         : "(v1-)",
+#   OPT_VEC_SUB_CONST   : "(v1-')",
+#   OPT_VEC_MUL         : "(v1*)",
+#   OPT_VEC_REDUCE_ADD  : "(vall+)",
+#   OPT_VEC_REDUCE_MUL  : "(vall*)",
 
   OPT_LT  : "(?<)",
   OPT_GTE : "(?>=)",

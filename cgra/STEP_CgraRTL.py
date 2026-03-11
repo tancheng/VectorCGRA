@@ -220,7 +220,6 @@ class STEP_CgraRTL(Component):
             s.rf_controller.ld_data_id[i]       //= s.ld_st_unit.ld_ifc[i].o_data_id # ld/st -> rf
             s.rf_controller.ld_req_accepted[i]  //= s.ld_req_accepted[i]
             s.rf_controller.st_req_accepted[i]  //= s.st_req_accepted[i]
-        s.rf_controller.send_thread_count //= s.ld_st_unit.thread_count # rf -> ld/st
         s.rf_controller.ld_st_complete //= s.ld_st_unit.ld_st_complete # ld/st -> rf
         s.rf_controller.mem_ready_mask_bank0 //= s.ld_st_unit.mem_ready_mask_bank0
         s.rf_controller.mem_ready_mask_bank1 //= s.ld_st_unit.mem_ready_mask_bank1
@@ -229,8 +228,10 @@ class STEP_CgraRTL(Component):
         s.rf_controller.mem_release_valid //= s.ld_st_unit.ld_release_valid
         s.rf_controller.mem_release_tid //= s.ld_st_unit.ld_release_tid
         s.rf_controller.mem_release_take //= s.ld_st_unit.release_take
-        s.rf_controller.cfg_thread_count_bank0 //= s.ld_st_unit.cfg_thread_count_bank0
-        s.rf_controller.cfg_thread_count_bank1 //= s.ld_st_unit.cfg_thread_count_bank1
+        s.rf_controller.cfg_thread_min_bank0 //= s.ld_st_unit.cfg_thread_min_bank0
+        s.rf_controller.cfg_thread_max_bank0 //= s.ld_st_unit.cfg_thread_max_bank0
+        s.rf_controller.cfg_thread_min_bank1 //= s.ld_st_unit.cfg_thread_min_bank1
+        s.rf_controller.cfg_thread_max_bank1 //= s.ld_st_unit.cfg_thread_max_bank1
         s.rf_controller.cfg_thread_mask_bank0 //= s.ld_st_unit.cfg_thread_mask_bank0
         s.rf_controller.cfg_thread_mask_bank1 //= s.ld_st_unit.cfg_thread_mask_bank1
         s.rf_controller.cfg_bank_has_load0 //= s.ld_st_unit.cfg_bank_has_load0
@@ -417,8 +418,10 @@ class STEP_CgraRTL(Component):
                 s.stores_in_tile[i] //= s.ld_st_unit.stores_in_tile[i]
                 s.ld_tile_last_seen[i] //= s.ld_st_unit.ld_tile_last_seen[i]
                 s.ld_i_req[i] //= s.tokenizer.token_shifter_out[num_wr_ports + i] # fabric -> ld/st
-            s.recv_ld_st_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
-            s.recv_ld_st_thread_count //= s.rf_controller.send_thread_count
+            s.recv_ld_st_thread_min = OutPort( clog2(MAX_THREAD_COUNT) )
+            s.recv_ld_st_thread_max = OutPort( clog2(MAX_THREAD_COUNT) )
+            s.recv_ld_st_thread_min //= s.rf_controller.send_thread_min
+            s.recv_ld_st_thread_max //= s.rf_controller.send_thread_max
             s.st_i_req = [OutPort(1) for _ in range(num_st_ports)]
             s.st_i_data = [OutPort(DataType) for _ in range(num_st_ports)]
             s.st_i_addr = [OutPort(AxiAddrType) for _ in range(num_st_ports)]

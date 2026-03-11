@@ -12,7 +12,7 @@ class STEP_LoadRTL( Component ):
         s.load_ifc = RecvAxiLoadIfcRTL(DataType)
         
         # Add tile tracking interface
-        s.thread_count = InPort( clog2(MAX_THREAD_COUNT) )
+        s.thread_span = InPort( clog2(MAX_THREAD_COUNT) )
         s.enable = InPort( 1 )
         s.i_tile_pred = InPort( 1 )             # Tile data indicator  
         s.issue_tid = InPort( clog2(MAX_THREAD_COUNT) )
@@ -63,7 +63,7 @@ class STEP_LoadRTL( Component ):
                         s.tile_counter <<= s.tile_counter + 1
                         
                         # Check if we've hit the threshold
-                        if s.tile_counter + 1 >= s.thread_count:
+                        if s.tile_counter + 1 >= s.thread_span:
                             s.tile_last_seen <<= 1
                 
                 # Decrement loads_in_tile when data comes back and is consumed

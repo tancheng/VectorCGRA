@@ -16,7 +16,8 @@ class STEP_LdStScoreboardRTL(Component):
         s.ld_done_tid = InPort(TidType)
         s.st_done_tid_val = InPort(1)
         s.st_done_tid = InPort(TidType)
-        s.thread_count = InPort(CountType)
+        s.thread_count_min = InPort(TidType)
+        s.thread_count_max = InPort(TidType)
         s.thread_mask = InPort(MaskType)
         s.require_load = InPort(1)
         s.require_store = InPort(1)
@@ -39,8 +40,20 @@ class STEP_LdStScoreboardRTL(Component):
         s.release_head = Wire(QueueIdxType)
         s.release_tail = Wire(QueueIdxType)
         s.release_count = Wire(QueueCountType)
+        s.target_mask = Wire(MaskType)
 
         zero_mask = MaskType(0)
+
+        @update
+        def comb_target_mask():
+            target_mask = s.thread_mask
+            if s.thread_mask == zero_mask:
+                target_mask = zero_mask
+                for i in range(MAX_THREAD_COUNT):
+                    tid_bits = TidType(i)
+                    if (tid_bits >= s.thread_count_min) & (tid_bits < s.thread_count_max):
+                        target_mask = target_mask | MaskType(1 << i)
+            s.target_mask @= target_mask
 
         @update_ff
         def ff_masks_and_queue():
@@ -65,15 +78,10 @@ class STEP_LdStScoreboardRTL(Component):
 
                 ready_after_events = zero_mask
                 complete_after_events = zero_mask
-                if s.thread_mask != zero_mask:
-                    target_mask = s.thread_mask
-                else:
-                    target_mask = zero_mask
+                target_mask = s.target_mask
 
                 for i in range(MAX_THREAD_COUNT):
                     one_hot_i = MaskType(1 << i)
-                    if (s.thread_mask == zero_mask) & (s.thread_count > CountType(i)):
-                        target_mask = target_mask | one_hot_i
                     if s.mem_dispatch_tid_val & (s.mem_dispatch_tid == TidType(i)):
                         mem_dispatch_next = mem_dispatch_next | one_hot_i
                     if s.ld_done_tid_val & (s.ld_done_tid == TidType(i)):
@@ -120,13 +128,7 @@ class STEP_LdStScoreboardRTL(Component):
 
         @update
         def comb_outs():
-            if s.thread_mask != zero_mask:
-                target_mask = s.thread_mask
-            else:
-                target_mask = zero_mask
-            for i in range(MAX_THREAD_COUNT):
-                if (s.thread_mask == zero_mask) & (s.thread_count > CountType(i)):
-                    target_mask = target_mask | MaskType(1 << i)
+            target_mask = s.target_mask
 
             if s.require_load | s.require_store:
                 s.ready_mask @= s.mem_dispatch_mask & target_mask

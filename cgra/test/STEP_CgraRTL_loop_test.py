@@ -24,7 +24,7 @@ num_fu_outports = 1
 num_register_banks = 2
 num_registers = 16
 num_pred_registers = 16
-thread_count = 20
+num_threads = 20
 
 class TestHarness(Component):
     def construct(s,
@@ -57,7 +57,7 @@ class TestHarness(Component):
 
         # Configure Sources
         ld_axi_msgs = [[] for _ in range(num_ld_ports)]
-        st_axi_msgs = [[], [1]*thread_count + [2] * thread_count + [3] * thread_count + [5]*thread_count]
+        st_axi_msgs = [[], [1]*num_threads + [2] * num_threads + [3] * num_threads + [5]*num_threads]
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(CfgMetadataType, cpu_to_cgra_metadata_msgs)
         s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(
             TileBitstreamType, cpu_to_cgra_bitstream_msgs, s.num_tiles, delay=1
@@ -277,7 +277,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[0],
                         cfg_id = 0,
                         br_id = 1,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 1,
                         end_cfg = 0,
                     ),
@@ -293,7 +294,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 1,
                         br_id = 2,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 0,
                         end_cfg = 0,
                         branch_en = b1(1),
@@ -316,7 +318,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 2,
                         br_id = 0,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 0,
                         end_cfg = 1,
                     ),

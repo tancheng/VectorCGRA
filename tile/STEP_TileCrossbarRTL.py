@@ -135,7 +135,7 @@ class STEP_TileCrossbarRTL(Component):
                     s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= Bits1(0)
                     for in_port in range(num_tile_inports):
                         if s.tile_bitstream.tile_fwd_route[in_port][i]:
-                            s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_pred_port[AbsoluteTileOutPortType(in_port)]
+                            s.tile_preshift_out_pred_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_pred_port[AbsoluteTileInPortType(in_port)]
 
         @update
         def update_fu_out_routing():
@@ -163,9 +163,10 @@ class STEP_TileCrossbarRTL(Component):
             # Handle forwarding logic when predicates are false
             if (s.should_forward > 0) & (s.tile_bitstream.opt_type != OPT_NAH):
                 # Forward input data that matches write address, or any data if different addr type
+                forwarded_port_idx = trunc(s.should_forward - 1, AbsoluteTileInPortType.nbits)
                 for i in range(num_tile_outports):
                     if s.tile_bitstream.tile_out_route[i]:
-                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_data_port[AbsoluteTileOutPortType(s.should_forward - 1)]      
+                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - i - 1)] @= s.tile_in_data_port[forwarded_port_idx]
             else:
                 # Route FU output to tile outputs
                 # TODO: @darrenl currently assuming only 1 fu outport
@@ -178,4 +179,4 @@ class STEP_TileCrossbarRTL(Component):
             for i in range(num_tile_inports):
                 for j in range(num_tile_outports):
                     if s.tile_bitstream.tile_fwd_route[i][j]:
-                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - j - 1)] @= s.tile_in_data_port[AbsoluteTileOutPortType(i)]
+                        s.tile_preshift_out_data_port[AbsoluteTileOutPortType(num_tile_outports - j - 1)] @= s.tile_in_data_port[AbsoluteTileInPortType(i)]

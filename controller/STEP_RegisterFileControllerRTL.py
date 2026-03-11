@@ -81,7 +81,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.cfg_load_sel_w @= Bits1(0)
                 s.cfg_swap_w @= Bits1(0)
                 s.cfg_dep_start_w @= Bits1(0)
-        s.send_thread_count = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.send_thread_min = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.send_thread_max = OutPort( clog2(MAX_THREAD_COUNT) )
         s.ld_enable = [OutPort(1) for _ in range(num_ld_ports)]
         s.st_enable = [OutPort(1) for _ in range(num_st_ports)]
         s.ld_st_complete = InPort(1)
@@ -92,8 +93,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.mem_release_valid = InPort(1)
         s.mem_release_tid = InPort(clog2(MAX_THREAD_COUNT))
         s.mem_release_take = OutPort(1)
-        s.cfg_thread_count_bank0 = OutPort(clog2(MAX_THREAD_COUNT))
-        s.cfg_thread_count_bank1 = OutPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_min_bank0 = OutPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_max_bank0 = OutPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_min_bank1 = OutPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_max_bank1 = OutPort(clog2(MAX_THREAD_COUNT))
         s.cfg_thread_mask_bank0 = OutPort(mk_bits(MAX_THREAD_COUNT))
         s.cfg_thread_mask_bank1 = OutPort(mk_bits(MAX_THREAD_COUNT))
         s.cfg_bank_has_load0 = OutPort(Bits1)
@@ -169,8 +172,10 @@ class STEP_RegisterFileControllerRTL( Component ):
             for i in range(num_st_ports):
                 bank0_has_store = bank0_has_store | s.st_enable_bank0[i]
                 bank1_has_store = bank1_has_store | s.st_enable_bank1[i]
-            s.cfg_thread_count_bank0 @= s.expected_count_bank0
-            s.cfg_thread_count_bank1 @= s.expected_count_bank1
+            s.cfg_thread_min_bank0 @= s.active_thread_min_bank0
+            s.cfg_thread_max_bank0 @= s.active_thread_max_bank0
+            s.cfg_thread_min_bank1 @= s.active_thread_min_bank1
+            s.cfg_thread_max_bank1 @= s.active_thread_max_bank1
             s.cfg_thread_mask_bank0 @= s.active_thread_mask_bank0
             s.cfg_thread_mask_bank1 @= s.active_thread_mask_bank1
             s.cfg_bank_has_load0 @= bank0_has_load
@@ -193,6 +198,9 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Debug Flags TODO: @darrenl to delete
         MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
         s.recv_cfg_thread_mask_resolved = Wire(MaskType)
+        s.recv_cfg_thread_count_resolved = Wire(MaxThreadType)
+        s.recv_cfg_thread_min_resolved = Wire(MaxThreadType)
+        s.recv_cfg_thread_max_resolved = Wire(MaxThreadType)
 
         s.wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
         s.ld_addr            = [ OutPort(RegAddrType) for _ in range(num_ld_ports) ]
@@ -233,6 +241,8 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.wr_addr_valcfg = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.pred_wr_valcfg = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.expected_count = Wire( MaxThreadType )
+        s.active_thread_min = Wire(MaxThreadType)
+        s.active_thread_max = Wire(MaxThreadType)
         s.rd_addr_cfg_bank0    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.rd_addr_cfg_bank1    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
         s.rd_addr_valcfg_bank0 = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
@@ -253,6 +263,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.pred_wr_valcfg_bank1 = [ Wire(Bits1)       for _ in range(num_wr_ports) ]
         s.expected_count_bank0 = Wire( MaxThreadType )
         s.expected_count_bank1 = Wire( MaxThreadType )
+        s.active_thread_min_bank0 = Wire(MaxThreadType)
+        s.active_thread_max_bank0 = Wire(MaxThreadType)
+        s.active_thread_min_bank1 = Wire(MaxThreadType)
+        s.active_thread_max_bank1 = Wire(MaxThreadType)
         s.active_thread_mask = Wire(MaskType)
         s.active_thread_mask_bank0 = Wire(MaskType)
         s.active_thread_mask_bank1 = Wire(MaskType)
@@ -265,6 +279,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.dep_mode = Wire(Bits1)
         s.dep_mode_n = Wire(Bits1)
         s.current_issue_tid = Wire(MaxThreadType)
+        s.current_issue_tid_data = Wire(RegDataType)
         s.issue_fire = Wire(Bits1)
         s.any_wr_enabled = Wire(Bits1)
         s.ld_seq_count = [Wire(MaxThreadType) for _ in range(num_ld_ports)]
@@ -276,7 +291,17 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.pred_wr_addr_cfg_bank0 = [ Wire(PredAddrType) for _ in range(num_wr_ports) ]
         s.pred_wr_addr_cfg_bank1 = [ Wire(PredAddrType) for _ in range(num_wr_ports) ]
 
-        s.send_thread_count //= s.expected_count
+        s.send_thread_min //= s.active_thread_min
+        s.send_thread_max //= s.active_thread_max
+
+        if RegDataType.nbits >= MaxThreadType.nbits:
+            @update
+            def comb_current_issue_tid_data():
+                s.current_issue_tid_data @= zext(s.current_issue_tid, RegDataType.nbits)
+        else:
+            @update
+            def comb_current_issue_tid_data():
+                s.current_issue_tid_data @= trunc(s.current_issue_tid, RegDataType.nbits)
 
         # Counters (increment on handshakes)
         s.rd_count = [ Wire(MaxThreadType) for _ in range(num_rd_ports) ]
@@ -454,7 +479,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 elif s.active_const_store:
                     s.rd_data[i] @= RegDataType(0)
                 elif s.tid_enabled[i]:
-                    s.rd_data[i] @= s.current_issue_tid[0:RegDataType.nbits]
+                    s.rd_data[i] @= s.current_issue_tid_data
                     if i % 4 == 0:
                         if i + 2 < num_rd_ports:
                             if s.rd_addr_valcfg[i + 2] & ~s.tid_enabled[i + 2]:
@@ -477,12 +502,32 @@ class STEP_RegisterFileControllerRTL( Component ):
 
         @update
         def comb_recv_cfg_thread_mask():
-            s.recv_cfg_thread_mask_resolved @= s.recv_cfg_thread_mask
+            resolved_mask = s.recv_cfg_thread_mask
+            resolved_count = MaxThreadType(0)
+            resolved_min = MaxThreadType(0)
+            resolved_max = MaxThreadType(0)
             if s.recv_cfg_thread_mask == MaskType(0):
-                s.recv_cfg_thread_mask_resolved @= MaskType(0)
-                for count in range(1, 1 << MaxThreadType.nbits):
-                    if s.recv_cfg_from_ctrl.msg.thread_count == MaxThreadType(count):
-                        s.recv_cfg_thread_mask_resolved @= MaskType((1 << count) - 1)
+                resolved_mask = MaskType(0)
+                resolved_min = s.recv_cfg_from_ctrl.msg.thread_count_min
+                resolved_max = s.recv_cfg_from_ctrl.msg.thread_count_max
+                for tid in range(MAX_THREAD_COUNT):
+                    tid_bits = MaxThreadType(tid)
+                    if (tid_bits >= resolved_min) & (tid_bits < resolved_max):
+                        resolved_mask = resolved_mask | MaskType(1 << tid)
+                        resolved_count = resolved_count + MaxThreadType(1)
+            else:
+                found_tid = Bits1(0)
+                for tid in range(MAX_THREAD_COUNT):
+                    if s.recv_cfg_thread_mask[tid]:
+                        resolved_count = resolved_count + MaxThreadType(1)
+                        if ~found_tid:
+                            resolved_min = MaxThreadType(tid)
+                            found_tid = Bits1(1)
+                        resolved_max = MaxThreadType(tid + 1)
+            s.recv_cfg_thread_count_resolved @= resolved_count
+            s.recv_cfg_thread_min_resolved @= resolved_min
+            s.recv_cfg_thread_max_resolved @= resolved_max
+            s.recv_cfg_thread_mask_resolved @= resolved_mask
 
         @update
         def comb_dep_complete_mask():
@@ -498,6 +543,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.cfg_bank_valid1 <<= 0
                 s.expected_count_bank0 <<= MaxThreadType(0)
                 s.expected_count_bank1 <<= MaxThreadType(0)
+                s.active_thread_min_bank0 <<= MaxThreadType(0)
+                s.active_thread_max_bank0 <<= MaxThreadType(0)
+                s.active_thread_min_bank1 <<= MaxThreadType(0)
+                s.active_thread_max_bank1 <<= MaxThreadType(0)
                 s.active_thread_mask_bank0 <<= MaskType(0)
                 s.active_thread_mask_bank1 <<= MaskType(0)
                 s.pred_reg_bank0 <<= PredAddrType(0)
@@ -555,7 +604,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                     cfg_is_const_store = cfg_is_const_store & any_store & ~any_load & ~any_data_write & ~any_pred_write
                     if s.cfg_load_sel_w == Bits1(0):
                         s.cfg_bank_valid0 <<= 1
-                        s.expected_count_bank0 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        s.expected_count_bank0 <<= s.recv_cfg_thread_count_resolved
+                        s.active_thread_min_bank0 <<= s.recv_cfg_thread_min_resolved
+                        s.active_thread_max_bank0 <<= s.recv_cfg_thread_max_resolved
                         s.active_thread_mask_bank0 <<= s.recv_cfg_thread_mask_resolved
                         s.pred_reg_bank0 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
                         s.branch_en_bank0 <<= s.recv_cfg_from_ctrl.msg.branch_en
@@ -578,7 +629,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.st_enable_bank0[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
                     else:
                         s.cfg_bank_valid1 <<= 1
-                        s.expected_count_bank1 <<= s.recv_cfg_from_ctrl.msg.thread_count
+                        s.expected_count_bank1 <<= s.recv_cfg_thread_count_resolved
+                        s.active_thread_min_bank1 <<= s.recv_cfg_thread_min_resolved
+                        s.active_thread_max_bank1 <<= s.recv_cfg_thread_max_resolved
                         s.active_thread_mask_bank1 <<= s.recv_cfg_thread_mask_resolved
                         s.pred_reg_bank1 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
                         s.branch_en_bank1 <<= s.recv_cfg_from_ctrl.msg.branch_en
@@ -711,7 +764,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.ld_seq_count_n[i] @= MaxThreadType(0)
                     for i in range(num_st_ports):
                         s.st_seq_count_n[i] @= MaxThreadType(0)
-                    s.expected_count_n @= s.recv_cfg_from_ctrl.msg.thread_count
+                    s.expected_count_n @= s.recv_cfg_thread_count_resolved
             
             elif s.state == ST_RUN:
                 if s.dep_mode & s.mem_release_valid:
@@ -756,6 +809,8 @@ class STEP_RegisterFileControllerRTL( Component ):
             if s.reset:
                 s.state           <<= ST_IDLE
                 s.expected_count  <<= MaxThreadType(0)
+                s.active_thread_min <<= MaxThreadType(0)
+                s.active_thread_max <<= MaxThreadType(0)
                 s.active_thread_mask <<= MaskType(0)
                 s.dep_thread_mask <<= MaskType(0)
                 s.active_pred_reg <<= PredAddrType(0)
@@ -796,6 +851,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.dep_mode <<= s.cfg_dep_start_w
                     if s.cfg_active_sel_w == Bits1(0):
                         s.expected_count <<= s.expected_count_bank0
+                        s.active_thread_min <<= s.active_thread_min_bank0
+                        s.active_thread_max <<= s.active_thread_max_bank0
                         s.active_thread_mask <<= s.active_thread_mask_bank0
                         dep_mask = MaskType(0)
                         if s.cfg_dep_start_w:
@@ -824,6 +881,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.st_enable_active[i] <<= s.st_enable_bank0[i]
                     else:
                         s.expected_count <<= s.expected_count_bank1
+                        s.active_thread_min <<= s.active_thread_min_bank1
+                        s.active_thread_max <<= s.active_thread_max_bank1
                         s.active_thread_mask <<= s.active_thread_mask_bank1
                         dep_mask = MaskType(0)
                         if s.cfg_dep_start_w:
@@ -882,7 +941,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.expected_count <<= s.expected_count_n
 
                     if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE):
-                        cfg_mask = s.recv_cfg_thread_mask_resolved
+                        s.active_thread_min <<= s.recv_cfg_thread_min_resolved
+                        s.active_thread_max <<= s.recv_cfg_thread_max_resolved
                         s.active_thread_mask <<= s.recv_cfg_thread_mask_resolved
                         s.dep_thread_mask <<= MaskType(0)
                         s.active_pred_reg <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
@@ -929,7 +989,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     for i in range(num_wr_ports):
                         if s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i] & (s.recv_cfg_from_ctrl.msg.out_pred_regs[i] == PredAddrType(r)):
                             count = PredCountType(0)
-                            expected = PredCountType(s.recv_cfg_from_ctrl.msg.thread_count)
+                            expected = PredCountType(s.recv_cfg_thread_count_resolved)
                             any_true = Bits1(0)
                             any_false = Bits1(0)
                             true_count = PredCountType(0)

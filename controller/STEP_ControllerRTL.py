@@ -179,14 +179,10 @@ class STEP_ControllerRTL(Component):
     s.branch_reconverge_cfg = Wire(BitstreamAddrType)
     s.branch_true_count = Wire(LoopCountType)
     s.branch_false_count = Wire(LoopCountType)
-    s.load_thread_count_override = Wire(LoopCountType)
-    s.load_thread_count_override_valid = Wire(1)
     s.load_thread_mask_override = Wire(MaskType)
     s.load_thread_mask_override_valid = Wire(1)
     s.active_thread_mask = Wire(MaskType)
-    s.active_thread_count = Wire(LoopCountType)
     s.next_thread_mask = Wire(MaskType)
-    s.next_thread_count = Wire(LoopCountType)
     s.load_yield_to_deferred = Wire(1)
     s.active_yield_to_deferred = Wire(1)
     s.next_yield_to_deferred = Wire(1)
@@ -196,7 +192,6 @@ class STEP_ControllerRTL(Component):
     s.deferred_depth = Wire(StackDepthType)
     s.deferred_cfg = [ Wire(BitstreamAddrType) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.deferred_tile_count = [ Wire(TileCountType) for _ in range(MAX_BITSTREAM_COUNT) ]
-    s.deferred_thread_count = [ Wire(LoopCountType) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.deferred_thread_mask = [ Wire(MaskType) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.deferred_skip_next_end_cfg = [ Wire(Bits1) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.deferred_persistent = [ Wire(Bits1) for _ in range(MAX_BITSTREAM_COUNT) ]
@@ -282,6 +277,29 @@ class STEP_ControllerRTL(Component):
 
     @update
     def prepare_cfg_messages():
+        base_thread_min = s.load_meta.thread_count_min
+        base_thread_max = s.load_meta.thread_count_max
+
+        cfg_thread_min = base_thread_min
+        cfg_thread_max = base_thread_max
+        cfg_thread_mask = MaskType(0)
+        if s.load_thread_mask_override_valid:
+            cfg_thread_mask = s.load_thread_mask_override
+            found_tid = Bits1(0)
+            cfg_thread_min = LoopCountType(0)
+            cfg_thread_max = LoopCountType(0)
+            for tid in range(MAX_THREAD_COUNT):
+                if s.load_thread_mask_override[tid]:
+                    if ~found_tid:
+                        cfg_thread_min = LoopCountType(tid)
+                        found_tid = Bits1(1)
+                    cfg_thread_max = LoopCountType(tid + 1)
+        else:
+            for tid in range(MAX_THREAD_COUNT):
+                tid_bits = LoopCountType(tid)
+                if (tid_bits >= cfg_thread_min) & (tid_bits < cfg_thread_max):
+                    cfg_thread_mask = cfg_thread_mask | MaskType(1 << tid)
+
         s.cfg_to_rf_msg.cmd @= s.load_meta.cmd
         s.cfg_to_rf_msg.tile_load_count @= s.load_meta.tile_load_count
         for i in range(num_pred_tiles):
@@ -308,17 +326,9 @@ class STEP_ControllerRTL(Component):
             s.cfg_to_tokenizer_msg.token_route_delay_to_sink[i] @= s.load_meta.tokenizer_cfg.token_route_delay_to_sink[i]
         s.cfg_to_rf_msg.cfg_id @= s.load_meta.cfg_id
         s.cfg_to_rf_msg.br_id @= s.load_meta.br_id
-        if s.load_thread_count_override_valid:
-            s.cfg_to_rf_msg.thread_count @= s.load_thread_count_override
-        else:
-            s.cfg_to_rf_msg.thread_count @= s.load_meta.thread_count
-        if s.load_thread_mask_override_valid:
-            s.cfg_to_rf_thread_mask @= s.load_thread_mask_override
-        else:
-            s.cfg_to_rf_thread_mask @= MaskType(0)
-            for count in range(1, 1 << LoopCountType.nbits):
-                if s.load_meta.thread_count == LoopCountType(count):
-                    s.cfg_to_rf_thread_mask @= MaskType((1 << count) - 1)
+        s.cfg_to_rf_msg.thread_count_min @= cfg_thread_min
+        s.cfg_to_rf_msg.thread_count_max @= cfg_thread_max
+        s.cfg_to_rf_thread_mask @= cfg_thread_mask
         s.cfg_to_rf_msg.start_cfg @= s.load_meta.start_cfg
         s.cfg_to_rf_msg.end_cfg @= s.load_meta.end_cfg
         s.cfg_to_rf_msg.branch_en @= s.load_meta.branch_en
@@ -437,14 +447,10 @@ class STEP_ControllerRTL(Component):
             s.branch_reconverge_cfg <<= BitstreamAddrType(0)
             s.branch_true_count <<= LoopCountType(0)
             s.branch_false_count <<= LoopCountType(0)
-            s.load_thread_count_override <<= LoopCountType(0)
-            s.load_thread_count_override_valid <<= Bits1(0)
             s.load_thread_mask_override <<= MaskType(0)
             s.load_thread_mask_override_valid <<= Bits1(0)
             s.active_thread_mask <<= MaskType(0)
-            s.active_thread_count <<= LoopCountType(0)
             s.next_thread_mask <<= MaskType(0)
-            s.next_thread_count <<= LoopCountType(0)
             s.send_cfg_to_rf_thread_mask <<= MaskType(0)
             s.load_yield_to_deferred <<= Bits1(0)
             s.active_yield_to_deferred <<= Bits1(0)
@@ -466,7 +472,6 @@ class STEP_ControllerRTL(Component):
                 s.tile_load_shadow[i] <<= TileCountType(0)
                 s.deferred_cfg[i] <<= BitstreamAddrType(0)
                 s.deferred_tile_count[i] <<= TileCountType(0)
-                s.deferred_thread_count[i] <<= LoopCountType(0)
                 s.deferred_thread_mask[i] <<= MaskType(0)
                 s.deferred_skip_next_end_cfg[i] <<= Bits1(0)
                 s.deferred_persistent[i] <<= Bits1(0)
@@ -514,7 +519,6 @@ class STEP_ControllerRTL(Component):
                         s.load_inflight <<= 1
                         s.cfg_packets_injected_count <<= TileCountType(0)
                         s.cfg_packets_applied_count <<= TileCountType(0)
-                        s.load_thread_count_override_valid <<= Bits1(0)
                         s.load_thread_mask_override_valid <<= Bits1(0)
                         s.load_yield_to_deferred <<= Bits1(0)
                         s.load_skip_next_end_cfg <<= Bits1(0)
@@ -577,11 +581,9 @@ class STEP_ControllerRTL(Component):
                     s.next_meta <<= s.load_meta
                     s.next_pc <<= s.load_pc
                     s.next_thread_mask <<= s.cfg_to_rf_thread_mask
-                    s.next_thread_count <<= s.cfg_to_rf_msg.thread_count
                     s.next_yield_to_deferred <<= s.load_yield_to_deferred
                     s.next_skip_next_end_cfg <<= s.load_skip_next_end_cfg
                     s.next_ready <<= 1
-                    s.load_thread_count_override_valid <<= Bits1(0)
                     s.load_thread_mask_override_valid <<= Bits1(0)
                     s.load_yield_to_deferred <<= Bits1(0)
                     s.load_skip_next_end_cfg <<= Bits1(0)
@@ -614,10 +616,8 @@ class STEP_ControllerRTL(Component):
                     s.active_meta <<= s.load_meta
                     s.active_meta_valid <<= 1
                     s.active_thread_mask <<= s.cfg_to_rf_thread_mask
-                    s.active_thread_count <<= s.cfg_to_rf_msg.thread_count
                     s.active_yield_to_deferred <<= s.load_yield_to_deferred
                     s.active_skip_next_end_cfg <<= s.load_skip_next_end_cfg
-                    s.load_thread_count_override_valid <<= Bits1(0)
                     s.load_thread_mask_override_valid <<= Bits1(0)
                     s.load_yield_to_deferred <<= Bits1(0)
                     s.load_skip_next_end_cfg <<= Bits1(0)
@@ -652,8 +652,6 @@ class STEP_ControllerRTL(Component):
                 s.load_pc <<= s.pc_next
                 s.cfg_packets_injected_count <<= TileCountType(0)
                 s.cfg_packets_applied_count <<= TileCountType(0)
-                s.load_thread_count_override <<= s.active_thread_count
-                s.load_thread_count_override_valid <<= Bits1(1)
                 s.load_thread_mask_override <<= s.active_thread_mask
                 s.load_thread_mask_override_valid <<= Bits1(1)
                 s.load_yield_to_deferred <<= Bits1(0)
@@ -695,9 +693,12 @@ class STEP_ControllerRTL(Component):
                     stack_idx = s.deferred_depth - StackDepthType(1)
                     next_cfg = s.deferred_cfg[stack_idx]
                     next_tile_count = s.deferred_tile_count[stack_idx]
-                    next_count = s.deferred_thread_count[stack_idx]
                     next_mask = s.deferred_thread_mask[stack_idx]
                     next_skip = s.deferred_skip_next_end_cfg[stack_idx]
+                    next_count = LoopCountType(0)
+                    for tid in range(MAX_THREAD_COUNT):
+                        if next_mask[tid]:
+                            next_count = next_count + LoopCountType(1)
                     s.deferred_depth <<= stack_idx
                     if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
                         s.pc_req_trigger <<= 1
@@ -709,8 +710,6 @@ class STEP_ControllerRTL(Component):
                         s.load_inflight <<= 1
                         s.cfg_packets_injected_count <<= TileCountType(0)
                         s.cfg_packets_applied_count <<= TileCountType(0)
-                        s.load_thread_count_override <<= next_count
-                        s.load_thread_count_override_valid <<= Bits1(1)
                         s.load_thread_mask_override <<= next_mask
                         s.load_thread_mask_override_valid <<= Bits1(1)
                         s.load_yield_to_deferred <<= Bits1(0)
@@ -784,11 +783,9 @@ class STEP_ControllerRTL(Component):
                                 if exit_count > LoopCountType(0):
                                     if merge_found:
                                         s.deferred_thread_mask[merge_idx] <<= merged_exit_mask
-                                        s.deferred_thread_count[merge_idx] <<= merged_exit_count
                                     else:
                                         s.deferred_cfg[s.deferred_depth] <<= exit_cfg
                                         s.deferred_tile_count[s.deferred_depth] <<= exit_tile_count
-                                        s.deferred_thread_count[s.deferred_depth] <<= merged_exit_count
                                         s.deferred_thread_mask[s.deferred_depth] <<= merged_exit_mask
                                         s.deferred_skip_next_end_cfg[s.deferred_depth] <<= Bits1(0)
                                         s.deferred_persistent[s.deferred_depth] <<= Bits1(1)
@@ -802,8 +799,6 @@ class STEP_ControllerRTL(Component):
                                     s.load_inflight <<= 0
                                     s.cfg_packets_injected_count <<= TileCountType(0)
                                     s.cfg_packets_applied_count <<= TileCountType(0)
-                                    s.load_thread_count_override <<= next_count
-                                    s.load_thread_count_override_valid <<= Bits1(1)
                                     s.load_thread_mask_override <<= next_mask
                                     s.load_thread_mask_override_valid <<= Bits1(1)
                                     s.load_yield_to_deferred <<= Bits1(0)
@@ -828,8 +823,6 @@ class STEP_ControllerRTL(Component):
                                     s.load_inflight <<= 1
                                     s.cfg_packets_injected_count <<= TileCountType(0)
                                     s.cfg_packets_applied_count <<= TileCountType(0)
-                                    s.load_thread_count_override <<= merged_exit_count
-                                    s.load_thread_count_override_valid <<= Bits1(1)
                                     s.load_thread_mask_override <<= merged_exit_mask
                                     s.load_thread_mask_override_valid <<= Bits1(1)
                                     s.load_yield_to_deferred <<= Bits1(0)
@@ -853,7 +846,6 @@ class STEP_ControllerRTL(Component):
                             if branch_has_else & (false_count > LoopCountType(0)):
                                 s.deferred_cfg[s.deferred_depth] <<= s.active_meta.branch_false_cfg_id
                                 s.deferred_tile_count[s.deferred_depth] <<= s.tile_load_by_branch_false_meta
-                                s.deferred_thread_count[s.deferred_depth] <<= false_count
                                 s.deferred_thread_mask[s.deferred_depth] <<= false_mask
                                 s.deferred_skip_next_end_cfg[s.deferred_depth] <<= Bits1(
                                     (s.active_meta.branch_has_else == Bits1(0))
@@ -873,8 +865,6 @@ class STEP_ControllerRTL(Component):
                                 s.load_inflight <<= 1
                                 s.cfg_packets_injected_count <<= TileCountType(0)
                                 s.cfg_packets_applied_count <<= TileCountType(0)
-                                s.load_thread_count_override <<= next_count
-                                s.load_thread_count_override_valid <<= Bits1(1)
                                 s.load_thread_mask_override <<= next_mask
                                 s.load_thread_mask_override_valid <<= Bits1(1)
                                 s.load_yield_to_deferred <<= branch_has_else & (false_count > LoopCountType(0))
@@ -905,8 +895,6 @@ class STEP_ControllerRTL(Component):
                                 s.load_inflight <<= 1
                                 s.cfg_packets_injected_count <<= TileCountType(0)
                                 s.cfg_packets_applied_count <<= TileCountType(0)
-                                s.load_thread_count_override <<= next_count
-                                s.load_thread_count_override_valid <<= Bits1(1)
                                 s.load_thread_mask_override <<= next_mask
                                 s.load_thread_mask_override_valid <<= Bits1(1)
                                 s.load_yield_to_deferred <<= Bits1(0)
@@ -936,7 +924,6 @@ class STEP_ControllerRTL(Component):
                     s.active_meta <<= s.next_meta
                     s.active_meta_valid <<= 1
                     s.active_thread_mask <<= s.next_thread_mask
-                    s.active_thread_count <<= s.next_thread_count
                     s.active_yield_to_deferred <<= s.next_yield_to_deferred
                     s.active_skip_next_end_cfg <<= s.next_skip_next_end_cfg
                     s.last_pc <<= s.next_pc == s.last_cfg_id
@@ -960,8 +947,6 @@ class STEP_ControllerRTL(Component):
                         s.load_inflight <<= 1
                         s.cfg_packets_injected_count <<= TileCountType(0)
                         s.cfg_packets_applied_count <<= TileCountType(0)
-                        s.load_thread_count_override <<= s.active_thread_count
-                        s.load_thread_count_override_valid <<= Bits1(1)
                         s.load_thread_mask_override <<= s.active_thread_mask
                         s.load_thread_mask_override_valid <<= Bits1(1)
                         s.load_yield_to_deferred <<= Bits1(0)
@@ -985,7 +970,6 @@ class STEP_ControllerRTL(Component):
                         s.load_inflight <<= 1
                         s.cfg_packets_injected_count <<= TileCountType(0)
                         s.cfg_packets_applied_count <<= TileCountType(0)
-                        s.load_thread_count_override_valid <<= Bits1(0)
                         s.load_thread_mask_override_valid <<= Bits1(0)
                         s.load_yield_to_deferred <<= Bits1(0)
                         s.load_skip_next_end_cfg <<= Bits1(0)

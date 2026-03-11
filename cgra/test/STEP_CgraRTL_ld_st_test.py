@@ -23,7 +23,9 @@ num_fu_outports = 1
 num_register_banks = 2
 num_registers = 16
 num_pred_registers = 16
-thread_count = 20
+num_threads = 20
+active_thread_min = 2
+active_thread_span = num_threads - active_thread_min
 
 class TestHarness(Component):
     def construct(s,
@@ -55,8 +57,8 @@ class TestHarness(Component):
         s.num_tiles = num_tile_cols * num_tile_rows
 
         # Configure Sources
-        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[i for i in range(thread_count * 2)]]
-        st_axi_msgs = [[], [2*i*3 for i in range(thread_count)]]
+        ld_axi_msgs = [[] for _ in range(num_ld_ports - 1)] + [[i for i in range(active_thread_span * 2)]]
+        st_axi_msgs = [[], [2*i*3 for i in range(active_thread_span)]]
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(CfgMetadataType, cpu_to_cgra_metadata_msgs)
         s.cpu_to_cgra_bitstream_pkts = SourceTriggeredRTL(TileBitstreamType, cpu_to_cgra_bitstream_msgs, s.num_tiles, delay=1)
         s.ld_axi_pkts = [AxiLdSourceTriggeredRTL(DataType, ld_axi_msgs[i], delay=13) for i in range(num_ld_ports)]
@@ -311,7 +313,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[0],
                         cfg_id = 0,
                         br_id = 1,
-                        thread_count = thread_count,
+                        thread_count_min = active_thread_min,
+                        thread_count_max = num_threads,
                         start_cfg = 1,
                         end_cfg = 0,
                     ),
@@ -327,7 +330,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[1],
                         cfg_id = 1,
                         br_id = 2,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 0,
                         end_cfg = 0,
                     ),
@@ -344,7 +348,8 @@ def init_param():
                         tokenizer_cfg = cfg_tokenizer_pkt[2],
                         cfg_id = 2,
                         br_id = 0,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 0,
                         end_cfg = 1,
                     ),

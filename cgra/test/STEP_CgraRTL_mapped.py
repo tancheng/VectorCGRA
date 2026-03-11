@@ -3,7 +3,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..STEP_CgraRTL import STEP_CgraRTL
-from ...lib.basic.AxiSourceRTL import AxiLdSourceRTL, AxiLdSourceTriggeredRTL, AxiStSourceRTL, AxiStSourceTriggeredRTL
+from ...lib.basic.AxiSourceRTL import AxiLdSourceTriggeredRTL, AxiStSourceTriggeredRTL
 from ...lib.basic.SourceTriggeredRTL import SourceTriggeredRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
@@ -58,13 +58,12 @@ class TestHarness(Component):
         s.dut.recv_from_cpu_metadata_pkt //= s.cpu_to_cgra_metadata_pkts.send
         s.dut.recv_from_cpu_bitstream_pkt //= s.cpu_to_cgra_bitstream_pkts.send
         s.dut.pc_req_trigger //= s.cpu_to_cgra_bitstream_pkts.trigger_in
+        s.dut.pc_req_trigger_count //= s.cpu_to_cgra_bitstream_pkts.trigger_count
+        s.dut.pc_req_trigger_complete //= s.cpu_to_cgra_bitstream_pkts.trigger_complete
         s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.msg
         s.dut.send_to_cpu_done //= s.cgra_to_cpu_signal.recv.val
 
     def done(s):
-        for i in range(s.cgra_def['num_ld_ports']):
-            if not s.ld_axi_pkts[i].done():
-                return False
         for i in range(s.cgra_def['num_st_ports']):
             if not s.st_axi_pkts[i].done():
                 return False

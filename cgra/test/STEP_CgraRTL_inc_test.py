@@ -111,7 +111,7 @@ def init_param():
     num_ld_ports = num_tile_cols // 2
     num_st_ports = num_tile_cols // 2
     num_consts = 4
-    thread_count = 1
+    num_threads = 1
 
     DataType = mk_bits(8)
     OperationType = mk_bits( clog2(NUM_OPTS) )
@@ -179,7 +179,8 @@ def init_param():
                         out_regs_val = [b1(1)] + [b1(0) for _ in range(num_tile_cols - 1)],
                         cfg_id = 0,
                         br_id = 1,
-                        thread_count = thread_count,
+                        thread_count_min = 0,
+                        thread_count_max = num_threads,
                         start_cfg = 1,
                         end_cfg = 1,
                     ),

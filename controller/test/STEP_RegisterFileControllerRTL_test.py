@@ -141,9 +141,9 @@ def init_param():
     num_ld_ports = num_tile_cols // 2
     num_st_ports = num_tile_cols // 2
     num_registers = 16
-    thread_count = 2
+    num_threads = 2
     num_pred_registers = 16
-    ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+    ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
     num_taker_ports = num_rd_ports
     num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
 
@@ -187,7 +187,8 @@ def init_param():
                         br_id = 1,
                         start_cfg = 1,
                         end_cfg = 0,
-                        thread_count = thread_count
+                        thread_count_min = 0,
+                        thread_count_max = num_threads
                         ),
         CfgMetadataType(cmd = CMD_CONFIG,
                         in_regs = [RegAddrType(i) for i in range(num_rd_ports)],
@@ -200,7 +201,8 @@ def init_param():
                         br_id = 0,
                         start_cfg = 0,
                         end_cfg = 1,
-                        thread_count = thread_count
+                        thread_count_min = 0,
+                        thread_count_max = num_threads
                         )
     ]
 
@@ -235,7 +237,7 @@ def init_param():
 
     recv_ld_data_id = [
         [],
-        [ThreadCountType(i) for i in range(thread_count)],
+        [ThreadIdxType(i) for i in range(num_threads)],
     ]
 
     send_cfg_done = [1] * len(recv_cfg_from_ctrl_msgs)

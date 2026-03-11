@@ -394,14 +394,19 @@ def mk_cfg_metadata_pkt(
                         CfgTokenizerType,
                         prefix="CfgMetadataPkt"):
     
-    ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+    ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     CmdType = mk_bits(max(1, NUM_CMDS))
 
     new_name = f"{prefix}_{num_rd_ports}_{num_wr_ports}"
 
     def str_func(s):
-        return f"CfgMetadataPkt: cfg_id [{s.cfg_id}, br_id: {s.br_id}, thread_count: {s.thread_count}, start_cfg: {s.start_cfg}, end_cfg: {s.end_cfg}]\n"
+        return (
+            f"CfgMetadataPkt: cfg_id [{s.cfg_id}, br_id: {s.br_id}, "
+            f"thread_count_min: {s.thread_count_min}, "
+            f"thread_count_max: {s.thread_count_max}, "
+            f"start_cfg: {s.start_cfg}, end_cfg: {s.end_cfg}]\n"
+        )
 
     field_dict = {}
     # TODO @darrenl pred_tile_valid is whether the immediate rf predicate is 0 or 1. should be address instead
@@ -421,7 +426,8 @@ def mk_cfg_metadata_pkt(
     field_dict['tokenizer_cfg'] = CfgTokenizerType
     field_dict['cfg_id'] = CfgIdType
     field_dict['br_id'] = CfgIdType
-    field_dict['thread_count'] = ThreadCountType
+    field_dict['thread_count_min'] = ThreadIdxType
+    field_dict['thread_count_max'] = ThreadIdxType
     field_dict['start_cfg'] = Bits1
     field_dict['end_cfg'] = Bits1
     # Branching / predication control
@@ -432,11 +438,10 @@ def mk_cfg_metadata_pkt(
     field_dict['branch_true_cfg_id'] = CfgIdType
     field_dict['branch_false_cfg_id'] = CfgIdType
     field_dict['reconverge_cfg_id'] = CfgIdType
-    # Loop control
     field_dict['loop_en'] = Bits1
     field_dict['loop_start_cfg_id'] = CfgIdType
     field_dict['loop_exit_cfg_id'] = CfgIdType
-    field_dict['loop_max'] = ThreadCountType
+    field_dict['loop_max'] = ThreadIdxType
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}

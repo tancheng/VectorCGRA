@@ -196,7 +196,7 @@ class STEP_PredRFRTL( Component ):
                         s.wr_count_n[i] @= MaxThreadType(0)
                         s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
                         s.wr_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs[i]
-                    s.expected_count_n @= s.recv_cfg_from_ctrl.msg.thread_count
+                    s.expected_count_n @= s.recv_cfg_from_ctrl.msg.thread_count_max - s.recv_cfg_from_ctrl.msg.thread_count_min
             
             elif s.state == ST_CONFIGURE:
                 # Always transition to RUN after configuration settles

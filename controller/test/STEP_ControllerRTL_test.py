@@ -118,17 +118,20 @@ def init_param():
     metadatas = [
         CfgMetadataType(cfg_id = 0,
                         br_id = 1,
-                        thread_count = iteration_threads,
+                        thread_count_min = 0,
+                        thread_count_max = iteration_threads,
                         start_cfg = 1,
                         end_cfg = 0),
         CfgMetadataType(cfg_id = 1,
                         br_id = 2,
-                        thread_count = iteration_threads,
+                        thread_count_min = 0,
+                        thread_count_max = iteration_threads,
                         start_cfg = 0,
                         end_cfg = 0),
         CfgMetadataType(cfg_id = 2,
                         br_id = 0,
-                        thread_count = iteration_threads,
+                        thread_count_min = 0,
+                        thread_count_max = iteration_threads,
                         start_cfg = 0,
                         end_cfg = 1)
     ]

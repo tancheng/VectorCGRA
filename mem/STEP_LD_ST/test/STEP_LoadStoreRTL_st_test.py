@@ -70,8 +70,21 @@ class TestHarness(Component):
         s.dut.st_enable[0] //= 1
     
         @update
-        def update_thread_count():
-            s.dut.thread_count @= num_req
+        def update_cfg():
+            s.dut.cfg_active_sel @= 0
+            s.dut.cfg_load_sel @= 0
+            s.dut.cfg_bank_commit @= 0
+            s.dut.release_take @= 0
+            s.dut.cfg_thread_min_bank0 @= 0
+            s.dut.cfg_thread_max_bank0 @= num_req
+            s.dut.cfg_thread_min_bank1 @= 0
+            s.dut.cfg_thread_max_bank1 @= 0
+            s.dut.cfg_thread_mask_bank0 @= 0
+            s.dut.cfg_thread_mask_bank1 @= 0
+            s.dut.cfg_bank_has_load0 @= 0
+            s.dut.cfg_bank_has_load1 @= 0
+            s.dut.cfg_bank_has_store0 @= 1
+            s.dut.cfg_bank_has_store1 @= 0
 
     def done(s):
         return s.recv_from_st_axi.done() and s.ld_complete.done()

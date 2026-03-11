@@ -19,6 +19,74 @@ class TilePortEnum(Enum):
     SE = PORT_SOUTHEAST
     SW = PORT_SOUTHWEST
 
+
+def _mapped_wr_tokenizer_idx(wr_port_idx):
+    if wr_port_idx < 4:
+        return ((wr_port_idx & 0x1) << 1) + ((wr_port_idx & 0x2) >> 1)
+    return wr_port_idx
+
+
+def _get_thread_range(metadata):
+    thread_count_min = metadata['thread_count_min']
+    thread_count_max = metadata['thread_count_max']
+    thread_span = max(0, thread_count_max - thread_count_min)
+    return thread_span, thread_count_min, thread_count_max
+
+
+def _iter_cfg_entries(data):
+    cfg_items = [
+        (key, value) for key, value in data.items()
+        if key.startswith('cfg_')
+    ]
+    return sorted(cfg_items, key=lambda item: item[1]['metadata']['cfg_id'])
+
+
+def _default_tile_fwd_route(num_tile_inports, num_tile_outports):
+    return [[0 for _ in range(num_tile_outports)] for _ in range(num_tile_inports)]
+
+
+def _resolve_opt_type(opt_name):
+    opt_aliases = {
+        'OPT_EXT': 'OPT_PAS',
+    }
+    resolved_name = opt_aliases.get(opt_name, opt_name)
+    return globals()[resolved_name]
+
+
+def _augment_tokenizer_routes(metadata, num_rd_ports, num_wr_ports):
+    route_lists = [
+        list(route) for route in metadata['tokenizer']['token_route_sink_enable']
+    ]
+
+    enabled_inputs = [
+        idx for idx in range(num_rd_ports)
+        if metadata['in_regs_val'][idx]
+    ]
+    if not enabled_inputs:
+        return route_lists
+
+    trigger_input_idx = enabled_inputs[-1]
+    for candidate_idx in reversed(enabled_inputs):
+        if any(route_lists[candidate_idx]):
+            trigger_input_idx = candidate_idx
+            break
+
+    for wr_port_idx in range(num_wr_ports):
+        write_enabled = metadata['out_regs_val'][wr_port_idx] or metadata.get(
+            'out_pred_regs_val',
+            [0] * num_wr_ports,
+        )[wr_port_idx]
+        if not write_enabled:
+            continue
+
+        tokenizer_wr_idx = _mapped_wr_tokenizer_idx(wr_port_idx)
+        if any(route[tokenizer_wr_idx] for route in route_lists):
+            continue
+
+        route_lists[trigger_input_idx][tokenizer_wr_idx] = 1
+
+    return route_lists
+
 def generateCPUPktFromJSON(json_path):
     # Load JSON file
     with open(json_path, 'r') as f:
@@ -30,14 +98,12 @@ def generateCPUPktFromJSON(json_path):
         cgra_def[key] = value
 
     # Define additional CGRA parameters
-    cgra_def.update({
-        "num_fu_inports": 3,
-        "num_fu_outports": 1,
-        "num_consts": 16,
-        "data_width": 8,
-        "num_register_banks": 8,
-        "num_pred_registers": 16,
-    })
+    cgra_def.setdefault("num_fu_inports", 3)
+    cgra_def.setdefault("num_fu_outports", 1)
+    cgra_def.setdefault("num_consts", 16)
+    cgra_def.setdefault("data_width", 8)
+    cgra_def.setdefault("num_register_banks", 8)
+    cgra_def.setdefault("num_pred_registers", 16)
     
     # Ensure upper limit of pred registers
     if cgra_def['num_pred_registers'] > cgra_def['num_registers']:
@@ -62,6 +128,7 @@ def generateCPUPktFromJSON(json_path):
     PredAddrType = mk_bits(clog2(cgra_def['num_pred_registers']))
     ShiftAmountType = mk_bits( clog2(SHIFT_REGISTER_SIZE) )
     TilePortType = mk_bits( clog2(cgra_def['num_tile_inports'] + 1) ) # +1 for no connection
+    TileOutType = mk_bits( cgra_def['num_tile_outports'] )
     TileIdType = mk_bits( clog2(cgra_def['num_tiles']) )
     TileBitstreamType = mk_tile_bitstream_pkt(cgra_def['num_tile_inports'],
                                                 cgra_def['num_tile_outports'],
@@ -76,7 +143,7 @@ def generateCPUPktFromJSON(json_path):
 
     CfgBitstreamType = mk_bitstream_pkt(cgra_def['num_tiles'], TileBitstreamType)
 
-    ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+    ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     CfgMetadataType = mk_cfg_metadata_pkt(cgra_def['num_tiles'],
                                             cgra_def['num_consts'],
@@ -105,45 +172,70 @@ def generateCPUPktFromJSON(json_path):
     # Process each packet and convert to CPU packet format
     cpu_metadata_pkt = []
     cpu_bitstream_pkt = []
-    for key, pkt in data.items():
+    for _, pkt in _iter_cfg_entries(data):
+        metadata = pkt['metadata']
+
         # Tokenizer Pkt
         tokenizer_route_sinks = []
-        for route in pkt['metadata']['tokenizer']['token_route_sink_enable']:
+        tokenizer_route_lists = _augment_tokenizer_routes(
+            metadata,
+            cgra_def['num_rd_ports'],
+            cgra_def['num_wr_ports'],
+        )
+        for route in tokenizer_route_lists:
             tokenizer_route_sinks.append(PortRouteType(int(''.join(map(str, route)), 2)))
         cfg_tokenizer_pkt = CfgTokenizerType(
             token_route_sink_enable=tokenizer_route_sinks,
-            token_route_delay_to_sink=[PortDelayType(delay) for delay in pkt['metadata']['tokenizer']['token_route_delay_to_sink']]
+            token_route_delay_to_sink=[PortDelayType(delay) for delay in metadata['tokenizer']['token_route_delay_to_sink']]
         )
 
         # Sanitize input regs
         in_regs = []
         in_tid = []
-        for reg in pkt['metadata']['in_regs']:
+        explicit_in_tid = metadata.get('in_tid_enable', [0] * cgra_def['num_rd_ports'])
+        for idx, reg in enumerate(metadata['in_regs']):
             if reg == 'tid':
                 in_regs.append(0)
                 in_tid.append(1)
             else:
                 in_regs.append(reg)
-                in_tid.append(0)
+                in_tid.append(explicit_in_tid[idx])
+
+        thread_span, thread_count_min, thread_count_max = _get_thread_range(metadata)
 
         # Metadata Pkt
         cfg_metadata_pkt = CfgMetadataType(
-            cmd = CMD_CONFIG,
-            pred_tile_valid = [Bits1(bit) for bit in pkt['metadata']['pred_tile_valid']],
-            ld_enable = [Bits1(bit) for bit in pkt['metadata']['ld_enable']],
-            st_enable = [Bits1(bit) for bit in pkt['metadata']['st_enable']],
-            ld_reg_addr = [RegAddrType(bit) for bit in pkt['metadata']['ld_reg_addr']],
+            cmd = metadata.get('cmd', CMD_CONFIG),
+            tile_load_count = metadata.get('tile_load_count', 0),
+            pred_tile_valid = [Bits1(bit) for bit in metadata['pred_tile_valid']],
+            ld_enable = [Bits1(bit) for bit in metadata['ld_enable']],
+            st_enable = [Bits1(bit) for bit in metadata['st_enable']],
+            ld_reg_addr = [RegAddrType(bit) for bit in metadata['ld_reg_addr']],
             in_regs = [RegAddrType(bit) for bit in in_regs],
-            in_regs_val = [Bits1(bit) for bit in pkt['metadata']['in_regs_val']],
+            in_regs_val = [Bits1(bit) for bit in metadata['in_regs_val']],
             in_tid_enable = [Bits1(bit) for bit in in_tid],
-            out_regs = [RegAddrType(bit) for bit in pkt['metadata']['out_regs']],
-            out_regs_val = [Bits1(bit) for bit in pkt['metadata']['out_regs_val']],
+            out_regs = [RegAddrType(bit) for bit in metadata['out_regs']],
+            out_regs_val = [Bits1(bit) for bit in metadata['out_regs_val']],
+            out_pred_regs = [PredAddrType(bit) for bit in metadata.get('out_pred_regs', [0] * cgra_def['num_wr_ports'])],
+            out_pred_regs_val = [Bits1(bit) for bit in metadata.get('out_pred_regs_val', [0] * cgra_def['num_wr_ports'])],
             tokenizer_cfg = cfg_tokenizer_pkt,
-            cfg_id = CfgIdType(pkt['metadata']['cfg_id']),
-            br_id = CfgIdType(pkt['metadata']['br_id']),
-            thread_count = ThreadCountType(pkt['metadata']['thread_count']),
-            start_cfg = Bits1(pkt['metadata']['start_cfg']),
-            end_cfg = Bits1(pkt['metadata']['end_cfg']),
+            cfg_id = CfgIdType(metadata['cfg_id']),
+            br_id = CfgIdType(metadata['br_id']),
+            thread_count_min = ThreadIdxType(thread_count_min),
+            thread_count_max = ThreadIdxType(thread_count_max),
+            start_cfg = Bits1(metadata['start_cfg']),
+            end_cfg = Bits1(metadata['end_cfg']),
+            branch_en = Bits1(metadata.get('branch_en', 0)),
+            branch_has_else = Bits1(metadata.get('branch_has_else', 0)),
+            branch_backedge_sel = metadata.get('branch_backedge_sel', 0),
+            pred_reg_id = PredAddrType(metadata.get('pred_reg_id', 0)),
+            branch_true_cfg_id = CfgIdType(metadata.get('branch_true_cfg_id', 0)),
+            branch_false_cfg_id = CfgIdType(metadata.get('branch_false_cfg_id', 0)),
+            reconverge_cfg_id = CfgIdType(metadata.get('reconverge_cfg_id', 0)),
+            loop_en = Bits1(metadata.get('loop_en', 0)),
+            loop_start_cfg_id = CfgIdType(metadata.get('loop_start_cfg_id', 0)),
+            loop_exit_cfg_id = CfgIdType(metadata.get('loop_exit_cfg_id', 0)),
+            loop_max = ThreadIdxType(metadata.get('loop_max', 0)),
         )
 
         # Tile Bitstream Pkts
@@ -160,6 +252,16 @@ def generateCPUPktFromJSON(json_path):
                 tile_out_route = '0' * cgra_def['num_tile_outports']
                 tile_pred_route = '0' * cgra_def['num_tile_outports']
                 pred_fwd_route = 0  # Default to no pred forwarding
+                tile_fwd_route = [
+                    TileOutType(int(''.join(map(str, route_bits)), 2))
+                    for route_bits in tile.get(
+                        'tile_fwd_route',
+                        _default_tile_fwd_route(
+                            cgra_def['num_tile_inports'],
+                            cgra_def['num_tile_outports'],
+                        ),
+                    )
+                ]
                 # Input Routes
                 for port in tile['tile_in_route']:
                     if port:
@@ -191,10 +293,11 @@ def generateCPUPktFromJSON(json_path):
                     tile_out_route = int(tile_out_route, 2),
                     tile_out_shift_amounts = tile_out_shift_amounts,
                     tile_pred_route = int(tile_pred_route, 2),
+                    tile_fwd_route = tile_fwd_route,
                     const_val = tile['const_val'],
                     pred_fwd_route = pred_fwd_route,
-                    pred_gen = tile['pred_gen'],
-                    opt_type = eval(tile['opt_type'])
+                    pred_gen = Bits1(tile['pred_gen']),
+                    opt_type = _resolve_opt_type(tile['opt_type'])
                 )
         
         # No Longer needed
@@ -203,15 +306,25 @@ def generateCPUPktFromJSON(json_path):
 
         # Full CPU Pkt
         cpu_metadata_pkt.append(cfg_metadata_pkt)
-        bitstream_pkts_before_reverse = []
+        ordered_tile_pkts = []
         for i in range(cgra_def['num_tile_rows']):
             row = [
                 tile_bitstream_pkts[i*cgra_def['num_tile_cols'] + j]
                 for j in range(cgra_def['num_tile_cols'])
             ]
+            ordered_tile_pkts += row[::-1] if i % 2 == 1 else row
 
-            bitstream_pkts_before_reverse += row[::-1] if i % 2 == 1 else row
-        cpu_bitstream_pkt += bitstream_pkts_before_reverse[::-1]
+        active_tile_pkts = [
+            tile_pkt for tile_pkt in ordered_tile_pkts[::-1]
+            if tile_pkt.opt_type != OPT_NAH
+        ]
+        expected_tile_load_count = int(cfg_metadata_pkt.tile_load_count)
+        if len(active_tile_pkts) != expected_tile_load_count:
+            raise ValueError(
+                f"Config {int(cfg_metadata_pkt.cfg_id)} expected {expected_tile_load_count} active tiles "
+                f"but JSON bitstream contains {len(active_tile_pkts)} non-OPT_NAH tiles"
+            )
+        cpu_bitstream_pkt += active_tile_pkts
 
     # Append the launch pkt
     cpu_metadata_pkt.append(CfgMetadataType(cmd = CMD_LAUNCH))
@@ -221,21 +334,21 @@ def generateCPUPktFromJSON(json_path):
     # Ld Pkts
     #####################
     ld_pkts = defaultdict(list)
-    for pkt in data.values():
-        thread_count = pkt['metadata']['thread_count']
+    for _, pkt in _iter_cfg_entries(data):
+        thread_span, _, _ = _get_thread_range(pkt['metadata'])
         for index, ld_enable in enumerate(pkt['metadata']['ld_enable']):
             if ld_enable:
-                ld_pkts[index] += [5] * thread_count  # Dummy ld pkt
+                ld_pkts[index] += [5] * thread_span  # Dummy ld pkt
 
     #####################
     # St Pkts
     #####################
     st_pkts = defaultdict(int)
-    for pkt in data.values():
-        thread_count = pkt['metadata']['thread_count']
+    for _, pkt in _iter_cfg_entries(data):
+        thread_span, _, _ = _get_thread_range(pkt['metadata'])
         for index, st_enable in enumerate(pkt['metadata']['st_enable']):
             if st_enable:
-                st_pkts[index] += 1  # Dummy st pkt
+                st_pkts[index] += thread_span  # Dummy st pkt count
 
     expected_cpu_pkts = [1]
     
