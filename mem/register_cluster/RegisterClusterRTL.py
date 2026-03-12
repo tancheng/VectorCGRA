@@ -53,12 +53,12 @@ class RegisterClusterRTL(Component):
         s.send_data_to_fu[i].val @= 0
 
       for i in range(num_reg_banks):
-        if s.recv_data_from_routing_crossbar[i].val:
-          s.send_data_to_fu[i].msg @= \
-            s.recv_data_from_routing_crossbar[i].msg
-        else:
+        if s.reg_bank[i].send_data_to_fu.val:
           s.send_data_to_fu[i].msg @= \
             s.reg_bank[i].send_data_to_fu.msg
+        else:
+          s.send_data_to_fu[i].msg @= \
+            s.recv_data_from_routing_crossbar[i].msg
 
         s.send_data_to_fu[i].val @= \
             s.recv_data_from_routing_crossbar[i].val | \
