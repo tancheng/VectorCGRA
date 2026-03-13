@@ -158,7 +158,7 @@ def initialize_test_harness(cmdline_opts,
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
   num_rd_tiles = num_x_tiles_per_cgra + num_y_tiles_per_cgra - 1
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   ctrl_addr_nbits = clog2(ctrl_mem_size)
