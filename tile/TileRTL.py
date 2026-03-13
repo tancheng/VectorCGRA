@@ -54,7 +54,7 @@ class TileRTL(Component):
     data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
 
     # Constants.
-    num_routing_xbar_inports = num_tile_inports
+    num_routing_xbar_inports = num_tile_inports + num_fu_inports
     num_routing_xbar_outports = num_fu_inports + num_tile_outports
 
     num_fu_xbar_inports = num_fu_outports
@@ -186,6 +186,12 @@ class TileRTL(Component):
     for i in range(num_tile_inports):
       s.recv_data[i] //= s.tile_in_channel[i].recv
       s.tile_in_channel[i].send //= s.routing_crossbar.recv_data[i]
+
+    # Register banks are connected to the routing crossbar as additional
+    # inports, enabling reg -> outport DATA_MOV without occupying the FU.
+    for i in range(num_fu_inports):
+      s.register_cluster.send_data_to_routing_crossbar[i] //= \
+          s.routing_crossbar.recv_data[num_tile_inports + i]
 
     # Connects specific xbar control signals to the corresponding crossbar.
     for i in range(num_routing_xbar_outports):

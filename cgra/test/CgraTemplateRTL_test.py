@@ -137,7 +137,7 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   num_cgras = num_cgra_columns * num_cgra_rows
   num_registers_per_reg_bank = 16
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)

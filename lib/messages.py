@@ -75,7 +75,10 @@ def mk_ctrl(num_fu_inports = 4,
 
   operation_nbits = clog2(NUM_OPTS)
   OperationType = mk_bits(operation_nbits)
-  TileInportsType = mk_bits(clog2(num_tile_inports  + 1))
+  # routing_xbar_outport must be wide enough to index both tile inports AND
+  # the new register-bank inports (num_tile_inports + num_fu_inports entries).
+  tile_in_type_nbits = clog2(num_tile_inports + num_fu_inports + 1)
+  TileInportsType = mk_bits(tile_in_type_nbits)
   TileOutportsType = mk_bits(clog2(num_tile_outports + 1))
   num_routing_outports = num_tile_outports + num_fu_inports
   RoutingOutportsType = mk_bits(clog2(num_routing_outports + 1))
@@ -87,9 +90,11 @@ def mk_ctrl(num_fu_inports = 4,
   RegFromType = mk_bits(2)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
 
+  # Includes tile_in_type_nbits in the name so the wider type gets a unique
+  # cache key and doesn't collide with the old Bits3 version.
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}_{vector_factor_power_nbits}"
+             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}"
 
   def str_func(s):
     out_str = '(fu_in)'

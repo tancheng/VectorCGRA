@@ -42,7 +42,8 @@ class CtrlMemDynamicRTL(Component):
     UpperBoundType = mk_bits(clog2(ctrl_mem_size + 1))
     TimeType = mk_bits(clog2(MAX_CTRL_COUNT + 1))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
-    TileInPortType = mk_bits(clog2(num_tile_inports))
+    num_routing_xbar_inports = num_tile_inports + num_fu_inports
+    TileInPortType = mk_bits(clog2(num_routing_xbar_inports))
     FuOutPortType = mk_bits(clog2(num_fu_outports))
     num_routing_outports = num_tile_outports + num_fu_inports
 
@@ -79,12 +80,12 @@ class CtrlMemDynamicRTL(Component):
     s.prologue_count_outport_fu_crossbar = \
         [[OutPort(PrologueCountType) for _ in range(num_fu_outports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_outport_routing_crossbar = \
-        [[OutPort(PrologueCountType) for _ in range(num_tile_inports)] for _ in range(ctrl_mem_size)]
+        [[OutPort(PrologueCountType) for _ in range(num_routing_xbar_inports)] for _ in range(ctrl_mem_size)]
 
     s.prologue_count_reg_fu_crossbar = \
         [[Wire(PrologueCountType) for _ in range(num_fu_outports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_reg_routing_crossbar = \
-        [[Wire(PrologueCountType) for _ in range(num_tile_inports)] for _ in range(ctrl_mem_size)]
+        [[Wire(PrologueCountType) for _ in range(num_routing_xbar_inports)] for _ in range(ctrl_mem_size)]
 
     # Connections.
     s.send_ctrl.msg //= s.reg_file.rdata[0]
@@ -269,7 +270,7 @@ class CtrlMemDynamicRTL(Component):
     def update_prologue_outport():
       s.prologue_count_outport_fu @= s.prologue_count_reg_fu[s.reg_file.raddr[0]]
       for addr in range(ctrl_mem_size):
-        for i in range(num_tile_inports):
+        for i in range(num_routing_xbar_inports):
           s.prologue_count_outport_routing_crossbar[addr][i] @= \
               s.prologue_count_reg_routing_crossbar[addr][i]
         for i in range(num_fu_outports):
@@ -280,7 +281,7 @@ class CtrlMemDynamicRTL(Component):
     def update_prologue_reg():
       if s.reset:
         for addr in range(ctrl_mem_size):
-          for i in range(num_tile_inports):
+          for i in range(num_routing_xbar_inports):
             s.prologue_count_reg_routing_crossbar[addr][i] <<= 0
           for i in range(num_fu_outports):
             s.prologue_count_reg_fu_crossbar[addr][i] <<= 0
