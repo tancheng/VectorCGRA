@@ -14,18 +14,11 @@ from ...lib.opt_type import *
 
 class AdderRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(AdderRTL, s).construct(DataType, CtrlType,
-                                 num_inports, num_outports,
-                                 data_mem_size, ctrl_mem_size,
-                                 1, vector_factor_power,
-                                 data_bitwidth = data_bitwidth)
+    super(AdderRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
-    s.const_one = DataType(1, 1)
+    s.const_one = s.DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))
     num_entries = 2
     CountType = mk_bits(clog2(num_entries + 1))
@@ -53,7 +46,7 @@ class AdderRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0

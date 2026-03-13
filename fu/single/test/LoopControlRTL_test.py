@@ -21,7 +21,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, 
                 src_parent_valid, src_start, src_end, src_step, src_opt, 
                 sink_index, sink_valid):
@@ -34,8 +34,7 @@ class TestHarness(Component):
     s.sink_index = TestSinkRTL(DataType, sink_index)
     s.sink_valid = TestSinkRTL(DataType, sink_valid)
 
-    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
-                         num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     s.src_parent_valid.send //= s.dut.recv_in[0]
     s.src_start.send //= s.dut.recv_in[1]
@@ -80,6 +79,11 @@ def test_loop_control_basic():
   num_outports = 2
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   
@@ -102,7 +106,7 @@ def test_loop_control_basic():
   sink_index = [DataType(i, 1) for i in range(num_iterations)] + [DataType(num_iterations, 0)]
   sink_valid = [DataType(1, 1) for _ in range(num_iterations)] + [DataType(0, 1)]
   
-  th = TestHarness(FU, DataType, CtrlType, num_inports,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, 
                    src_parent_valid, src_start, src_end, src_step, src_opt,
                    sink_index, sink_valid)
@@ -116,6 +120,11 @@ def test_loop_control_step():
   num_outports = 2
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   
@@ -133,7 +142,7 @@ def test_loop_control_step():
   sink_index = [DataType(i, 1) for i in expected_indices] + [DataType(10, 0)]
   sink_valid = [DataType(1, 1) for _ in range(num_iterations)] + [DataType(0, 1)]
   
-  th = TestHarness(FU, DataType, CtrlType, num_inports,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, 
                    src_parent_valid, src_start, src_end, src_step, src_opt,
                    sink_index, sink_valid)
@@ -147,6 +156,11 @@ def test_loop_control_nested():
   num_outports = 2
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   
@@ -161,7 +175,7 @@ def test_loop_control_nested():
   sink_index = [DataType(i, 1) for i in range(num_iterations)] + [DataType(num_iterations, 0)]
   sink_valid = [DataType(1, 1) for _ in range(num_iterations)] + [DataType(0, 1)]
   
-  th = TestHarness(FU, DataType, CtrlType, num_inports,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, 
                    src_parent_valid, src_start, src_end, src_step, src_opt,
                    sink_index, sink_valid)

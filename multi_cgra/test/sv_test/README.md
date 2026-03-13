@@ -31,3 +31,14 @@ Translated tbs so far:
     - mem_access_is_combinational = True,
     - test_name = 'test_fir_vector_global_reduce.'
 
+3. test_multi_CGRA_systolic_2x2_2x2 of MeshMultiCgraRTL_test.py (02/10/2026 version). The PyMTL test has the following parameters:
+
+    - num_cgra_rows = 2,
+    - num_cgra_columns = 2,
+    - num_x_tiles_per_cgra = 2,
+    - num_y_tiles_per_cgra = 2,
+    - num_banks_per_cgra = 2,
+    - data_mem_size_per_bank = 16,
+    - mem_access_is_combinational = True,
+    - test_name = 'test_systolic.'
+

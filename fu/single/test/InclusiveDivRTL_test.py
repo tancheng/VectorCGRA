@@ -29,7 +29,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, ConfigType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, ConfigType,
                 data_bitwidth,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const, ctrl_msgs,
@@ -42,9 +42,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, ConfigType,
-                         num_inports, num_outports, data_mem_size,
-                         latency=4, data_bitwidth = data_bitwidth)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports, latency=4)
 
     connect(s.src_in0.send, s.dut.recv_in[0])
     connect(s.src_in1.send, s.dut.recv_in[1])
@@ -69,6 +67,11 @@ def test_mul():
   ConfigType = mk_ctrl(num_inports, num_outports)
   FuInType = mk_bits(clog2(num_inports + 1))
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType) 
   PredType      = mk_predicate(1, 1)
   src_in0       = [DataType(13, 1), DataType(9, 1), DataType(7, 1), DataType(2, 1), DataType(0, 1), DataType(0, 1)]
   src_in1       = [                 DataType(3, 1)                                                                ]
@@ -81,7 +84,7 @@ def test_mul():
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register),
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register),
                    ConfigType(OPT_DIV_INCLUSIVE_END,   pick_register)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    data_bitwidth,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,

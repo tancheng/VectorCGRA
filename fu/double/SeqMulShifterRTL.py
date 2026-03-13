@@ -17,16 +17,10 @@ from ...lib.opt_type import *
 
 class SeqMulShifterRTL(TwoSeqCombo):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports):
 
-    super(SeqMulShifterRTL, s).construct(DataType,
-                                         CtrlType, MulRTL, ShifterRTL,
-                                         num_inports, num_outports,
-                                         data_mem_size, ctrl_mem_size,
-                                         data_bitwidth = data_bitwidth)
+    super(SeqMulShifterRTL, s).construct(CtrlPktType, MulRTL, ShifterRTL,
+                                         num_inports, num_outports)
 
     @update
     def update_opt():

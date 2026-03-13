@@ -16,15 +16,15 @@ from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
-
+from ...lib.util.data_struct_attr import *
 
 class VectorMulRTL(Component):
 
-  def construct(s, bw, CtrlType, num_inports, num_outports,
-                data_mem_size):
+  def construct(s, bw, CtrlPktType, num_inports, num_outports):
 
     # DataType should be 2 times due to the longer output.
     num_entries = 2
+    s.CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
     DataType = mk_bits(bw * 2)
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
@@ -38,7 +38,7 @@ class VectorMulRTL(Component):
     # Interfaces.
     s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
     s.recv_const = RecvIfcRTL(DataType)
-    s.recv_opt = RecvIfcRTL(CtrlType)
+    s.recv_opt = RecvIfcRTL(s.CtrlType)
     s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
     # Components.

@@ -3,7 +3,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 ma
   input logic [4:0] src,
   input logic [4:0] dst,
   input logic [4:0] cmd,
-  input logic [31:0] data_payload,
+  input logic [63:0] data_payload,
   input logic       data_predicate,
   input logic [6:0] data_addr,
   input logic [6:0] ctrl_operation
@@ -204,7 +204,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 ma
   input logic [3:0][3:0] write_reg_idx,
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr,
-  input logic [31:0] data,
+  input logic [63:0] data,
   input logic [0:0] pred,
   input logic [6:0] data_addr
 );

@@ -22,7 +22,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src2_msgs, src3_msgs, src_const, ctrl_msgs,
                 sink0_msgs, sink1_msgs):
@@ -36,8 +36,7 @@ class TestHarness(Component):
     s.sink_out1 = TestSinkRTL(DataType, sink1_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     connect(s.src_in0.send,           s.dut.recv_in[0])
     connect(s.src_in1.send,           s.dut.recv_in[1])
@@ -83,8 +82,13 @@ def test_four():
   PredicateType = mk_predicate(1, 1)
   num_inports   = 4
   num_outports  = 2
-  data_mem_size = 8
   CtrlType      = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
 
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
@@ -98,7 +102,7 @@ def test_four():
   sink_out1     = [DataType(5, 0), DataType(5, 1)]
   src_opt       = [CtrlType(OPT_INC_NE_CONST_NOT_GRT, pickRegister),
                    CtrlType(OPT_INC_NE_CONST_NOT_GRT, pickRegister)]
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_in2, src_in3, src_const,
                    src_opt, sink_out0, sink_out1)

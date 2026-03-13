@@ -14,16 +14,9 @@ from ...lib.opt_type import *
 
 class DivRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(DivRTL, s).construct(DataType, CtrlType,
-                               num_inports, num_outports,
-                               data_mem_size, ctrl_mem_size,
-                               1, vector_factor_power,
-                               data_bitwidth = data_bitwidth)
+    super(DivRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
@@ -52,7 +45,7 @@ class DivRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0

@@ -22,7 +22,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness( Component ):
 
-  def construct( s, FunctionUnit, bandwidth, ConfigType,
+  def construct( s, FunctionUnit, bandwidth, IntraCgraPktType, ConfigType,
                  num_inports, num_outports, data_mem_size,
                  src0_msgs, src1_msgs, src_const,
                  ctrl_msgs, sink_msgs ):
@@ -35,9 +35,8 @@ class TestHarness( Component ):
     s.sink_out  = TestSinkRTL( OutDataType, sink_msgs )
 
     s.const_queue = ConstQueueRTL( InDataType, src_const )
-    s.dut = FunctionUnit( bandwidth, ConfigType,
-                          num_inports, num_outports,
-                          data_mem_size )
+    s.dut = FunctionUnit( bandwidth, IntraCgraPktType,
+                          num_inports, num_outports)
 
     s.src_in0.send.rdy //= s.dut.recv_in[0].rdy
     s.src_in0.send.val //= s.dut.recv_in[0].val
@@ -91,10 +90,15 @@ def test_vadder():
   InDataType    = mk_bits(bandwidth)
   OutDataType   = mk_bits(bandwidth * 2)
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports   = 2
   num_outports  = 1
   ConfigType    = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(InDataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [InDataType (2), InDataType (129), InDataType (4)]
@@ -104,7 +108,7 @@ def test_vadder():
   src_opt       = [ConfigType(OPT_MUL, pickRegister),
                    ConfigType(OPT_MUL, pickRegister),
                    ConfigType(OPT_MUL, pickRegister) ]
-  th = TestHarness(FU, bandwidth, ConfigType,
+  th = TestHarness(FU, bandwidth, IntraCgraPktType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)

@@ -21,20 +21,15 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 
 class RetRTL(Fu):
-  def construct(s, DataType, CtrlType, num_inports,
-                num_outports, data_mem_size, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
 
-    super(RetRTL, s).construct(DataType, CtrlType,
-                               num_inports, num_outports,
-                               data_mem_size, ctrl_mem_size,
-                               1, vector_factor_power,
-                               data_bitwidth = data_bitwidth)
-
+    super(RetRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
+    
     # Constants.
     FuInType = mk_bits(clog2(num_inports + 1))
     idx_nbits = clog2(num_inports)
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    ctrl_mem_size = 2 ** s.CtrlAddrType.nbits
 
     # Components.
     s.in0 = Wire(FuInType)
@@ -57,7 +52,7 @@ class RetRTL(Fu):
 
       for j in range(num_outports):
         s.send_out[j].val @= 0
-        s.send_out[j].msg @= DataType()
+        s.send_out[j].msg @= s.DataType()
 
       s.send_to_ctrl_mem.val @= 0
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)

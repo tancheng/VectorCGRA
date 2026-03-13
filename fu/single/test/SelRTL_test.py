@@ -22,7 +22,7 @@ from ....lib.opt_type import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size,
                 src_data1, src_data2, src_ref0, src_opt,
                 sink_msgs):
@@ -33,8 +33,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink_out = TestSinkRTL( DataType, sink_msgs)
 
-    s.dut = FunctionUnit(DataType, CtrlType,
-                         num_inports, num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     s.src_data1.send //= s.dut.recv_in[1]
     s.src_data2.send //= s.dut.recv_in[2]
@@ -79,6 +78,11 @@ def test_Select():
   num_outports = 1
   CtrlType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_data1 = [DataType(9, 1), DataType(3, 1), DataType(4, 1)]
@@ -88,7 +92,7 @@ def test_Select():
                CtrlType(OPT_SEL, pickRegister),
                CtrlType(OPT_SEL, pickRegister)]
   sink_out =  [DataType(9, 1), DataType(7, 1), DataType(4, 1)]
-  th = TestHarness(FU, DataType, CtrlType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_data1, src_data2, src_ref0, src_opt,
                    sink_out)

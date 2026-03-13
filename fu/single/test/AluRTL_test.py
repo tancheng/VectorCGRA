@@ -25,7 +25,7 @@ from ....mem.const.ConstQueueRTL import ConstQueueRTL
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, ConfigType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, ConfigType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
                 src1_msgs, src_const, ctrl_msgs, sink_msgs):
 
@@ -35,8 +35,7 @@ class TestHarness(Component):
     s.sink_out = TestSinkRTL(DataType, sink_msgs)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
-    s.dut = FunctionUnit(DataType, ConfigType, num_inports,
-                         num_outports, data_mem_size)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     s.src_in0.send //= s.dut.recv_in[0]
     s.src_in1.send //= s.dut.recv_in[1]
@@ -77,10 +76,15 @@ def test_add_sub():
   FU = AdderRTL
   DataType = mk_data(16, 1)
   PredicateType = mk_predicate(1, 1)
-  data_mem_size = 8
   num_inports = 2
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(7, 1), DataType(4, 1)]
@@ -90,7 +94,7 @@ def test_add_sub():
   src_opt =   [ConfigType(OPT_ADD_CONST, pickRegister),
                ConfigType(OPT_SUB,       pickRegister),
                ConfigType(OPT_ADD_CONST, pickRegister)]
-  th = TestHarness(FU, DataType, ConfigType, num_inports,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out)
   run_sim(th)
@@ -103,6 +107,11 @@ def test_logic():
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
   src_in0       = [DataType(1, 1), DataType(2, 1), DataType(4, 1),      DataType(1, 1)]
@@ -113,7 +122,7 @@ def test_logic():
                    ConfigType(OPT_AND, pickRegister),
                    ConfigType(OPT_BIT_NOT, pickRegister),
                    ConfigType(OPT_XOR, pickRegister)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -127,6 +136,11 @@ def test_shifter():
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(2, 1),  DataType(4, 1)]
@@ -136,7 +150,7 @@ def test_shifter():
   src_opt =   [ConfigType(OPT_LLS, pickRegister),
                ConfigType(OPT_LLS, pickRegister),
                ConfigType(OPT_LRS, pickRegister)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
@@ -150,6 +164,11 @@ def test_mul():
   num_outports = 1
   ConfigType = mk_ctrl(num_inports, num_outports)
   data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
   src_in0 =   [DataType(1, 1), DataType(2, 1), DataType(4, 1)]
@@ -159,7 +178,7 @@ def test_mul():
   src_opt =   [ConfigType(OPT_MUL, pickRegister),
                ConfigType(OPT_MUL, pickRegister),
                ConfigType(OPT_MUL, pickRegister)]
-  th = TestHarness(FU, DataType, ConfigType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)

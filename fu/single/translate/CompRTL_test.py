@@ -23,10 +23,14 @@ num_inports   = 2
 num_outports  = 2
 CtrlType      = mk_ctrl(num_inports, num_outports)
 data_mem_size = 8
+ctrl_mem_size = 8
+DataAddrType  = mk_bits(clog2(data_mem_size))
+CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
 
 def test_elaborate():
-  dut = CompRTL(DataType, CtrlType,
-                num_inports, num_outports, data_mem_size)
+  dut = CompRTL(IntraCgraPktType, num_inports, num_outports)
   dut.apply(DefaultPassGroup(linetrace=True))
   dut.sim_reset()
   dut.sim_tick()
@@ -34,8 +38,7 @@ def test_elaborate():
 
 # TODO: fix import by either suppressing warnings or address them
 def test_translate(cmdline_opts):
-  dut = CompRTL(DataType, CtrlType,
-                num_inports, num_outports, data_mem_size)
+  dut = CompRTL(IntraCgraPktType, num_inports, num_outports)
   dut.set_metadata(VerilogTranslationPass.explicit_module_name,
                    f'CompRTL')
   config_model_with_cmdline_opts(dut, cmdline_opts, duts=[])

@@ -24,20 +24,15 @@ from ...lib.util.data_struct_attr import *
 
 class FpAddRTL(Fu):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports, data_mem_size,
-                ctrl_mem_size = 4,
-                data_bitwidth = 32,
+  def construct(s, CtrlPktType,
+                num_inports, num_outports, 
                 exp_nbits = 8,
                 sig_nbits = 23):
 
-    super(FpAddRTL, s).construct(DataType, CtrlType,
-                                 num_inports, num_outports,
-                                 data_mem_size, ctrl_mem_size,
-                                 data_bitwidth = data_bitwidth)
+    super(FpAddRTL, s).construct(CtrlPktType, num_inports, num_outports)
 
     # Local parameters
-    assert DataType.get_field_type(kAttrPayload).nbits == exp_nbits + sig_nbits + 1
+    assert s.DataType.get_field_type(kAttrPayload).nbits == exp_nbits + sig_nbits + 1
 
     num_entries = 2
     FuInType    = mk_bits(clog2(num_inports + 1))
@@ -79,7 +74,7 @@ class FpAddRTL(Fu):
 
       for i in range(num_outports):
         s.send_out[i].val @= 0
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
 
       s.recv_const.rdy @= 0
       s.recv_opt.rdy @= 0

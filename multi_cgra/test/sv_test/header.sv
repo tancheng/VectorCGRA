@@ -6,15 +6,17 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [31:0] data_payload,
   input logic       data_predicate,
   input logic [6:0] data_addr,
-  input logic [6:0] ctrl_operation
+  input logic [6:0] ctrl_operation,
+  input logic [1:0] src_cgra_id = 2'd0,
+  input logic [1:0] dst_cgra_id = 2'd0
 );
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
-  pkt.src_cgra_id = 2'd0;
-  pkt.dst_cgra_id = 2'd0;
+  pkt.src_cgra_id = src_cgra_id;
+  pkt.dst_cgra_id = dst_cgra_id;
   pkt.src_cgra_x  = 1'b0;
   pkt.src_cgra_y  = 1'b0;
   pkt.dst_cgra_x  = 1'b0;
@@ -123,15 +125,17 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [3:0][0:0] read_reg_from,
   input logic [3:0][3:0] write_reg_idx,
   input logic [3:0][3:0] read_reg_idx,
-  input logic [3:0] ctrl_addr
+  input logic [3:0] ctrl_addr,
+  input logic [1:0] src_cgra_id = 2'd0,
+  input logic [1:0] dst_cgra_id = 2'd0
 );
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
-  pkt.src_cgra_id = 2'd0;
-  pkt.dst_cgra_id = 2'd0;
+  pkt.src_cgra_id = src_cgra_id;
+  pkt.dst_cgra_id = dst_cgra_id;
   pkt.src_cgra_x  = 1'b0;
   pkt.src_cgra_y  = 1'b0;
   pkt.dst_cgra_x  = 1'b0;
@@ -206,15 +210,17 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed ma
   input logic [3:0] ctrl_addr,
   input logic [31:0] data,
   input logic [0:0] pred,
-  input logic [6:0] data_addr
+  input logic [6:0] data_addr,
+  input logic [1:0] src_cgra_id = 2'd0,
+  input logic [1:0] dst_cgra_id = 2'd0
 );
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed pkt;
   integer file_handle;
 
   pkt.src         = src;
   pkt.dst         = dst;
-  pkt.src_cgra_id = 2'd0;
-  pkt.dst_cgra_id = 2'd0;
+  pkt.src_cgra_id = src_cgra_id;
+  pkt.dst_cgra_id = dst_cgra_id;
   pkt.src_cgra_x  = 1'b0;
   pkt.src_cgra_y  = 1'b0;
   pkt.dst_cgra_x  = 1'b0;

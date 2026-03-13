@@ -135,7 +135,8 @@ def test_reg_bank():
 
   expected_sink_data = \
       [[DataType(5, 1)],
-       [DataType(0, 0), DataType(10, 1), DataType(11, 1), DataType(12, 1)],
+        # Routing of 10 and 11 are overwritten by read_reg.
+       [DataType(0, 0), DataType(0, 0), DataType(12, 1)],
        [],
        [DataType(42, 1)]
       ]

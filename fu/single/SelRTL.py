@@ -16,15 +16,15 @@ from ...lib.opt_type import *
 
 class SelRTL(Component):
 
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size = 4, ctrl_mem_size = 4,
-                vector_factor_power = 0, data_bitwidth = 32):
+  def construct(s, CtrlPktType, num_inports, num_outports,
+                vector_factor_power = 0):
 
     # Constant
     num_entries = 2
-    AddrType = mk_bits(clog2(data_mem_size))
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+    DataType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrData)
+    AddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrDataAddr)
+    CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
+    CtrlAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrlAddr)
     s.const_zero = DataType(0, 0)
     s.true = DataType(1, 1)
     FuInType = mk_bits(clog2(num_inports + 1))

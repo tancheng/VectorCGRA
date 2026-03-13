@@ -21,33 +21,30 @@ from ...lib.opt_type import *
 
 class VectorAdderComboRTL(Component):
 
-  def construct(s, DataType, CtrlType,
+  def construct(s, CtrlPktType,
                 num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 4,
                 vector_factor_power = 0,
                 num_lanes = 4, data_bitwidth = 64):
 
-    PredicateType = DataType.get_field_type(kAttrPredicate)
-    data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     # Constants
     assert(data_bitwidth % num_lanes == 0)
-    num_entries = 2
-    s.const_zero = DataType()
+    num_entries   = 2
+    s.DataType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrData)
+    s.DataAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrDataAddr)
+    s.CtrlType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrl)
+    s.CtrlAddrType = CtrlPktType.get_field_type(kAttrPayload).get_field_type(kAttrCtrlAddr)
+    s.CgraPayloadType = CtrlPktType.get_field_type(kAttrPayload)
+    s.const_zero = s.DataType()
+    data_bitwidth = s.DataType.get_field_type(kAttrPayload).nbits
     sub_bw = data_bitwidth // num_lanes
     CountType = mk_bits(clog2(num_entries + 1))
-    DataAddrType = mk_bits(clog2(data_mem_size))
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-    s.ctrl_addr_inport = InPort(CtrlAddrType)
-    s.CgraPayloadType = mk_cgra_payload(DataType,
-                                        DataAddrType,
-                                        CtrlType,
-                                        CtrlAddrType)
+    s.ctrl_addr_inport = InPort(s.CtrlAddrType)
 
     # Interface
-    s.recv_in = [RecvIfcRTL(DataType) for _ in range(num_inports)]
-    s.recv_const = RecvIfcRTL(DataType)
-    s.recv_opt = RecvIfcRTL(CtrlType)
-    s.send_out = [SendIfcRTL(DataType) for _ in range(num_outports)]
+    s.recv_in = [RecvIfcRTL(s.DataType) for _ in range(num_inports)]
+    s.recv_const = RecvIfcRTL(s.DataType)
+    s.recv_opt = RecvIfcRTL(s.CtrlType)
+    s.send_out = [SendIfcRTL(s.DataType) for _ in range(num_outports)]
     s.send_to_ctrl_mem = SendIfcRTL(s.CgraPayloadType)
     s.recv_from_ctrl_mem = RecvIfcRTL(s.CgraPayloadType)
     
@@ -55,7 +52,7 @@ class VectorAdderComboRTL(Component):
     s.clear = InPort(b1)
 
     # Components
-    s.Fu = [VectorAdderRTL(sub_bw, CtrlType, 4, 2, data_mem_size)
+    s.Fu = [VectorAdderRTL(sub_bw, CtrlPktType, 4, 2)
             for _ in range(num_lanes)]
 
     # Connection: for carry-in/out
@@ -74,11 +71,10 @@ class VectorAdderComboRTL(Component):
       s.Fu[i].send_out[0].msg[0:sub_bw] //= s.send_out[0].msg.payload[i*sub_bw:(i+1)*sub_bw]
 
     # Redundant interfaces for MemUnit
-    AddrType = mk_bits(clog2(data_mem_size))
-    s.to_mem_raddr = SendIfcRTL(AddrType)
-    s.from_mem_rdata = RecvIfcRTL(DataType)
-    s.to_mem_waddr = SendIfcRTL(AddrType)
-    s.to_mem_wdata = SendIfcRTL(DataType)
+    s.to_mem_raddr = SendIfcRTL(s.DataAddrType)
+    s.from_mem_rdata = RecvIfcRTL(s.DataType)
+    s.to_mem_waddr = SendIfcRTL(s.DataAddrType)
+    s.to_mem_wdata = SendIfcRTL(s.DataType)
 
     @update
     def update_signal():
@@ -161,8 +157,8 @@ class VectorAdderComboRTL(Component):
       s.to_mem_waddr.val @= b1(0)
       s.to_mem_wdata.val @= b1(0)
       s.to_mem_wdata.msg @= s.const_zero
-      s.to_mem_waddr.msg @= AddrType(0)
-      s.to_mem_raddr.msg @= AddrType(0)
+      s.to_mem_waddr.msg @= s.DataAddrType(0)
+      s.to_mem_raddr.msg @= s.DataAddrType(0)
       s.to_mem_raddr.val @= b1(0)
       s.from_mem_rdata.rdy @= b1(0)
 

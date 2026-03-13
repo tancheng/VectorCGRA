@@ -57,12 +57,15 @@ class RegisterClusterRTL(Component):
         s.send_data_to_routing_crossbar[i].val @= 0
 
       for i in range(num_reg_banks):
-        if s.recv_data_from_routing_crossbar[i].val:
-          s.send_data_to_fu[i].msg @= \
-            s.recv_data_from_routing_crossbar[i].msg
-        else:
+        # Compiler must make sure read_reg and routing do not happen at the same clock cycle, 
+        # otherwise the data read from register bank will overwrite the routing data, incurs
+        # unexpected behavior.
+        if s.reg_bank[i].send_data_to_fu.val:
           s.send_data_to_fu[i].msg @= \
             s.reg_bank[i].send_data_to_fu.msg
+        elif s.recv_data_from_routing_crossbar[i].val:
+          s.send_data_to_fu[i].msg @= \
+            s.recv_data_from_routing_crossbar[i].msg
 
         s.send_data_to_fu[i].val @= \
             s.recv_data_from_routing_crossbar[i].val | \

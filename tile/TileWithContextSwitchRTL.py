@@ -77,9 +77,7 @@ class TileWithContextSwitchRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(DataType, CtrlSignalType,
-                              num_fu_inports, num_fu_outports,
-                              data_mem_size, ctrl_mem_size,
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, num_fu_outports,
                               num_tiles, FuList)
     # We use many CMD_CONST to simulate runtime commands in TileWithContextSwitchRTL_test,
     # so here we increase the size of const_mem to avoid deadlock.
@@ -129,7 +127,7 @@ class TileWithContextSwitchRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
-    
+
     # Used for:
     # Clearing the 'first' signal in PhiRTL to correctly resume the progress.
     # Clearing the 'prologue_counter' signal in CrossbarRTL to correctly resume the progress.
@@ -193,7 +191,7 @@ class TileWithContextSwitchRTL(Component):
         s.element.from_mem_rdata[i].msg //= DataType()
         s.element.to_mem_waddr[i].rdy //= 0
         s.element.to_mem_wdata[i].rdy //= 0
-    
+
     # Feed clear signal to PhiRTL and CrossbarRTL to correctly resume the progress.
     for i in range(len(FuList)):
       if (FuList[i] == PhiRTL) | (FuList[i] == RetRTL):
@@ -275,6 +273,9 @@ class TileWithContextSwitchRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_PAUSE) | \

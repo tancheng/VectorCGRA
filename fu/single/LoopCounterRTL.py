@@ -30,39 +30,29 @@ from ...lib.cmd_type import *
 
 class LoopCounterRTL(Fu):
   
-  def construct(s, DataType, CtrlType,
-                num_inports, num_outports,
-                data_mem_size, ctrl_mem_size = 8,
-                vector_factor_power = 0, data_bitwidth = 32):
-    
-    super(LoopCounterRTL, s).construct(DataType, CtrlType,
-                                      num_inports, num_outports,
-                                      data_mem_size, ctrl_mem_size,
-                                      1, vector_factor_power,
-                                      data_bitwidth = data_bitwidth)
-    
-    AddrType = mk_bits(clog2(data_mem_size))
-    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-    s.CgraPayloadType = mk_cgra_payload(DataType, AddrType, CtrlType, CtrlAddrType)
-    
+  def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
+
+    super(LoopCounterRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)    
+   
+    ctrl_mem_size = 2 ** s.CtrlAddrType.nbits
     # ===== Per-ctrl_addr State Arrays =====
     # Each ctrl_addr has its own leaf counter configuration and state.
-    s.leaf_lower_bound = [Wire(DataType) for _ in range(ctrl_mem_size)]
-    s.leaf_upper_bound = [Wire(DataType) for _ in range(ctrl_mem_size)]
-    s.leaf_step = [Wire(DataType) for _ in range(ctrl_mem_size)]
-    s.leaf_current_value = [Wire(DataType) for _ in range(ctrl_mem_size)]
+    s.leaf_lower_bound = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
+    s.leaf_upper_bound = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
+    s.leaf_step = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
+    s.leaf_current_value = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
     
 
     
     # Shadow register for each ctrl_addr (stores relay/root counter values).
-    s.shadow_regs = [Wire(DataType) for _ in range(ctrl_mem_size)]
+    s.shadow_regs = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
     s.shadow_valid = [Wire(1) for _ in range(ctrl_mem_size)]
     
     # Completion tracking for each ctrl_addr.
     s.already_done = [Wire(1) for _ in range(ctrl_mem_size)]
     
     # ===== Control Signals =====
-    s.current_ctrl_addr = Wire(CtrlAddrType)
+    s.current_ctrl_addr = Wire(s.CtrlAddrType)
     s.loop_terminated = Wire(1)
     
     # Update triggers from AC (CMD).
@@ -72,8 +62,8 @@ class LoopCounterRTL(Fu):
     s.cmd_config_upper = Wire(1)
     s.cmd_config_step = Wire(1)
     
-    s.target_ctrl_addr = Wire(CtrlAddrType)
-    s.target_ctrl_data = Wire(DataType)
+    s.target_ctrl_addr = Wire(s.CtrlAddrType)
+    s.target_ctrl_data = Wire(s.DataType)
     
     @update
     def comb_logic():
@@ -82,7 +72,7 @@ class LoopCounterRTL(Fu):
         s.recv_in[i].rdy @= b1(0)
       for i in range(num_outports):
         s.send_out[i].val @= b1(0)
-        s.send_out[i].msg @= DataType()
+        s.send_out[i].msg @= s.DataType()
       
       s.recv_const.rdy @= b1(0)
       s.recv_opt.rdy @= b1(0)
@@ -101,8 +91,8 @@ class LoopCounterRTL(Fu):
       s.cmd_config_lower @= b1(0)
       s.cmd_config_upper @= b1(0)
       s.cmd_config_step @= b1(0)
-      s.target_ctrl_addr @= CtrlAddrType(0)
-      s.target_ctrl_data @= DataType(0, 0)
+      s.target_ctrl_addr @= s.CtrlAddrType(0)
+      s.target_ctrl_data @= s.DataType(0, 0)
       
       if s.recv_opt.val:
         # ===== OPT_LOOP_COUNT: Loop-Driven Mode (Leaf Counter) =====
@@ -121,7 +111,7 @@ class LoopCounterRTL(Fu):
             if ~s.already_done[addr]:
               s.send_to_ctrl_mem.val @= b1(1)
               s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
-                CMD_LEAF_COUNTER_COMPLETE, DataType(0, 0), 0, s.recv_opt.msg, addr
+                CMD_LEAF_COUNTER_COMPLETE, s.DataType(0, 0), 0, s.recv_opt.msg, addr
               )
               s.send_out[0].val @= b1(1)
               s.recv_opt.rdy @= s.send_to_ctrl_mem.rdy & s.send_out[0].rdy
@@ -175,10 +165,10 @@ class LoopCounterRTL(Fu):
     def update_leaf_counters():
       if s.reset | s.clear:
         for i in range(ctrl_mem_size):
-          s.leaf_lower_bound[i] <<= DataType(0, 0)
-          s.leaf_upper_bound[i] <<= DataType(0, 0)
-          s.leaf_step[i] <<= DataType(0, 0)
-          s.leaf_current_value[i] <<= DataType(0, 0)
+          s.leaf_lower_bound[i] <<= s.DataType(0, 0)
+          s.leaf_upper_bound[i] <<= s.DataType(0, 0)
+          s.leaf_step[i] <<= s.DataType(0, 0)
+          s.leaf_current_value[i] <<= s.DataType(0, 0)
       else:
         # CMD Config Updates
         if s.cmd_config_lower:
@@ -196,7 +186,7 @@ class LoopCounterRTL(Fu):
         if s.recv_opt.val & (s.recv_opt.msg.operation == OPT_LOOP_COUNT):
            addr = s.current_ctrl_addr
            if s.send_out[0].val & s.send_out[0].rdy & ~s.loop_terminated:
-             s.leaf_current_value[addr] <<= DataType(
+             s.leaf_current_value[addr] <<= s.DataType(
                s.leaf_current_value[addr].payload + s.leaf_step[addr].payload, b1(1)
              )
         
@@ -209,7 +199,7 @@ class LoopCounterRTL(Fu):
     def update_shadow_registers():
       if s.reset | s.clear:
         for i in range(ctrl_mem_size):
-          s.shadow_regs[i] <<= DataType(0, 0)
+          s.shadow_regs[i] <<= s.DataType(0, 0)
           s.shadow_valid[i] <<= b1(0)
       else:
         # Runtime update from AC.

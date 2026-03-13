@@ -369,7 +369,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        # North -> FU
-                                                                       TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                                                                  # FU -> East
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -428,7 +428,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       # East -> FU
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                                                                 # FU -> East
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -441,7 +441,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       # NorthEast -> FU
-                                                                      TileInType(6), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTHEAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # FU -> North
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -482,7 +482,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        # West -> FU,  North -> FU
-                                                                       TileInType(3), TileInType(1), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        # FU -> FU
@@ -521,7 +521,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                                      # North -> FU
-                                                                      TileInType(0), TileInType(1), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                                     # FU -> FU
@@ -538,7 +538,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       # NorthWest -> FU, West -> FU
-                                                                      TileInType(5), TileInType(3), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_NORTHWEST), TileInType(PORT_WEST), TileInType(0), TileInType(0)],
                                                                                                   # FU -> West
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -586,7 +586,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        # North -> FU
-                                                                       TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # Sends to self reg.
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -616,7 +616,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                       TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # Sends to south tile: tile 0.
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -632,7 +632,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                                      # South -> FU
-                                                                      TileInType(0), TileInType(2), TileInType(0), TileInType(0)],
+                                                                      TileInType(0), TileInType(PORT_SOUTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                                                   # FU -> SouthEast
                                                                       FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
@@ -646,7 +646,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       # East -> FU
-                                                                      TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       # FU -> FU
@@ -700,7 +700,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        # North -> FU
-                                                                       TileInType(1), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                       # Sends result to north tile9, and self first register cluster.
                                                                        # FU -> North
                                                                       [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -786,7 +786,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        # East -> FU
-                                                                       TileInType(4), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
                                                                                      # FU -> South               # FU -> East
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -861,7 +861,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       fu_in_code,
                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                       TileInType(3), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
                                                                                      # FU -> South
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
@@ -890,7 +890,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       # South -> FU
-                                                                      TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                                                   # FU -> West
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),

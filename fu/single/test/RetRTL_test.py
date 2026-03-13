@@ -21,7 +21,7 @@ from ....lib.messages import *
 
 class TestHarness(Component):
 
-  def construct(s, FunctionUnit, DataType, CtrlType,
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 CgraPayloadType,
                 num_inports, num_outports,
                 data_mem_size,
@@ -36,9 +36,7 @@ class TestHarness(Component):
     s.src_opt = TestSrcRTL(CtrlType, src_opt)
     s.sink = TestSinkRTL(CgraPayloadType, sink)
 
-    s.dut = FunctionUnit(DataType, CtrlType, num_inports,
-                         num_outports, data_mem_size, ctrl_mem_size,
-                         data_bitwidth = data_nbits)
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
 
     s.src_in.send //= s.dut.recv_in[0]
     s.src_opt.send //= s.dut.recv_opt
@@ -91,13 +89,16 @@ def test_Ret():
                                     DataAddrType,
                                     CtrlType,
                                     CtrlAddrType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
   FuInType = mk_bits(clog2(num_inports + 1))
   src_in =  [DataType(1, 0), DataType(2, 1), DataType(3, 1)]
   src_opt = [CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
   sink =    [CgraPayloadType(CMD_COMPLETE, data = DataType(2, 1), ctrl = CtrlType(OPT_RET, [FuInType(1), FuInType(0)]))] # , DataType(2, 1), DataType(3, 0)]
-  th = TestHarness(FU, DataType, CtrlType, CgraPayloadType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                    num_inports, num_outports, data_mem_size, ctrl_mem_size,
                    data_nbits, src_in, src_opt, sink)
   run_sim(th)
@@ -119,6 +120,7 @@ def test_Ret_Void():
                                     DataAddrType,
                                     CtrlType,
                                     CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
 
   # Test inputs: first with predicate=0 (should be ignored),
@@ -133,7 +135,7 @@ def test_Ret_Void():
                           data = 0,
                           ctrl = CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]))]
 
-  th = TestHarness(FU, DataType, CtrlType, CgraPayloadType,
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                    num_inports, num_outports, data_mem_size, ctrl_mem_size,
                    data_nbits, src_in, src_opt, sink)
   run_sim(th)
