@@ -92,7 +92,8 @@ def test_reg_bank():
   src_opt.write_reg_from[reg_bank_id] = b2(2)
   # Writes data into reg[15].
   src_opt.write_reg_idx[reg_bank_id] = b4(15)
-  src_opt.read_reg_from[reg_bank_id] = b1(1)
+  # read_reg_towards: 0=nothing, 1=FU, 2=routing_xbar, 3=both
+  src_opt.read_reg_towards[reg_bank_id] = b2(1)
   # Reads data from reg[15].
   src_opt.read_reg_idx[reg_bank_id] = b4(15) # read after write
 

@@ -232,7 +232,7 @@ typedef struct packed {
   logic [0:0] is_last_ctrl;
   logic [3:0][1:0] write_reg_from;
   logic [3:0][3:0] write_reg_idx;
-  logic [3:0][0:0] read_reg_from;
+  logic [3:0][0:0] read_reg_towards;
   logic [3:0][3:0] read_reg_idx;
 } CGRAConfig_7_4_2_4_4_3__49d22cda396bec88;
 */

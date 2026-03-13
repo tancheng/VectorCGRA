@@ -240,8 +240,8 @@ fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
 write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
 # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
 write_reg_from_code[0] = b2(2)
-read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-read_reg_from_code[0] = b1(1)
+read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+read_reg_towards_code[0] = b2(1)
 read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
 fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -378,7 +378,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       write_reg_from = write_reg_from_code,
                                                                       # Reads from the second reg cluster, which is written by the
                                                                       # following OPT_PHI_CONST.
-                                                                      read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                      read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
 
           # STORE_CONST, indicating the address is a const.
           IntraCgraPktType(0, 0,
@@ -395,7 +395,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       # Sends to self reg. Needs to be another register cluster to
                                                                       # avoid conflict with previous OPT_ADD.
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                      read_reg_from = read_reg_from_code))),
+                                                                      read_reg_towards = read_reg_towards_code))),
           # NAH.
           IntraCgraPktType(0, 0,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -499,7 +499,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                      read_reg_from = read_reg_from_code))),
+                                                                      read_reg_towards = read_reg_towards_code))),
           # NAH.
           IntraCgraPktType(0, 1,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -528,7 +528,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
 
           # ADD.
           IntraCgraPktType(0, 1,
@@ -551,7 +551,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_RET,
                                                                      # The first 2 indicates the first operand is from the second inport,
                                                                      # which is actually from the second register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     # inport channel, indicated by the `read_reg_towards_code`.
                                                                      [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -559,7 +559,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)])))
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)])))
       
       ],
 
@@ -608,7 +608,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                                      # FU -> FU
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                      read_reg_from = read_reg_from_code))),
+                                                                      read_reg_towards = read_reg_towards_code))),
           # MUL.
           IntraCgraPktType(0, 4,
                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -621,7 +621,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                      read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                      read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
 
           # Configs for Task 2.
           # MUL.
@@ -637,7 +637,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                                                   # FU -> SouthEast
                                                                       FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
           # ADD_CONST_LD.
           IntraCgraPktType(0, 4,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 5,
@@ -722,7 +722,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                       # Reads operand for `NOT` from self first register cluster.
-                                                                      read_reg_from = read_reg_from_code))),
+                                                                      read_reg_towards = read_reg_towards_code))),
 
           # Configs for Task 2.
           # PHI_CONST.
@@ -731,7 +731,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      # The first 2 indicates the first operand is from the second inport,
                                                                      # which is actually from the second register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     # inport channel, indicated by the `read_reg_towards_code`.
                                                                      [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -743,7 +743,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       # FU -> FU
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
 
           # INC_NE_CONST_NOT_GRT.
           IntraCgraPktType(0, 5,
@@ -760,7 +760,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                       FuOutType(0), FuOutType(2), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
           # NAH.
           IntraCgraPktType(0, 5,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 6,
@@ -808,14 +808,14 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                       # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                      read_reg_from = read_reg_from_code))),
+                                                                      read_reg_towards = read_reg_towards_code))),
           # LD.
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                      ctrl = CtrlType(OPT_LD,
                                                                      # The first 2 indicates the first operand is from the second inport,
                                                                      # which is actually from the second register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     # inport channel, indicated by the `read_reg_towards_code`.
                                                                      [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
@@ -825,7 +825,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
           # NAH.
           IntraCgraPktType(0, 8,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -895,7 +895,7 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)])))
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)])))
       ],
 
       # ------------------------------------------------------Starts executing Task 1------------------------------------------------------------
