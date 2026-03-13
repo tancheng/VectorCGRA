@@ -291,7 +291,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
                                                                       [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                      read_reg_towards = [b2(1), b1(0), b1(0), b1(0)],
+                                                                      read_reg_towards = [b2(1), b2(0), b2(0), b2(0)],
                                                                       read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
 
            # Tile `target_tile`. Note that tile 0 and tile `target_tile` can access the memory, as they are on
