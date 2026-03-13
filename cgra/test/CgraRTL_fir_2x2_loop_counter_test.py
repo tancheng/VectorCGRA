@@ -244,8 +244,8 @@ fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
 write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
 # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
 write_reg_from_code[0] = b2(2)
-read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-read_reg_from_code[0] = b1(1)
+read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+read_reg_towards_code[0] = b2(1)
 read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
 fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -442,7 +442,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
 
           # NAH.
           IntraCgraPktType(0, 0,
@@ -496,7 +496,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
 
           # Launch the tile.
           IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_LAUNCH))
@@ -522,7 +522,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(PORT_EAST), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
           # ADD_CONST_LD.
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
@@ -542,7 +542,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)],
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
 
           IntraCgraPktType(0, 2,
@@ -587,7 +587,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                                       TileInType(0), TileInType(PORT_SOUTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)],
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)]))),
           # RET.
           IntraCgraPktType(0, 3,
@@ -595,13 +595,13 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                      ctrl = CtrlType(OPT_RET,
                                                                      # The first 2 indicates the first operand is from the second inport,
                                                                      # which is actually from the second register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     # inport channel, indicated by the `read_reg_towards_code`.
                                                                      [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(PORT_WEST), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(1), b1(0), b1(0)],
+                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)],
                                                                      write_reg_from = [b2(0), b2(0), b2(1), b2(0)]))),
           # PHI_CONST.
           IntraCgraPktType(0, 3,
@@ -609,13 +609,13 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
                                                      ctrl = CtrlType(OPT_PHI_CONST,
                                                                      # The first 3 indicates the first operand is from the third inport,
                                                                      # which is actually from the third register cluster rather than the
-                                                                     # inport channel, indicated by the `read_reg_from_code`.
+                                                                     # inport channel, indicated by the `read_reg_towards_code`.
                                                                      [FuInType(3), FuInType(0), FuInType(0), FuInType(0)],
                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_from = [b1(0), b1(0), b1(1), b1(0)],
+                                                                     read_reg_towards = [b2(0), b1(0), b1(1), b1(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)]))),
 
           IntraCgraPktType(0, 3,

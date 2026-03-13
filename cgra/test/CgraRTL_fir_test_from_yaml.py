@@ -239,8 +239,8 @@ fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
 write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
 # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
 write_reg_from_code[0] = b2(2)
-read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-read_reg_from_code[0] = b1(1)
+read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+read_reg_towards_code[0] = b2(1)
 read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
 fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]

@@ -233,8 +233,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   fu_in_code[0] = FuInType(1)
   fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
   fu_xbar_code[num_tile_outports] = FuOutType(1)
-  read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-  read_reg_from_code[0] = b1(1)
+  read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+  read_reg_towards_code[0] = b2(1)
   read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
   read_reg_idx_code[0] = RegIdxType(2)
 
@@ -296,7 +296,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                                            fu_in_code,
                                                            routing_xbar_code,
                                                            fu_xbar_code,
-                                                           read_reg_from = read_reg_from_code,
+                                                           read_reg_towards = read_reg_towards_code,
                                                            read_reg_idx = read_reg_idx_code))),
 
           IntraCgraPktType(0, # src

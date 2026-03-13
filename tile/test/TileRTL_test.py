@@ -523,7 +523,8 @@ def test_readReg_routing_priority(cmdline_opts):
                                                                  [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                   FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                  # Reads from register 0 in registerbank 0 to fu(0).
-                                                                 read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                                                                 # read_reg_towards: 0=nothing, 1=FU, 2=routing_xbar, 3=both
+                                                                 read_reg_towards = [b2(1), b2(0), b2(0), b2(0)],
                                                                  read_reg_idx = [b4(0), b4(0), b4(0), b4(0)]
                                                                  ))),
       IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]

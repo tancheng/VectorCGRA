@@ -220,7 +220,7 @@ typedef struct packed {
   logic [7:0] opaque;
   logic [0:0] vc_id;
   MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr__d9140faa89010e06 payload;
-} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__377cfca417046add;
+} IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
 */
 /*
 typedef struct packed {
@@ -249,7 +249,7 @@ typedef struct packed {
   logic [0:0] is_last_ctrl;
   logic [3:0][1:0] write_reg_from;
   logic [3:0][3:0] write_reg_idx;
-  logic [3:0][0:0] read_reg_from;
+  logic [3:0][0:0] read_reg_towards;
   logic [3:0][3:0] read_reg_idx;
 } CGRAConfig_7_4_2_4_4_3__49d22cda396bec88;
 */

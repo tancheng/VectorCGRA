@@ -41,7 +41,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   pkt.payload.ctrl.is_last_ctrl        = 1'b0;
   pkt.payload.ctrl.write_reg_from      = '{default: 2'd0};
   pkt.payload.ctrl.write_reg_idx       = '{default: 4'd0};
-  pkt.payload.ctrl.read_reg_from       = '{default: 1'd0};
+  pkt.payload.ctrl.read_reg_towards      = '{default: 2'd0};
   pkt.payload.ctrl.read_reg_idx        = '{default: 4'd0};
 
 /*
@@ -120,7 +120,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   input logic [7:0][2:0] routing_xbar_outport,
   input logic [7:0][1:0] fu_xbar_outport,
   input logic [3:0][1:0] write_reg_from,
-  input logic [3:0][0:0] read_reg_from,
+  input logic [3:0][0:0] read_reg_towards,
   input logic [3:0][3:0] write_reg_idx,
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr
@@ -152,7 +152,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   pkt.payload.ctrl.is_last_ctrl        = 1'b0;
   pkt.payload.ctrl.write_reg_from      = write_reg_from;
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
-  pkt.payload.ctrl.read_reg_from       = read_reg_from;
+  pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
 
   file_handle = $fopen("hexcode.txt", "a");
@@ -200,7 +200,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   input logic [7:0][2:0] routing_xbar_outport,
   input logic [7:0][1:0] fu_xbar_outport,
   input logic [3:0][1:0] write_reg_from,
-  input logic [3:0][0:0] read_reg_from,
+  input logic [3:0][0:0] read_reg_towards,
   input logic [3:0][3:0] write_reg_idx,
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr,
@@ -234,7 +234,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   pkt.payload.ctrl.is_last_ctrl        = 1'b0;
   pkt.payload.ctrl.write_reg_from      = write_reg_from;
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
-  pkt.payload.ctrl.read_reg_from       = read_reg_from;
+  pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
 
   pkt.payload.data.payload   = data;
@@ -305,7 +305,7 @@ function automatic logic [218-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
     p.payload.ctrl.is_last_ctrl,
     p.payload.ctrl.write_reg_from,
     p.payload.ctrl.write_reg_idx,
-    p.payload.ctrl.read_reg_from,
+    p.payload.ctrl.read_reg_towards,
     p.payload.ctrl.read_reg_idx,
     p.payload.ctrl_addr
   };
@@ -320,7 +320,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 un
   p.payload.ctrl_addr = v[i +: 4]; i += 4;
   // ctrl (107)
   p.payload.ctrl.read_reg_idx = v[i +: 16]; i += 16;
-  p.payload.ctrl.read_reg_from = v[i +: 4]; i += 4;
+  p.payload.ctrl.read_reg_towards = v[i +: 4]; i += 4;
   p.payload.ctrl.write_reg_idx = v[i +: 16]; i += 16;
   p.payload.ctrl.write_reg_from = v[i +: 8]; i += 8;
   p.payload.ctrl.is_last_ctrl = v[i +: 1]; i += 1;

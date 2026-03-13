@@ -105,7 +105,7 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].fu_in[i] @= 0
         s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_from[i]
         s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_idx[i]
-        s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_from[i]
+        s.reg_file.wdata[0].read_reg_towards[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_towards[i]
         s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_idx[i]
       for i in range(num_routing_outports):
         s.reg_file.wdata[0].routing_xbar_outport[i] @= 0
@@ -122,7 +122,7 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].fu_in[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_in[i]
           s.reg_file.wdata[0].write_reg_from[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_from[i]
           s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_idx[i]
-          s.reg_file.wdata[0].read_reg_from[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_from[i]
+          s.reg_file.wdata[0].read_reg_towards[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_towards[i]
           s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_idx[i]
         for i in range(num_routing_outports):
           s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.routing_xbar_outport[i]
