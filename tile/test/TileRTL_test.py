@@ -463,7 +463,7 @@ def test_readReg_routing_priority(cmdline_opts):
   num_commands = NUM_CMDS
   num_ctrl_operations = NUM_OPTS
   num_registers_per_reg_bank = 16
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
