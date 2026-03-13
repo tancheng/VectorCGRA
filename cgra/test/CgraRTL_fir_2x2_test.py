@@ -509,7 +509,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                       FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b2(0), b2(0), b2(0)]))),
 
           # ADD.
           IntraCgraPktType(0, 1,
@@ -534,7 +534,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
           IntraCgraPktType(0, 1,
                            payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
@@ -600,7 +600,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                       TileInType(0), TileInType(PORT_SOUTH), TileInType(0), TileInType(0)],
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b2(0), b2(0), b2(0)]))),
           # ADD_CONST_LD.
           IntraCgraPktType(0, 2,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
@@ -668,7 +668,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                      [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
-                                                                     read_reg_towards = [b2(0), b1(1), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
           # INC_NE_CONST_NOT_GRT.
           IntraCgraPktType(0, 3,
@@ -682,7 +682,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
                                                                       FuOutType(0), FuOutType(2), FuOutType(0), FuOutType(0)],
                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                      write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                     read_reg_towards = [b2(1), b1(0), b1(0), b1(0)]))),
+                                                                     read_reg_towards = [b2(1), b2(0), b2(0), b2(0)]))),
           # NAH.
           IntraCgraPktType(0, 3,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
