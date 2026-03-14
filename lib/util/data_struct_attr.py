@@ -39,7 +39,3 @@ kAttrSrcCgraY = 'src_cgra_y'
 kAttrDstCgraX = 'dst_cgra_x'
 kAttrDstCgraY = 'dst_cgra_y'
 kAttrAddr = 'addr'
-kReadTowardsNothing = 0
-kReadTowardsFu = 1
-kReadTowardsRoutingXbar = 2
-kReadTowardsBoth = 3

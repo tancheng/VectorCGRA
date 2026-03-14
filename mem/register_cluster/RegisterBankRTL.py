@@ -17,8 +17,20 @@ from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
-from ...lib.util.data_struct_attr import kReadTowardsNothing, kReadTowardsFu, \
-                                         kReadTowardsRoutingXbar, kReadTowardsBoth
+from ...lib.util.common import *
+
+# Canonical definitions live in common.py; keep local aliases to minimize churn.
+from ...lib.util.common import (
+  READ_TOWARDS_NOTHING,
+  READ_TOWARDS_FU,
+  READ_TOWARDS_ROUTING_XBAR,
+  READ_TOWARDS_BOTH,
+)
+
+kReadTowardsNothing     = READ_TOWARDS_NOTHING
+kReadTowardsFu          = READ_TOWARDS_FU
+kReadTowardsRoutingXbar = READ_TOWARDS_ROUTING_XBAR
+kReadTowardsBoth        = READ_TOWARDS_BOTH
 
 class RegisterBankRTL(Component):
 
@@ -34,7 +46,7 @@ class RegisterBankRTL(Component):
     # InPort is enough to expose the data. Recv ifc would complicate
     # the design and handshake.
     s.inport_wdata = [InPort(DataType) for _ in range(3)]
-    s.inport_valid = [InPort(b1) for _ in range(3)]
+    s.inport_valid = [InPort(mk_bits(1)) for _ in range(3)]
 
     # Component
     s.reg_file = RegisterFile(DataType, num_registers, rd_ports = 1,

@@ -1,3 +1,5 @@
+typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__0f53ca30ef872aeb IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
+
 function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
 (
   input logic [4:0] src,
