@@ -55,3 +55,9 @@ GLOBAL_REDUCE_MAX_COUNT = 4
 # Cgra Topology
 MESH = "Mesh"
 KING_MESH = "KingMesh"
+
+# Register cluster read direction enums
+READ_TOWARDS_NOTHING      = 0
+READ_TOWARDS_FU           = 1
+READ_TOWARDS_ROUTING_XBAR = 2
+READ_TOWARDS_BOTH         = 3
