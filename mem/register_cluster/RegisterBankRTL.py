@@ -19,18 +19,12 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
-# Canonical definitions live in common.py; keep local aliases to minimize churn.
 from ...lib.util.common import (
   READ_TOWARDS_NOTHING,
   READ_TOWARDS_FU,
   READ_TOWARDS_ROUTING_XBAR,
   READ_TOWARDS_BOTH,
 )
-
-kReadTowardsNothing     = READ_TOWARDS_NOTHING
-kReadTowardsFu          = READ_TOWARDS_FU
-kReadTowardsRoutingXbar = READ_TOWARDS_ROUTING_XBAR
-kReadTowardsBoth        = READ_TOWARDS_BOTH
 
 class RegisterBankRTL(Component):
 
