@@ -15,6 +15,8 @@ from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 from ...lib.util.common import *
+from ...lib.util.data_struct_attr import kReadTowardsNothing, kReadTowardsFu, \
+                                         kReadTowardsRoutingXbar, kReadTowardsBoth
 
 class RegisterClusterRTL(Component):
 
@@ -44,16 +46,6 @@ class RegisterClusterRTL(Component):
       s.reg_bank[i].inport_valid[PORT_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].val
       s.reg_bank[i].inport_valid[PORT_CONST] //= s.recv_data_from_const[i].val
 
-    # Constants for read_reg_towards semantics:
-    # 0: towards nothing (no read)
-    # 1: towards FU (reg data consumed by operation)
-    # 2: towards routing_xbar (reg data routed out to outport)
-    # 3: towards both FU and routing_xbar
-    READ_TOWARDS_NOTHING = 0
-    READ_TOWARDS_FU = 1
-    READ_TOWARDS_ROUTING_XBAR = 2
-    READ_TOWARDS_BOTH = 3
-
     @update
     def update_msgs_signals():
       # Initializes signals.
@@ -69,34 +61,32 @@ class RegisterClusterRTL(Component):
       for i in range(num_reg_banks):
         read_towards = s.inport_opt.read_reg_towards[i]
         # Checks if data should go towards FU (1 or 3)
-        reg_towards_fu = (read_towards == READ_TOWARDS_FU) | (read_towards == READ_TOWARDS_BOTH)
+        reg_towards_fu = (read_towards == kReadTowardsFu) | (read_towards == kReadTowardsBoth)
         # Checks if data should go towards routing_xbar (2 or 3)
-        reg_towards_routing_xbar = (read_towards == READ_TOWARDS_ROUTING_XBAR) | (read_towards == READ_TOWARDS_BOTH)
+        reg_towards_routing_xbar = (read_towards == kReadTowardsRoutingXbar) | (read_towards == kReadTowardsBoth)
 
         # Data from register bank has priority over routing crossbar data for FU path.
-        # Note: reg_bank[i].send_data_to_fu.val is set based on read_reg_towards in RegisterBankRTL.
-        if s.reg_bank[i].send_data_to_fu.val:
+        # Note: reg_bank[i].send_data.val is set based on read_reg_towards in RegisterBankRTL.
+        if s.reg_bank[i].send_data.val:
           s.send_data_to_fu[i].msg @= \
-            s.reg_bank[i].send_data_to_fu.msg
+            s.reg_bank[i].send_data.msg
         elif s.recv_data_from_routing_crossbar[i].val:
           s.send_data_to_fu[i].msg @= \
             s.recv_data_from_routing_crossbar[i].msg
 
         s.send_data_to_fu[i].val @= \
             s.recv_data_from_routing_crossbar[i].val | \
-            s.reg_bank[i].send_data_to_fu.val
-        s.reg_bank[i].send_data_to_fu.rdy @= s.send_data_to_fu[i].rdy
+            s.reg_bank[i].send_data.val
+        s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
         s.recv_data_from_routing_crossbar[i].rdy @= s.send_data_to_fu[i].rdy
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
 
         # Drive the direct reg -> routing_crossbar path.
-        # Data is read from register (msg is available when read_towards > 0),
-        # but only valid for routing_xbar when read_towards is 2 or 3.
-        s.send_data_to_routing_crossbar[i].msg @= \
-            s.reg_bank[i].send_data_to_fu.msg
-        s.send_data_to_routing_crossbar[i].val @= reg_towards_routing_xbar
+        if reg_towards_routing_xbar:
+          s.send_data_to_routing_crossbar[i].msg @= s.reg_bank[i].send_data.msg
+          s.send_data_to_routing_crossbar[i].val @= 1
 
   def line_trace(s):
     reg_bank_str = "reg_banks: " + "|".join([reg_bank.line_trace() for reg_bank in s.reg_bank])

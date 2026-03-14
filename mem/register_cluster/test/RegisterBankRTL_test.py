@@ -37,7 +37,7 @@ class TestHarness(Component):
     s.reg_bank.inport_valid[PORT_FU_CROSSBAR] //= 1
     s.reg_bank.inport_valid[PORT_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
-    s.reg_bank.send_data_to_fu //= s.sink.recv
+    s.reg_bank.send_data //= s.sink.recv
 
   def done(s):
     return s.sink.done()
