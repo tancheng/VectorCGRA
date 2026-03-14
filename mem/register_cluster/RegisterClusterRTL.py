@@ -78,7 +78,7 @@ class RegisterClusterRTL(Component):
 
         # Data from register bank has priority over routing crossbar data for FU path.
         # Note: reg_bank[i].send_data.val is set based on read_reg_towards in RegisterBankRTL.
-        if s.reg_bank[i].send_data.val:
+        if s.reg_bank[i].send_data.val & reg_towards_fu:
           s.send_data_to_fu[i].msg @= \
             s.reg_bank[i].send_data.msg
         elif s.recv_data_from_routing_crossbar[i].val:
@@ -87,7 +87,7 @@ class RegisterClusterRTL(Component):
 
         s.send_data_to_fu[i].val @= \
             s.recv_data_from_routing_crossbar[i].val | \
-            s.reg_bank[i].send_data.val
+            (s.reg_bank[i].send_data.val & reg_towards_fu)
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
         s.recv_data_from_routing_crossbar[i].rdy @= s.send_data_to_fu[i].rdy
