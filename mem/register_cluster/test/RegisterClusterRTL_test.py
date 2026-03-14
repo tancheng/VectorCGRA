@@ -14,6 +14,25 @@ from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ....lib.messages import *
 from ....lib.opt_type import *
+from ....lib.util.common import (
+  READ_TOWARDS_NOTHING,
+  READ_TOWARDS_FU,
+  READ_TOWARDS_ROUTING_XBAR,
+  READ_TOWARDS_BOTH,
+  PORT_ROUTING_CROSSBAR,
+  PORT_FU_CROSSBAR,
+  PORT_CONST,
+)
+
+# Local bitwidth helpers (avoid relying on optional pymtl3.stdlib modules)
+Bits2 = mk_bits(2)
+Bits4 = mk_bits(4)
+
+def b2(v):
+  return Bits2(v)
+
+def b4(v):
+  return Bits4(v)
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -107,11 +126,11 @@ def test_reg_bank():
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt = ConfigType(OPT_ADD_CONST, pickRegister)
-  src_opt.write_reg_from[reg_bank_id] = b2(2)
+  src_opt.write_reg_from[reg_bank_id] = b2(PORT_FU_CROSSBAR + 1)
   # Writes data into reg[15].
   src_opt.write_reg_idx[reg_bank_id] = b4(15)
   # read_reg_towards: 0=nothing, 1=FU, 2=routing_xbar, 3=both
-  src_opt.read_reg_towards[reg_bank_id] = b2(1)
+  src_opt.read_reg_towards[reg_bank_id] = b2(READ_TOWARDS_FU)
   # Reads data from reg[15].
   src_opt.read_reg_idx[reg_bank_id] = b4(15) # read after write
 
@@ -226,9 +245,9 @@ def test_reg_cluster_read_towards_routing_xbar():
   # Control word: write bank-0 reg[3] from FU-crossbar (write_reg_from=2),
   # then read it towards routing_xbar (read_reg_towards=2).
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[0]    = b2(2)   # write from FU-crossbar
+  src_opt.write_reg_from[0]    = b2(PORT_FU_CROSSBAR + 1)   # write from FU-crossbar
   src_opt.write_reg_idx[0]     = b4(3)
-  src_opt.read_reg_towards[0]  = b2(2)   # READ_TOWARDS_ROUTING_XBAR
+  src_opt.read_reg_towards[0]  = b2(READ_TOWARDS_ROUTING_XBAR)
   src_opt.read_reg_idx[0]      = b4(3)
 
   # Bank 0 receives one value via FU-crossbar; all others empty.
@@ -252,7 +271,7 @@ def test_reg_cluster_read_towards_routing_xbar():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar)
-  run_sim(th, max_cycles=15)
+  run_sim(th, max_cycles = 15)
 
 #-------------------------------------------------------------------------
 # test: read_reg_towards=3 => data goes to BOTH FU and routing_xbar
@@ -279,9 +298,9 @@ def test_reg_cluster_read_towards_both():
   FuInType   = mk_bits(clog2(num_fu_inports + 1))
 
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[2]   = b2(1)   # write from routing-crossbar
+  src_opt.write_reg_from[2]   = b2(PORT_ROUTING_CROSSBAR + 1)   # write from routing-crossbar
   src_opt.write_reg_idx[2]    = b4(7)
-  src_opt.read_reg_towards[2] = b2(3)   # READ_TOWARDS_BOTH
+  src_opt.read_reg_towards[2] = b2(READ_TOWARDS_BOTH)
   src_opt.read_reg_idx[2]     = b4(7)
 
   src_data_from_routing_xbar = [[], [], [DataType(55, 1)], []]
@@ -302,7 +321,7 @@ def test_reg_cluster_read_towards_both():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar)
-  run_sim(th, max_cycles=15)
+  run_sim(th, max_cycles = 15)
 
 #-------------------------------------------------------------------------
 # test: read_reg_towards=1 => data goes to FU only, xbar output stays idle
@@ -327,9 +346,9 @@ def test_reg_cluster_read_towards_fu_no_xbar_output():
   FuInType   = mk_bits(clog2(num_fu_inports + 1))
 
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[1]   = b2(2)   # write from FU-crossbar
+  src_opt.write_reg_from[1]   = b2(PORT_FU_CROSSBAR + 1)   # write from FU-crossbar
   src_opt.write_reg_idx[1]    = b4(0)
-  src_opt.read_reg_towards[1] = b2(1)   # READ_TOWARDS_FU only
+  src_opt.read_reg_towards[1] = b2(READ_TOWARDS_FU)
   src_opt.read_reg_idx[1]     = b4(0)
 
   src_data_from_routing_xbar = [[] for _ in range(num_reg_banks)]
@@ -350,5 +369,5 @@ def test_reg_cluster_read_towards_fu_no_xbar_output():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar)
-  run_sim(th, max_cycles=15)
+  run_sim(th, max_cycles = 15)
 
