@@ -142,8 +142,8 @@ class TileRTL(Component):
     s.routing_crossbar.tile_id //= s.tile_id
 
     # Assigns crossbar id.
-    s.routing_crossbar.crossbar_id //= PORT_ROUTING_CROSSBAR
-    s.fu_crossbar.crossbar_id //= PORT_FU_CROSSBAR
+    s.routing_crossbar.crossbar_id //= PORT_INDEX_ROUTING_CROSSBAR
+    s.fu_crossbar.crossbar_id //= PORT_INDEX_FU_CROSSBAR
 
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const

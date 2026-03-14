@@ -50,12 +50,12 @@ class RegisterClusterRTL(Component):
     # Connections.
     for i in range(num_reg_banks):
       s.reg_bank[i].inport_opt //= s.inport_opt
-      s.reg_bank[i].inport_wdata[PORT_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].msg
-      s.reg_bank[i].inport_wdata[PORT_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg
-      s.reg_bank[i].inport_wdata[PORT_CONST] //= s.recv_data_from_const[i].msg
-      s.reg_bank[i].inport_valid[PORT_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].val
-      s.reg_bank[i].inport_valid[PORT_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].val
-      s.reg_bank[i].inport_valid[PORT_CONST] //= s.recv_data_from_const[i].val
+      s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].msg
+      s.reg_bank[i].inport_wdata[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg
+      s.reg_bank[i].inport_wdata[PORT_INDEX_CONST] //= s.recv_data_from_const[i].msg
+      s.reg_bank[i].inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].val
+      s.reg_bank[i].inport_valid[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].val
+      s.reg_bank[i].inport_valid[PORT_INDEX_CONST] //= s.recv_data_from_const[i].val
 
     @update
     def update_msgs_signals():

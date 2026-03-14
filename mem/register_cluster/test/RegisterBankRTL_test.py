@@ -30,12 +30,12 @@ class TestHarness(Component):
     s.reg_bank = RegisterBankRTL(DataType, ConfigType, reg_bank_id,
                                  num_registers)
 
-    s.reg_bank.inport_wdata[PORT_ROUTING_CROSSBAR] //= src_msgs[PORT_ROUTING_CROSSBAR]
-    s.reg_bank.inport_wdata[PORT_FU_CROSSBAR] //= src_msgs[PORT_FU_CROSSBAR]
-    s.reg_bank.inport_wdata[PORT_CONST] //= src_msgs[PORT_CONST]
-    s.reg_bank.inport_valid[PORT_ROUTING_CROSSBAR] //= 1
-    s.reg_bank.inport_valid[PORT_FU_CROSSBAR] //= 1
-    s.reg_bank.inport_valid[PORT_CONST] //= 1
+    s.reg_bank.inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= src_msgs[PORT_INDEX_ROUTING_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_INDEX_FU_CROSSBAR] //= src_msgs[PORT_INDEX_FU_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_INDEX_CONST] //= src_msgs[PORT_INDEX_CONST]
+    s.reg_bank.inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_INDEX_FU_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_INDEX_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
     s.reg_bank.send_data //= s.sink.recv
 
