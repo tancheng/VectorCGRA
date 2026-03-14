@@ -19,6 +19,9 @@ from ....lib.util.common import (
   READ_TOWARDS_FU,
   READ_TOWARDS_ROUTING_XBAR,
   READ_TOWARDS_BOTH,
+  PORT_INDEX_ROUTING_CROSSBAR,
+  PORT_INDEX_FU_CROSSBAR,
+  PORT_INDEX_CONST,
   PORT_ROUTING_CROSSBAR,
   PORT_FU_CROSSBAR,
   PORT_CONST,
@@ -126,7 +129,7 @@ def test_reg_bank():
   pickRegister = [FuInType(x + 1) for x in range(num_fu_inports)]
 
   src_opt = ConfigType(OPT_ADD_CONST, pickRegister)
-  src_opt.write_reg_from[reg_bank_id] = b2(PORT_FU_CROSSBAR + 1)
+  src_opt.write_reg_from[reg_bank_id] = b2(PORT_FU_CROSSBAR)
   # Writes data into reg[15].
   src_opt.write_reg_idx[reg_bank_id] = b4(15)
   # read_reg_towards: 0=nothing, 1=FU, 2=routing_xbar, 3=both
@@ -245,7 +248,7 @@ def test_reg_cluster_read_towards_routing_xbar():
   # Control word: write bank-0 reg[3] from FU-crossbar (write_reg_from=2),
   # then read it towards routing_xbar (read_reg_towards=2).
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[0]    = b2(PORT_FU_CROSSBAR + 1)   # write from FU-crossbar
+  src_opt.write_reg_from[0]    = b2(PORT_FU_CROSSBAR)   # write from FU-crossbar
   src_opt.write_reg_idx[0]     = b4(3)
   src_opt.read_reg_towards[0]  = b2(READ_TOWARDS_ROUTING_XBAR)
   src_opt.read_reg_idx[0]      = b4(3)
@@ -298,7 +301,7 @@ def test_reg_cluster_read_towards_both():
   FuInType   = mk_bits(clog2(num_fu_inports + 1))
 
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[2]   = b2(PORT_ROUTING_CROSSBAR + 1)   # write from routing-crossbar
+  src_opt.write_reg_from[2]   = b2(PORT_ROUTING_CROSSBAR)   # write from routing-crossbar
   src_opt.write_reg_idx[2]    = b4(7)
   src_opt.read_reg_towards[2] = b2(READ_TOWARDS_BOTH)
   src_opt.read_reg_idx[2]     = b4(7)
@@ -346,7 +349,7 @@ def test_reg_cluster_read_towards_fu_no_xbar_output():
   FuInType   = mk_bits(clog2(num_fu_inports + 1))
 
   src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
-  src_opt.write_reg_from[1]   = b2(PORT_FU_CROSSBAR + 1)   # write from FU-crossbar
+  src_opt.write_reg_from[1]   = b2(PORT_FU_CROSSBAR)   # write from FU-crossbar
   src_opt.write_reg_idx[1]    = b4(0)
   src_opt.read_reg_towards[1] = b2(READ_TOWARDS_FU)
   src_opt.read_reg_idx[1]     = b4(0)
