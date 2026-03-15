@@ -1,4 +1,4 @@
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 make_intra_cgra_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -8,7 +8,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   input logic [6:0] data_addr,
   input logic [6:0] ctrl_operation
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -110,7 +110,7 @@ ADD 10 10 31
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 make_intra_cgra_config_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_config_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -125,7 +125,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -190,7 +190,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 make_intra_cgra_config_pkt_w_data
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_config_pkt_w_data
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -208,7 +208,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   input logic [0:0] pred,
   input logic [6:0] data_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -277,7 +277,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 ma
   return pkt;
 endfunction
 
-function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 p);
+function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -311,8 +311,8 @@ function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
   };
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 unpack_pkt (logic [229-1:0] v, int printHex = 1);
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 p;
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b unpack_pkt (logic [229-1:0] v, int printHex = 1);
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p;
   integer file_handle;
   // Use a running index from LSB upward for clarity
   int i = 0;

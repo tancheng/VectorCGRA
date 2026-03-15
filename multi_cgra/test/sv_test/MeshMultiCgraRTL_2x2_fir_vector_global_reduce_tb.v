@@ -11,11 +11,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__176d07e92dff4e44 send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -24,7 +24,7 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload__d294fd7ecd3c5b69 in bits (229).
+  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b in bits (229).
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
   logic [229-1:0] pkt_queue [$];
 
