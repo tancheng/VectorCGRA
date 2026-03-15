@@ -152,7 +152,7 @@ def initialize_test_harness(cmdline_opts,
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
   num_rd_tiles = num_x_tiles_per_cgra + num_y_tiles_per_cgra - 1
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   ctrl_addr_nbits = clog2(ctrl_mem_size)
@@ -261,7 +261,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                       [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                      read_reg_from = [b1(1), b1(0), b1(0), b1(0)],
+                                                                      read_reg_towards = [b2(1), b2(0), b2(0), b2(0)],
                                                                       read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
 
            # Tile 2. Note that tile 0 and tile 2 can access the memory, as they are on
@@ -805,8 +805,8 @@ def initialize_test_harness(cmdline_opts,
     write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
     # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
     write_reg_from_code[0] = b2(2)
-    read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-    read_reg_from_code[0] = b1(1)
+    read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+    read_reg_towards_code[0] = b2(1)
     read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
     fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -963,7 +963,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = write_reg_from_code,
                                                                        # Reads from the second reg cluster, which is written by the
                                                                        # following OPT_PHI_CONST.
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # STORE_CONST, indicating the address is a const.
             IntraCgraPktType(0, 0,
@@ -977,7 +977,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to self reg. Needs to be another register cluster to
                                                                        # avoid conflict with previous OPT_ADD.
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 0,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -1056,7 +1056,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1139,7 +1139,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # MUL.
             IntraCgraPktType(0, 4,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1150,7 +1150,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_LAUNCH))
@@ -1210,7 +1210,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        # Reads operand for `NOT` from self first register cluster.
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
 
             # Launch the tile.
             IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_LAUNCH))
@@ -1252,21 +1252,21 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # LD.
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_LD,
                                                                        # The first 2 indicates the first operand is from the second inport,
                                                                        # which is actually from the second register cluster rather than the
-                                                                       # inport channel, indicated by the `read_reg_from_code`.
+                                                                       # inport channel, indicated by the `read_reg_towards_code`.
                                                                        [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 4.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
             # NAH.
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1344,7 +1344,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_LAUNCH))
@@ -1426,8 +1426,8 @@ def initialize_test_harness(cmdline_opts,
     write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
     # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
     write_reg_from_code[0] = b2(2)
-    read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-    read_reg_from_code[0] = b1(1)
+    read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+    read_reg_towards_code[0] = b2(1)
     read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
     fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -1565,7 +1565,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = write_reg_from_code,
                                                                        # Reads from the second reg cluster, which is written by the
                                                                        # following OPT_PHI_CONST.
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # STORE_CONST, indicating the address is a const.
             IntraCgraPktType(0, 0,
@@ -1579,7 +1579,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to self reg. Needs to be another register cluster to
                                                                        # avoid conflict with previous OPT_ADD.
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 0,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -1658,7 +1658,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1741,7 +1741,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # MUL.
             IntraCgraPktType(0, 4,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1752,7 +1752,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_LAUNCH))
@@ -1812,7 +1812,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        # Reads operand for `NOT` from self first register cluster.
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
 
             # Launch the tile.
             IntraCgraPktType(0, 5, payload = CgraPayloadType(CMD_LAUNCH))
@@ -1854,21 +1854,21 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # LD.
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_LD,
                                                                        # The first 2 indicates the first operand is from the second inport,
                                                                        # which is actually from the second register cluster rather than the
-                                                                       # inport channel, indicated by the `read_reg_from_code`.
+                                                                       # inport channel, indicated by the `read_reg_towards_code`.
                                                                        [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 4.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
             # NAH.
             IntraCgraPktType(0, 8,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -1945,7 +1945,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 9, payload = CgraPayloadType(CMD_LAUNCH))
@@ -2040,8 +2040,8 @@ def initialize_test_harness(cmdline_opts,
     write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
     # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
     write_reg_from_code[0] = b2(2)
-    read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-    read_reg_from_code[0] = b1(1)
+    read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+    read_reg_towards_code[0] = b2(1)
     read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
     fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
@@ -2245,7 +2245,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = write_reg_from_code,
                                                                        # Reads from the second reg cluster, which is written by the
                                                                        # following OPT_PHI_CONST.
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # STORE_CONST, indicating the address is a const.
             IntraCgraPktType(0, 0, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
@@ -2259,7 +2259,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to self reg. Needs to be another register cluster to
                                                                        # avoid conflict with previous OPT_ADD.
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 0, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -2343,7 +2343,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 1, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -2426,7 +2426,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # MUL.
             IntraCgraPktType(0, 4, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -2437,7 +2437,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 4, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y, payload = CgraPayloadType(CMD_LAUNCH))
@@ -2497,7 +2497,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        # Reads operand for `NOT` from self first register cluster.
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
 
             # Launch the tile.
             IntraCgraPktType(0, 5, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y, payload = CgraPayloadType(CMD_LAUNCH))
@@ -2539,21 +2539,21 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # LD.
             IntraCgraPktType(0, 8, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_LD,
                                                                        # The first 2 indicates the first operand is from the second inport,
                                                                        # which is actually from the second register cluster rather than the
-                                                                       # inport channel, indicated by the `read_reg_from_code`.
+                                                                       # inport channel, indicated by the `read_reg_towards_code`.
                                                                        [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 4.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
             # NAH.
             IntraCgraPktType(0, 8, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -2630,7 +2630,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 9, 0, cgra_0_id, 0, 0, cgra_0_x, cgra_0_y, payload = CgraPayloadType(CMD_LAUNCH))
@@ -2665,7 +2665,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = write_reg_from_code,
                                                                        # Reads from the second reg cluster, which is written by the
                                                                        # following OPT_PHI_CONST.
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # STORE_CONST, indicating the address is a const.
             IntraCgraPktType(0, 0, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
@@ -2679,7 +2679,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to self reg. Needs to be another register cluster to
                                                                        # avoid conflict with previous OPT_ADD.
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 0, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
@@ -2758,7 +2758,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # NAH.
             IntraCgraPktType(0, 1, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -2841,7 +2841,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # MUL.
             IntraCgraPktType(0, 4, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -2852,7 +2852,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends to south tile: tile 0.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 4, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y,  payload = CgraPayloadType(CMD_LAUNCH))
@@ -2912,7 +2912,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        # Reads operand for `NOT` from self first register cluster.
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
 
             # Launch the tile.
             IntraCgraPktType(0, 5, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y,  payload = CgraPayloadType(CMD_LAUNCH))
@@ -2954,21 +2954,21 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
                                                                        # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
-                                                                       read_reg_from = read_reg_from_code))),
+                                                                       read_reg_towards = read_reg_towards_code))),
             # LD.
             IntraCgraPktType(0, 8, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_LD,
                                                                        # The first 2 indicates the first operand is from the second inport,
                                                                        # which is actually from the second register cluster rather than the
-                                                                       # inport channel, indicated by the `read_reg_from_code`.
+                                                                       # inport channel, indicated by the `read_reg_towards_code`.
                                                                        [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
                                                                        [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
                                                                         TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
                                                                        # Sends to south tile: tile 4.
                                                                        [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
             # NAH.
             IntraCgraPktType(0, 8, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y, 
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
@@ -3045,7 +3045,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # Sends result to west tile8.
                                                                        [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+                                                                       read_reg_towards = [b2(0), b2(1), b2(0), b2(0)]))),
 
             # Launch the tile.
             IntraCgraPktType(0, 9, 0, cgra_1_id, 0, 0, cgra_1_x, cgra_1_y,  payload = CgraPayloadType(CMD_LAUNCH))

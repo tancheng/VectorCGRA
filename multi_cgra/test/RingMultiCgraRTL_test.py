@@ -78,7 +78,7 @@ def test_homo_1x4(cmdline_opts):
   num_cgras = num_cgra_rows * num_cgra_columns
   width = 2
   height = 2
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   ctrl_addr_nbits = clog2(ctrl_mem_size)

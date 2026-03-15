@@ -379,7 +379,8 @@ class InstructionSignals:
             if read_from_reg == -1:
                 self.read_from_reg[idx] = OPR_FROM_PORT
 
-        read_reg_from_made = [self.B1Type(x) for x in self.read_from_reg]
+        # read_reg_towards uses 2-bit type (RegFromType): 0=nothing, 1=FU, 2=routing_xbar, 3=both
+        read_reg_towards_made = [self.B2Type(x) for x in self.read_from_reg]
         
         for idx, read_from_reg_idx in enumerate(self.read_from_reg_idx):
             if read_from_reg_idx == -1:
@@ -389,18 +390,18 @@ class InstructionSignals:
         # make FuOut
         # CtrlType requires: operation, fu_in, routing_xbar_outport, fu_xbar_outport,
         #                    vector_factor_power, is_last_ctrl, write_reg_from, write_reg_idx,
-        #                    read_reg_from, read_reg_idx
+        #                    read_reg_towards, read_reg_idx
         # Use keyword arguments for optional fields to avoid parameter order issues
-        pkt = self.IntraCgraPktType(0, self.id_, 
-                                    payload = self.CgraPayloadType(self.CMD_CONFIG_, 
-                                                                    ctrl_addr = self.CtrlAddrType(self.ctrl_addr), 
+        pkt = self.IntraCgraPktType(0, self.id_,
+                                    payload = self.CgraPayloadType(self.CMD_CONFIG_,
+                                                                    ctrl_addr = self.CtrlAddrType(self.ctrl_addr),
                                                                     ctrl = self.CtrlType(self.opCode,
                                                                                         fu_in_code_made,
                                                                                         TileIn_made,
                                                                                         FuOut_made,
                                                                                         write_reg_from = write_reg_from_made,
                                                                                         write_reg_idx = write_reg_idx_made,
-                                                                                        read_reg_from = read_reg_from_made,
+                                                                                        read_reg_towards = read_reg_towards_made,
                                                                                         read_reg_idx = read_reg_idx_made,
                                                                                         )))
         return pkt

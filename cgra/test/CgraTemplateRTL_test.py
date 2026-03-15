@@ -137,7 +137,7 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   num_cgras = num_cgra_columns * num_cgra_rows
   num_registers_per_reg_bank = 16
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
@@ -202,8 +202,8 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   fu_out_code  = [FuOutType(0) for x in range(num_routing_outports)]
   # Note that we still need to set FU xbar, and `INC` requires one output.
   fu_out_code[num_tile_outports] = FuOutType(1)
-  read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-  read_reg_from_code[0] = b1(1)
+  read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+  read_reg_towards_code[0] = b2(1)
   read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
   read_reg_idx_code[0] = RegIdxType(2)
 
@@ -244,7 +244,7 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
                                                        fu_in_code,
                                                        tile_in_code,
                                                        fu_out_code,
-                                                       read_reg_from = read_reg_from_code,
+                                                       read_reg_towards = read_reg_towards_code,
                                                        read_reg_idx = read_reg_idx_code))),
 
       IntraCgraPktType(0, # src

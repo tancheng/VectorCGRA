@@ -75,7 +75,10 @@ def mk_ctrl(num_fu_inports = 4,
 
   operation_nbits = clog2(NUM_OPTS)
   OperationType = mk_bits(operation_nbits)
-  TileInportsType = mk_bits(clog2(num_tile_inports  + 1))
+  # routing_xbar_outport must be wide enough to index both tile inports AND
+  # the new register-bank inports (num_tile_inports + num_fu_inports entries).
+  tile_in_type_nbits = clog2(num_tile_inports + num_fu_inports + 1)
+  TileInportsType = mk_bits(tile_in_type_nbits)
   TileOutportsType = mk_bits(clog2(num_tile_outports + 1))
   num_routing_outports = num_tile_outports + num_fu_inports
   RoutingOutportsType = mk_bits(clog2(num_routing_outports + 1))
@@ -87,9 +90,11 @@ def mk_ctrl(num_fu_inports = 4,
   RegFromType = mk_bits(2)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
 
+  # Includes tile_in_type_nbits in the name so the wider type gets a unique
+  # cache key and doesn't collide with the old Bits3 version.
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}_{vector_factor_power_nbits}"
+             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -116,11 +121,11 @@ def mk_ctrl(num_fu_inports = 4,
     out_str += '|(is_last_ctrl)'
     out_str += str(int(s.is_last_ctrl))
 
-    out_str += '|(read_reg_from)'
+    out_str += '|(read_reg_towards)'
     for i in range(num_fu_inports):
       if i != 0:
         out_str += '-'
-      out_str += str(int(s.read_reg_from[i]))
+      out_str += str(int(s.read_reg_towards[i]))
 
     out_str += '|(write_reg_from)'
     for i in range(num_fu_inports):
@@ -162,8 +167,12 @@ def mk_ctrl(num_fu_inports = 4,
   # corresponding inport.
   field_dict[kAttrWriteRegFrom] = [RegFromType for _ in range(num_fu_inports)]
   field_dict[kAttrWriteRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
-  # Indicates whether to read data from the register bank.
-  field_dict[kAttrReadRegFrom] = [b1 for _ in range(num_fu_inports)]
+  # Indicates where to route data read from the register bank:
+  # 0: towards nothing (no read)
+  # 1: towards FU (reg data consumed by operation)
+  # 2: towards routing_xbar (reg data routed out to outport)
+  # 3: towards both FU and routing_xbar
+  field_dict[kAttrReadRegTowards] = [RegFromType for _ in range(num_fu_inports)]
   field_dict[kAttrReadRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
 
   return mk_bitstruct( new_name, field_dict,

@@ -168,7 +168,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   num_cgras = num_cgra_columns * num_cgra_rows
   num_ctrl_operations = 64
   num_registers_per_reg_bank = 16
-  TileInType = mk_bits(clog2(num_tile_inports + 1))
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   FuOutType = mk_bits(clog2(num_fu_outports + 1))
   addr_nbits = clog2(data_mem_size_global)
@@ -233,8 +233,8 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
   fu_in_code[0] = FuInType(1)
   fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
   fu_xbar_code[num_tile_outports] = FuOutType(1)
-  read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
-  read_reg_from_code[0] = b1(1)
+  read_reg_towards_code = [b2(0) for _ in range(num_fu_inports)]
+  read_reg_towards_code[0] = b2(1)
   read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
   read_reg_idx_code[0] = RegIdxType(2)
 
@@ -296,7 +296,7 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                                                            fu_in_code,
                                                            routing_xbar_code,
                                                            fu_xbar_code,
-                                                           read_reg_from = read_reg_from_code,
+                                                           read_reg_towards = read_reg_towards_code,
                                                            read_reg_idx = read_reg_idx_code))),
 
           IntraCgraPktType(0, # src

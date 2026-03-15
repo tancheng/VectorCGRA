@@ -30,14 +30,14 @@ class TestHarness(Component):
     s.reg_bank = RegisterBankRTL(DataType, ConfigType, reg_bank_id,
                                  num_registers)
 
-    s.reg_bank.inport_wdata[PORT_ROUTING_CROSSBAR] //= src_msgs[PORT_ROUTING_CROSSBAR]
-    s.reg_bank.inport_wdata[PORT_FU_CROSSBAR] //= src_msgs[PORT_FU_CROSSBAR]
-    s.reg_bank.inport_wdata[PORT_CONST] //= src_msgs[PORT_CONST]
-    s.reg_bank.inport_valid[PORT_ROUTING_CROSSBAR] //= 1
-    s.reg_bank.inport_valid[PORT_FU_CROSSBAR] //= 1
-    s.reg_bank.inport_valid[PORT_CONST] //= 1
+    s.reg_bank.inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= src_msgs[PORT_INDEX_ROUTING_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_INDEX_FU_CROSSBAR] //= src_msgs[PORT_INDEX_FU_CROSSBAR]
+    s.reg_bank.inport_wdata[PORT_INDEX_CONST] //= src_msgs[PORT_INDEX_CONST]
+    s.reg_bank.inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_INDEX_FU_CROSSBAR] //= 1
+    s.reg_bank.inport_valid[PORT_INDEX_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
-    s.reg_bank.send_data_to_fu //= s.sink.recv
+    s.reg_bank.send_data //= s.sink.recv
 
   def done(s):
     return s.sink.done()
@@ -92,7 +92,8 @@ def test_reg_bank():
   src_opt.write_reg_from[reg_bank_id] = b2(2)
   # Writes data into reg[15].
   src_opt.write_reg_idx[reg_bank_id] = b4(15)
-  src_opt.read_reg_from[reg_bank_id] = b1(1)
+  # read_reg_towards: 0=nothing, 1=FU, 2=routing_xbar, 3=both
+  src_opt.read_reg_towards[reg_bank_id] = b2(1)
   # Reads data from reg[15].
   src_opt.read_reg_idx[reg_bank_id] = b4(15) # read after write
 
