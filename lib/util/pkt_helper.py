@@ -271,16 +271,18 @@ def generateCPUPktFromJSON(json_path):
 
                 # Output Routes
                 for port in tile['tile_out_route']:
-                    idx = TilePortEnum[port].value
-                    tile_out_route = tile_out_route[:idx] + '1' + tile_out_route[idx+1:]
+                    if port:
+                        idx = TilePortEnum[port].value
+                        tile_out_route = tile_out_route[:idx] + '1' + tile_out_route[idx+1:]
                 
                 # tile_out_shift_amounts
                 tile_out_shift_amounts = [ShiftAmountType(val) for val in tile['tile_out_shift_amounts']]
 
                 # Pred Routes
                 for port in tile['tile_pred_route']:
-                    idx = TilePortEnum[port].value
-                    tile_pred_route = tile_pred_route[:idx] + '1' + tile_pred_route[idx+1:]
+                    if port:
+                        idx = TilePortEnum[port].value
+                        tile_pred_route = tile_pred_route[:idx] + '1' + tile_pred_route[idx+1:]
                 
                 # Pred Forwarding
                 if tile['pred_fwd_route']:
@@ -338,7 +340,7 @@ def generateCPUPktFromJSON(json_path):
         thread_span, _, _ = _get_thread_range(pkt['metadata'])
         for index, ld_enable in enumerate(pkt['metadata']['ld_enable']):
             if ld_enable:
-                ld_pkts[index] += [5] * thread_span  # Dummy ld pkt
+                ld_pkts[index] += [5] * (thread_span*20)  # Dummy ld pkt
 
     #####################
     # St Pkts
