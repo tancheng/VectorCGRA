@@ -115,8 +115,11 @@ class STEP_TileCrossbarRTL(Component):
                     if ~s.tile_in_pred_port[input_idx]:
                         s.pred_in_val @= Bits1(0)
 
-            if (~s.pred_in_val | ~s.pred_in_rf_buffer) & (s.tile_bitstream.pred_fwd_route > 0):
-                s.should_forward @= DirectionType(s.tile_bitstream.pred_fwd_route - 1)
+            if (~s.pred_in_val | ~s.pred_in_rf_buffer) & (s.tile_bitstream.pred_based_sel_in_to_out_route > 0):
+                # pred_based_sel_in_to_out_route is encoded as a 0-based tile
+                # input port enum in the bitstream. Convert to 1-based token
+                # index here because should_forward=0 means "no forwarding".
+                s.should_forward @= DirectionType(s.tile_bitstream.pred_based_sel_in_to_out_route + 1)
 
         @update
         def route_predicate_outputs():

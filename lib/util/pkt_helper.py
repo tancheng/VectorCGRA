@@ -251,7 +251,7 @@ def generateCPUPktFromJSON(json_path):
                 tile_in_route = []
                 tile_out_route = '0' * cgra_def['num_tile_outports']
                 tile_pred_route = '0' * cgra_def['num_tile_outports']
-                pred_fwd_route = 0  # Default to no pred forwarding
+                pred_based_sel_in_to_out_route = 0  # Default to no pred forwarding
                 tile_fwd_route = [
                     TileOutType(int(''.join(map(str, route_bits)), 2))
                     for route_bits in tile.get(
@@ -285,8 +285,8 @@ def generateCPUPktFromJSON(json_path):
                         tile_pred_route = tile_pred_route[:idx] + '1' + tile_pred_route[idx+1:]
                 
                 # Pred Forwarding
-                if tile['pred_fwd_route']:
-                    pred_fwd_route = TilePortEnum[tile['pred_fwd_route']].value
+                if tile['pred_based_sel_in_to_out_route']:
+                    pred_based_sel_in_to_out_route = TilePortEnum[tile['pred_based_sel_in_to_out_route']].value
 
                 # Append Tile Bitstream Pkt
                 tile_bitstream_pkts[tile['id']] = TileBitstreamType(
@@ -297,7 +297,7 @@ def generateCPUPktFromJSON(json_path):
                     tile_pred_route = int(tile_pred_route, 2),
                     tile_fwd_route = tile_fwd_route,
                     const_val = tile['const_val'],
-                    pred_fwd_route = pred_fwd_route,
+                    pred_based_sel_in_to_out_route = pred_based_sel_in_to_out_route,
                     pred_gen = Bits1(tile['pred_gen']),
                     opt_type = _resolve_opt_type(tile['opt_type'])
                 )

@@ -112,7 +112,7 @@ class STEP_TileWrapperRTL(Component):
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
         if debug:
-            check_row = 0
+            check_row = 1
             check_col = 0
             check_tile_id = check_row * num_tile_cols + check_col
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
@@ -224,11 +224,11 @@ class STEP_TileWrapperRTL(Component):
                                 if j > 0:
                                     # South West tie off
                                     s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= s.recv_west_data_port[2*i+1]
-                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
+                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 1
                                 if j < num_tile_cols - 1:
                                     # South East tie off
                                     s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= s.recv_east_data_port[2*i+1]
-                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
+                                    s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 1
                 else:
                     # Connect North Ports to LD
                     s.tiles[i][j].tile_in_data_port[PORT_NORTH] //= DataType()
@@ -265,7 +265,7 @@ class STEP_TileWrapperRTL(Component):
                         s.tiles[i][j].tile_in_pred_port[PORT_NORTHWEST] //= 0
                         # South West tie off
                         s.tiles[i][j].tile_in_data_port[PORT_SOUTHWEST] //= s.recv_west_data_port[2*i+1]
-                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 0
+                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHWEST] //= 1
 
                 # Connect East Ports to fabric I/O
                 if j == num_tile_cols - 1:
@@ -280,7 +280,7 @@ class STEP_TileWrapperRTL(Component):
                         s.tiles[i][j].tile_in_pred_port[PORT_NORTHEAST] //= 0
                         # South East tie off
                         s.tiles[i][j].tile_in_data_port[PORT_SOUTHEAST] //= s.recv_east_data_port[2*i+1]
-                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 0
+                        s.tiles[i][j].tile_in_pred_port[PORT_SOUTHEAST] //= 1
                 
                 # Connect South Ports to Ld/St Unit
                 if i == num_tile_rows - 1:

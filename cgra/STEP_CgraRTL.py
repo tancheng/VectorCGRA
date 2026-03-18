@@ -16,6 +16,7 @@ from ..lib.util.common import *
 
 class STEP_CgraRTL(Component):
     def construct(s,
+            cgra_def,
             # Top Level Pkt Types
             CfgMetadataType,
             CfgBitstreamType,
@@ -33,13 +34,17 @@ class STEP_CgraRTL(Component):
             PredRegAddrType,
 
             # CGRA Parameters
-            num_tile_cols,
-            num_tile_rows,
+            num_tile_cols = 4,
+            num_tile_rows = 4,
             num_register_banks = 2,
             num_registers = 16,
             num_pred_registers = 16,
             debug = True
         ):
+        # Validation Checks
+        ld_st_locs = [1,0,0,1]
+        if cgra_def['ld_locs'] != ld_st_locs or cgra_def['st_locs'] != ld_st_locs:
+            raise NotImplementedError(f"Only support ld/st port locations {ld_st_locs} for now, but got ld: {cgra_def['ld_locs']} and st: {cgra_def['st_locs']}")
         
         # Default CGRA Parameters
         num_tiles = num_tile_cols * num_tile_rows
@@ -192,16 +197,12 @@ class STEP_CgraRTL(Component):
             s.rf_controller.send_tile_preds[i] //= s.tile_fabric.recv_from_rf_pred[i] # rf -> fabric
         for i in range(num_tile_rows):
             rd_base_idx = 4 * i
-            if i % 2 == 0:
-                s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
-            else:
-                s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
-                s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
+            # Keep a uniform RF read-port mapping for every row:
+            # west ports = base, base+1; east ports = base+2, base+3.
+            s.rf_controller.rd_data[rd_base_idx]   //= s.tile_fabric.recv_west_data_port[2*i] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+1] //= s.tile_fabric.recv_west_data_port[2*i+1] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+2] //= s.tile_fabric.recv_east_data_port[2*i] # rf -> fabric
+            s.rf_controller.rd_data[rd_base_idx+3] //= s.tile_fabric.recv_east_data_port[2*i+1] # rf -> fabric
             s.rf_controller.wr_data[2*i] //= s.tile_fabric.send_west_data_port[i] # fabric -> rf
             s.rf_controller.wr_data[2*i+1] //= s.tile_fabric.send_east_data_port[i] # fabric -> rf
             s.rf_controller.recv_pred_port[2*i] //= s.tile_fabric.send_west_pred_port[i] # fabric -> rf
@@ -251,57 +252,60 @@ class STEP_CgraRTL(Component):
                 s.st_req_accepted[i] @= s.ld_st_unit.st_ifc[i].i_req & s.ld_st_unit.st_ifc[i].o_rdy & s.rf_controller.st_enable[i]
 
         ##### Load/Store & Fabric Connections
+        s.load_addr_wire = [Wire(AxiAddrType) for _ in range(num_ld_ports)]
+        s.load_pred_wire = [Wire(Bits1) for _ in range(num_ld_ports)]
+        s.load_data_wire = [Wire(DataType) for _ in range(num_ld_ports)]
+        s.store_addr_wire = [Wire(AxiAddrType) for _ in range(num_st_ports)]
         s.store_pred_wire = [Wire(Bits1) for _ in range(num_st_ports)]
         s.store_data_wire = [Wire(DataType) for _ in range(num_st_ports)]
         for i in range(num_tile_cols // 2):
             # TODO @darrenl make sure works for differently timed data and addr
             # Predicates
-            s.ld_st_unit.ld_tile_pred[i] //= s.tile_fabric.send_north_pred_port[i*2] # fabric -> ld/st
+            s.ld_st_unit.ld_tile_pred[i] //= s.load_pred_wire[i] # fabric -> ld/st
             s.ld_st_unit.st_tile_pred[i] //= s.store_pred_wire[i] # fabric -> ld/st
 
             # Data and Control Store - SOUTH ONLY
             s.ld_st_unit.st_ifc[i].i_data //= s.store_data_wire[i] # fabric -> ld/st
-            # s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2].rdy # ld/st -> fabric
-            # s.ld_st_unit.st_ifc[i].o_rdy //= s.tile_fabric.send_south_data_port[i*2+1].rdy # ld/st -> fabric
-
-        # Internal Ld/St Fabric Wire extension connections
-        s.north_addr_wire = [Wire(AxiAddrType) for _ in range(num_ld_ports)]
-        for i in range(num_ld_ports):
-            # NORTH Load ONLY - Addr at Even tile columns
-            s.north_addr_wire[i] //= s.ld_st_unit.ld_ifc[i].i_addr
-
-        s.south_addr_wire = [Wire(AxiAddrType) for _ in range(num_st_ports)]
-        for i in range(num_st_ports):
-            # NORTH Load ONLY - Addr at Even tile columns
-            s.south_addr_wire[i] //= s.ld_st_unit.st_ifc[i].i_addr
+            s.ld_st_unit.st_ifc[i].i_addr //= s.store_addr_wire[i] # fabric -> ld/st
+            s.ld_st_unit.ld_ifc[i].i_addr //= s.load_addr_wire[i] # fabric -> ld/st
         
         # Load/Store & Fabric Update Connections
         @update
         def update_ld_st_fabric():
-            for i in range(num_ld_ports):
-                # NORTH Load ONLY - Addr at Even tile columns
-                # widen narrow data flits into full AXI address width
-                s.north_addr_wire[i] @= zext( s.tile_fabric.send_north_data_port[i*2], AxiAddrType.nbits ) # ld/st -> fabric
+            # NORTH Load ONLY - Addr at Even tile columns
+            # widen narrow data flits into full AXI address width
+            s.load_pred_wire[0] @= s.tile_fabric.send_north_pred_port[0]
+            s.load_addr_wire[0] @= zext( s.tile_fabric.send_north_data_port[0], AxiAddrType.nbits ) # ld/st -> fabric
 
-                # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
-                s.south_addr_wire[i] @= zext( s.tile_fabric.send_south_data_port[i*2], AxiAddrType.nbits ) # ld/st -> fabric
-                s.store_pred_wire[i] @= s.tile_fabric.send_south_pred_port[i*2]
-                s.store_data_wire[i] @= s.tile_fabric.send_south_data_port[i*2+1]
+            # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
+            s.store_pred_wire[0] @= s.tile_fabric.send_south_pred_port[0]
+            s.store_data_wire[0] @= s.tile_fabric.send_south_data_port[1]
+            s.store_addr_wire[0] @= zext( s.tile_fabric.send_south_data_port[0], AxiAddrType.nbits ) # ld/st -> fabric
+
+            # NORTH Load ONLY - Addr at Even tile columns
+            # widen narrow data flits into full AXI address width
+            s.load_pred_wire[1] @= s.tile_fabric.send_north_pred_port[3]
+            s.load_addr_wire[1] @= zext( s.tile_fabric.send_north_data_port[3], AxiAddrType.nbits ) # ld/st -> fabric
+
+            # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
+            s.store_pred_wire[1] @= s.tile_fabric.send_south_pred_port[2]
+            s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[3]
+            s.store_addr_wire[1] @= zext( s.tile_fabric.send_south_data_port[2], AxiAddrType.nbits ) # ld/st -> fabric
 
             # Sparse single-tile branch stores place a single value on the
             # leftmost south lane. When the remapped store port is active and
             # its native columns are idle, reuse that lone value as both
             # address-predicate source and store data so the control path can
             # observe the divergent value.
-            if num_st_ports > 1:
-                if s.rf_controller.st_enable[1] & ~s.rf_controller.st_enable[0]:
-                    if (s.tile_fabric.send_south_data_port[2] == DataType(0)) & (s.tile_fabric.send_south_data_port[3] == DataType(0)):
-                        s.south_addr_wire[1] @= zext(s.tile_fabric.send_south_data_port[0], AxiAddrType.nbits)
-                        s.store_pred_wire[1] @= s.tile_fabric.send_south_pred_port[0]
-                        if s.tile_fabric.send_south_data_port[1] != DataType(0):
-                            s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[1]
-                        else:
-                            s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[0]
+            # if num_st_ports > 1:
+            #     if s.rf_controller.st_enable[1] & ~s.rf_controller.st_enable[0]:
+            #         if (s.tile_fabric.send_south_data_port[2] == DataType(0)) & (s.tile_fabric.send_south_data_port[3] == DataType(0)):
+            #             s.south_addr_wire[1] @= zext(s.tile_fabric.send_south_data_port[0], AxiAddrType.nbits)
+            #             s.store_pred_wire[1] @= s.tile_fabric.send_south_pred_port[0]
+            #             if s.tile_fabric.send_south_data_port[1] != DataType(0):
+            #                 s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[1]
+            #             else:
+            #                 s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[0]
         
         ##### Load/Store External Connections
         # Load Axis
@@ -459,7 +463,9 @@ class STEP_CgraRTL(Component):
             # RF & Fabric Test
             s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
             for i in range(num_rd_ports):
-                s.rf_to_fabric_msg[i] //= s.rf_controller.rd_data[i]
+                # Use RF controller's explicit debug read-data probe so
+                # waveforms reflect the actual register-file outputs.
+                s.rf_to_fabric_msg[i] //= s.rf_controller.rf_rd_data[i]
             s.rf_from_fabric_msg = [ OutPort(DataType) for _ in range(num_wr_ports)]
             for i in range(num_wr_ports // 2):
                 s.rf_from_fabric_msg[2*i] //= s.tile_fabric.send_west_data_port[i]

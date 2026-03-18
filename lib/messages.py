@@ -600,7 +600,7 @@ def mk_tile_bitstream_pkt(
     field_dict['tile_out_shift_amounts'] = [ShiftAmountType for _ in range(num_tile_outports)]
     field_dict['tile_fwd_route'] = [TileOutType for _ in range(num_tile_inports)]
     field_dict['const_val'] = DataType
-    field_dict['pred_fwd_route'] = TilePortType
+    field_dict['pred_based_sel_in_to_out_route'] = TilePortType
     field_dict['pred_gen'] = Bits1
     field_dict['opt_type'] = OperationType
 

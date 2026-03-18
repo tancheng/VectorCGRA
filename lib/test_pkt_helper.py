@@ -73,7 +73,7 @@ def test_generate_cpu_pkt_from_json_generates_thread_span_ld_st_counts(tmp_path)
                         [0, 0, 0, 0, 0, 0, 0, 0]
                     ],
                     "const_val": 0,
-                    "pred_fwd_route": "",
+                    "pred_based_sel_in_to_out_route": "",
                     "pred_gen": 0,
                     "opt_type": "OPT_ADD"
                 },
