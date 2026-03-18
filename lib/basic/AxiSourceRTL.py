@@ -132,11 +132,11 @@ class AxiLdSourceTriggeredRTL( Component ):
                     s.loaded_idx <<= s.loaded_idx + 1
                 
                 # If overflow in msg_idx, raise error
-                if (len(s.msgs) > 0) & (~(s.loaded_idx == 0)) & (s.loaded_idx >= len(s.msgs) + 1):
+                if (len(s.msgs) > 0) & (~(s.loaded_idx == 0)) & (s.msg_idx >= len(s.msgs)):
                     raise PyMTLTestSinkError(
                         f'Test sink {s} has msg_idx out of range!\n'
-                        f'Msg Index (Hex)      : {s.loaded_idx}\n'
-                        f'Number of msgs (Dec) : {len(s.msgs) + 1}\n'
+                        f'Msg Index (Hex)      : {s.msg_idx}\n'
+                        f'Number of msgs (Dec) : {len(s.msgs)}\n'
                     )
         
     def done( s ):
