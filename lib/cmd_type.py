@@ -42,29 +42,29 @@ CMD_PRESERVE                         = 22
 CMD_CONFIG_STREAMING_LD_START_ADDR   = 23
 CMD_CONFIG_STREAMING_LD_STRIDE       = 24
 CMD_CONFIG_STREAMING_LD_END_ADDR     = 25
-CMD_UPDATE_COUNTER_SHADOW_VALUE      = 26  # Updates shadow registers value from AC.
-CMD_RESET_LEAF_COUNTER               = 27  # Resets leaf counter to lower_bound.
+CMD_UPDATE_COUNTER_SHADOW_VALUE      = 26  # LC -> Target Tile (DCU): update shadow register
+CMD_RESET_LEAF_COUNTER               = 27  # LC -> Target Tile (DCU): reset counter to lower_bound
 CMD_CONFIG_LOOP_LOWER                = 28
 CMD_CONFIG_LOOP_UPPER                = 29
 CMD_CONFIG_LOOP_STEP                 = 30
-CMD_LEAF_COUNTER_COMPLETE            = 31
+CMD_LEAF_COUNTER_COMPLETE            = 31  # Target Tile (DCU) -> LC: innermost loop finished
 
-# Loop Controller (LC) Configuration Commands (from CPU).
-CMD_LC_CONFIG_LOWER                  = 32  # Configures CCU lower_bound.
-CMD_LC_CONFIG_UPPER                  = 33  # Configures CCU upper_bound.
-CMD_LC_CONFIG_STEP                   = 34  # Configures CCU step.
-CMD_LC_CONFIG_CHILD_COUNT            = 35  # Configures child_complete_count.
-CMD_LC_CONFIG_TARGET                 = 36  # Configures target (tile_id, ctrl_addr, is_remote, cgra_id).
-CMD_LC_CONFIG_PARENT                 = 37  # Configures parent_ccu_id, is_root, is_relay.
-CMD_LC_LAUNCH                        = 38  # Launches LC (all CCUs enter RUNNING).
+# Loop Controller (LC) Configuration Commands (from Controller).
+CMD_LC_CONFIG_LOWER                  = 32  # Controller -> LC: Configures CCU lower_bound
+CMD_LC_CONFIG_UPPER                  = 33  # Controller -> LC: Configures CCU upper_bound
+CMD_LC_CONFIG_STEP                   = 34  # Controller -> LC: Configures CCU step
+CMD_LC_CONFIG_CHILD_COUNT            = 35  # Controller -> LC: Configures child_complete_count
+CMD_LC_CONFIG_TARGET                 = 36  # Controller -> LC: Configures target (tile_id, ctrl_addr, is_remote, cgra_id)
+CMD_LC_CONFIG_PARENT                 = 37  # Controller -> LC: Configures parent_ccu_id, is_root, is_relay
+CMD_LC_LAUNCH                        = 38  # Controller -> LC: Launches LC (all CCUs enter RUNNING)
 
 # Loop Controller Inter-CGRA Sync Commands.
-CMD_LC_SYNC_VALUE                    = 39  # Parent LC → Child LC: sync current value.
-CMD_LC_CHILD_COMPLETE                = 40  # Child LC → Parent LC: child complete.
-CMD_LC_CHILD_RESET                   = 41  # Parent LC → Child LC: reset child.
+CMD_LC_SYNC_VALUE                    = 39  # Parent LC (this CGRA) -> Child LC (another CGRA): sync current value
+CMD_LC_CHILD_COMPLETE                = 40  # Child LC (another CGRA) -> Parent LC (this CGRA): child complete
+CMD_LC_CHILD_RESET                   = 41  # Parent LC (this CGRA) -> Child LC (another CGRA): reset child
 
 # Loop Controller Status.
-CMD_LC_ALL_COMPLETE                  = 42  # LC → Controller: all loops complete.
+CMD_LC_ALL_COMPLETE                  = 42  # LC -> Controller: all outer loops complete
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",

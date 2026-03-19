@@ -4,7 +4,7 @@
 
 The Loop Controller (LC) is a hardware module inside the CGRA Controller that manages **outer loop counters**. It works alongside the existing LoopCounter FU (DCU) on the tile array, which handles the innermost loop counting.
 
-![LC in CGRA Overview](loop_controller_hierachy.png)
+![LC in CGRA Overview](loop_controller_hierarchy.png)
 
 
 ## Where LC Sits in the Architecture
