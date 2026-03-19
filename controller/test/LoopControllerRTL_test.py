@@ -1,15 +1,15 @@
 """
 ==========================================================================
-AffineControllerRTL_test.py
+LoopControllerRTL_test.py
 ==========================================================================
-Test cases for the Affine Controller.
+Test cases for the Loop Controller.
 
 Author : Shangkun Li
   Date : February 19, 2026
 """
 
 from pymtl3 import *
-from ..AffineControllerRTL import AffineControllerRTL
+from ..LoopControllerRTL import LoopControllerRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.messages import *
@@ -38,7 +38,7 @@ class TestHarness(Component):
     s.sink_to_tile = TestSinkRTL(CgraPayloadType, sink_to_tile, cmp_fn=cmp_fn)
     s.sink_to_remote = TestSinkRTL(CgraPayloadType, sink_to_remote, cmp_fn=cmp_fn)
 
-    s.dut = AffineControllerRTL(DataType, CtrlType,
+    s.dut = LoopControllerRTL(DataType, CtrlType,
                                  num_ccus=num_ccus,
                                  max_targets_per_ccu=max_targets_per_ccu,
                                  data_mem_size=data_mem_size,
@@ -128,16 +128,16 @@ def mk_parent_payload(parent_id, is_root):
 
 def test_basic_2_layer_loop():
   src_config = [
-    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
     # Leaf-mode target: reset + shadow (shadow_only=False).
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(0, 0, shadow_only=False), CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+    CgraPayloadType(CMD_LC_CONFIG_PARENT,
                     DataType(mk_parent_payload(0, True), 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
   ]
 
   # 3 completions: i=0 done → dispatch, i=1 done → dispatch, i=2 done → COMPLETE
@@ -175,17 +175,17 @@ def test_basic_2_layer_loop():
 
 def test_sibling_barrier():
   src_config = [
-    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(2, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(2, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_UPPER, DataType(2, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_CHILD_COUNT, DataType(2, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(0, 0), CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(1, 1), CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+    CgraPayloadType(CMD_LC_CONFIG_PARENT,
                     DataType(mk_parent_payload(0, True), 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
   ]
 
   # i=0: both DCUs complete (2 events). i=1: both complete again.
@@ -241,35 +241,35 @@ def test_sibling_barrier():
 def test_3_layer_loop():
   # ===== Configure CCU[0]: i = 0..1 =====
   config_ccu0 = [
-    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(2, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_UPPER, DataType(2, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
     # CCU[0] target: i-delivery DCU at ctrl_addr=1 (shadow_only!)
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(1, 0, shadow_only=True), CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+    CgraPayloadType(CMD_LC_CONFIG_PARENT,
                     DataType(mk_parent_payload(0, True), 0), 0, CtrlType(0), 0),
   ]
 
   # ===== Configure CCU[1]: j = 0..2, parent = CCU[0] =====
   config_ccu1 = [
-    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 1),
-    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 1),
-    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 1),
-    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 1),
+    CgraPayloadType(CMD_LC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 1),
+    CgraPayloadType(CMD_LC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 1),
+    CgraPayloadType(CMD_LC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 1),
+    CgraPayloadType(CMD_LC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 1),
     # CCU[1] target 0: k-DCU at ctrl_addr=0 (leaf, needs reset + shadow)
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(0, 0, shadow_only=False), CtrlType(0), 1),
     # CCU[1] target 1: j-delivery DCU at ctrl_addr=2 (shadow_only!)
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(2, 0, shadow_only=True), CtrlType(0), 1),
-    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+    CgraPayloadType(CMD_LC_CONFIG_PARENT,
                     DataType(mk_parent_payload(0, False), 0), 0, CtrlType(0), 1),
   ]
 
   launch = [
-    CgraPayloadType(CMD_AC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
   ]
 
   src_config = config_ccu0 + config_ccu1 + launch
@@ -326,7 +326,7 @@ def test_3_layer_loop():
 #-------------------------------------------------------------------------
 # Test: Cross-CGRA 2-layer loop
 #
-#   for(i=0; i<3; i++) {            // CCU[0] on CGRA-0 (this AC)
+#   for(i=0; i<3; i++) {            // CCU[0] on CGRA-0 (this LC)
 #     for(j=0; j<N; j++) body(i,j); // DCU on CGRA-1 (remote)
 #   }
 #
@@ -336,7 +336,7 @@ def test_3_layer_loop():
 #
 #   Flow:
 #     Launch → CCU[0] RUNNING, i=0
-#     Remote DCU completes → CMD_AC_CHILD_COMPLETE via recv_from_remote
+#     Remote DCU completes → CMD_LC_CHILD_COMPLETE via recv_from_remote
 #     i=1 → DISPATCHING → send reset to remote, shadow=1 to local
 #     Remote DCU completes → i=2 → dispatch → reset + shadow=2
 #     Remote DCU completes → i=3 >= 3 → COMPLETE (no dispatch)
@@ -344,23 +344,23 @@ def test_3_layer_loop():
 
 def test_cross_cgra_2_layer_loop():
   src_config = [
-    CgraPayloadType(CMD_AC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_LOWER, DataType(0, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_UPPER, DataType(3, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_STEP,  DataType(1, 1), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CONFIG_CHILD_COUNT, DataType(1, 0), 0, CtrlType(0), 0),
     # Target 0: remote leaf DCU on CGRA-1 (is_remote=1, shadow_only=0).
     # predicate=1 (is_remote), data_addr=0 (no shadow_only bit).
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     DataType(mk_target_config(0, 0, shadow_only=False)[0].payload,
                              1),  # predicate=1 → is_remote
                     mk_target_config(0, 0, shadow_only=False)[1],
                     CtrlType(0), 0),
     # Target 1: local i-delivery DCU at ctrl_addr=0 (shadow_only=1).
-    CgraPayloadType(CMD_AC_CONFIG_TARGET,
+    CgraPayloadType(CMD_LC_CONFIG_TARGET,
                     *mk_target_config(0, 0, shadow_only=True), CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CONFIG_PARENT,
+    CgraPayloadType(CMD_LC_CONFIG_PARENT,
                     DataType(mk_parent_payload(0, True), 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_LAUNCH, DataType(0, 0), 0, CtrlType(0), 0),
   ]
 
   # No local tile events (inner loop is on remote CGRA).
@@ -368,9 +368,9 @@ def test_cross_cgra_2_layer_loop():
 
   # 3 remote completions (one per i iteration).
   src_from_remote = [
-    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
-    CgraPayloadType(CMD_AC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
+    CgraPayloadType(CMD_LC_CHILD_COMPLETE, DataType(0, 0), 0, CtrlType(0), 0),
   ]
 
   # Expected tile output: 2 shadow updates for i-delivery DCU (i=1, i=2).

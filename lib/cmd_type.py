@@ -49,22 +49,22 @@ CMD_CONFIG_LOOP_UPPER                = 29
 CMD_CONFIG_LOOP_STEP                 = 30
 CMD_LEAF_COUNTER_COMPLETE            = 31
 
-# Affine Controller (AC) Configuration Commands (from CPU).
-CMD_AC_CONFIG_LOWER                  = 32  # Configures CCU lower_bound.
-CMD_AC_CONFIG_UPPER                  = 33  # Configures CCU upper_bound.
-CMD_AC_CONFIG_STEP                   = 34  # Configures CCU step.
-CMD_AC_CONFIG_CHILD_COUNT            = 35  # Configures child_complete_count.
-CMD_AC_CONFIG_TARGET                 = 36  # Configures target (tile_id, ctrl_addr, is_remote, cgra_id).
-CMD_AC_CONFIG_PARENT                 = 37  # Configures parent_ccu_id, is_root, is_relay.
-CMD_AC_LAUNCH                        = 38  # Launches AC (all CCUs enter RUNNING).
+# Loop Controller (LC) Configuration Commands (from CPU).
+CMD_LC_CONFIG_LOWER                  = 32  # Configures CCU lower_bound.
+CMD_LC_CONFIG_UPPER                  = 33  # Configures CCU upper_bound.
+CMD_LC_CONFIG_STEP                   = 34  # Configures CCU step.
+CMD_LC_CONFIG_CHILD_COUNT            = 35  # Configures child_complete_count.
+CMD_LC_CONFIG_TARGET                 = 36  # Configures target (tile_id, ctrl_addr, is_remote, cgra_id).
+CMD_LC_CONFIG_PARENT                 = 37  # Configures parent_ccu_id, is_root, is_relay.
+CMD_LC_LAUNCH                        = 38  # Launches LC (all CCUs enter RUNNING).
 
-# Affine Controller Inter-CGRA Sync Commands.
-CMD_AC_SYNC_VALUE                    = 39  # Parent AC → Child AC: sync current value.
-CMD_AC_CHILD_COMPLETE                = 40  # Child AC → Parent AC: child complete.
-CMD_AC_CHILD_RESET                   = 41  # Parent AC → Child AC: reset child.
+# Loop Controller Inter-CGRA Sync Commands.
+CMD_LC_SYNC_VALUE                    = 39  # Parent LC → Child LC: sync current value.
+CMD_LC_CHILD_COMPLETE                = 40  # Child LC → Parent LC: child complete.
+CMD_LC_CHILD_RESET                   = 41  # Parent LC → Child LC: reset child.
 
-# Affine Controller Status.
-CMD_AC_ALL_COMPLETE                  = 42  # AC → Controller: all loops complete.
+# Loop Controller Status.
+CMD_LC_ALL_COMPLETE                  = 42  # LC → Controller: all loops complete.
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -99,16 +99,16 @@ CMD_SYMBOL_DICT = {
   CMD_CONFIG_LOOP_UPPER:                "(CONFIG_LOOP_UPPER)",
   CMD_CONFIG_LOOP_STEP:                 "(CONFIG_LOOP_STEP)",
   CMD_LEAF_COUNTER_COMPLETE:            "(LEAF_COUNTER_COMPLETE)",
-  CMD_AC_CONFIG_LOWER:                  "(AC_CONFIG_CCU_LOWER)",
-  CMD_AC_CONFIG_UPPER:                  "(AC_CONFIG_CCU_UPPER)",
-  CMD_AC_CONFIG_STEP:                   "(AC_CONFIG_CCU_STEP)",
-  CMD_AC_CONFIG_CHILD_COUNT:            "(AC_CONFIG_CCU_CHILD_COUNT)",
-  CMD_AC_CONFIG_TARGET:                 "(AC_CONFIG_CCU_TARGET)",
-  CMD_AC_CONFIG_PARENT:                 "(AC_CONFIG_CCU_PARENT)",
-  CMD_AC_LAUNCH:                        "(AC_LAUNCH)",
-  CMD_AC_SYNC_VALUE:                    "(AC_SYNC_VALUE)",
-  CMD_AC_CHILD_COMPLETE:                "(AC_CHILD_COMPLETE)",
-  CMD_AC_CHILD_RESET:                   "(AC_CHILD_RESET)",
-  CMD_AC_ALL_COMPLETE:                  "(AC_ALL_COMPLETE)",
+  CMD_LC_CONFIG_LOWER:                  "(LC_CONFIG_CCU_LOWER)",
+  CMD_LC_CONFIG_UPPER:                  "(LC_CONFIG_CCU_UPPER)",
+  CMD_LC_CONFIG_STEP:                   "(LC_CONFIG_CCU_STEP)",
+  CMD_LC_CONFIG_CHILD_COUNT:            "(LC_CONFIG_CCU_CHILD_COUNT)",
+  CMD_LC_CONFIG_TARGET:                 "(LC_CONFIG_CCU_TARGET)",
+  CMD_LC_CONFIG_PARENT:                 "(LC_CONFIG_CCU_PARENT)",
+  CMD_LC_LAUNCH:                        "(LC_LAUNCH)",
+  CMD_LC_SYNC_VALUE:                    "(LC_SYNC_VALUE)",
+  CMD_LC_CHILD_COMPLETE:                "(LC_CHILD_COMPLETE)",
+  CMD_LC_CHILD_RESET:                   "(LC_CHILD_RESET)",
+  CMD_LC_ALL_COMPLETE:                  "(LC_ALL_COMPLETE)",
 }
 

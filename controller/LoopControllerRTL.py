@@ -1,14 +1,14 @@
 """
 ==========================================================================
-AffineControllerRTL.py
+LoopControllerRTL.py
 ==========================================================================
-Affine Controller (AC) for managing outer loop counters in CGRA.
+Loop Controller (LC) for managing outer loop counters in CGRA.
 
-Each AC contains parameterizable number of Configurable Counter Units (CCUs).
+Each LC contains parameterizable number of Configurable Counter Units (CCUs).
 CCUs form a DAG topology supporting:
   - Multiple independent counter chains (e.g., 4+4 partition)
   - 1-to-N fanout (one CCU controls multiple DCUs)
-  - Cross-AC CCU chaining for logic CGRA fusion via NoC
+  - Cross-LC CCU chaining for logic CGRA fusion via NoC
 
 CCU types:
   - Root CCU: No parent, drives the outermost loop
@@ -40,7 +40,7 @@ CCU_STATE_RUNNING     = 1
 CCU_STATE_DISPATCHING = 2
 CCU_STATE_COMPLETE    = 3
 
-class AffineControllerRTL(Component):
+class LoopControllerRTL(Component):
 
   def construct(s, DataType, CtrlType,
                 num_ccus = 8,
@@ -202,7 +202,7 @@ class AffineControllerRTL(Component):
 
       # ----- Remote events -----
       if s.recv_from_remote.val:
-        if s.recv_from_remote.msg.cmd == CMD_AC_CHILD_COMPLETE:
+        if s.recv_from_remote.msg.cmd == CMD_LC_CHILD_COMPLETE:
           # Only consume if a CCU is RUNNING to receive it.
           has_running = b1(0)
           for i in range(num_ccus):
@@ -245,21 +245,21 @@ class AffineControllerRTL(Component):
         if s.config_cmd_valid:
           ccu_idx = s.recv_config.msg.ctrl_addr
 
-          if s.recv_config.msg.cmd == CMD_AC_CONFIG_LOWER:
+          if s.recv_config.msg.cmd == CMD_LC_CONFIG_LOWER:
             s.ccu_lower_bound[ccu_idx] <<= s.recv_config.msg.data
             s.ccu_current_value[ccu_idx] <<= s.recv_config.msg.data
 
-          elif s.recv_config.msg.cmd == CMD_AC_CONFIG_UPPER:
+          elif s.recv_config.msg.cmd == CMD_LC_CONFIG_UPPER:
             s.ccu_upper_bound[ccu_idx] <<= s.recv_config.msg.data
 
-          elif s.recv_config.msg.cmd == CMD_AC_CONFIG_STEP:
+          elif s.recv_config.msg.cmd == CMD_LC_CONFIG_STEP:
             s.ccu_step[ccu_idx] <<= s.recv_config.msg.data
 
-          elif s.recv_config.msg.cmd == CMD_AC_CONFIG_CHILD_COUNT:
+          elif s.recv_config.msg.cmd == CMD_LC_CONFIG_CHILD_COUNT:
             s.ccu_child_complete_count[ccu_idx] <<= \
                 CountType(s.recv_config.msg.data.payload[0:4])
 
-          elif s.recv_config.msg.cmd == CMD_AC_CONFIG_TARGET:
+          elif s.recv_config.msg.cmd == CMD_LC_CONFIG_TARGET:
             tidx = s.ccu_config_target_idx[ccu_idx]
             s.ccu_target_ctrl_addrs[ccu_idx][tidx] <<= \
                 CtrlAddrType(s.recv_config.msg.data.payload[0:clog2(ctrl_mem_size)])
@@ -276,13 +276,13 @@ class AffineControllerRTL(Component):
             s.ccu_config_target_idx[ccu_idx] <<= tidx + CountType(1)
             s.ccu_num_targets[ccu_idx] <<= tidx + CountType(1)
 
-          elif s.recv_config.msg.cmd == CMD_AC_CONFIG_PARENT:
+          elif s.recv_config.msg.cmd == CMD_LC_CONFIG_PARENT:
             s.ccu_parent_ccu_id[ccu_idx] <<= \
                 CCUIdType(s.recv_config.msg.data.payload[0:max(clog2(num_ccus),1)])
             s.ccu_is_root[ccu_idx] <<= \
                 s.recv_config.msg.data.payload[max(clog2(num_ccus),1)]
 
-          elif s.recv_config.msg.cmd == CMD_AC_LAUNCH:
+          elif s.recv_config.msg.cmd == CMD_LC_LAUNCH:
             for i in range(num_ccus):
               if (s.ccu_num_targets[i] != CountType(0)) | s.ccu_is_root[i]:
                 s.ccu_state[i] <<= StateType(CCU_STATE_RUNNING)
@@ -365,7 +365,7 @@ class AffineControllerRTL(Component):
         # ===== Remote events =====
         if s.remote_event_valid:
           remote_cmd = s.recv_from_remote.msg.cmd
-          if remote_cmd == CMD_AC_CHILD_COMPLETE:
+          if remote_cmd == CMD_LC_CHILD_COMPLETE:
             for i in range(num_ccus):
               if s.ccu_state[i] == StateType(CCU_STATE_RUNNING):
                 new_count = s.ccu_received_complete_count[i] + CountType(1)
