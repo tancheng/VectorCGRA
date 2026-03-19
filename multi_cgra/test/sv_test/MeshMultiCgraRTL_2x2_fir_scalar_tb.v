@@ -26,7 +26,7 @@ module cgra_test
 
   //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload in bits (197).
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [197-1:0] pkt_queue [$];
+  logic [198-1:0] pkt_queue [$];
 
   initial
   begin

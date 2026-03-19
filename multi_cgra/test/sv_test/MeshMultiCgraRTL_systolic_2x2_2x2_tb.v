@@ -11,11 +11,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__93eab3196cd292c5 recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__7f11690546faea3b recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__93eab3196cd292c5 send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_4_8_2_CgraPayload__7f11690546faea3b send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -24,9 +24,9 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_4_8_2_CgraPayload__93eab3196cd292c5 in bits (181).
+  //   Packed dimension: the size of IntraCgraPacket_4_2x2_4_8_2_CgraPayload__7f11690546faea3b in bits (181).
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [181-1:0] pkt_queue [$];
+  logic [182-1:0] pkt_queue [$];
 
   initial
   begin
@@ -203,7 +203,7 @@ typedef struct packed {
   logic [7:0] opaque;
   logic [0:0] vc_id;
   MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr__d9140faa89010e06 payload;
-} IntraCgraPacket_4_2x2_4_8_2_CgraPayload__93eab3196cd292c5;
+} IntraCgraPacket_4_2x2_4_8_2_CgraPayload__7f11690546faea3b;
 */
 /*
 typedef struct packed {
