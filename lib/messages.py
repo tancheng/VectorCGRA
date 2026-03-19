@@ -397,6 +397,7 @@ def mk_cfg_metadata_pkt(
     ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     CmdType = mk_bits(max(1, NUM_CMDS))
+    ConstImmType = mk_bits(min(8, DataType.nbits))
 
     new_name = f"{prefix}_{num_rd_ports}_{num_wr_ports}"
 
@@ -419,6 +420,10 @@ def mk_cfg_metadata_pkt(
     field_dict['in_regs'] = [RegAddrType for _ in range(num_rd_ports)]
     field_dict['in_regs_val'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['in_tid_enable'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['in_pred_regs'] = [PredAddrType for _ in range(num_rd_ports)]
+    field_dict['in_pred_en'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['in_pred_inv'] = [Bits1 for _ in range(num_rd_ports)]
+    field_dict['in_const_vals'] = [ConstImmType for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['out_pred_regs'] = [PredAddrType for _ in range(num_wr_ports)]

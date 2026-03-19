@@ -151,6 +151,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.active_const_store = Wire(Bits1)
         num_tile_rows_local = num_wr_ports // 2
         num_tile_cols_local = num_tiles // num_tile_rows_local
+        num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
         for i in range(num_rd_ports):
             s.tile_token_take_pair_mirror[i] //= s.tile_token_take_pair_req[i ^ 2]
             s.tile_token_avail_pair[i] //= s.tile_token_avail[i ^ 2]
@@ -197,6 +198,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Helpful observability (optional)
         # Debug Flags TODO: @darrenl to delete
         MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
+        ConstImmType = mk_bits(min(8, RegDataType.nbits))
         s.recv_cfg_thread_mask_resolved = Wire(MaskType)
         s.recv_cfg_thread_count_resolved = Wire(MaxThreadType)
         s.recv_cfg_thread_min_resolved = Wire(MaxThreadType)
@@ -249,6 +251,14 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_addr_valcfg_bank1 = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.tid_enabled_bank0    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.tid_enabled_bank1    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.rd_pred_addr_cfg_bank0 = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
+        s.rd_pred_addr_cfg_bank1 = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
+        s.rd_pred_en_bank0 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_en_bank1 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_inv_bank0 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_inv_bank1 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_const_val_bank0 = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_const_val_bank1 = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
         s.pred_reg_bank0       = Wire(PredAddrType)
         s.pred_reg_bank1       = Wire(PredAddrType)
         s.branch_en_bank0      = Wire(Bits1)
@@ -317,6 +327,18 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_addr_cfg_n    = [ OutPort(RegAddrType) for _ in range(num_rd_ports) ]
         s.wr_addr_cfg_n    = [ OutPort(RegAddrType) for _ in range(num_wr_ports) ]
         s.tid_enabled_n    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
+        s.rd_pred_addr_cfg = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
+        s.rd_pred_en = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_inv = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_const_val = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_pred_addr_cfg_n = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
+        s.rd_pred_en_n = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_inv_n = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_const_val_n = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_port_active = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_predicate_true = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_predicate_use_reg = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_reg_read_en = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.expected_count_n = Wire( MaxThreadType )
 
         #TODO: @darrenl delete me debug statements
@@ -417,6 +439,23 @@ class STEP_RegisterFileControllerRTL( Component ):
                     rank = rank + MaxThreadType(1)
             s.current_issue_tid @= issue_tid
 
+        @update
+        def comb_predicated_read_select():
+            for i in range(num_rd_ports):
+                pred_true = Bits1(0)
+                pred_mask = MaskType(0)
+                for r in range(num_pred_registers):
+                    if s.rd_pred_addr_cfg[i] == PredAddrType(r):
+                        pred_mask = s.pred_true_mask_reg[r]
+                for tid in range(MAX_THREAD_COUNT):
+                    if s.current_issue_tid == MaxThreadType(tid):
+                        pred_true = Bits1(pred_mask[tid])
+                if s.rd_pred_inv[i]:
+                    pred_true = ~pred_true
+                s.rd_predicate_true[i] @= pred_true
+                s.rd_predicate_use_reg[i] @= s.rd_pred_en[i] & pred_true
+                s.rd_port_active[i] @= s.rd_addr_valcfg[i] | s.rd_pred_en[i]
+
 
         # Enable wires for read and write ports
         s.rd_enable = [ OutPort(Bits1) for _ in range(num_rd_ports) ]
@@ -426,7 +465,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         def comb_port_enables():
             rd_issue_ok = Bits1(1)
             for i in range(num_rd_ports):
-                if s.rd_addr_valcfg[i]:
+                if s.rd_port_active[i]:
                     rd_issue_ok = rd_issue_ok & s.tile_token_avail[i] & s.tile_token_avail_pair[i]
             s.issue_fire @= Bits1(0)
             if (s.state == ST_RUN) & s.run_primed & (s.issue_count < s.expected_count):
@@ -442,9 +481,10 @@ class STEP_RegisterFileControllerRTL( Component ):
 
             for i in range(num_rd_ports):
                 if (s.state == ST_RUN) & ~s.run_primed:
-                    s.rd_enable[i] @= s.rd_addr_valcfg[i]
+                    s.rd_reg_read_en[i] @= s.rd_addr_valcfg[i] | s.rd_predicate_use_reg[i]
                 else:
-                    s.rd_enable[i] @= s.rd_addr_valcfg[i] & s.issue_fire
+                    s.rd_reg_read_en[i] @= (s.rd_addr_valcfg[i] | s.rd_predicate_use_reg[i]) & s.issue_fire
+                s.rd_enable[i] @= s.rd_reg_read_en[i]
             for i in range(num_wr_ports):
                 mapped_idx = i
                 if i < 4:
@@ -479,10 +519,12 @@ class STEP_RegisterFileControllerRTL( Component ):
         @update
         def comb_output_data():
             for i in range(num_rd_ports):
-                if ~s.rd_addr_valcfg[i]:
+                if ~s.rd_port_active[i]:
                     s.rd_data[i] @= RegDataType(0)
                 elif s.active_const_store:
                     s.rd_data[i] @= RegDataType(0)
+                elif s.rd_pred_en[i] & ~s.rd_predicate_use_reg[i]:
+                    s.rd_data[i] @= zext(s.rd_const_val[i], RegDataType.nbits)
                 elif s.tid_enabled[i]:
                     s.rd_data[i] @= s.current_issue_tid_data
                     if i % 4 == 0:
@@ -567,6 +609,14 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.rd_addr_valcfg_bank1[i] <<= Bits1(0)
                     s.tid_enabled_bank0[i] <<= Bits1(0)
                     s.tid_enabled_bank1[i] <<= Bits1(0)
+                    s.rd_pred_addr_cfg_bank0[i] <<= PredAddrType(0)
+                    s.rd_pred_addr_cfg_bank1[i] <<= PredAddrType(0)
+                    s.rd_pred_en_bank0[i] <<= Bits1(0)
+                    s.rd_pred_en_bank1[i] <<= Bits1(0)
+                    s.rd_pred_inv_bank0[i] <<= Bits1(0)
+                    s.rd_pred_inv_bank1[i] <<= Bits1(0)
+                    s.rd_const_val_bank0[i] <<= ConstImmType(0)
+                    s.rd_const_val_bank1[i] <<= ConstImmType(0)
                 for i in range(num_wr_ports):
                     s.wr_addr_cfg_bank0[i] <<= RegAddrType(0)
                     s.wr_addr_cfg_bank1[i] <<= RegAddrType(0)
@@ -608,7 +658,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         any_data_write = any_data_write | s.recv_cfg_from_ctrl.msg.out_regs_val[i]
                         any_pred_write = any_pred_write | s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i]
                     for i in range(num_rd_ports):
-                        any_input_read = any_input_read | s.recv_cfg_from_ctrl.msg.in_regs_val[i]
+                        any_input_read = any_input_read | s.recv_cfg_from_ctrl.msg.in_regs_val[i] | s.recv_cfg_from_ctrl.msg.in_pred_en[i]
                     cfg_is_const_store = cfg_is_const_store & any_store & ~any_load & ~any_data_write & ~any_pred_write & ~any_input_read
                     if s.cfg_load_sel_w == Bits1(0):
                         s.cfg_bank_valid0 <<= 1
@@ -623,10 +673,23 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
                             s.rd_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                             s.tid_enabled_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
+                            s.rd_pred_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_regs[i]
+                            s.rd_pred_en_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
+                            s.rd_pred_inv_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
+                            s.rd_const_val_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
                         for i in range(num_wr_ports):
+                            mapped_idx = i
+                            if i < 4:
+                                mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
+                            has_wr_route = Bits1(0)
+                            has_pred_route = Bits1(0)
+                            route_bit_idx = Bits4(num_returner_ports - mapped_idx - 1)
+                            for r in range(num_rd_ports):
+                                has_wr_route = has_wr_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
+                                has_pred_route = has_pred_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
                             s.wr_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_regs[i]
-                            s.wr_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
-                            s.pred_wr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i]
+                            s.wr_addr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i] & has_wr_route
+                            s.pred_wr_valcfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i] & has_pred_route
                             s.pred_wr_addr_cfg_bank0[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs[i]
                         for i in range(num_tiles):
                             s.pred_tile_valid_bank0[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
@@ -648,10 +711,23 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs[i]
                             s.rd_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                             s.tid_enabled_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_tid_enable[i]
+                            s.rd_pred_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_regs[i]
+                            s.rd_pred_en_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
+                            s.rd_pred_inv_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
+                            s.rd_const_val_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
                         for i in range(num_wr_ports):
+                            mapped_idx = i
+                            if i < 4:
+                                mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
+                            has_wr_route = Bits1(0)
+                            has_pred_route = Bits1(0)
+                            route_bit_idx = Bits4(num_returner_ports - mapped_idx - 1)
+                            for r in range(num_rd_ports):
+                                has_wr_route = has_wr_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
+                                has_pred_route = has_pred_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
                             s.wr_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_regs[i]
-                            s.wr_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
-                            s.pred_wr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i]
+                            s.wr_addr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_regs_val[i] & has_wr_route
+                            s.pred_wr_valcfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i] & has_pred_route
                             s.pred_wr_addr_cfg_bank1[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs[i]
                         for i in range(num_tiles):
                             s.pred_tile_valid_bank1[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]
@@ -735,6 +811,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.rd_addr_valcfg_n[i] @= s.rd_addr_valcfg[i]
                 s.rd_addr_cfg_n[i] @= s.rd_addr_cfg[i]
                 s.tid_enabled_n[i] @= s.tid_enabled[i]
+                s.rd_pred_addr_cfg_n[i] @= s.rd_pred_addr_cfg[i]
+                s.rd_pred_en_n[i] @= s.rd_pred_en[i]
+                s.rd_pred_inv_n[i] @= s.rd_pred_inv[i]
+                s.rd_const_val_n[i] @= s.rd_const_val[i]
 
                 # Token defaults
                 s.tile_token_take_req[i] @= Bits1(0)
@@ -766,9 +846,20 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs_val[i]
                         s.rd_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_regs[i]
                         s.tid_enabled_n[i] @= s.recv_cfg_from_ctrl.msg.in_tid_enable[i] & s.recv_cfg_from_ctrl.msg.in_regs_val[i]
+                        s.rd_pred_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_regs[i]
+                        s.rd_pred_en_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
+                        s.rd_pred_inv_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
+                        s.rd_const_val_n[i] @= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
                     for i in range(num_wr_ports):
+                        mapped_idx = i
+                        if i < 4:
+                            mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
+                        has_wr_route = Bits1(0)
+                        route_bit_idx = Bits4(num_returner_ports - mapped_idx - 1)
+                        for r in range(num_rd_ports):
+                            has_wr_route = has_wr_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
                         s.wr_count_n[i] @= MaxThreadType(0)
-                        s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i]
+                        s.wr_addr_valcfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs_val[i] & has_wr_route
                         s.wr_addr_cfg_n[i] @= s.recv_cfg_from_ctrl.msg.out_regs[i]
                     for i in range(num_ld_ports):
                         s.ld_seq_count_n[i] @= MaxThreadType(0)
@@ -785,7 +876,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     if s.issue_fire:
                         s.issue_count_n @= s.issue_count + MaxThreadType(1)
                         for i in range(num_rd_ports):
-                            if s.rd_addr_valcfg[i]:
+                            if s.rd_port_active[i]:
                                 s.rd_count_n[i] @= s.rd_count[i] + MaxThreadType(1)
                                 s.tile_token_take_req[i] @= Bits1(1)
                                 s.tile_token_take_pair_req[i] @= Bits1(1)
@@ -836,6 +927,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.rd_addr_cfg[i]    <<= RegAddrType(0)
                     s.rd_addr_valcfg[i] <<= Bits1(0)
                     s.tid_enabled[i]    <<= Bits1(0)
+                    s.rd_pred_addr_cfg[i] <<= PredAddrType(0)
+                    s.rd_pred_en[i] <<= Bits1(0)
+                    s.rd_pred_inv[i] <<= Bits1(0)
+                    s.rd_const_val[i] <<= ConstImmType(0)
                     s.rd_count[i]       <<= MaxThreadType(0)
                 for i in range(num_wr_ports):
                     s.wr_addr_cfg[i]    <<= RegAddrType(0)
@@ -880,6 +975,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank0[i]
                             s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank0[i]
                             s.tid_enabled[i] <<= s.tid_enabled_bank0[i] & s.rd_addr_valcfg_bank0[i]
+                            s.rd_pred_addr_cfg[i] <<= s.rd_pred_addr_cfg_bank0[i]
+                            s.rd_pred_en[i] <<= s.rd_pred_en_bank0[i]
+                            s.rd_pred_inv[i] <<= s.rd_pred_inv_bank0[i]
+                            s.rd_const_val[i] <<= s.rd_const_val_bank0[i]
                             s.rd_count[i] <<= MaxThreadType(0)
                         for i in range(num_wr_ports):
                             s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank0[i]
@@ -910,6 +1009,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_addr_cfg[i] <<= s.rd_addr_cfg_bank1[i]
                             s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_bank1[i]
                             s.tid_enabled[i] <<= s.tid_enabled_bank1[i] & s.rd_addr_valcfg_bank1[i]
+                            s.rd_pred_addr_cfg[i] <<= s.rd_pred_addr_cfg_bank1[i]
+                            s.rd_pred_en[i] <<= s.rd_pred_en_bank1[i]
+                            s.rd_pred_inv[i] <<= s.rd_pred_inv_bank1[i]
+                            s.rd_const_val[i] <<= s.rd_const_val_bank1[i]
                             s.rd_count[i] <<= MaxThreadType(0)
                         for i in range(num_wr_ports):
                             s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank1[i]
@@ -941,6 +1044,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_addr_cfg[i] <<= s.rd_addr_cfg_n[i]
                         s.rd_addr_valcfg[i] <<= s.rd_addr_valcfg_n[i]
                         s.tid_enabled[i] <<= s.tid_enabled_n[i]
+                        s.rd_pred_addr_cfg[i] <<= s.rd_pred_addr_cfg_n[i]
+                        s.rd_pred_en[i] <<= s.rd_pred_en_n[i]
+                        s.rd_pred_inv[i] <<= s.rd_pred_inv_n[i]
+                        s.rd_const_val[i] <<= s.rd_const_val_n[i]
 
                     for i in range(num_wr_ports):
                         s.wr_count[i] <<= s.wr_count_n[i]
@@ -977,7 +1084,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             any_data_write = any_data_write | s.recv_cfg_from_ctrl.msg.out_regs_val[j]
                             any_pred_write = any_pred_write | s.recv_cfg_from_ctrl.msg.out_pred_regs_val[j]
                         for j in range(num_rd_ports):
-                            any_input_read = any_input_read | s.recv_cfg_from_ctrl.msg.in_regs_val[j]
+                            any_input_read = any_input_read | s.recv_cfg_from_ctrl.msg.in_regs_val[j] | s.recv_cfg_from_ctrl.msg.in_pred_en[j]
                         s.active_const_store <<= cfg_is_const_store & any_store & ~any_load & ~any_data_write & ~any_pred_write & ~any_input_read
                         for i in range(num_tiles):
                             s.pred_tile_valid_active[i] <<= s.recv_cfg_from_ctrl.msg.pred_tile_valid[i]

@@ -217,11 +217,19 @@ class STEP_TileRTL(Component):
                 elif s.opt_type == OPT_ADD:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] + s.crossbar.send_to_fu[1]
                 elif s.opt_type == OPT_DIV:
-                    s.fu_out[i] @= s.crossbar.send_to_fu[0] / s.crossbar.send_to_fu[1]
+                    if s.crossbar.send_to_fu[1] == DataType(0):
+                        s.fu_out[i] @= DataType(0)
+                    else:
+                        s.fu_out[i] @= s.crossbar.send_to_fu[0] / s.crossbar.send_to_fu[1]
                 elif s.opt_type == OPT_SUB:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] - s.crossbar.send_to_fu[1]
                 elif s.opt_type == OPT_MUL:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] * s.crossbar.send_to_fu[1]
+                elif s.opt_type == OPT_MOD:
+                    if s.crossbar.send_to_fu[1] == DataType(0):
+                        s.fu_out[i] @= DataType(0)
+                    else:
+                        s.fu_out[i] @= s.crossbar.send_to_fu[0] % s.crossbar.send_to_fu[1]
                 elif s.opt_type == OPT_INC:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] + 1
                 elif s.opt_type == OPT_OR:

@@ -33,6 +33,10 @@ def test_generate_cpu_pkt_from_json_generates_thread_span_ld_st_counts(tmp_path)
                 "in_regs": ["tid"],
                 "in_regs_val": [1],
                 "in_tid_enable": [1],
+                "in_pred_regs": [0],
+                "in_pred_en": [0],
+                "in_pred_inv": [0],
+                "in_const_vals": [7],
                 "out_regs": [1],
                 "out_regs_val": [1],
                 "out_pred_regs": [0],
@@ -93,6 +97,8 @@ def test_generate_cpu_pkt_from_json_generates_thread_span_ld_st_counts(tmp_path)
     assert int(cpu_metadata_pkts[0].thread_count_min) == 0
     assert int(cpu_metadata_pkts[0].thread_count_max) == 4
     assert int(cpu_metadata_pkts[0].in_tid_enable[0]) == 1
+    assert int(cpu_metadata_pkts[0].in_pred_en[0]) == 0
+    assert int(cpu_metadata_pkts[0].in_const_vals[0]) == 7
     assert int(cpu_metadata_pkts[0].tokenizer_cfg.token_route_sink_enable[0]) == 0b100
     assert ld_pkts[0] == [5, 5, 5, 5]
     assert st_pkts[0] == 4
