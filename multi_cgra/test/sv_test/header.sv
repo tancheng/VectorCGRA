@@ -285,7 +285,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   return pkt;
 endfunction
 
-function automatic logic [197-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
+function automatic logic [198-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,

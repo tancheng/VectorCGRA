@@ -277,7 +277,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b ma
   return pkt;
 endfunction
 
-function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p);
+function automatic logic [230-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -311,7 +311,7 @@ function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
   };
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b unpack_pkt (logic [229-1:0] v, int printHex = 1);
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b unpack_pkt (logic [230-1:0] v, int printHex = 1);
   IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p;
   integer file_handle;
   // Use a running index from LSB upward for clarity
@@ -336,8 +336,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b un
   p.payload.data.bypass = v[i +: 1]; i += 1;
   p.payload.data.predicate = v[i +: 1]; i += 1;
   p.payload.data.payload = v[i +: 64]; i += 64;
-  // cmd (5)
-  p.payload.cmd = v[i +: 5]; i += 5;
+  // cmd (6)
+  p.payload.cmd = v[i +: 6]; i += 6;
   // header tail (27)
   p.vc_id = v[i +: 1]; i += 1;
   p.opaque = v[i +: 8]; i += 8;
@@ -351,8 +351,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b un
   p.src = v[i +: 5]; i += 5;
 
   // Consistency check.
-  if (i != 229)
-    $error("unpack index mismatch: %0d != %0d", i, 229);
+  if (i != 230)
+    $error("unpack index mismatch: %0d != %0d", i, 230);
 
 /*
 111103b7 lui x7
