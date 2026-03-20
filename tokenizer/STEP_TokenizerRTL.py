@@ -19,6 +19,7 @@ class STEP_TokenizerRTL(Component):
         s.token_shifter_out = OutPort(1)
         s.token_avail = OutPort(1)
         s.cfg_swap = InPort(1)
+        s.cfg_relaunch = InPort(1)
         
         DelayIdxType = mk_bits( clog2(max_delay) )
         s.token_shifter = OutPort( max_delay )
@@ -28,7 +29,7 @@ class STEP_TokenizerRTL(Component):
 
         @update
         def update_shifter_out():
-            if s.cfg_swap:
+            if s.cfg_swap | s.cfg_relaunch:
                 s.token_shifter_out @= 0
             else:
                 # Preserve the historical positive-delay timing used by the
@@ -56,7 +57,7 @@ class STEP_TokenizerRTL(Component):
             if s.reset:
                 s.token_count <<= num_tokens
                 s.token_shifter <<= 0
-            if s.cfg_swap:
+            if s.cfg_swap | s.cfg_relaunch:
                 # Tokenizer state is shared across config banks, so a bank swap
                 # must restart credits for the newly active config.
                 s.token_count <<= num_tokens

@@ -357,7 +357,7 @@ class TestHarness(Component):
         return s.dut.line_trace()
 
 def init_param(
-    json_path='/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mapping.json',
+    json_path='/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mapping_gemm.json',
     axi_delay=1,
 ):
     #-------------------------------------------------------------------------
@@ -378,25 +378,20 @@ def _assert_runtime_branch_behavior(pc_triggers, branch_expectations):
     pc_trace = [int(pc) for pc in pc_triggers]
     assert len(pc_trace) > 0, "No pc_req triggers observed"
 
-    unique_pcs = set(pc_trace)
-
-    # Simple kernels may have branch metadata populated but still execute a
-    # single straight-line path at runtime. Do not fail in that case.
-    if len(unique_pcs) <= 1:
-        return
-
-    # Only enforce backedge behavior when the configured control-flow graph
-    # actually contains a backward edge.
-    has_configured_backedge = any(
-        (exp["true_cfg"] < exp["cfg_id"]) or (exp["false_cfg"] < exp["cfg_id"])
-        for exp in branch_expectations.values()
-    )
-    if has_configured_backedge:
-        backedge_observed = any(
-            pc_trace[i + 1] < pc_trace[i] for i in range(len(pc_trace) - 1)
-        )
-        assert backedge_observed, (
-            f"Configured backedge not observed at runtime; observed PC trace {pc_trace}"
+    # Validate that every observed transition out of a branch cfg uses one of
+    # the configured branch targets. A branch may legally take only the
+    # forward path (e.g., all-true/all-false masks), so do not require a
+    # runtime backedge just because one exists in the static graph.
+    for i in range(len(pc_trace) - 1):
+        cur_pc = pc_trace[i]
+        next_pc = pc_trace[i + 1]
+        exp = branch_expectations.get(cur_pc)
+        if not exp:
+            continue
+        valid_targets = {exp["true_cfg"], exp["false_cfg"]}
+        assert next_pc in valid_targets, (
+            f"Invalid runtime branch transition from cfg_{cur_pc} to cfg_{next_pc}; "
+            f"expected one of {sorted(valid_targets)} from PC trace {pc_trace}"
         )
 
 
@@ -420,13 +415,43 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
         "timed_out": False,
         "pc_triggers": [],
         "pc_trigger_pairs": [],
+        "wr_issue_counts": None,
+        "wr_commit_counts": None,
     }
+    num_wr_ports = model.cgra_def["num_wr_ports"]
+    expected_wr_tids = [deque() for _ in range(num_wr_ports)]
+    wr_issue_counts = [0 for _ in range(num_wr_ports)]
+    wr_commit_counts = [0 for _ in range(num_wr_ports)]
 
     try:
         model.apply(DefaultPassGroup(linetrace=print_line_trace))
         model.sim_reset()
 
         while (not model.done()) and (model.sim_cycle_count() < max_cycles):
+            cycle = model.sim_cycle_count()
+            if model.dut.rf_issue_fire:
+                issue_tid = int(model.dut.rf_issue_tid)
+                for i in range(num_wr_ports):
+                    if int(model.dut.rf_wr_track_en[i]):
+                        expected_wr_tids[i].append(issue_tid)
+                        wr_issue_counts[i] += 1
+
+            for i in range(num_wr_ports):
+                if int(model.dut.rf_wr_commit_valid[i]):
+                    wr_commit_counts[i] += 1
+                    observed_tid = int(model.dut.rf_wr_commit_tid[i])
+                    if not expected_wr_tids[i]:
+                        raise AssertionError(
+                            f"Writeback TID underflow at cycle {cycle} port {i}: "
+                            f"observed tid={observed_tid} with empty expected queue"
+                        )
+                    expected_tid = expected_wr_tids[i].popleft()
+                    if observed_tid != expected_tid:
+                        raise AssertionError(
+                            f"Writeback TID mismatch at cycle {cycle} port {i}: "
+                            f"expected tid={expected_tid} observed tid={observed_tid}"
+                        )
+
             if model.dut.pc_req_trigger:
                 if metrics["first_launch_cycle"] is None:
                     metrics["first_launch_cycle"] = model.sim_cycle_count()
@@ -446,6 +471,8 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
 
         metrics["done_cycle"] = model.sim_cycle_count()
         metrics["timed_out"] = model.sim_cycle_count() >= max_cycles
+        metrics["wr_issue_counts"] = wr_issue_counts
+        metrics["wr_commit_counts"] = wr_commit_counts
         if metrics["timed_out"]:
             unique_pcs = sorted(set(metrics["pc_triggers"]))
             tail_pcs = metrics["pc_triggers"][-16:]
@@ -457,6 +484,14 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
                 f"pairs={unique_pairs} tail_pairs={tail_pairs}"
             )
         assert model.done(), "Simulation exited before harness completion criteria was satisfied"
+        for i in range(num_wr_ports):
+            if expected_wr_tids[i]:
+                tail_expected = list(expected_wr_tids[i])[:16]
+                raise AssertionError(
+                    f"Writeback TID queue not drained for port {i}: "
+                    f"pending={len(expected_wr_tids[i])} tail={tail_expected} "
+                    f"issued={wr_issue_counts[i]} committed={wr_commit_counts[i]}"
+                )
         _assert_runtime_branch_behavior(metrics["pc_triggers"], model.branch_expectations)
 
         model.sim_tick()
@@ -491,6 +526,9 @@ def _print_metrics(runtime_metrics):
     print(f"  total_sim_cycles: {runtime_metrics['done_cycle']}")
     print(f"  e2e_cycles: {e2e_cycles}")
     print(f"  launch_to_first_complete_cycles: {launch_to_first_complete_cycles}")
+    if runtime_metrics["wr_issue_counts"] is not None:
+        print(f"  wr_issue_counts: {runtime_metrics['wr_issue_counts']}")
+        print(f"  wr_commit_counts: {runtime_metrics['wr_commit_counts']}")
 
 
 def test_simple(cmdline_opts):

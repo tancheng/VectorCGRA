@@ -1,0 +1,599 @@
+{
+    "cgra_def": {
+        "num_tiles": 16,
+        "num_tile_rows": 4,
+        "num_tile_cols": 4,
+        "num_tile_inports": 8,
+        "num_tile_outports": 8,
+        "num_fu_inports": 3,
+        "num_fu_outports": 1,
+        "num_consts": 16,
+        "data_width": 32,
+        "num_rd_ports": 16,
+        "num_wr_ports": 8,
+        "num_ld_ports": 2,
+        "num_st_ports": 2,
+        "num_register_banks": 8,
+        "num_registers": 16,
+        "num_pred_registers": 16
+    },
+    "meta": {
+        "basic_block_count": 3,
+        "format": "step_dfg_v3_predicated",
+        "node_count": 18,
+        "thread_id_bounds": ["const:0", "const:3"]
+    },
+    "cfg_0": {
+        "metadata": {
+            "cmd": 3,
+            "tile_load_count": 5,
+            "pred_tile_valid": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "ld_enable": [1, 1],
+            "ld_reg_addr": [4, 1],
+            "ld_base_addr": [0, 0],
+            "st_enable": [0, 0],
+            "in_regs": [0, 0, "tid", 0, "tid", 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+            "in_regs_val": [false, false, true, false, true, false, false, false, true, false, false, false, false, false, false, false],
+            "in_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_en": [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+            "in_pred_inv": [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+            "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_tid_enable": [0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "out_regs": [0, 0, 3, 0, 2, 0, 0, 0],
+            "out_regs_val": [false, true, true, false, true, false, false, false],
+            "out_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0],
+            "out_pred_regs_val": [false, false, false, false, false, false, false, false],
+            "tokenizer": {
+                "token_route_sink_enable": [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "token_route_delay_to_sink": [0, 3, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0]
+            },
+            "cfg_id": 0,
+            "br_id": 1,
+            "thread_count_min": 0,
+            "thread_count_max": 3,
+            "thread_count": 3,
+            "start_cfg": 1,
+            "end_cfg": 0,
+            "branch_en": 0,
+            "branch_has_else": 0,
+            "branch_backedge_sel": 0,
+            "pred_reg_id": 0,
+            "branch_true_cfg_id": 0,
+            "branch_false_cfg_id": 0,
+            "reconverge_cfg_id": 0
+        },
+        "bitstream": {
+            "tile_7_[1,1]": {
+                "id": 0,
+                "tile_in_route": ["S", "", ""],
+                "tile_out_route": ["N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["N"],
+                "const_val": 268435456,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD_CONST"
+            },
+            "tile_8_[2,1]": {
+                "id": 1,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_9_[3,1]": {
+                "id": 2,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_10_[4,1]": {
+                "id": 3,
+                "tile_in_route": ["E", "", ""],
+                "tile_out_route": ["E", "N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["E", "N"],
+                "const_val": 268435456,
+                "pred_based_sel_in_to_out_route": "E",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD_CONST"
+            },
+            "tile_13_[1,2]": {
+                "id": 4,
+                "tile_in_route": ["E", "S", ""],
+                "tile_out_route": ["W", "N"],
+                "tile_out_shift_amounts": [0, 2, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["W", "N"],
+                "const_val": 0,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD"
+            },
+            "tile_14_[2,2]": {
+                "id": 5,
+                "tile_in_route": ["", "", ""],
+                "tile_out_route": ["W"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["W"],
+                "const_val": 5,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_MUL_CONST"
+            },
+            "tile_15_[3,2]": {
+                "id": 6,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_16_[4,2]": {
+                "id": 7,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_19_[1,3]": {
+                "id": 8,
+                "tile_in_route": ["W", "", ""],
+                "tile_out_route": ["W", "N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["W", "N"],
+                "const_val": 1,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD_CONST"
+            },
+            "tile_20_[2,3]": {
+                "id": 9,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_21_[3,3]": {
+                "id": 10,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_22_[4,3]": {
+                "id": 11,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_25_[1,4]": {
+                "id": 12,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_26_[2,4]": {
+                "id": 13,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_27_[3,4]": {
+                "id": 14,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_28_[4,4]": {
+                "id": 15,
+                "opt_type": "OPT_NAH"
+            }
+        }
+    },
+    "cfg_1": {
+        "metadata": {
+            "cmd": 3,
+            "tile_load_count": 4,
+            "pred_tile_valid": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "ld_enable": [1, 1],
+            "ld_reg_addr": [6, 5],
+            "ld_base_addr": [0, 0],
+            "st_enable": [0, 0],
+            "in_regs": [0, 0, 3, 0, 4, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+            "in_regs_val": [false, false, true, false, true, false, false, false, true, false, false, false, false, false, false, false],
+            "in_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_en": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+            "in_pred_inv": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+            "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_tid_enable": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "out_regs": [0, 0, 0, 0, 0, 0, 0, 0],
+            "out_regs_val": [false, false, false, false, false, false, false, false],
+            "out_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0],
+            "out_pred_regs_val": [false, false, false, false, true, false, false, false],
+            "tokenizer": {
+                "token_route_sink_enable": [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "token_route_delay_to_sink": [0, 0, 0, 0, 1, 0, 0, 0, 3, 2, 0, 0]
+            },
+            "cfg_id": 1,
+            "br_id": 2,
+            "thread_count_min": 0,
+            "thread_count_max": 3,
+            "thread_count": 3,
+            "start_cfg": 0,
+            "end_cfg": 0,
+            "branch_en": 1,
+            "branch_has_else": 1,
+            "branch_backedge_sel": 2,
+            "pred_reg_id": 0,
+            "branch_true_cfg_id": 2,
+            "branch_false_cfg_id": 0,
+            "reconverge_cfg_id": 2
+        },
+        "bitstream": {
+            "tile_7_[1,1]": {
+                "id": 0,
+                "tile_in_route": ["S", "", ""],
+                "tile_out_route": ["N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["N"],
+                "const_val": 268435456,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD_CONST"
+            },
+            "tile_8_[2,1]": {
+                "id": 1,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_9_[3,1]": {
+                "id": 2,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_10_[4,1]": {
+                "id": 3,
+                "tile_in_route": ["E", "", ""],
+                "tile_out_route": ["N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["N"],
+                "const_val": 268435456,
+                "pred_based_sel_in_to_out_route": "E",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD_CONST"
+            },
+            "tile_13_[1,2]": {
+                "id": 4,
+                "tile_in_route": ["W", "", ""],
+                "tile_out_route": ["N"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["N"],
+                "const_val": 0,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 0,
+                "opt_type": "OPT_EXT"
+            },
+            "tile_14_[2,2]": {
+                "id": 5,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_15_[3,2]": {
+                "id": 6,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_16_[4,2]": {
+                "id": 7,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_19_[1,3]": {
+                "id": 8,
+                "tile_in_route": ["W", "", ""],
+                "tile_out_route": ["W"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["W"],
+                "const_val": 5,
+                "pred_based_sel_in_to_out_route": "W",
+                "pred_gen": 1,
+                "opt_type": "OPT_EQ_CONST"
+            },
+            "tile_20_[2,3]": {
+                "id": 9,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_21_[3,3]": {
+                "id": 10,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_22_[4,3]": {
+                "id": 11,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_25_[1,4]": {
+                "id": 12,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_26_[2,4]": {
+                "id": 13,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_27_[3,4]": {
+                "id": 14,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_28_[4,4]": {
+                "id": 15,
+                "opt_type": "OPT_NAH"
+            }
+        }
+    },
+    "cfg_2": {
+        "metadata": {
+            "cmd": 3,
+            "tile_load_count": 3,
+            "pred_tile_valid": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "ld_enable": [0, 0],
+            "ld_reg_addr": [0, 0],
+            "ld_base_addr": [0, 0],
+            "st_enable": [1, 0],
+            "in_regs": [0, 0, 0, 0, 0, 0, 0, 0, 6, 5, 0, 0, 1, 0, 0, 0],
+            "in_regs_val": [false, false, false, false, false, false, false, false, true, true, false, false, true, true, false, false],
+            "in_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_en": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+            "in_pred_inv": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+            "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_tid_enable": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "out_regs": [0, 0, 0, 0, 0, 0, 0, 0],
+            "out_regs_val": [false, false, false, false, false, false, false, false],
+            "out_pred_regs": [0, 0, 0, 0, 0, 0, 0, 0],
+            "out_pred_regs_val": [false, false, false, false, false, false, false, false],
+            "tokenizer": {
+                "token_route_sink_enable": [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "token_route_delay_to_sink": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]
+            },
+            "cfg_id": 2,
+            "br_id": 3,
+            "thread_count_min": 0,
+            "thread_count_max": 3,
+            "thread_count": 3,
+            "start_cfg": 0,
+            "end_cfg": 1,
+            "branch_en": 0,
+            "branch_has_else": 0,
+            "branch_backedge_sel": 0,
+            "pred_reg_id": 0,
+            "branch_true_cfg_id": 0,
+            "branch_false_cfg_id": 0,
+            "reconverge_cfg_id": 0
+        },
+        "bitstream": {
+            "tile_7_[1,1]": {
+                "id": 0,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_8_[2,1]": {
+                "id": 1,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_9_[3,1]": {
+                "id": 2,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_10_[4,1]": {
+                "id": 3,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_13_[1,2]": {
+                "id": 4,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_14_[2,2]": {
+                "id": 5,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_15_[3,2]": {
+                "id": 6,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_16_[4,2]": {
+                "id": 7,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_19_[1,3]": {
+                "id": 8,
+                "tile_in_route": ["W", "", ""],
+                "tile_out_route": ["S"],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["S"],
+                "const_val": 0,
+                "pred_based_sel_in_to_out_route": "S",
+                "pred_gen": 0,
+                "opt_type": "OPT_MUL"
+            },
+            "tile_20_[2,3]": {
+                "id": 9,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_21_[3,3]": {
+                "id": 10,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_22_[4,3]": {
+                "id": 11,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_25_[1,4]": {
+                "id": 12,
+                "tile_in_route": ["W", "N", ""],
+                "tile_out_route": ["S"],
+                "tile_out_shift_amounts": [0, 0, 1, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": ["S"],
+                "const_val": 0,
+                "pred_based_sel_in_to_out_route": "S",
+                "pred_gen": 0,
+                "opt_type": "OPT_ADD"
+            },
+            "tile_26_[2,4]": {
+                "id": 13,
+                "tile_in_route": ["", "", ""],
+                "tile_out_route": [""],
+                "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
+                "tile_fwd_route": [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0]
+                ],
+                "tile_pred_route": [""],
+                "const_val": 0,
+                "pred_fwd_route": "",
+                "pred_gen": 0,
+                "opt_type": "OPT_PAS"
+            },
+            "tile_27_[3,4]": {
+                "id": 14,
+                "opt_type": "OPT_NAH"
+            },
+            "tile_28_[4,4]": {
+                "id": 15,
+                "opt_type": "OPT_NAH"
+            }
+        }
+    }
+}

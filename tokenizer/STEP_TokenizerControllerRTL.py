@@ -37,21 +37,25 @@ class STEP_TokenizerControllerRTL(Component):
         s.cfg_active_sel_w = Wire(Bits1)
         s.cfg_load_sel_w = Wire(Bits1)
         s.cfg_swap_w = Wire(Bits1)
+        s.cfg_relaunch_w = Wire(Bits1)
         if enable_double_buffering:
             s.cfg_active_sel = InPort(Bits1)
             s.cfg_load_sel = InPort(Bits1)
             s.cfg_swap = InPort(Bits1)
+            s.cfg_relaunch = InPort(Bits1)
             @update
             def cfg_select_wires():
                 s.cfg_active_sel_w @= s.cfg_active_sel
                 s.cfg_load_sel_w @= s.cfg_load_sel
                 s.cfg_swap_w @= s.cfg_swap
+                s.cfg_relaunch_w @= s.cfg_relaunch
         else:
             @update
             def cfg_select_wires():
                 s.cfg_active_sel_w @= Bits1(0)
                 s.cfg_load_sel_w @= Bits1(0)
                 s.cfg_swap_w @= Bits1(0)
+                s.cfg_relaunch_w @= Bits1(0)
         s.tokenizer_cfg = Wire(TokenizerCfgType)
         s.tokenizer_cfg_bank0 = Wire(TokenizerCfgType)
         s.tokenizer_cfg_bank1 = Wire(TokenizerCfgType)
@@ -77,6 +81,7 @@ class STEP_TokenizerControllerRTL(Component):
             s.token_return[i] //= s.tokenizers[i].token_return
             s.token_shifter_out[i] //= s.tokenizers[i].token_shifter_out
             s.tokenizers[i].cfg_swap //= s.cfg_swap_w
+            s.tokenizers[i].cfg_relaunch //= s.cfg_relaunch_w
 
         # Save Cfg States
         @update

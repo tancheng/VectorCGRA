@@ -40,6 +40,7 @@ class STEP_ControllerRTL(Component):
     s.cfg_active_sel = OutPort(1)
     s.cfg_load_sel = OutPort(1)
     s.cfg_swap = OutPort(1)
+    s.cfg_relaunch = OutPort(1)
     s.cfg_bank_commit = OutPort(1)
     s.rf_dep_start = OutPort(1)
     s.fabric_cfg_packets_applied = InPort(TileCountType)
@@ -313,6 +314,10 @@ class STEP_ControllerRTL(Component):
             s.cfg_to_rf_msg.in_regs[i] @= s.load_meta.in_regs[i]
             s.cfg_to_rf_msg.in_regs_val[i] @= s.load_meta.in_regs_val[i]
             s.cfg_to_rf_msg.in_tid_enable[i] @= s.load_meta.in_tid_enable[i]
+            s.cfg_to_rf_msg.in_pred_regs[i] @= s.load_meta.in_pred_regs[i]
+            s.cfg_to_rf_msg.in_pred_en[i] @= s.load_meta.in_pred_en[i]
+            s.cfg_to_rf_msg.in_pred_inv[i] @= s.load_meta.in_pred_inv[i]
+            s.cfg_to_rf_msg.in_const_vals[i] @= s.load_meta.in_const_vals[i]
         for i in range(num_wr_cfg_ports):
             s.cfg_to_rf_msg.out_regs[i] @= s.load_meta.out_regs[i]
             s.cfg_to_rf_msg.out_regs_val[i] @= s.load_meta.out_regs_val[i]
@@ -396,6 +401,7 @@ class STEP_ControllerRTL(Component):
         s.send_to_cpu_done <<= s.send_to_cpu_done_reg
         s.pc_req_trigger <<= 0
         s.cfg_swap <<= 0
+        s.cfg_relaunch <<= 0
         s.cfg_bank_commit <<= 0
         s.rf_dep_start <<= 0
 
@@ -598,6 +604,7 @@ class STEP_ControllerRTL(Component):
                     s.send_cfg_to_rf.msg <<= s.cfg_to_rf_msg
                     s.send_cfg_to_rf_thread_mask <<= s.cfg_to_rf_thread_mask
                     s.send_cfg_to_rf.val <<= 1
+                    s.cfg_relaunch <<= 1
                     s.cfg_bank_commit <<= 1
                     s.send_cfg_to_tokenizer.msg <<= s.cfg_to_tokenizer_msg
                     s.send_cfg_to_tokenizer.val <<= 1
@@ -792,24 +799,45 @@ class STEP_ControllerRTL(Component):
                                         s.deferred_origin_branch[s.deferred_depth] <<= s.active_meta.cfg_id
                                         s.deferred_depth <<= s.deferred_depth + StackDepthType(1)
                                 if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
-                                    s.load_bank_reg <<= ~s.active_bank
-                                    s.load_bank <<= ~s.active_bank
-                                    s.load_pc <<= next_cfg
-                                    s.load_tile_count <<= TileCountType(0)
-                                    s.load_inflight <<= 0
-                                    s.cfg_packets_injected_count <<= TileCountType(0)
-                                    s.cfg_packets_applied_count <<= TileCountType(0)
-                                    s.load_thread_mask_override <<= next_mask
-                                    s.load_thread_mask_override_valid <<= Bits1(1)
-                                    s.load_yield_to_deferred <<= Bits1(0)
-                                    s.load_skip_next_end_cfg <<= Bits1(0)
-                                    s.fabric_cfg_load_done <<= 1
-                                    s.cfg_packets_injection_done <<= 1
-                                    s.load_meta_valid <<= 0
-                                    s.meta_req_pending <<= 1
-                                    s.cfg_mem_raddr_reg <<= next_cfg
-                                    s.prefetch_inflight <<= 0
-                                    s.rf_done_pending <<= 0
+                                    if next_cfg == s.active_meta.cfg_id:
+                                        s.load_bank_reg <<= s.active_bank
+                                        s.load_bank <<= s.active_bank
+                                        s.load_pc <<= next_cfg
+                                        s.load_tile_count <<= TileCountType(0)
+                                        s.load_inflight <<= 0
+                                        s.cfg_packets_injected_count <<= TileCountType(0)
+                                        s.cfg_packets_applied_count <<= TileCountType(0)
+                                        s.load_thread_mask_override <<= next_mask
+                                        s.load_thread_mask_override_valid <<= Bits1(1)
+                                        s.load_yield_to_deferred <<= Bits1(0)
+                                        s.load_skip_next_end_cfg <<= Bits1(0)
+                                        s.fabric_cfg_load_done <<= 1
+                                        s.cfg_packets_injection_done <<= 1
+                                        s.load_meta_valid <<= 0
+                                        s.meta_req_pending <<= 1
+                                        s.cfg_mem_raddr_reg <<= next_cfg
+                                        s.pc <<= next_cfg
+                                        s.prefetch_inflight <<= 0
+                                        s.rf_done_pending <<= 0
+                                    else:
+                                        s.load_bank_reg <<= ~s.active_bank
+                                        s.load_bank <<= ~s.active_bank
+                                        s.load_pc <<= next_cfg
+                                        s.load_tile_count <<= TileCountType(0)
+                                        s.load_inflight <<= 0
+                                        s.cfg_packets_injected_count <<= TileCountType(0)
+                                        s.cfg_packets_applied_count <<= TileCountType(0)
+                                        s.load_thread_mask_override <<= next_mask
+                                        s.load_thread_mask_override_valid <<= Bits1(1)
+                                        s.load_yield_to_deferred <<= Bits1(0)
+                                        s.load_skip_next_end_cfg <<= Bits1(0)
+                                        s.fabric_cfg_load_done <<= 1
+                                        s.cfg_packets_injection_done <<= 1
+                                        s.load_meta_valid <<= 0
+                                        s.meta_req_pending <<= 1
+                                        s.cfg_mem_raddr_reg <<= next_cfg
+                                        s.prefetch_inflight <<= 0
+                                        s.rf_done_pending <<= 0
                             elif exit_count > LoopCountType(0):
                                 if merge_found & (merge_idx + StackDepthType(1) == s.deferred_depth):
                                     s.deferred_depth <<= merge_idx
@@ -856,64 +884,110 @@ class STEP_ControllerRTL(Component):
                                 s.deferred_origin_branch[s.deferred_depth] <<= s.active_meta.cfg_id
                                 s.deferred_depth <<= s.deferred_depth + StackDepthType(1)
                             if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
-                                s.pc_req_trigger <<= 1
-                                s.load_bank_reg <<= s.active_bank
-                                s.load_bank <<= s.active_bank
-                                s.load_pc <<= next_cfg
-                                s.load_tile_count <<= next_tile_count
-                                s.pc <<= next_cfg
-                                s.load_inflight <<= 1
-                                s.cfg_packets_injected_count <<= TileCountType(0)
-                                s.cfg_packets_applied_count <<= TileCountType(0)
-                                s.load_thread_mask_override <<= next_mask
-                                s.load_thread_mask_override_valid <<= Bits1(1)
-                                s.load_yield_to_deferred <<= branch_has_else & (false_count > LoopCountType(0))
-                                s.load_skip_next_end_cfg <<= Bits1(0)
-                                s.fabric_cfg_load_done <<= 0
-                                s.cfg_packets_injection_done <<= 0
-                                s.load_meta_valid <<= 0
-                                s.meta_req_pending <<= 1
-                                s.cfg_mem_raddr_reg <<= next_cfg
-                                s.prefetch_inflight <<= 0
-                                s.rf_done_pending <<= 0
-                                if next_tile_count == TileCountType(0):
+                                if next_cfg == s.active_meta.cfg_id:
+                                    s.load_bank_reg <<= s.active_bank
+                                    s.load_bank <<= s.active_bank
+                                    s.load_pc <<= next_cfg
+                                    s.load_tile_count <<= TileCountType(0)
+                                    s.pc <<= next_cfg
                                     s.load_inflight <<= 0
+                                    s.cfg_packets_injected_count <<= TileCountType(0)
+                                    s.cfg_packets_applied_count <<= TileCountType(0)
+                                    s.load_thread_mask_override <<= next_mask
+                                    s.load_thread_mask_override_valid <<= Bits1(1)
+                                    s.load_yield_to_deferred <<= branch_has_else & (false_count > LoopCountType(0))
+                                    s.load_skip_next_end_cfg <<= Bits1(0)
                                     s.fabric_cfg_load_done <<= 1
                                     s.cfg_packets_injection_done <<= 1
+                                    s.load_meta_valid <<= 0
+                                    s.meta_req_pending <<= 1
+                                    s.cfg_mem_raddr_reg <<= next_cfg
+                                    s.prefetch_inflight <<= 0
+                                    s.rf_done_pending <<= 0
+                                else:
+                                    s.pc_req_trigger <<= 1
+                                    s.load_bank_reg <<= s.active_bank
+                                    s.load_bank <<= s.active_bank
+                                    s.load_pc <<= next_cfg
+                                    s.load_tile_count <<= next_tile_count
+                                    s.pc <<= next_cfg
+                                    s.load_inflight <<= 1
+                                    s.cfg_packets_injected_count <<= TileCountType(0)
+                                    s.cfg_packets_applied_count <<= TileCountType(0)
+                                    s.load_thread_mask_override <<= next_mask
+                                    s.load_thread_mask_override_valid <<= Bits1(1)
+                                    s.load_yield_to_deferred <<= branch_has_else & (false_count > LoopCountType(0))
+                                    s.load_skip_next_end_cfg <<= Bits1(0)
+                                    s.fabric_cfg_load_done <<= 0
+                                    s.cfg_packets_injection_done <<= 0
+                                    s.load_meta_valid <<= 0
+                                    s.meta_req_pending <<= 1
+                                    s.cfg_mem_raddr_reg <<= next_cfg
+                                    s.prefetch_inflight <<= 0
+                                    s.rf_done_pending <<= 0
+                                    if next_tile_count == TileCountType(0):
+                                        s.load_inflight <<= 0
+                                        s.fabric_cfg_load_done <<= 1
+                                        s.cfg_packets_injection_done <<= 1
                         elif branch_has_else & (false_count > LoopCountType(0)):
                             next_cfg = s.active_meta.branch_false_cfg_id
                             next_tile_count = s.tile_load_by_branch_false_meta
                             next_mask = false_mask
                             next_count = false_count
                             if ~s.load_inflight & ~s.meta_req_pending & ~s.load_meta_valid:
-                                s.pc_req_trigger <<= 1
-                                s.load_bank_reg <<= s.active_bank
-                                s.load_bank <<= s.active_bank
-                                s.load_pc <<= next_cfg
-                                s.load_tile_count <<= next_tile_count
-                                s.pc <<= next_cfg
-                                s.load_inflight <<= 1
-                                s.cfg_packets_injected_count <<= TileCountType(0)
-                                s.cfg_packets_applied_count <<= TileCountType(0)
-                                s.load_thread_mask_override <<= next_mask
-                                s.load_thread_mask_override_valid <<= Bits1(1)
-                                s.load_yield_to_deferred <<= Bits1(0)
-                                s.load_skip_next_end_cfg <<= Bits1(
-                                    (s.active_meta.branch_has_else == Bits1(0))
-                                    & (s.active_meta.branch_backedge_sel == Bits2(0))
-                                    & s.end_cfg_by_branch_reconverge
-                                )
-                                s.fabric_cfg_load_done <<= 0
-                                s.cfg_packets_injection_done <<= 0
-                                s.load_meta_valid <<= 0
-                                s.meta_req_pending <<= 1
-                                s.cfg_mem_raddr_reg <<= next_cfg
-                                s.prefetch_inflight <<= 0
-                                s.rf_done_pending <<= 0
-                                if next_tile_count == TileCountType(0):
+                                if next_cfg == s.active_meta.cfg_id:
+                                    s.load_bank_reg <<= s.active_bank
+                                    s.load_bank <<= s.active_bank
+                                    s.load_pc <<= next_cfg
+                                    s.load_tile_count <<= TileCountType(0)
+                                    s.pc <<= next_cfg
                                     s.load_inflight <<= 0
+                                    s.cfg_packets_injected_count <<= TileCountType(0)
+                                    s.cfg_packets_applied_count <<= TileCountType(0)
+                                    s.load_thread_mask_override <<= next_mask
+                                    s.load_thread_mask_override_valid <<= Bits1(1)
+                                    s.load_yield_to_deferred <<= Bits1(0)
+                                    s.load_skip_next_end_cfg <<= Bits1(
+                                        (s.active_meta.branch_has_else == Bits1(0))
+                                        & (s.active_meta.branch_backedge_sel == Bits2(0))
+                                        & s.end_cfg_by_branch_reconverge
+                                    )
                                     s.fabric_cfg_load_done <<= 1
                                     s.cfg_packets_injection_done <<= 1
+                                    s.load_meta_valid <<= 0
+                                    s.meta_req_pending <<= 1
+                                    s.cfg_mem_raddr_reg <<= next_cfg
+                                    s.prefetch_inflight <<= 0
+                                    s.rf_done_pending <<= 0
+                                else:
+                                    s.pc_req_trigger <<= 1
+                                    s.load_bank_reg <<= s.active_bank
+                                    s.load_bank <<= s.active_bank
+                                    s.load_pc <<= next_cfg
+                                    s.load_tile_count <<= next_tile_count
+                                    s.pc <<= next_cfg
+                                    s.load_inflight <<= 1
+                                    s.cfg_packets_injected_count <<= TileCountType(0)
+                                    s.cfg_packets_applied_count <<= TileCountType(0)
+                                    s.load_thread_mask_override <<= next_mask
+                                    s.load_thread_mask_override_valid <<= Bits1(1)
+                                    s.load_yield_to_deferred <<= Bits1(0)
+                                    s.load_skip_next_end_cfg <<= Bits1(
+                                        (s.active_meta.branch_has_else == Bits1(0))
+                                        & (s.active_meta.branch_backedge_sel == Bits2(0))
+                                        & s.end_cfg_by_branch_reconverge
+                                    )
+                                    s.fabric_cfg_load_done <<= 0
+                                    s.cfg_packets_injection_done <<= 0
+                                    s.load_meta_valid <<= 0
+                                    s.meta_req_pending <<= 1
+                                    s.cfg_mem_raddr_reg <<= next_cfg
+                                    s.prefetch_inflight <<= 0
+                                    s.rf_done_pending <<= 0
+                                    if next_tile_count == TileCountType(0):
+                                        s.load_inflight <<= 0
+                                        s.fabric_cfg_load_done <<= 1
+                                        s.cfg_packets_injection_done <<= 1
                 elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.next_ready:
                     s.cfg_swap <<= 1
                     s.rf_dep_start <<= s.rf_cfg_issue_ready & ~s.rf_cfg_done

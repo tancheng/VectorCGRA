@@ -299,6 +299,20 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.ld_seq_count_n = [Wire(MaxThreadType) for _ in range(num_ld_ports)]
         s.st_seq_count_n = [Wire(MaxThreadType) for _ in range(num_st_ports)]
         s.wr_thread_tid = [Wire(MaxThreadType) for _ in range(num_wr_ports)]
+        s.wr_track_en = [Wire(Bits1) for _ in range(num_wr_ports)]
+        s.wr_token_fire = [Wire(Bits1) for _ in range(num_wr_ports)]
+        s.wr_commit_valid = [Wire(Bits1) for _ in range(num_wr_ports)]
+        s.wr_commit_tid = [Wire(MaxThreadType) for _ in range(num_wr_ports)]
+        TidQueuePtrType = mk_bits(max(1, clog2(MAX_THREAD_COUNT)))
+        TidQueueCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
+        s.wr_tid_fifo_head = [Wire(TidQueuePtrType) for _ in range(num_wr_ports)]
+        s.wr_tid_fifo_tail = [Wire(TidQueuePtrType) for _ in range(num_wr_ports)]
+        s.wr_tid_fifo_count = [Wire(TidQueueCountType) for _ in range(num_wr_ports)]
+        s.wr_tid_fifo_data = [
+            [Wire(MaxThreadType) for _ in range(MAX_THREAD_COUNT)]
+            for _ in range(num_wr_ports)
+        ]
+        s.wr_seen_mask = [Wire(MaskType) for _ in range(num_wr_ports)]
         s.pred_wr_addr_cfg = [ Wire(PredAddrType) for _ in range(num_wr_ports) ]
         s.pred_wr_addr_cfg_bank0 = [ Wire(PredAddrType) for _ in range(num_wr_ports) ]
         s.pred_wr_addr_cfg_bank1 = [ Wire(PredAddrType) for _ in range(num_wr_ports) ]
@@ -353,11 +367,24 @@ class STEP_RegisterFileControllerRTL( Component ):
             s.rf_rd_tid_addr = [OutPort(MaxThreadType) for _ in range(num_rd_ports)]
             s.rf_rd_data = [OutPort(RegDataType) for _ in range(num_rd_ports)]
             s.rf_rd_addr = [OutPort(RegAddrType) for _ in range(num_rd_ports)]
+            s.rf_issue_fire = OutPort(Bits1)
+            s.rf_issue_tid = OutPort(MaxThreadType)
+            s.rf_wr_track_en = [OutPort(Bits1) for _ in range(num_wr_ports)]
+            s.rf_wr_commit_valid = [OutPort(Bits1) for _ in range(num_wr_ports)]
+            s.rf_wr_commit_tid = [OutPort(MaxThreadType) for _ in range(num_wr_ports)]
+            s.rf_wr_seen_mask = [OutPort(MaskType) for _ in range(num_wr_ports)]
             for i in range(num_ld_ports):
                 s.rf_ld_wr_reg_addr[i] //= s.ld_reg_addr_active[i]
                 s.rf_ld_wr_tid_addr[i] //= s.ld_data_id[i]
                 s.rf_ld_wr_data[i] //= s.ld_data[i]
                 s.rf_ld_wr_enable[i] //= s.ld_data_valid[i]
+            s.rf_issue_fire //= s.issue_fire
+            s.rf_issue_tid //= s.current_issue_tid
+            for i in range(num_wr_ports):
+                s.rf_wr_track_en[i] //= s.wr_track_en[i]
+                s.rf_wr_commit_valid[i] //= s.wr_commit_valid[i]
+                s.rf_wr_commit_tid[i] //= s.wr_commit_tid[i]
+                s.rf_wr_seen_mask[i] //= s.wr_seen_mask[i]
             @update
             def update_some_ports():
                 for i in range(num_rd_ports):
@@ -377,19 +404,11 @@ class STEP_RegisterFileControllerRTL( Component ):
             for i in range(num_rd_ports):
                 s.register_file.rd_thread_idx[i] @= s.current_issue_tid
             for i in range(num_wr_ports):
-                wr_tid = MaxThreadType(0)
-                rank = MaxThreadType(0)
-                for tid in range(MAX_THREAD_COUNT):
-                    if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
-                        if s.wr_count[i] == rank:
-                            wr_tid = MaxThreadType(tid)
-                        rank = rank + MaxThreadType(1)
-                for tid in range(MAX_THREAD_COUNT):
-                    if s.dep_thread_mask[tid]:
-                        if s.wr_count[i] == rank:
-                            wr_tid = MaxThreadType(tid)
-                        rank = rank + MaxThreadType(1)
-                s.wr_thread_tid[i] @= wr_tid
+                head_tid = MaxThreadType(0)
+                for q in range(MAX_THREAD_COUNT):
+                    if s.wr_tid_fifo_head[i] == TidQueuePtrType(q):
+                        head_tid = s.wr_tid_fifo_data[i][q]
+                s.wr_thread_tid[i] @= head_tid
                 s.register_file.wr_thread_idx[i] @= s.wr_thread_tid[i]
             for i in range(num_ld_ports):
                 s.register_file.wr_thread_idx[i + num_wr_ports] @= s.ld_data_id[i]
@@ -495,6 +514,26 @@ class STEP_RegisterFileControllerRTL( Component ):
         def comb_token_takes():
             for i in range(num_rd_ports):
                 s.tile_token_take[i] @= s.tile_token_take_req[i] | s.tile_token_take_pair_mirror[i]
+
+        @update
+        def comb_wr_tracking():
+            for i in range(num_wr_ports):
+                mapped_idx = i
+                if i < 4:
+                    mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
+                wr_track = s.wr_addr_valcfg[i] | s.pred_wr_valcfg[i]
+                wr_token = Bits1(0)
+                if s.wr_addr_valcfg[i]:
+                    wr_token = s.tile_token_shifter_out[mapped_idx] & (s.wr_count[i] < s.expected_count)
+                elif s.pred_wr_valcfg[i]:
+                    wr_token = (
+                        s.tile_token_shifter_out[mapped_idx]
+                        & (s.pred_count[s.active_pred_reg] < s.pred_expected[s.active_pred_reg])
+                    )
+                s.wr_track_en[i] @= wr_track
+                s.wr_token_fire[i] @= wr_token
+                s.wr_commit_valid[i] @= wr_token & (s.wr_tid_fifo_count[i] > TidQueueCountType(0))
+                s.wr_commit_tid[i] @= s.wr_thread_tid[i]
 
         for i in range(num_rd_ports):
             s.register_file.rd_addr[i].msg //= s.rd_addr_cfg[i]
@@ -754,21 +793,9 @@ class STEP_RegisterFileControllerRTL( Component ):
             s.any_wr_enabled @= Bits1(0)
             wr_complete_mask = target_mask
             for port in range(num_wr_ports):
-                if s.wr_addr_valcfg[port]:
+                if s.wr_track_en[port]:
                     s.any_wr_enabled @= Bits1(1)
-                    port_mask = MaskType(0)
-                    rank = MaxThreadType(0)
-                    for tid in range(MAX_THREAD_COUNT):
-                        if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
-                            if s.wr_count[port] > rank:
-                                port_mask = port_mask | MaskType(1 << tid)
-                            rank = rank + MaxThreadType(1)
-                    for tid in range(MAX_THREAD_COUNT):
-                        if s.dep_thread_mask[tid]:
-                            if s.wr_count[port] > rank:
-                                port_mask = port_mask | MaskType(1 << tid)
-                            rank = rank + MaxThreadType(1)
-                    wr_complete_mask = wr_complete_mask & port_mask
+                    wr_complete_mask = wr_complete_mask & s.wr_seen_mask[port]
 
             if s.any_wr_enabled:
                 s.nonmem_ready_mask @= wr_complete_mask
@@ -786,8 +813,10 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.rd_regs_complete[i] @= Bits1(1)
                 # Check write ports
                 for i in range(num_wr_ports):
-                    if s.wr_addr_valcfg[i]:
-                        s.wr_regs_complete[i] @= Bits1(s.wr_count[i] >= s.expected_count)
+                    if s.wr_track_en[i]:
+                        s.wr_regs_complete[i] @= Bits1(
+                            (s.wr_seen_mask[i] & s.active_target_mask) == s.active_target_mask
+                        )
                     else:
                         s.wr_regs_complete[i] @= Bits1(1)
 
@@ -885,14 +914,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                         mapped_idx = i
                         if i < 4:
                             mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
-                        if s.wr_addr_valcfg[i]:
-                            if s.tile_token_shifter_out[mapped_idx] & (s.wr_count[i] < s.expected_count):
-                                s.wr_count_n[i] @= s.wr_count[i] + MaxThreadType(1)
-                                s.tile_token_return[mapped_idx] @= 1
-                        elif s.pred_wr_valcfg[i]:
-                            if s.tile_token_shifter_out[mapped_idx] & (s.pred_count[s.active_pred_reg] < s.pred_expected[s.active_pred_reg]):
-                                s.wr_count_n[i] @= s.wr_count[i] + MaxThreadType(1)
-                                s.tile_token_return[mapped_idx] @= 1
+                        if s.wr_token_fire[i]:
+                            s.wr_count_n[i] @= s.wr_count[i] + MaxThreadType(1)
+                            s.tile_token_return[mapped_idx] @= 1
                     for i in range(num_ld_ports):
                         if s.ld_req_accepted[i] & (s.ld_seq_count[i] < s.expected_count):
                             s.ld_seq_count_n[i] @= s.ld_seq_count[i] + MaxThreadType(1)
@@ -1095,6 +1119,65 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.st_enable_active[i] <<= s.recv_cfg_from_ctrl.msg.st_enable[i]
 
         # -------------------------------------------------------------------------
+        # Writeback thread-id tracking
+        # -------------------------------------------------------------------------
+        @update_ff
+        def wr_tid_tracking_ff():
+            cfg_start = s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE)
+            flush_tracking = s.reset | s.cfg_swap_w | cfg_start
+            if flush_tracking:
+                for i in range(num_wr_ports):
+                    s.wr_tid_fifo_head[i] <<= TidQueuePtrType(0)
+                    s.wr_tid_fifo_tail[i] <<= TidQueuePtrType(0)
+                    s.wr_tid_fifo_count[i] <<= TidQueueCountType(0)
+                    s.wr_seen_mask[i] <<= MaskType(0)
+                    for q in range(MAX_THREAD_COUNT):
+                        s.wr_tid_fifo_data[i][q] <<= MaxThreadType(0)
+            else:
+                for i in range(num_wr_ports):
+                    count = s.wr_tid_fifo_count[i]
+                    can_pop = s.wr_commit_valid[i]
+                    can_push = s.issue_fire & s.run_primed & (s.state == ST_RUN) & s.wr_track_en[i]
+                    commit_mask = MaskType(0)
+                    for tid in range(MAX_THREAD_COUNT):
+                        if s.wr_commit_tid[i] == MaxThreadType(tid):
+                            commit_mask = MaskType(1 << tid)
+
+                    if can_push:
+                        if (count < TidQueueCountType(MAX_THREAD_COUNT)) | can_pop:
+                            for q in range(MAX_THREAD_COUNT):
+                                if s.wr_tid_fifo_tail[i] == TidQueuePtrType(q):
+                                    s.wr_tid_fifo_data[i][q] <<= s.current_issue_tid
+
+                    if can_pop:
+                        s.wr_seen_mask[i] <<= s.wr_seen_mask[i] | commit_mask
+                    else:
+                        s.wr_seen_mask[i] <<= s.wr_seen_mask[i]
+
+                    if can_pop:
+                        s.wr_tid_fifo_head[i] <<= s.wr_tid_fifo_head[i] + TidQueuePtrType(1)
+                    else:
+                        s.wr_tid_fifo_head[i] <<= s.wr_tid_fifo_head[i]
+
+                    if can_push & ((count < TidQueueCountType(MAX_THREAD_COUNT)) | can_pop):
+                        s.wr_tid_fifo_tail[i] <<= s.wr_tid_fifo_tail[i] + TidQueuePtrType(1)
+                    else:
+                        s.wr_tid_fifo_tail[i] <<= s.wr_tid_fifo_tail[i]
+
+                    if can_push & ~can_pop:
+                        if count < TidQueueCountType(MAX_THREAD_COUNT):
+                            s.wr_tid_fifo_count[i] <<= count + TidQueueCountType(1)
+                        else:
+                            s.wr_tid_fifo_count[i] <<= count
+                    elif can_pop & ~can_push:
+                        if count > TidQueueCountType(0):
+                            s.wr_tid_fifo_count[i] <<= count - TidQueueCountType(1)
+                        else:
+                            s.wr_tid_fifo_count[i] <<= TidQueueCountType(0)
+                    else:
+                        s.wr_tid_fifo_count[i] <<= count
+
+        # -------------------------------------------------------------------------
         # Predicate register file update
         # -------------------------------------------------------------------------
         @update
@@ -1153,13 +1236,10 @@ class STEP_RegisterFileControllerRTL( Component ):
 
                 if s.state == ST_RUN:
                     for i in range(num_wr_ports):
-                        mapped_idx = i
-                        if i < 4:
-                            mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
-                        if s.pred_wr_valcfg[i] & (s.pred_wr_addr_cfg[i] == PredAddrType(r)) & s.tile_token_shifter_out[mapped_idx]:
+                        if s.pred_wr_valcfg[i] & (s.pred_wr_addr_cfg[i] == PredAddrType(r)) & s.wr_commit_valid[i]:
                             tid_mask = MaskType(0)
                             for tid in range(MAX_THREAD_COUNT):
-                                if s.wr_thread_tid[i] == MaxThreadType(tid):
+                                if s.wr_commit_tid[i] == MaxThreadType(tid):
                                     tid_mask = MaskType(1 << tid)
                             if (tid_mask != MaskType(0)) & ((seen_mask & tid_mask) == MaskType(0)):
                                 seen_mask = seen_mask | tid_mask

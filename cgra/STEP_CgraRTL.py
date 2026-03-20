@@ -147,10 +147,12 @@ class STEP_CgraRTL(Component):
             s.cfg_active_sel = OutPort(Bits1)
             s.cfg_load_sel = OutPort(Bits1)
             s.cfg_swap = OutPort(Bits1)
+            s.cfg_relaunch = OutPort(Bits1)
         else:
             s.cfg_active_sel = Wire(Bits1)
             s.cfg_load_sel = OutPort(Bits1)
             s.cfg_swap = Wire(Bits1)
+            s.cfg_relaunch = Wire(Bits1)
         ##### Core Controller Connections
         s.core_controller.recv_from_cpu_bitstream_pkt //= s.recv_from_cpu_bitstream_pkt
         s.core_controller.recv_from_cpu_metadata_pkt //= s.recv_from_cpu_metadata_pkt # cpu -> core
@@ -162,6 +164,7 @@ class STEP_CgraRTL(Component):
         s.cfg_active_sel //= s.core_controller.cfg_active_sel
         s.cfg_load_sel //= s.core_controller.cfg_load_sel
         s.cfg_swap //= s.core_controller.cfg_swap
+        s.cfg_relaunch //= s.core_controller.cfg_relaunch
         s.cfg_bank_commit = Wire(1)
         s.cfg_bank_commit //= s.core_controller.cfg_bank_commit
         
@@ -320,6 +323,7 @@ class STEP_CgraRTL(Component):
         s.tokenizer.cfg_active_sel //= s.cfg_active_sel # cc -> tokenizer
         s.tokenizer.cfg_load_sel //= s.cfg_load_sel # cc -> tokenizer
         s.tokenizer.cfg_swap //= s.cfg_swap # cc -> tokenizer
+        s.tokenizer.cfg_relaunch //= s.cfg_relaunch # cc -> tokenizer
 
         ###### Tokenizer & Rf
         for i in range(num_taker_ports):
@@ -448,6 +452,17 @@ class STEP_CgraRTL(Component):
             s.rf_cfg_issue_ready //= s.rf_controller.cfg_issue_ready
             s.rf_cfg_writeback_complete = OutPort(Bits1)
             s.rf_cfg_writeback_complete //= s.rf_controller.cfg_writeback_complete
+            s.rf_issue_fire = OutPort(Bits1)
+            s.rf_issue_tid = OutPort(mk_bits(clog2(MAX_THREAD_COUNT)))
+            s.rf_issue_fire //= s.rf_controller.rf_issue_fire
+            s.rf_issue_tid //= s.rf_controller.rf_issue_tid
+            s.rf_wr_track_en = [OutPort(Bits1) for _ in range(num_wr_ports)]
+            s.rf_wr_commit_valid = [OutPort(Bits1) for _ in range(num_wr_ports)]
+            s.rf_wr_commit_tid = [OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_wr_ports)]
+            for i in range(num_wr_ports):
+                s.rf_wr_track_en[i] //= s.rf_controller.rf_wr_track_en[i]
+                s.rf_wr_commit_valid[i] //= s.rf_controller.rf_wr_commit_valid[i]
+                s.rf_wr_commit_tid[i] //= s.rf_controller.rf_wr_commit_tid[i]
             s.rf_rd_addr_valcfg_n  = [OutPort(Bits1)         for _ in range(num_rd_ports)]
             s.rf_rd_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_rd_ports)]
             s.rf_wr_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_wr_ports)]
@@ -463,9 +478,9 @@ class STEP_CgraRTL(Component):
             # RF & Fabric Test
             s.rf_to_fabric_msg = [ OutPort(DataType) for _ in range(num_rd_ports)]
             for i in range(num_rd_ports):
-                # Use RF controller's explicit debug read-data probe so
-                # waveforms reflect the actual register-file outputs.
-                s.rf_to_fabric_msg[i] //= s.rf_controller.rf_rd_data[i]
+                # Expose the post-select RF output actually sent into fabric
+                # (register, constant, or synthetic tid path).
+                s.rf_to_fabric_msg[i] //= s.rf_controller.rd_data[i]
             s.rf_from_fabric_msg = [ OutPort(DataType) for _ in range(num_wr_ports)]
             for i in range(num_wr_ports // 2):
                 s.rf_from_fabric_msg[2*i] //= s.tile_fabric.send_west_data_port[i]

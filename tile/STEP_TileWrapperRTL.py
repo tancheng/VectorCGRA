@@ -112,7 +112,7 @@ class STEP_TileWrapperRTL(Component):
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
         if debug:
-            check_row = 1
+            check_row = 2
             check_col = 0
             check_tile_id = check_row * num_tile_cols + check_col
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]

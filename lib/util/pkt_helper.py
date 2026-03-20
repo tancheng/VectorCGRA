@@ -332,30 +332,38 @@ def generateCPUPktFromJSON(json_path):
                     )
                 ]
                 # Input Routes
-                for port in tile['tile_in_route']:
-                    if port:
-                        tile_in_route.append(TilePortType(TilePortEnum[port].value + 1))  # +1 for external port
-                    else:
-                        tile_in_route.append(TilePortType(0))
+                if "tile_in_route" not in tile:
+                    tile['tile_in_route'] = [TilePortType(0)] * cgra_def['num_tile_inports']
+                else:
+                    for port in tile['tile_in_route']:
+                        if port:
+                            tile_in_route.append(TilePortType(TilePortEnum[port].value + 1))  # +1 for external port
+                        else:
+                            tile_in_route.append(TilePortType(0))
 
                 # Output Routes
-                for port in tile['tile_out_route']:
-                    if port:
-                        idx = TilePortEnum[port].value
-                        tile_out_route = tile_out_route[:idx] + '1' + tile_out_route[idx+1:]
+                if "tile_out_route" in tile:
+                    for port in tile['tile_out_route']:
+                        if port:
+                            idx = TilePortEnum[port].value
+                            tile_out_route = tile_out_route[:idx] + '1' + tile_out_route[idx+1:]
                 
                 # tile_out_shift_amounts
                 max_shift_val = (1 << ShiftAmountType.nbits) - 1
-                tile_out_shift_amounts = [
-                    ShiftAmountType(max(0, min(int(val), max_shift_val)))
-                    for val in tile['tile_out_shift_amounts']
-                ]
+                if "tile_out_shift_amounts" not in tile:
+                    tile['tile_out_shift_amounts'] = [0] * cgra_def['num_tile_outports']
+                else:
+                    tile_out_shift_amounts = [
+                        ShiftAmountType(max(0, min(int(val), max_shift_val)))
+                        for val in tile['tile_out_shift_amounts']
+                    ]
 
                 # Pred Routes
-                for port in tile['tile_pred_route']:
-                    if port:
-                        idx = TilePortEnum[port].value
-                        tile_pred_route = tile_pred_route[:idx] + '1' + tile_pred_route[idx+1:]
+                if "tile_pred_route" in tile:
+                    for port in tile['tile_pred_route']:
+                        if port:
+                            idx = TilePortEnum[port].value
+                            tile_pred_route = tile_pred_route[:idx] + '1' + tile_pred_route[idx+1:]
                 
                 # Pred Forwarding
                 pred_sel_route = tile.get('pred_based_sel_in_to_out_route', '')
@@ -370,9 +378,9 @@ def generateCPUPktFromJSON(json_path):
                     tile_out_shift_amounts = tile_out_shift_amounts,
                     tile_pred_route = int(tile_pred_route, 2),
                     tile_fwd_route = tile_fwd_route,
-                    const_val = tile['const_val'],
+                    const_val = tile.get('const_val', 0),
                     pred_based_sel_in_to_out_route = pred_based_sel_in_to_out_route,
-                    pred_gen = Bits1(tile['pred_gen']),
+                    pred_gen = Bits1(tile.get('pred_gen', 0)),
                     opt_type = _resolve_opt_type(tile['opt_type'])
                 )
         
