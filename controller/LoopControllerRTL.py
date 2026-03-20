@@ -24,6 +24,12 @@ Each target is dispatched in a single cycle:
   - shadow_only targets: CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU)
   - normal targets:      CMD_RESET_LEAF_COUNTER (leaf DCU)
 
+NOTE: The `target.ctrl_addr` sent from LC acts as a Loop ID (Context ID) 
+to the target DCU. If a CGRA is spatial-only (ctrl_mem_size == 1), each DCU 
+only has 1 `ctrl_addr`. Therefore, a spatial-only DCU can only host 1 loop. 
+To support nested multiple loops in a spatial-only CGRA, the compiler MUST map 
+different loops to different tiles rather than time-multiplexing them.
+
 Author : Shangkun Li
   Date : February 19, 2026
 """
@@ -395,5 +401,5 @@ class LoopControllerRTL(Component):
           f'{s.ccu_child_complete_count[i]}'
         )
     if not traces:
-      return '[AC|IDLE]'
-    return '[AC|' + ' '.join(traces) + ']'
+      return '[LC|IDLE]'
+    return '[LC|' + ' '.join(traces) + ']'
