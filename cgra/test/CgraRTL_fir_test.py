@@ -1017,7 +1017,6 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
                                                      data = DataType(1, 1))),
-
           # Launch the tile.
           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
       ],

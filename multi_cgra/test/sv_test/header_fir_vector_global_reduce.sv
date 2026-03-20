@@ -1,14 +1,14 @@
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [63:0] data_payload,
   input logic       data_predicate,
   input logic [6:0] data_addr,
   input logic [6:0] ctrl_operation
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -110,11 +110,11 @@ ADD 10 10 31
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_config_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_config_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][3:0] routing_xbar_outport,
@@ -125,7 +125,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b ma
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -190,11 +190,11 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b ma
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b make_intra_cgra_config_pkt_w_data
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_config_pkt_w_data
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][3:0] routing_xbar_outport,
@@ -208,7 +208,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b ma
   input logic [0:0] pred,
   input logic [6:0] data_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -277,7 +277,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b ma
   return pkt;
 endfunction
 
-function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p);
+function automatic logic [230-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -311,8 +311,8 @@ function automatic logic [229-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
   };
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b unpack_pkt (logic [229-1:0] v, int printHex = 1);
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b p;
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 unpack_pkt (logic [230-1:0] v, int printHex = 1);
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 p;
   integer file_handle;
   // Use a running index from LSB upward for clarity
   int i = 0;
@@ -336,8 +336,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b un
   p.payload.data.bypass = v[i +: 1]; i += 1;
   p.payload.data.predicate = v[i +: 1]; i += 1;
   p.payload.data.payload = v[i +: 64]; i += 64;
-  // cmd (5)
-  p.payload.cmd = v[i +: 5]; i += 5;
+  // cmd (6)
+  p.payload.cmd = v[i +: 6]; i += 6;
   // header tail (27)
   p.vc_id = v[i +: 1]; i += 1;
   p.opaque = v[i +: 8]; i += 8;
@@ -351,8 +351,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__61e9c50a2d25d19b un
   p.src = v[i +: 5]; i += 5;
 
   // Consistency check.
-  if (i != 229)
-    $error("unpack index mismatch: %0d != %0d", i, 229);
+  if (i != 230)
+    $error("unpack index mismatch: %0d != %0d", i, 230);
 
 /*
 111103b7 lui x7

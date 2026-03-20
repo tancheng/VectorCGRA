@@ -1,10 +1,10 @@
-typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__0f53ca30ef872aeb IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
+typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a96b45c418e4c9d2 IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
 
 function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [31:0] data_payload,
   input logic       data_predicate,
   input logic [6:0] data_addr,
@@ -118,7 +118,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][3:0] routing_xbar_outport,
@@ -200,7 +200,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
 (
   input logic [4:0] src,
   input logic [4:0] dst,
-  input logic [4:0] cmd,
+  input logic [5:0] cmd,
   input logic [6:0] operation,
   input logic [3:0][2:0] fu_in_code,
   input logic [7:0][3:0] routing_xbar_outport,
@@ -285,7 +285,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   return pkt;
 endfunction
 
-function automatic logic [197-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
+function automatic logic [198-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
