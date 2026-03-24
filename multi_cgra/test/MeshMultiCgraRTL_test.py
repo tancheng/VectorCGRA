@@ -1793,18 +1793,18 @@ def initialize_test_harness(cmdline_opts,
         # cgra 2 tile 0
         [
             # Const for PHI_CONST.
-            IntraCgraPktType(2, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
             # Const for ADD_CONST.
-            IntraCgraPktType(2, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
 
             # Pre-configure per-tile config count per iter.
-            IntraCgraPktType(2, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
             # Pre-configure per-tile total config count.
-            IntraCgraPktType(2, 0, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
             # PHI_CONST.
-            IntraCgraPktType(2, 0,
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                        ctrl = CtrlType(OPT_PHI_CONST,
                                                                        fu_in_code,
@@ -1815,7 +1815,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = write_reg_from_code))),
 
             # ADD_CONST.
-            IntraCgraPktType(2, 0,
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
@@ -1828,7 +1828,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
                                                                        read_reg_from = read_reg_from_code))),
             # LD.
-            IntraCgraPktType(2, 0,
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_LD,
                                                                        # The first 2 indicates the first operand is from the second inport,
@@ -1842,7 +1842,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
                                                                        read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
             # NAH.
-            IntraCgraPktType(2, 0,
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                        ctrl = CtrlType(OPT_NAH,
                                                                        fu_in_code,
@@ -1852,7 +1852,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
             # Skips first time incoming from east tile via routing xbar.
-            IntraCgraPktType(2, 0,
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
                                                        ctrl = CtrlType(routing_xbar_outport = [
                                                            TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
@@ -1860,22 +1860,22 @@ def initialize_test_harness(cmdline_opts,
                                                        data = DataType(1, 1))),
 
             # Launch the tile.
-            IntraCgraPktType(2, 0, payload = CgraPayloadType(CMD_LAUNCH))
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
         ],
 
         # cgra 2 tile 1
         [
             # Const for ADD_CONST.
-            IntraCgraPktType(2, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
 
             # Pre-configure per-tile config count per iter.
-            IntraCgraPktType(2, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
 
             # Pre-configure per-tile total config count.
-            IntraCgraPktType(2, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
 
             # NAH.
-            IntraCgraPktType(2, 1,
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
                                                        ctrl = CtrlType(OPT_NAH,
                                                                        fu_in_code,
@@ -1885,7 +1885,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
             # ADD_CONST.
-            IntraCgraPktType(2, 1,
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
                                                        ctrl = CtrlType(OPT_ADD_CONST,
                                                                        fu_in_code,
@@ -1897,7 +1897,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
                                                                        write_reg_from = [b2(0), b2(2), b2(0), b2(0)],))),
             # NAH.
-            IntraCgraPktType(2, 1,
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                        ctrl = CtrlType(OPT_NAH,
                                                                        fu_in_code,
@@ -1907,7 +1907,7 @@ def initialize_test_harness(cmdline_opts,
                                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
             # GRANT_PREDICATE.
-            IntraCgraPktType(2, 1,
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
                              payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                        ctrl = CtrlType(OPT_GRT_PRED,
                                                                        # Swaps the first and second operands as the second one is
@@ -1921,7 +1921,7 @@ def initialize_test_harness(cmdline_opts,
                                                                        read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
 
             # Launch the tile.
-            IntraCgraPktType(2, 1, payload = CgraPayloadType(CMD_LAUNCH))
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
         ]
     ]
 
@@ -3831,7 +3831,7 @@ def test_multi_CGRA_fir_scalar_2x2_2x2(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
+  run_sim(th, 250)
 
 def test_multi_CGRA_fir_vector(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
