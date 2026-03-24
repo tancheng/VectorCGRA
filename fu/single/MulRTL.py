@@ -71,10 +71,6 @@ class MulRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
-          
-          if s.recv_opt.rdy and s.send_out[0].val:
-            with open('log.txt', 'a') as f:
-              print(f"\n\n\nMUL Cycle Trace: in0={s.recv_in[s.in0_idx].msg.payload} in1={s.recv_in[s.in1_idx].msg.payload} res={s.send_out[0].msg.payload}\n\n\n", file=f)
 
         elif s.recv_opt.msg.operation == OPT_MUL_CONST:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload * s.recv_const.msg.payload
@@ -92,4 +88,3 @@ class MulRTL(Fu):
           s.recv_opt.rdy @= 0
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
-

@@ -124,12 +124,9 @@ def run_sim(test_harness, max_cycles = 200):
   while not test_harness.done() and ncycles < max_cycles:
     test_harness.sim_tick()
     ncycles += 1
-    #print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
-    #print("dbg::cycle {}:{}".format(ncycles, test_harness.dut.cgra[2].tile[0].element.send_out[0].data))
+    print("cycle {}:{}".format(ncycles, test_harness.line_trace()))
 
   # Checks timeout.
-  print(f"Available attributes: {dir(test_harness.dut)}")
-  print(f"Available attributes: {test_harness.dut.get_child_components()}")
   assert ncycles < max_cycles
 
   test_harness.sim_tick()
@@ -1935,7 +1932,7 @@ def initialize_test_harness(cmdline_opts,
 
     expected_complete_sink_out_pkg = \
         [
-            IntraCgraPktType(src = 1, dst = 4, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1) # src/dst chk in lib.msg.
+            IntraCgraPktType(src = 1, dst = 4, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1)
         ]
     expected_mem_sink_out_pkt = \
         [
@@ -3834,7 +3831,7 @@ def test_multi_CGRA_fir_scalar_2x2_2x2(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th, 100)
+  run_sim(th)
 
 def test_multi_CGRA_fir_vector(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
