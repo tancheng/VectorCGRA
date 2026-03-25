@@ -424,6 +424,7 @@ def mk_cfg_metadata_pkt(
     field_dict['in_pred_en'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['in_pred_inv'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['in_const_vals'] = [ConstImmType for _ in range(num_rd_ports)]
+    field_dict['in_pred_reset_const_en'] = [Bits1 for _ in range(num_rd_ports)]
     field_dict['out_regs'] = [RegAddrType for _ in range(num_wr_ports)]
     field_dict['out_regs_val'] = [Bits1 for _ in range(num_wr_ports)]
     field_dict['out_pred_regs'] = [PredAddrType for _ in range(num_wr_ports)]

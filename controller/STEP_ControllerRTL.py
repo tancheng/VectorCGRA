@@ -24,6 +24,7 @@ class STEP_ControllerRTL(Component):
                 ):
     BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     PredRegType = mk_bits(clog2(num_pred_registers))
+    PredResetMaskType = mk_bits(num_pred_registers)
     LoopCountType = mk_bits(clog2(MAX_THREAD_COUNT))
     MaskType = mk_bits(MAX_THREAD_COUNT)
     TileCountType = mk_bits(clog2(num_tiles + 1))
@@ -58,6 +59,7 @@ class STEP_ControllerRTL(Component):
     # RF ports
     s.send_cfg_to_rf = SendIfcRTL(CfgMetadataType)
     s.send_cfg_to_rf_thread_mask = OutPort(MaskType)
+    s.send_cfg_to_rf_pred_reset_mask = OutPort(PredResetMaskType)
 
     # Tokenizer ports
     s.send_cfg_to_tokenizer = SendIfcRTL(CfgTokenizerType)
@@ -111,8 +113,6 @@ class STEP_ControllerRTL(Component):
         s.pc_done = Wire(1)
         s.pc_next = Wire(BitstreamAddrType)
         s.last_pc = Wire(1)
-    s.pc_req //= s.pc
-    
     # New register for maintaining current cfg_mem read address
     s.cfg_mem_raddr_reg = Wire(BitstreamAddrType)
     if debug:
@@ -157,6 +157,7 @@ class STEP_ControllerRTL(Component):
     s.fabric_cfg_bank0_id = Wire(BitstreamAddrType)
     s.fabric_cfg_bank1_id = Wire(BitstreamAddrType)
     s.load_pc = Wire(BitstreamAddrType)
+    s.pc_req //= s.load_pc
     s.next_pc = Wire(BitstreamAddrType)
     s.active_meta = Wire(CfgMetadataType)
     s.next_meta = Wire(CfgMetadataType)
@@ -206,6 +207,7 @@ class STEP_ControllerRTL(Component):
     s.cfg_packets_applied_count = Wire(TileCountType)
     s.cfg_to_rf_msg = Wire(CfgMetadataType)
     s.cfg_to_rf_thread_mask = Wire(MaskType)
+    s.cfg_to_rf_pred_reset_mask = Wire(PredResetMaskType)
     s.cfg_to_tokenizer_msg = Wire(CfgTokenizerType)
     num_pred_tiles = len(s.cfg_to_rf_msg.pred_tile_valid)
     num_ld_cfg_ports = len(s.cfg_to_rf_msg.ld_enable)
@@ -284,6 +286,7 @@ class STEP_ControllerRTL(Component):
         cfg_thread_min = base_thread_min
         cfg_thread_max = base_thread_max
         cfg_thread_mask = MaskType(0)
+        cfg_pred_reset_mask = PredResetMaskType(0)
         if s.load_thread_mask_override_valid:
             cfg_thread_mask = s.load_thread_mask_override
             found_tid = Bits1(0)
@@ -300,6 +303,16 @@ class STEP_ControllerRTL(Component):
                 tid_bits = LoopCountType(tid)
                 if (tid_bits >= cfg_thread_min) & (tid_bits < cfg_thread_max):
                     cfg_thread_mask = cfg_thread_mask | MaskType(1 << tid)
+
+        for i in range(MAX_BITSTREAM_COUNT):
+            if (
+                s.cfg_mem_shadow[i].branch_en
+                & (s.cfg_mem_shadow[i].cfg_id != s.load_meta.cfg_id)
+                & (s.cfg_mem_shadow[i].reconverge_cfg_id == s.load_meta.cfg_id)
+            ):
+                for r in range(num_pred_registers):
+                    if s.cfg_mem_shadow[i].pred_reg_id == PredRegType(r):
+                        cfg_pred_reset_mask = cfg_pred_reset_mask | PredResetMaskType(1 << r)
 
         s.cfg_to_rf_msg.cmd @= s.load_meta.cmd
         s.cfg_to_rf_msg.tile_load_count @= s.load_meta.tile_load_count
@@ -318,6 +331,7 @@ class STEP_ControllerRTL(Component):
             s.cfg_to_rf_msg.in_pred_en[i] @= s.load_meta.in_pred_en[i]
             s.cfg_to_rf_msg.in_pred_inv[i] @= s.load_meta.in_pred_inv[i]
             s.cfg_to_rf_msg.in_const_vals[i] @= s.load_meta.in_const_vals[i]
+            s.cfg_to_rf_msg.in_pred_reset_const_en[i] @= s.load_meta.in_pred_reset_const_en[i]
         for i in range(num_wr_cfg_ports):
             s.cfg_to_rf_msg.out_regs[i] @= s.load_meta.out_regs[i]
             s.cfg_to_rf_msg.out_regs_val[i] @= s.load_meta.out_regs_val[i]
@@ -334,6 +348,7 @@ class STEP_ControllerRTL(Component):
         s.cfg_to_rf_msg.thread_count_min @= cfg_thread_min
         s.cfg_to_rf_msg.thread_count_max @= cfg_thread_max
         s.cfg_to_rf_thread_mask @= cfg_thread_mask
+        s.cfg_to_rf_pred_reset_mask @= cfg_pred_reset_mask
         s.cfg_to_rf_msg.start_cfg @= s.load_meta.start_cfg
         s.cfg_to_rf_msg.end_cfg @= s.load_meta.end_cfg
         s.cfg_to_rf_msg.branch_en @= s.load_meta.branch_en
@@ -397,6 +412,7 @@ class STEP_ControllerRTL(Component):
 
         # Default interface values
         s.send_cfg_to_rf.val <<= 0
+        s.send_cfg_to_rf_pred_reset_mask <<= PredResetMaskType(0)
         s.send_cfg_to_tokenizer.val <<= 0
         s.send_to_cpu_done <<= s.send_to_cpu_done_reg
         s.pc_req_trigger <<= 0
@@ -458,6 +474,7 @@ class STEP_ControllerRTL(Component):
             s.active_thread_mask <<= MaskType(0)
             s.next_thread_mask <<= MaskType(0)
             s.send_cfg_to_rf_thread_mask <<= MaskType(0)
+            s.send_cfg_to_rf_pred_reset_mask <<= PredResetMaskType(0)
             s.load_yield_to_deferred <<= Bits1(0)
             s.active_yield_to_deferred <<= Bits1(0)
             s.next_yield_to_deferred <<= Bits1(0)
@@ -572,6 +589,7 @@ class STEP_ControllerRTL(Component):
                 if s.load_bank_reg != s.active_bank:
                     s.send_cfg_to_rf.msg <<= s.cfg_to_rf_msg
                     s.send_cfg_to_rf_thread_mask <<= s.cfg_to_rf_thread_mask
+                    s.send_cfg_to_rf_pred_reset_mask <<= s.cfg_to_rf_pred_reset_mask
                     s.send_cfg_to_rf.val <<= 1
                     s.cfg_bank_commit <<= 1
                     s.send_cfg_to_tokenizer.msg <<= s.cfg_to_tokenizer_msg
@@ -603,6 +621,7 @@ class STEP_ControllerRTL(Component):
                     # Active-bank load complete: start config when allowed
                     s.send_cfg_to_rf.msg <<= s.cfg_to_rf_msg
                     s.send_cfg_to_rf_thread_mask <<= s.cfg_to_rf_thread_mask
+                    s.send_cfg_to_rf_pred_reset_mask <<= s.cfg_to_rf_pred_reset_mask
                     s.send_cfg_to_rf.val <<= 1
                     s.cfg_relaunch <<= 1
                     s.cfg_bank_commit <<= 1
@@ -820,24 +839,47 @@ class STEP_ControllerRTL(Component):
                                         s.prefetch_inflight <<= 0
                                         s.rf_done_pending <<= 0
                                     else:
+                                        reuse_inactive_bank = Bits1(0)
+                                        if s.active_bank == Bits1(0):
+                                            reuse_inactive_bank = (
+                                                s.fabric_cfg_bank1_valid
+                                                & (s.fabric_cfg_bank1_id == next_cfg)
+                                            )
+                                        else:
+                                            reuse_inactive_bank = (
+                                                s.fabric_cfg_bank0_valid
+                                                & (s.fabric_cfg_bank0_id == next_cfg)
+                                            )
                                         s.load_bank_reg <<= ~s.active_bank
                                         s.load_bank <<= ~s.active_bank
                                         s.load_pc <<= next_cfg
-                                        s.load_tile_count <<= TileCountType(0)
-                                        s.load_inflight <<= 0
                                         s.cfg_packets_injected_count <<= TileCountType(0)
                                         s.cfg_packets_applied_count <<= TileCountType(0)
                                         s.load_thread_mask_override <<= next_mask
                                         s.load_thread_mask_override_valid <<= Bits1(1)
                                         s.load_yield_to_deferred <<= Bits1(0)
                                         s.load_skip_next_end_cfg <<= Bits1(0)
-                                        s.fabric_cfg_load_done <<= 1
-                                        s.cfg_packets_injection_done <<= 1
                                         s.load_meta_valid <<= 0
                                         s.meta_req_pending <<= 1
                                         s.cfg_mem_raddr_reg <<= next_cfg
                                         s.prefetch_inflight <<= 0
                                         s.rf_done_pending <<= 0
+                                        if reuse_inactive_bank:
+                                            s.load_tile_count <<= TileCountType(0)
+                                            s.load_inflight <<= 0
+                                            s.fabric_cfg_load_done <<= 1
+                                            s.cfg_packets_injection_done <<= 1
+                                        else:
+                                            s.pc_req_trigger <<= 1
+                                            s.load_tile_count <<= next_tile_count
+                                            s.load_inflight <<= 1
+                                            s.pc <<= next_cfg
+                                            s.fabric_cfg_load_done <<= 0
+                                            s.cfg_packets_injection_done <<= 0
+                                            if next_tile_count == TileCountType(0):
+                                                s.load_inflight <<= 0
+                                                s.fabric_cfg_load_done <<= 1
+                                                s.cfg_packets_injection_done <<= 1
                             elif exit_count > LoopCountType(0):
                                 if merge_found & (merge_idx + StackDepthType(1) == s.deferred_depth):
                                     s.deferred_depth <<= merge_idx

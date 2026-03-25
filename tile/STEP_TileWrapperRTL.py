@@ -112,8 +112,8 @@ class STEP_TileWrapperRTL(Component):
         
         #### TEST CONNECTIONS delete me TODO: @darrenl
         if debug:
-            check_row = 2
-            check_col = 0
+            check_row = 1
+            check_col = 3
             check_tile_id = check_row * num_tile_cols + check_col
             s.fu_in = [ OutPort(DataType) for _ in range(num_fu_inports) ]
             s.fu_out = [ OutPort(DataType) for _ in range(num_fu_outports) ]
@@ -146,12 +146,14 @@ class STEP_TileWrapperRTL(Component):
                 s.tile_wrapper_id_matched @= s.scan_chain.scan_pts[check_row*num_tile_rows + scan_col].tile_id == check_tile_id
 
             # More tests
+            s.tile_pred_in = [OutPort(1) for _ in range(num_tile_outports)]
             for i in range(num_fu_inports):
                 s.fu_in[i] //= s.tiles[check_row][check_col].fu_in[i]
             for i in range(num_fu_outports):
                 s.fu_out[i] //= s.tiles[check_row][check_col].fu_out[i]
             for i in range(num_tile_inports):
                 s.tile_in_test[i] //= s.tiles[check_row][check_col].tile_in_test[i]
+                s.tile_pred_in[i] //= s.tiles[check_row][check_col].tile_input_pred_port[i]
             
             s.tile_data_out = [OutPort(DataType) for _ in range(num_tile_outports)]
             for i in range(num_tile_outports):

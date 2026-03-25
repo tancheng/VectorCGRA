@@ -1,6 +1,9 @@
 import json
+import os
+from glob import glob
 from collections import deque
 
+import pytest
 from pymtl3 import *
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
@@ -16,6 +19,9 @@ from ...lib.util.pkt_helper import generateCPUPktFromJSON
 from ...lib.util.common import MAX_BITSTREAM_COUNT, MAX_THREAD_COUNT
 from ...lib.messages import *
 from ...lib.opt_type import *
+
+DFG_MAPPINGS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mappings"
+DEFAULT_DFG_JSON = f"{DFG_MAPPINGS_DIR}/dfg_mapping_gemm.json"
 
 
 #-------------------------------------------------------------------------
@@ -357,7 +363,7 @@ class TestHarness(Component):
         return s.dut.line_trace()
 
 def init_param(
-    json_path='/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mapping_gemm.json',
+    json_path=DEFAULT_DFG_JSON,
     axi_delay=1,
 ):
     #-------------------------------------------------------------------------
@@ -530,6 +536,11 @@ def _print_metrics(runtime_metrics):
         print(f"  wr_issue_counts: {runtime_metrics['wr_issue_counts']}")
         print(f"  wr_commit_counts: {runtime_metrics['wr_commit_counts']}")
 
+def _mapping_json_paths():
+    paths = sorted(glob(f"{DFG_MAPPINGS_DIR}/*.json"))
+    assert paths, f"No mapping JSON files found under {DFG_MAPPINGS_DIR}"
+    return paths
+
 
 def test_simple(cmdline_opts):
     th = init_param()
@@ -539,6 +550,25 @@ def test_simple(cmdline_opts):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
     cmdline_opts = dict(cmdline_opts)
-    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 700
+    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    _print_metrics(runtime_metrics)
+
+
+@pytest.mark.parametrize(
+    "json_path",
+    _mapping_json_paths(),
+    ids=lambda p: os.path.basename(p),
+)
+def test_all_mappings(cmdline_opts, json_path):
+    th = init_param(json_path=json_path)
+
+    th.elaborate()
+    th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                        'ALWCOMBORDER'])
+    cmdline_opts = dict(cmdline_opts)
+    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
+    runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    print(f"Validated mapping: {json_path}")
     _print_metrics(runtime_metrics)

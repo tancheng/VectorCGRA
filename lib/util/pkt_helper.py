@@ -230,6 +230,7 @@ def generateCPUPktFromJSON(json_path):
         in_pred_en = metadata.get('in_pred_en', [0] * cgra_def['num_rd_ports'])
         in_pred_inv = metadata.get('in_pred_inv', [0] * cgra_def['num_rd_ports'])
         in_const_vals = metadata.get('in_const_vals', [0] * cgra_def['num_rd_ports'])
+        in_pred_reset_const_en = metadata.get('in_pred_reset_const_en', [0] * cgra_def['num_rd_ports'])
 
         if len(in_pred_regs) != cgra_def['num_rd_ports']:
             raise ValueError(
@@ -249,6 +250,11 @@ def generateCPUPktFromJSON(json_path):
         if len(in_const_vals) != cgra_def['num_rd_ports']:
             raise ValueError(
                 f"cfg_{metadata.get('cfg_id', '?')} metadata.in_const_vals length {len(in_const_vals)} "
+                f"does not match num_rd_ports {cgra_def['num_rd_ports']}"
+            )
+        if len(in_pred_reset_const_en) != cgra_def['num_rd_ports']:
+            raise ValueError(
+                f"cfg_{metadata.get('cfg_id', '?')} metadata.in_pred_reset_const_en length {len(in_pred_reset_const_en)} "
                 f"does not match num_rd_ports {cgra_def['num_rd_ports']}"
             )
 
@@ -283,6 +289,7 @@ def generateCPUPktFromJSON(json_path):
                 ConstImmType(max(0, min(int(bit), (1 << ConstImmType.nbits) - 1)))
                 for bit in in_const_vals
             ],
+            in_pred_reset_const_en = [Bits1(bit) for bit in in_pred_reset_const_en],
             out_regs = [RegAddrType(bit) for bit in metadata['out_regs']],
             out_regs_val = [Bits1(bit) for bit in metadata['out_regs_val']],
             out_pred_regs = [PredAddrType(bit) for bit in metadata.get('out_pred_regs', [0] * cgra_def['num_wr_ports'])],
@@ -388,8 +395,6 @@ def generateCPUPktFromJSON(json_path):
         # Cfg Bitstream Pkt
         # cfg_bitstream_pkt = CfgBitstreamType(bitstream = tile_bitstream_pkts)
 
-        # Full CPU Pkt
-        cpu_metadata_pkt.append(cfg_metadata_pkt)
         ordered_tile_pkts = []
         for i in range(cgra_def['num_tile_rows']):
             row = [
@@ -398,17 +403,19 @@ def generateCPUPktFromJSON(json_path):
             ]
             ordered_tile_pkts += row[::-1] if i % 2 == 1 else row
 
-        active_tile_pkts = [
+        tile_pkts_to_send = [
             tile_pkt for tile_pkt in ordered_tile_pkts[::-1]
             if tile_pkt.opt_type != OPT_NAH
         ]
         expected_tile_load_count = int(cfg_metadata_pkt.tile_load_count)
-        if len(active_tile_pkts) != expected_tile_load_count:
+        if len(tile_pkts_to_send) != expected_tile_load_count:
             raise ValueError(
                 f"Config {int(cfg_metadata_pkt.cfg_id)} expected {expected_tile_load_count} active tiles "
-                f"but JSON bitstream contains {len(active_tile_pkts)} non-OPT_NAH tiles"
+                f"but JSON bitstream contains {len(tile_pkts_to_send)} non-OPT_NAH tiles"
             )
-        cpu_bitstream_pkt += active_tile_pkts
+
+        cpu_metadata_pkt.append(cfg_metadata_pkt)
+        cpu_bitstream_pkt += tile_pkts_to_send
 
     # Append the launch pkt
     cpu_metadata_pkt.append(CfgMetadataType(cmd = CMD_LAUNCH))

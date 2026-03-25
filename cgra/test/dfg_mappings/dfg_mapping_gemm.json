@@ -38,6 +38,7 @@
             "in_pred_en": [true, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
             "in_pred_inv": [true, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
             "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_reset_const_en": [false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
             "in_tid_enable": [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "out_regs": [2, 0, 3, 0, 0, 0, 0, 0],
             "out_regs_val": [true, false, true, true, false, false, false, false],
@@ -88,7 +89,7 @@
                 "tile_fwd_route": [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -240,12 +241,13 @@
             "ld_reg_addr": [6, 9],
             "ld_base_addr": [0, 0],
             "st_enable": [0, 0],
-            "in_regs": [5, 0, 8, 0, 0, 0, 3, 10, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_regs": [0, 5, 0, 8, 0, 0, 3, 10, 0, 0, 0, 0, 0, 0, 0, 0],
             "in_regs_val": [true, true, true, true, false, false, true, true, false, false, false, false, false, false, false, false],
-            "in_pred_regs": [1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            "in_pred_en": [true, false, true, false, false, false, false, true, false, false, false, false, false, false, false, false],
-            "in_pred_inv": [true, false, true, false, false, false, false, true, false, false, false, false, false, false, false, false],
+            "in_pred_regs": [0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_en": [false, true, false, true, false, false, false, true, false, false, false, false, false, false, false, false],
+            "in_pred_inv": [false, true, false, true, false, false, false, true, false, false, false, false, false, false, false, false],
             "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_reset_const_en": [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false],
             "in_tid_enable": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "out_regs": [5, 8, 0, 7, 0, 10, 0, 0],
             "out_regs_val": [true, true, false, true, false, true, false, false],
@@ -253,14 +255,14 @@
             "out_pred_regs_val": [false, false, true, false, false, false, false, false],
             "tokenizer": {
                 "token_route_sink_enable": [
-                    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -270,7 +272,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 ],
-                "token_route_delay_to_sink": [3, 2, 0, 0, 0, 0, 0, 0, 2, 3, 0, 0]
+                "token_route_delay_to_sink": [4, 3, 5, 1, 0, 3, 0, 0, 5, 4, 0, 0]
             },
             "cfg_id": 1,
             "br_id": 2,
@@ -290,9 +292,9 @@
         "bitstream": {
             "tile_7_[1,1]": {
                 "id": 0,
-                "tile_in_route": ["W", "SE", ""],
+                "tile_in_route": ["W", "SW", ""],
                 "tile_out_route": ["W", "N"],
-                "tile_out_shift_amounts": [0, 0, 2, 0, 0, 0, 0, 0],
+                "tile_out_shift_amounts": [0, 0, 3, 0, 0, 0, 0, 0],
                 "tile_fwd_route": [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -300,7 +302,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["W", "N"],
@@ -321,7 +323,7 @@
                 "id": 3,
                 "tile_in_route": ["E", "S", "SW"],
                 "tile_out_route": ["E", "N"],
-                "tile_out_shift_amounts": [0, 0, 0, 1, 0, 0, 0, 0],
+                "tile_out_shift_amounts": [0, 1, 0, 2, 0, 0, 0, 0],
                 "tile_fwd_route": [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -340,7 +342,7 @@
             },
             "tile_13_[1,2]": {
                 "id": 4,
-                "tile_in_route": ["N", "", ""],
+                "tile_in_route": ["E", "", ""],
                 "tile_out_route": ["W"],
                 "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
                 "tile_fwd_route": [
@@ -362,13 +364,13 @@
             "tile_14_[2,2]": {
                 "id": 5,
                 "tile_in_route": ["", "", ""],
-                "tile_out_route": ["NW"],
+                "tile_out_route": [""],
                 "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
                 "tile_fwd_route": [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -376,7 +378,7 @@
                 ],
                 "tile_pred_route": [""],
                 "const_val": 0,
-                "pred_fwd_route": "NW",
+                "pred_fwd_route": "",
                 "pred_gen": 0,
                 "opt_type": "OPT_PAS"
             },
@@ -397,7 +399,7 @@
                 ],
                 "tile_pred_route": ["W", "NE", "SE"],
                 "const_val": 1,
-                "pred_based_sel_in_to_out_route": "W",
+                "pred_based_sel_in_to_out_route": "E",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"
             },
@@ -413,7 +415,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["E", "N"],
@@ -437,14 +439,14 @@
             "tile_22_[4,3]": {
                 "id": 11,
                 "tile_in_route": ["", "", ""],
-                "tile_out_route": ["E", ""],
+                "tile_out_route": ["", ""],
                 "tile_out_shift_amounts": [0, 0, 0, 0, 0, 0, 0, 0],
                 "tile_fwd_route": [
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0]
@@ -488,6 +490,7 @@
             "in_pred_en": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
             "in_pred_inv": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
             "in_const_vals": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "in_pred_reset_const_en": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
             "in_tid_enable": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "out_regs": [0, 0, 0, 0, 0, 0, 0, 0],
             "out_regs_val": [false, false, false, false, false, false, false, false],

@@ -45,6 +45,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # External ifcs
         s.recv_cfg_from_ctrl = RecvIfcRTL( CfgMetadataType )   # from main ctrl
         s.recv_cfg_thread_mask = InPort(mk_bits(MAX_THREAD_COUNT))
+        s.recv_cfg_pred_reset_mask = InPort(mk_bits(num_pred_registers))
         s.rd_data            = [ OutPort(RegDataType) for _ in range(num_rd_ports) ]
         s.wr_data            = [ InPort(RegDataType) for _ in range(num_wr_ports) ]
         s.cfg_done           = OutPort( 1 )                # level-true when RUN complete this cycle
@@ -128,6 +129,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Predicate register file
         PredCountType = mk_bits(clog2(MAX_THREAD_COUNT))
         MaskType = mk_bits(MAX_THREAD_COUNT)
+        PredResetMaskType = mk_bits(num_pred_registers)
         s.pred_count = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
         s.pred_expected = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
         s.pred_any_true_reg = [ Wire(Bits1) for _ in range(num_pred_registers) ]
@@ -137,6 +139,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.pred_true_mask_reg = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.pred_false_mask_reg = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.pred_seen_mask_reg = [ Wire(MaskType) for _ in range(num_pred_registers) ]
+        s.pred_force_const_mask_reg = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.pred_count_next = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
         s.pred_expected_next = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
         s.pred_any_true_next = [ Wire(Bits1) for _ in range(num_pred_registers) ]
@@ -146,6 +149,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.pred_true_mask_next = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.pred_false_mask_next = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.pred_seen_mask_next = [ Wire(MaskType) for _ in range(num_pred_registers) ]
+        s.pred_force_const_mask_next = [ Wire(MaskType) for _ in range(num_pred_registers) ]
         s.active_pred_reg = Wire(PredAddrType)
         s.active_branch_en = Wire(Bits1)
         s.active_const_store = Wire(Bits1)
@@ -259,8 +263,12 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_pred_inv_bank1 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_const_val_bank0 = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
         s.rd_const_val_bank1 = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_pred_reset_const_en_bank0 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.rd_pred_reset_const_en_bank1 = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.pred_reg_bank0       = Wire(PredAddrType)
         s.pred_reg_bank1       = Wire(PredAddrType)
+        s.pred_reset_mask_bank0 = Wire(PredResetMaskType)
+        s.pred_reset_mask_bank1 = Wire(PredResetMaskType)
         s.branch_en_bank0      = Wire(Bits1)
         s.branch_en_bank1      = Wire(Bits1)
         s.const_store_bank0    = Wire(Bits1)
@@ -345,10 +353,12 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_pred_en = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_pred_inv = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_const_val = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_pred_reset_const_en = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_pred_addr_cfg_n = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
         s.rd_pred_en_n = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_pred_inv_n = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_const_val_n = [ Wire(ConstImmType) for _ in range(num_rd_ports) ]
+        s.rd_pred_reset_const_en_n = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_port_active = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_predicate_true = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.rd_predicate_use_reg = [ Wire(Bits1) for _ in range(num_rd_ports) ]
@@ -463,16 +473,22 @@ class STEP_RegisterFileControllerRTL( Component ):
             for i in range(num_rd_ports):
                 pred_true = Bits1(0)
                 pred_mask = MaskType(0)
+                force_const_mask = MaskType(0)
+                force_const = Bits1(0)
+                reset_const_en = Bits1(0)
                 for r in range(num_pred_registers):
                     if s.rd_pred_addr_cfg[i] == PredAddrType(r):
                         pred_mask = s.pred_true_mask_reg[r]
+                        force_const_mask = s.pred_force_const_mask_reg[r]
                 for tid in range(MAX_THREAD_COUNT):
                     if s.current_issue_tid == MaxThreadType(tid):
                         pred_true = Bits1(pred_mask[tid])
+                        force_const = Bits1(force_const_mask[tid])
+                reset_const_en = s.rd_pred_reset_const_en[i]
                 if s.rd_pred_inv[i]:
                     pred_true = ~pred_true
                 s.rd_predicate_true[i] @= pred_true
-                s.rd_predicate_use_reg[i] @= s.rd_pred_en[i] & pred_true
+                s.rd_predicate_use_reg[i] @= s.rd_pred_en[i] & pred_true & ~(force_const & reset_const_en)
                 s.rd_port_active[i] @= s.rd_addr_valcfg[i] | s.rd_pred_en[i]
 
 
@@ -637,6 +653,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.active_thread_mask_bank1 <<= MaskType(0)
                 s.pred_reg_bank0 <<= PredAddrType(0)
                 s.pred_reg_bank1 <<= PredAddrType(0)
+                s.pred_reset_mask_bank0 <<= PredResetMaskType(0)
+                s.pred_reset_mask_bank1 <<= PredResetMaskType(0)
                 s.branch_en_bank0 <<= Bits1(0)
                 s.branch_en_bank1 <<= Bits1(0)
                 s.const_store_bank0 <<= Bits1(0)
@@ -656,6 +674,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.rd_pred_inv_bank1[i] <<= Bits1(0)
                     s.rd_const_val_bank0[i] <<= ConstImmType(0)
                     s.rd_const_val_bank1[i] <<= ConstImmType(0)
+                    s.rd_pred_reset_const_en_bank0[i] <<= Bits1(0)
+                    s.rd_pred_reset_const_en_bank1[i] <<= Bits1(0)
                 for i in range(num_wr_ports):
                     s.wr_addr_cfg_bank0[i] <<= RegAddrType(0)
                     s.wr_addr_cfg_bank1[i] <<= RegAddrType(0)
@@ -706,6 +726,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.active_thread_max_bank0 <<= s.recv_cfg_thread_max_resolved
                         s.active_thread_mask_bank0 <<= s.recv_cfg_thread_mask_resolved
                         s.pred_reg_bank0 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
+                        s.pred_reset_mask_bank0 <<= s.recv_cfg_pred_reset_mask
                         s.branch_en_bank0 <<= s.recv_cfg_from_ctrl.msg.branch_en
                         s.const_store_bank0 <<= cfg_is_const_store
                         for i in range(num_rd_ports):
@@ -716,6 +737,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_pred_en_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
                             s.rd_pred_inv_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
                             s.rd_const_val_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
+                            s.rd_pred_reset_const_en_bank0[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_reset_const_en[i]
                         for i in range(num_wr_ports):
                             mapped_idx = i
                             if i < 4:
@@ -744,6 +766,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.active_thread_max_bank1 <<= s.recv_cfg_thread_max_resolved
                         s.active_thread_mask_bank1 <<= s.recv_cfg_thread_mask_resolved
                         s.pred_reg_bank1 <<= s.recv_cfg_from_ctrl.msg.pred_reg_id
+                        s.pred_reset_mask_bank1 <<= s.recv_cfg_pred_reset_mask
                         s.branch_en_bank1 <<= s.recv_cfg_from_ctrl.msg.branch_en
                         s.const_store_bank1 <<= cfg_is_const_store
                         for i in range(num_rd_ports):
@@ -754,6 +777,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_pred_en_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
                             s.rd_pred_inv_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
                             s.rd_const_val_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
+                            s.rd_pred_reset_const_en_bank1[i] <<= s.recv_cfg_from_ctrl.msg.in_pred_reset_const_en[i]
                         for i in range(num_wr_ports):
                             mapped_idx = i
                             if i < 4:
@@ -844,6 +868,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.rd_pred_en_n[i] @= s.rd_pred_en[i]
                 s.rd_pred_inv_n[i] @= s.rd_pred_inv[i]
                 s.rd_const_val_n[i] @= s.rd_const_val[i]
+                s.rd_pred_reset_const_en_n[i] @= s.rd_pred_reset_const_en[i]
 
                 # Token defaults
                 s.tile_token_take_req[i] @= Bits1(0)
@@ -879,6 +904,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_pred_en_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_en[i]
                         s.rd_pred_inv_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_inv[i]
                         s.rd_const_val_n[i] @= s.recv_cfg_from_ctrl.msg.in_const_vals[i]
+                        s.rd_pred_reset_const_en_n[i] @= s.recv_cfg_from_ctrl.msg.in_pred_reset_const_en[i]
                     for i in range(num_wr_ports):
                         mapped_idx = i
                         if i < 4:
@@ -955,6 +981,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.rd_pred_en[i] <<= Bits1(0)
                     s.rd_pred_inv[i] <<= Bits1(0)
                     s.rd_const_val[i] <<= ConstImmType(0)
+                    s.rd_pred_reset_const_en[i] <<= Bits1(0)
                     s.rd_count[i]       <<= MaxThreadType(0)
                 for i in range(num_wr_ports):
                     s.wr_addr_cfg[i]    <<= RegAddrType(0)
@@ -1003,6 +1030,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_pred_en[i] <<= s.rd_pred_en_bank0[i]
                             s.rd_pred_inv[i] <<= s.rd_pred_inv_bank0[i]
                             s.rd_const_val[i] <<= s.rd_const_val_bank0[i]
+                            s.rd_pred_reset_const_en[i] <<= s.rd_pred_reset_const_en_bank0[i]
                             s.rd_count[i] <<= MaxThreadType(0)
                         for i in range(num_wr_ports):
                             s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank0[i]
@@ -1037,6 +1065,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             s.rd_pred_en[i] <<= s.rd_pred_en_bank1[i]
                             s.rd_pred_inv[i] <<= s.rd_pred_inv_bank1[i]
                             s.rd_const_val[i] <<= s.rd_const_val_bank1[i]
+                            s.rd_pred_reset_const_en[i] <<= s.rd_pred_reset_const_en_bank1[i]
                             s.rd_count[i] <<= MaxThreadType(0)
                         for i in range(num_wr_ports):
                             s.wr_addr_cfg[i] <<= s.wr_addr_cfg_bank1[i]
@@ -1072,6 +1101,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.rd_pred_en[i] <<= s.rd_pred_en_n[i]
                         s.rd_pred_inv[i] <<= s.rd_pred_inv_n[i]
                         s.rd_const_val[i] <<= s.rd_const_val_n[i]
+                        s.rd_pred_reset_const_en[i] <<= s.rd_pred_reset_const_en_n[i]
 
                     for i in range(num_wr_ports):
                         s.wr_count[i] <<= s.wr_count_n[i]
@@ -1193,8 +1223,14 @@ class STEP_RegisterFileControllerRTL( Component ):
                 true_mask = s.pred_true_mask_reg[r]
                 false_mask = s.pred_false_mask_reg[r]
                 seen_mask = s.pred_seen_mask_reg[r]
+                force_const_mask = s.pred_force_const_mask_reg[r]
+                reconverge_reset_mask = MaskType(0)
+                reconverge_reset_en = Bits1(0)
 
                 if cfg_start:
+                    if s.recv_cfg_pred_reset_mask[r]:
+                        reconverge_reset_mask = s.recv_cfg_thread_mask_resolved
+                        reconverge_reset_en = Bits1(1)
                     for i in range(num_wr_ports):
                         if s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i] & (s.recv_cfg_from_ctrl.msg.out_pred_regs[i] == PredAddrType(r)):
                             count = PredCountType(0)
@@ -1208,6 +1244,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                             seen_mask = MaskType(0)
                 elif s.cfg_swap_w:
                     if s.cfg_active_sel_w == Bits1(0):
+                        if s.pred_reset_mask_bank0[r]:
+                            reconverge_reset_mask = s.active_thread_mask_bank0
+                            reconverge_reset_en = Bits1(1)
                         cfg_expected = PredCountType(s.expected_count_bank0)
                         for i in range(num_wr_ports):
                             if s.pred_wr_valcfg_bank0[i] & (s.pred_wr_addr_cfg_bank0[i] == PredAddrType(r)):
@@ -1221,6 +1260,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                                 false_mask = MaskType(0)
                                 seen_mask = MaskType(0)
                     else:
+                        if s.pred_reset_mask_bank1[r]:
+                            reconverge_reset_mask = s.active_thread_mask_bank1
+                            reconverge_reset_en = Bits1(1)
                         cfg_expected = PredCountType(s.expected_count_bank1)
                         for i in range(num_wr_ports):
                             if s.pred_wr_valcfg_bank1[i] & (s.pred_wr_addr_cfg_bank1[i] == PredAddrType(r)):
@@ -1234,6 +1276,27 @@ class STEP_RegisterFileControllerRTL( Component ):
                                 false_mask = MaskType(0)
                                 seen_mask = MaskType(0)
 
+                if reconverge_reset_en:
+                    true_mask = true_mask & ~reconverge_reset_mask
+                    false_mask = false_mask & ~reconverge_reset_mask
+                    seen_mask = seen_mask & ~reconverge_reset_mask
+                    force_const_mask = force_const_mask | reconverge_reset_mask
+
+                    count = PredCountType(0)
+                    true_count = PredCountType(0)
+                    false_count = PredCountType(0)
+                    any_true = Bits1(0)
+                    any_false = Bits1(0)
+                    for tid in range(MAX_THREAD_COUNT):
+                        if seen_mask[tid]:
+                            count = count + PredCountType(1)
+                        if true_mask[tid]:
+                            any_true = Bits1(1)
+                            true_count = true_count + PredCountType(1)
+                        if false_mask[tid]:
+                            any_false = Bits1(1)
+                            false_count = false_count + PredCountType(1)
+
                 if s.state == ST_RUN:
                     for i in range(num_wr_ports):
                         if s.pred_wr_valcfg[i] & (s.pred_wr_addr_cfg[i] == PredAddrType(r)) & s.wr_commit_valid[i]:
@@ -1241,6 +1304,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             for tid in range(MAX_THREAD_COUNT):
                                 if s.wr_commit_tid[i] == MaxThreadType(tid):
                                     tid_mask = MaskType(1 << tid)
+                            force_const_mask = force_const_mask & ~tid_mask
                             if (tid_mask != MaskType(0)) & ((seen_mask & tid_mask) == MaskType(0)):
                                 seen_mask = seen_mask | tid_mask
                                 if count < expected:
@@ -1265,6 +1329,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.pred_true_mask_next[r] @= true_mask
                 s.pred_false_mask_next[r] @= false_mask
                 s.pred_seen_mask_next[r] @= seen_mask
+                s.pred_force_const_mask_next[r] @= force_const_mask
 
         @update_ff
         def pred_rf_ff():
@@ -1279,6 +1344,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.pred_true_mask_reg[r] <<= MaskType(0)
                     s.pred_false_mask_reg[r] <<= MaskType(0)
                     s.pred_seen_mask_reg[r] <<= MaskType(0)
+                    s.pred_force_const_mask_reg[r] <<= MaskType(0)
             else:
                 for r in range(num_pred_registers):
                     s.pred_count[r] <<= s.pred_count_next[r]
@@ -1290,6 +1356,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.pred_true_mask_reg[r] <<= s.pred_true_mask_next[r]
                     s.pred_false_mask_reg[r] <<= s.pred_false_mask_next[r]
                     s.pred_seen_mask_reg[r] <<= s.pred_seen_mask_next[r]
+                    s.pred_force_const_mask_reg[r] <<= s.pred_force_const_mask_next[r]
 
         # -------------------------------------------------------------------------
         # Outputs derived from registered state (single-writer comb)

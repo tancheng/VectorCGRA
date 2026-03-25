@@ -127,8 +127,11 @@ class STEP_TileRTL(Component):
             TileIdType = mk_bits(clog2(16))
         
             s.tile_in_test = [ OutPort(DataType) for _ in range(num_tile_inports) ]
+            s.tile_input_pred_port = [ OutPort(Bits1) for _ in range(num_tile_inports) ]
             for i in range(num_tile_inports):
                 s.tile_in_test[i] //= s.tile_in_data_port[i]
+                s.tile_input_pred_port[i] //= s.tile_in_pred_port[i]
+
             s.ingest_new_bitstream = OutPort(Bits1)
             s.id_matched = OutPort(Bits1)
             s.id_received = OutPort(TileIdType)
@@ -137,6 +140,7 @@ class STEP_TileRTL(Component):
                 s.ingest_new_bitstream @= s.cfg_packet_applied
                 s.id_matched @= s.recv_tile_bitstream.msg.tile_id == s.id
                 s.id_received @= s.recv_tile_bitstream.msg.tile_id
+
         #######
 
         # Wire Connections

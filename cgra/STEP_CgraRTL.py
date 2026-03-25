@@ -179,6 +179,7 @@ class STEP_CgraRTL(Component):
         ##### Core Controller & RF Controller Connections
         s.core_controller.send_cfg_to_rf //= s.rf_controller.recv_cfg_from_ctrl # core -> rf
         s.core_controller.send_cfg_to_rf_thread_mask //= s.rf_controller.recv_cfg_thread_mask
+        s.core_controller.send_cfg_to_rf_pred_reset_mask //= s.rf_controller.recv_cfg_pred_reset_mask
         s.core_controller.rf_cfg_done //= s.rf_controller.cfg_done # rf -> core
         s.core_controller.rf_cfg_issue_ready //= s.rf_controller.cfg_issue_ready # rf -> core
         s.core_controller.rf_dep_mode //= s.rf_controller.dep_mode_out # rf -> core
@@ -535,14 +536,15 @@ class STEP_CgraRTL(Component):
                 s.fu_in[i] //= s.tile_fabric.fu_in[i]
             for i in range(num_fu_outports):
                 s.fu_out[i] //= s.tile_fabric.fu_out[i]
-            for i in range(num_tile_inports):
-                s.tile_in_test[i] //= s.tile_fabric.tile_in_test[i]
             
             s.tile_data_out = [OutPort(DataType) for _ in range(num_tile_outports)]
+            s.tile_pred_out = [OutPort(1) for _ in range(num_tile_outports)]
+            s.tile_pred_in = [OutPort(1) for _ in range(num_tile_inports)]
+            for i in range(num_tile_inports):
+                s.tile_in_test[i] //= s.tile_fabric.tile_in_test[i]
+                s.tile_pred_in[i] //= s.tile_fabric.tile_pred_in[i]
             for i in range(num_tile_outports):
                 s.tile_data_out[i] //= s.tile_fabric.tile_data_out[i]
-            s.tile_pred_out = [OutPort(1) for _ in range(num_tile_outports)]
-            for i in range(num_tile_outports):
                 s.tile_pred_out[i] //= s.tile_fabric.tile_pred_out[i]
 
     def line_trace(s):
