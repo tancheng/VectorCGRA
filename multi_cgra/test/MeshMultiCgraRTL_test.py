@@ -799,6 +799,497 @@ def initialize_test_harness(cmdline_opts,
       ctrl_steps_per_iter = 3
       ctrl_steps_total = 3
 
+  elif test_name == 'test_systolic_4x4_2x2':
+      updated_ctrl_steps = 3
+      fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
+
+      activation_tensor_preload_data = [
+          [
+              # CGRA 4, tile 2: [1, 2, 3]
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = 128)),
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(2, 1), data_addr = 129)),
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(3, 1), data_addr = 130)),
+
+              # CGRA 4, tile 0: [4, 5, 6]
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(4, 1), data_addr = 131)),
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(5, 1), data_addr = 132)),
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(6, 1), data_addr = 133)),
+
+              # CGRA 0, tile 2: [7, 8, 9]
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(7, 1), data_addr = 0)),
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(8, 1), data_addr = 1)),
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(9, 1), data_addr = 2)),
+          ]
+      ]
+
+      src_opt_pkt = [
+          # CGRA 4, tile 2.
+          [
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(128, 1))),
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(129, 1))),
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(130, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 2, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 2, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              # LD_CONST indicates the address is a const.
+              IntraCgraPktType(0, 2, 0, 4,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_LD_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         # Sends to east tiles: [(CGRA 4, tile 3), (CGRA 5, tile 2), (CGRA 5, tile 3)].
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 4, tile 0.
+          [
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(131, 1))),
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(132, 1))),
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(133, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 0, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 0, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              # LD_CONST indicates the address is a const.
+              IntraCgraPktType(0, 0, 0, 4,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_LD_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         # Sends to east tiles: [(CGRA 4, tile 1), (CGRA 5, tile 0), (CGRA 5, tile 1)]
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              # IntraCgraPktType(0, 2, 0, 4, payload = CgraPayloadType(CMD_LAUNCH)),
+              IntraCgraPktType(0, 0, 0, 4, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 0, tile 2.
+          [
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(0, 1))),
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(1, 1))),
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 2, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 2, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              # LD_CONST indicates the address is a const.
+              IntraCgraPktType(0, 2, 0, 0,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_LD_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         # Sends to east tiles: [(CGRA 0, tile 3), (CGRA 1, tile 2), (CGRA 1, tile 3)]
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              # IntraCgraPktType(0, 2, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+              # IntraCgraPktType(0, 0, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+              IntraCgraPktType(0, 2, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 4, tile 3.
+          [
+              IntraCgraPktType(0, 3, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(2, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 3, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 3, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 3, 0, 4,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 4, tile 2) to east (CGRA 5, tile 2).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 4, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         #              Sends mul to south tile(CGRA 4, tile 1).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 3, 0, 4, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 4, tile 1.
+          [
+              IntraCgraPktType(0, 1, 0, 4, payload = CgraPayloadType(CMD_CONST, data = DataType(4, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 1, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 1, 0, 4,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 1, 0, 4,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 4, tile 0) to east (CGRA 5, tile 0).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 4, tile 0) to first inport of FU, to do MUL_CONST (const 4).
+                                                                          # Put data from north(CGRA 4, tile 3) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                         #              Sends mul_add to south tile(CGRA 0, tile 3).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              # IntraCgraPktType(0, 3, 0, 4, payload = CgraPayloadType(CMD_LAUNCH)),
+              IntraCgraPktType(0, 1, 0, 4, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 0, tile 3.
+          [
+              IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(6, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 3, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 3, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 3, 0, 0,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 0, tile 2) to east (CGRA 1, tile 2).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 0, tile 2) to first inport of FU, to do MUL_CONST (const 6).
+                                                                          # Put data from north(CGRA 4, tile 1) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                         #              Sends mul_add to south tile(CGRA 0, tile 1).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              # IntraCgraPktType(0, 3, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+              # IntraCgraPktType(0, 1, 0, 2, payload = CgraPayloadType(CMD_LAUNCH)),
+              IntraCgraPktType(0, 3, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 0, tile 1.
+          [
+              # Const
+              IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))), # 60
+              IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(4, 1))), # 72
+              IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(5, 1))), # 84
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 1, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 1, 0, 0,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 1, 0, 0,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_STR_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Stores data from north(CGRA 0, tile 3).
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 1, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 5, tile 2.
+          [
+              IntraCgraPktType(0, 2, 0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(8, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 2, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 2, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 2, 0, 5,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 4, tile 3) to east (CGRA 5, tile 3).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 4, tile 3) to first inport of FU, to do OPT_MUL_CONST.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         #              Sends mul to south tile(CGRA 5, tile 0).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 2, 0, 5, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 5, tile 0.
+          [
+              IntraCgraPktType(0, 0, 0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(10, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 0, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 0, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 0, 0, 5,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 4, tile 1) to east (CGRA 5, tile 1).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 4, tile 1) to first inport of FU, to do MUL_CONST (const 10).
+                                                                          # Put data from north(CGRA 5, tile 2) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                          #             Sends mul_add to south tile(CGRA 1, tile 2).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 0, 0, 5, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 1, tile 2.
+          [
+              IntraCgraPktType(0, 2, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(12, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 2, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 2, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 2, 0, 1,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         # Forward data from west(CGRA 0, tile 3) to east (CGRA 1, tile 3).
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(3),
+                                                                          # Put data from west(CGRA 0, tile 3) to first inport of FU, to do MUL_CONST (const 12).
+                                                                          # Put data from north(CGRA 5, tile 0) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                          #             Sends mul_add to south tile(CGRA 1, tile 0).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 2, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 1, tile 0.
+          [
+              # Const
+              IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(32, 1))), # 132
+              IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(33, 1))), # 162
+              IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(34, 1))), # 192
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 0, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 0, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 0, 0, 1,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_STR_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Stores data from north(CGRA 1, tile 2).
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 5, tile 3.
+          [
+              IntraCgraPktType(0, 3, 0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(14, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 3, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 3, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 3, 0, 5,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Put data from west(CGRA 5, tile 2) to first inport of FU, to do OPT_MUL_CONST.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                          #             Sends mul to south tile(CGRA 5, tile 1).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 3, 0, 5, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 5, tile 1.
+          [
+              IntraCgraPktType(0, 1, 0, 5, payload = CgraPayloadType(CMD_CONST, data = DataType(16, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 1, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 1, 0, 5,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 1, 0, 5,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Put data from west(CGRA 5, tile 0) to first inport of FU, to do MUL_CONST (const 16).
+                                                                          # Put data from north(CGRA 5, tile 3) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                          #             Sends mul_add to south tile(CGRA 1, tile 3).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 1, 0, 5, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 1, tile 3.
+          [
+              IntraCgraPktType(0, 3, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(18, 1))),
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 3, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 3, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 3, 0, 1,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_MUL_CONST_ADD,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Put data from west(CGRA 1, tile 2) to first inport of FU, to do MUL_CONST (const 18).
+                                                                          # Put data from north(CGRA 5, tile 1) to third inport to do ADD.
+                                                                          TileInType(PORT_WEST), TileInType(0), TileInType(PORT_NORTH), TileInType(0)],
+                                                                          #             Sends mul_add to south tile(CGRA 1, tile 1).
+                                                                         [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 3, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+          ],
+
+          # CGRA 1, tile 1.
+          [
+              # Const
+              IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(35, 1))), # 204
+              IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(36, 1))), # 252
+              IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(37, 1))), # 300
+
+              # Pre-configure per-tile config count per iter.
+              IntraCgraPktType(0, 1, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
+
+              # Pre-configure per-tile total config count.
+              IntraCgraPktType(0, 1, 0, 1,       0, 0, 0, 0, 0, 0,
+                               CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(updated_ctrl_steps, 1))),
+
+              IntraCgraPktType(0, 1, 0, 1,
+                               payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                         ctrl = CtrlType(OPT_STR_CONST,
+                                                                         fu_in_code,
+                                                                         [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                          # Stores data from north(CGRA 1, tile 3).
+                                                                          TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                         [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                          FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+              IntraCgraPktType(0, 1, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+          ]
+      ]
+
+      src_query_pkt = \
+          [
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 3)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 4)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 5)),
+
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 32)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 33)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
+
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 35)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 36)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 37))
+          ]
+
+      # Figure to illustrate details: https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_weight_stationary_systolic_array.png
+      expected_complete_sink_out_pkg = [IntraCgraPktType(payload = CgraPayloadType(CMD_COMPLETE)) for _ in range(15)]
+      expected_mem_sink_out_pkt = \
+          [
+              # cgra 0
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x3c, 1), data_addr = 3)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x48, 1), data_addr = 4)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x54, 1), data_addr = 5)),
+
+              # cgra 1
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x84, 1), data_addr = 32)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xa2, 1), data_addr = 33)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xc0, 1), data_addr = 34)),
+
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xcc, 1), data_addr = 35)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfc, 1), data_addr = 36)),
+              IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0x12c, 1), data_addr = 37))
+          ]
+
+      for activation in activation_tensor_preload_data:
+          src_ctrl_pkt.extend(activation)
+      for src_opt in src_opt_pkt:
+          src_ctrl_pkt.extend(src_opt)
+
+      expected_sink_out_pkt.extend(expected_complete_sink_out_pkg)
+      expected_sink_out_pkt.extend(expected_mem_sink_out_pkt)
+
+      # We only needs 3 steps to finish this test.
+      ctrl_steps_per_iter = 3
+      ctrl_steps_total = 3
+
   elif test_name == 'test_fir_scalar':
     routing_xbar_code = [TileInType(0) for _ in range(num_routing_outports)]
     fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
@@ -1359,6 +1850,580 @@ def initialize_test_harness(cmdline_opts,
     expected_complete_sink_out_pkg = \
         [
             IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1)
+        ]
+    expected_mem_sink_out_pkt = \
+        [
+            # IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
+        ]
+
+    for activation in preload_data:
+        src_ctrl_pkt.extend(activation)
+    for src_opt in src_opt_pkt:
+        src_ctrl_pkt.extend(src_opt)
+
+    expected_sink_out_pkt.extend(expected_complete_sink_out_pkg)
+    expected_sink_out_pkt.extend(expected_mem_sink_out_pkt)
+
+  elif test_name == 'test_fir_scalar_2x2_2x2':
+    routing_xbar_code = [TileInType(0) for _ in range(num_routing_outports)]
+    fu_xbar_code = [FuOutType(0) for _ in range(num_routing_outports)]
+    write_reg_from_code = [b2(0) for _ in range(num_fu_inports)]
+    # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+    write_reg_from_code[0] = b2(2)
+    read_reg_from_code = [b1(0) for _ in range(num_fu_inports)]
+    read_reg_from_code[0] = b1(1)
+    read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
+
+    fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
+    src_ctrl_pkt = []
+    src_query_pkt = []
+    expected_sink_out_pkt = []
+    # Expects all the fields on the output is exactly same as provided golden reference.
+    cmp_func = lambda a, b : a.payload.data == b.payload.data and \
+                             a.payload.cmd == b.payload.cmd and \
+                             a.payload.ctrl.operation == b.payload.ctrl.operation and \
+                             a.src == b.src and \
+                             a.dst == b.dst and \
+                             a.src_cgra_id == b.src_cgra_id and \
+                             a.dst_cgra_id == b.dst_cgra_id and \
+                             a.src_cgra_x == b.src_cgra_x and \
+                             a.src_cgra_y == b.src_cgra_y and \
+                             a.dst_cgra_x == b.dst_cgra_x and \
+                             a.dst_cgra_y == b.dst_cgra_y
+
+    preload_data = [
+        [
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(10, 1), data_addr = 0)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(11, 1), data_addr = 1)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(12, 1), data_addr = 2)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(13, 1), data_addr = 3)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(14, 1), data_addr = 4)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(15, 1), data_addr = 5)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(16, 1), data_addr = 6)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(17, 1), data_addr = 7)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(18, 1), data_addr = 8)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(19, 1), data_addr = 9)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(20, 1), data_addr = 10)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(21, 1), data_addr = 11)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(22, 1), data_addr = 12)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(23, 1), data_addr = 13)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(24, 1), data_addr = 14)),
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(25, 1), data_addr = 15)),
+        ]
+    ]
+
+    # kernel specific parameters.
+    kStoreAddress = 16 # We no longer need this for storing the result, as we can directly return it to CPU.
+    kInputBaseAddress = 0
+    kCoefficientBaseAddress = 2
+    kSumInitValue = 3
+    kLoopLowerBound = 2
+    kLoopIncrement = 1
+    kLoopUpperBound = 10
+    kCtrlCountPerIter = 4
+    ctrl_steps_per_iter = kCtrlCountPerIter
+    # Though kTotalCtrlSteps is way more than required loop iteration count,
+    # the stored result should still be correct thanks to the grant predicate.
+    kTotalCtrlSteps = kCtrlCountPerIter * \
+                      (kLoopUpperBound - kLoopLowerBound) + \
+                      100
+    ctrl_steps_total = kTotalCtrlSteps
+    kExpectedOutput = 2215
+
+    # Corresponding DFG:
+    #
+    #              0(phi_const) <---------┐
+    #             /      |      \         |
+    #           2(+)    4(+)    8(+)      |
+    #          /       /       /  |       |
+    #        3(ld) 5(ld)   9(cmp) |       |
+    #          \    /        | \  |       |
+    #           6(x)    12(not) 10(grant_predicate)
+    #             |          |
+    #      ┌--> 7(+)         |
+    #      |    /   \        |
+    #  1(phi_const)  11(grant_predicate)
+    #                        |
+    #                     13(ret)
+    #
+    # Corresponding mapping:
+    '''
+        ↑ Y
+    (0,5)|         🔳
+    (0,4)|        .
+    (0,3)|      .
+    (0,2)|    .
+    (0,1)| 🔳
+    (0,0)+-------------→ X
+        (1,0)(2,0)(3,0)
+
+    ===================================================
+    cycle 0:
+    [    🔳            🔳            🔳            🔳 ]
+
+    [ 0(phi_const) →   🔳            🔳            🔳 ]
+        ↓ ↺
+    [    🔳            🔳            🔳            🔳 ]
+
+    [   7(+)    ───→   🔳            🔳            🔳 ]
+          ↺
+    ---------------------------------------------------
+    cycle 1:
+    [    🔳            🔳            🔳            🔳 ]
+
+    [ 2(+ const)     8(+ const)      🔳            🔳 ]
+          ↺            ↓ ↺
+    [ 4(+ const)       🔳            🔳            🔳 ]
+          ↺
+    [ 1(phi_const)  11(grant_pred)   🔳            🔳 ]
+          ↺             ↺
+    ---------------------------------------------------
+    cycle 2:
+    [    🔳            🔳            🔳            🔳 ]
+
+    [   3(ld)          🔳            🔳            🔳 ]
+          ↓             ↑
+    [   5(ld)        9(cmp)          🔳            🔳 ]
+          ↺             ↺
+    [    🔳         13(ret)          🔳            🔳 ]
+
+    ---------------------------------------------------
+    cycle 3:
+    [    🔳            🔳            🔳            🔳 ]
+
+    [    🔳   ← 10(grant_predicate)  🔳            🔳 ]
+
+    [   6(x)        12(not)          🔳            🔳 ]
+          ↓             ↓
+    [    🔳            🔳            🔳            🔳 ]
+
+    ---------------------------------------------------
+    '''
+
+    src_opt_pkt = [
+        # cgra 0 tile 0
+        [
+            # Const for PHI_CONST.
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kSumInitValue, 1))),
+
+            # # Store address.
+            # IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONST, data = DataType(kStoreAddress, 1))),
+
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # ADD.
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_ADD,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to east tile: tile 1; and self reg.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
+                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = write_reg_from_code,
+                                                                       # Reads from the second reg cluster, which is written by the
+                                                                       # following OPT_PHI_CONST.
+                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+
+            # PHI CONST, indicating the address is a const.
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_PHI_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                       # Sends to self reg. Needs to be another register cluster to
+                                                                       # avoid conflict with previous OPT_ADD.
+                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
+                                                                       read_reg_from = read_reg_from_code))),
+            # NAH.
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+            # NAH.
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # Pre-configure the prologue count for both operation and routing.
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 0,
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
+                                                       ctrl = CtrlType(routing_xbar_outport = [
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 0,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 0,
+                                                       ctrl = CtrlType(fu_xbar_outport = [
+                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                                                       data = DataType(1, 1))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_LAUNCH))
+        ],
+
+        # cgra 0 tile 1
+        [
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # NAH.
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # GRT PRED.
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_GRT_PRED,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_WEST), TileInType(PORT_NORTH), TileInType(0), TileInType(0)],
+                                                                       # Sends to self first reg cluster.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = write_reg_from_code))),
+            # RET.
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_RET,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       read_reg_from = read_reg_from_code))),
+            # NAH.
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 1,
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 2,
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
+                                                       ctrl = CtrlType(routing_xbar_outport = [
+                                                           TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 1,
+                                                       ctrl = CtrlType(routing_xbar_outport = [
+                                                           TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                       data = DataType(1, 1))),
+            IntraCgraPktType(0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 1,
+                                                       ctrl = CtrlType(fu_xbar_outport = [
+                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                           FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                                                       data = DataType(1, 1))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+        ],
+
+        # cgra 0 tile 2
+        [
+            # Const for ADD_CONST.
+            IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONST, data = DataType(kCoefficientBaseAddress, 1))),
+
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # NAH.
+            IntraCgraPktType(0, 2,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # ADD_CONST.
+            IntraCgraPktType(0, 2,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_ADD_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to self reg.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = write_reg_from_code))),
+            # LD.
+            IntraCgraPktType(0, 2,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_LD,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to self reg. Needs to be another register cluster to
+                                                                       # avoid conflict with ADD_CONST.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
+                                                                       read_reg_from = read_reg_from_code))),
+            # MUL.
+            IntraCgraPktType(0, 2,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_MUL,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to south tile: tile 0.
+                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 2, payload = CgraPayloadType(CMD_LAUNCH))
+        ],
+
+        # cgra 0 tile 3
+        [
+            # Const for CMP.
+            IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopUpperBound, 1))),
+
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # NAH.
+            IntraCgraPktType(0, 3,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # NAH.
+            IntraCgraPktType(0, 3,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # CMP.
+            IntraCgraPktType(0, 3,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_NE_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends result to north tile9, and self first register cluster.
+                                                                       [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = write_reg_from_code))),
+
+            # NOT.
+            IntraCgraPktType(0, 3,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_NOT,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends result to south.
+                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       # Reads operand for `NOT` from self first register cluster.
+                                                                       read_reg_from = read_reg_from_code))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 3, payload = CgraPayloadType(CMD_LAUNCH))
+        ],
+
+        # cgra 2 tile 0
+        [
+            # Const for PHI_CONST.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopLowerBound, 1))),
+            # Const for ADD_CONST.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kInputBaseAddress, 1))),
+
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # PHI_CONST.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_PHI_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(1),
+                                                                        FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       write_reg_from = write_reg_from_code))),
+
+            # ADD_CONST.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_ADD_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to self reg.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                       # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],
+                                                                       read_reg_from = read_reg_from_code))),
+            # LD.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_LD,
+                                                                       # The first 2 indicates the first operand is from the second inport,
+                                                                       # which is actually from the second register cluster rather than the
+                                                                       # inport channel, indicated by the `read_reg_from_code`.
+                                                                       [FuInType(2), FuInType(0), FuInType(0), FuInType(0)],
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to south tile: tile 4.
+                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+            # NAH.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # Skips first time incoming from east tile via routing xbar.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 0,
+                                                       ctrl = CtrlType(routing_xbar_outport = [
+                                                           TileInType(PORT_EAST), TileInType(0), TileInType(0), TileInType(0),
+                                                           TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                       data = DataType(1, 1))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+        ],
+
+        # cgra 2 tile 1
+        [
+            # Const for ADD_CONST.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(kLoopIncrement, 1))),
+
+            # Pre-configure per-tile config count per iter.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlCountPerIter, 1))),
+
+            # Pre-configure per-tile total config count.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+
+            # NAH.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # ADD_CONST.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                       ctrl = CtrlType(OPT_ADD_CONST,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends to south tile5 and self reg (cluster 1).
+                                                                       [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0)],
+                                                                       # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                       write_reg_from = [b2(0), b2(2), b2(0), b2(0)],))),
+            # NAH.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                       ctrl = CtrlType(OPT_NAH,
+                                                                       fu_in_code,
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+            # GRANT_PREDICATE.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1,
+                             payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                       ctrl = CtrlType(OPT_GRT_PRED,
+                                                                       # Swaps the first and second operands as the second one is
+                                                                       # by default treated as the condition.
+                                                                       [FuInType(2), FuInType(1), FuInType(0), FuInType(0)],
+                                                                       [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0)],
+                                                                       # Sends result to west tile8.
+                                                                       [FuOutType(0), FuOutType(0), FuOutType(1), FuOutType(0),
+                                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                       read_reg_from = [b1(0), b1(1), b1(0), b1(0)]))),
+
+            # Launch the tile.
+            IntraCgraPktType(0, 1, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH))
+        ]
+    ]
+
+    src_query_pkt = \
+        [
+            # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = kStoreAddress)),
+        ]
+
+    expected_complete_sink_out_pkg = \
+        [
+            IntraCgraPktType(src = 1, dst = 4, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0), ctrl = CtrlType(OPT_RET))) for _ in range(1)
         ]
     expected_mem_sink_out_pkt = \
         [
@@ -3188,7 +4253,6 @@ def test_multi_CGRA_systolic_2x2_2x2_translation(cmdline_opts):
   th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v")
   translate_model(th, ['dut'])
 
-
 def test_multi_CGRA_systolic_2x2_2x2_non_combinational_mem_access(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
                                num_cgra_rows = 2,
@@ -3206,6 +4270,24 @@ def test_multi_CGRA_systolic_2x2_2x2_non_combinational_mem_access(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_multi_CGRA_systolic_4x4_2x2(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 4,
+                               num_cgra_columns = 4,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_systolic_4x4_2x2')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th, 500)
 
 def test_multi_CGRA_fir_scalar(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
@@ -3240,6 +4322,24 @@ def test_multi_CGRA_fir_scalar_translation(cmdline_opts):
   th.dut.set_metadata(VerilogTranslationPass.explicit_module_name, "MeshMultiCgraRTL__explicit")
   th.dut.set_metadata(VerilogTranslationPass.explicit_file_name, "MeshMultiCgraRTL__explicit__pickled.v")
   translate_model(th, ['dut'])
+
+def test_multi_CGRA_fir_scalar_2x2_2x2(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_fir_scalar_2x2_2x2')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th, 250)
 
 def test_multi_CGRA_fir_vector(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,
