@@ -130,19 +130,15 @@ class STEP_ControllerRTL(Component):
     # Shadow metadata storage for low-latency reads in control logic
     s.cfg_mem_shadow = [ Wire(CfgMetadataType) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.cfg_mem_shadow_rdata = Wire(CfgMetadataType)
-    s.br_id_shadow = [ Wire(BitstreamAddrType) for _ in range(MAX_BITSTREAM_COUNT) ]
-    s.end_cfg_shadow = [ Wire(1) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.br_id_by_load_pc = Wire(BitstreamAddrType)
     s.end_cfg_by_load_pc = Wire(1)
     s.br_id_by_next_pc = Wire(BitstreamAddrType)
     s.end_cfg_by_next_pc = Wire(1)
     s.end_cfg_by_branch_reconverge = Wire(1)
-    s.tile_load_shadow = [ Wire(TileCountType) for _ in range(MAX_BITSTREAM_COUNT) ]
     s.tile_load_by_load_pc = Wire(TileCountType)
     s.tile_load_by_next_pc = Wire(TileCountType)
     s.tile_load_by_branch_true_meta = Wire(TileCountType)
     s.tile_load_by_branch_false_meta = Wire(TileCountType)
-    s.tile_load_by_branch_false_reg = Wire(TileCountType)
     s.tile_load_by_branch_reconverge = Wire(TileCountType)
     s.tile_load_by_loop_start_meta = Wire(TileCountType)
     s.tile_load_by_loop_exit_meta = Wire(TileCountType)
@@ -173,14 +169,6 @@ class STEP_ControllerRTL(Component):
     s.prefetch_inflight = Wire(1)
     s.rf_done_pending = Wire(1)
     s.rf_wait_for_busy = Wire(1)
-    s.branch_active = Wire(1)
-    s.branch_need_false = Wire(1)
-    s.branch_phase = Wire(1)
-    s.branch_true_cfg = Wire(BitstreamAddrType)
-    s.branch_false_cfg = Wire(BitstreamAddrType)
-    s.branch_reconverge_cfg = Wire(BitstreamAddrType)
-    s.branch_true_count = Wire(LoopCountType)
-    s.branch_false_count = Wire(LoopCountType)
     s.load_thread_mask_override = Wire(MaskType)
     s.load_thread_mask_override_valid = Wire(1)
     s.active_thread_mask = Wire(MaskType)
@@ -203,7 +191,6 @@ class STEP_ControllerRTL(Component):
     s.last_cfg_id = Wire(BitstreamAddrType)
     s.send_to_cpu_done_reg = Wire(1)
     s.load_tile_count = Wire(TileCountType)
-    s.load_tile_count_next = Wire(TileCountType)
     s.cfg_packets_applied_count = Wire(TileCountType)
     s.cfg_to_rf_msg = Wire(CfgMetadataType)
     s.cfg_to_rf_thread_mask = Wire(MaskType)
@@ -236,42 +223,39 @@ class STEP_ControllerRTL(Component):
     def shadow_read():
         # Use shadow entry zero as the default to keep the block translatable.
         s.cfg_mem_shadow_rdata @= s.cfg_mem_shadow[0]
-        s.br_id_by_load_pc @= s.br_id_shadow[0]
-        s.end_cfg_by_load_pc @= s.end_cfg_shadow[0]
-        s.br_id_by_next_pc @= s.br_id_shadow[0]
-        s.end_cfg_by_next_pc @= s.end_cfg_shadow[0]
-        s.end_cfg_by_branch_reconverge @= s.end_cfg_shadow[0]
-        s.tile_load_by_load_pc @= s.tile_load_shadow[0]
-        s.tile_load_by_next_pc @= s.tile_load_shadow[0]
-        s.tile_load_by_branch_true_meta @= s.tile_load_shadow[0]
-        s.tile_load_by_branch_false_meta @= s.tile_load_shadow[0]
-        s.tile_load_by_branch_false_reg @= s.tile_load_shadow[0]
-        s.tile_load_by_branch_reconverge @= s.tile_load_shadow[0]
-        s.tile_load_by_loop_start_meta @= s.tile_load_shadow[0]
-        s.tile_load_by_loop_exit_meta @= s.tile_load_shadow[0]
+        s.br_id_by_load_pc @= s.cfg_mem_shadow[0].br_id
+        s.end_cfg_by_load_pc @= s.cfg_mem_shadow[0].end_cfg
+        s.br_id_by_next_pc @= s.cfg_mem_shadow[0].br_id
+        s.end_cfg_by_next_pc @= s.cfg_mem_shadow[0].end_cfg
+        s.end_cfg_by_branch_reconverge @= s.cfg_mem_shadow[0].end_cfg
+        s.tile_load_by_load_pc @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_next_pc @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_branch_true_meta @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_branch_false_meta @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_branch_reconverge @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_loop_start_meta @= s.cfg_mem_shadow[0].tile_load_count
+        s.tile_load_by_loop_exit_meta @= s.cfg_mem_shadow[0].tile_load_count
         for i in range(MAX_BITSTREAM_COUNT):
             if s.load_pc == BitstreamAddrType(i):
                 s.cfg_mem_shadow_rdata @= s.cfg_mem_shadow[i]
-                s.br_id_by_load_pc @= s.br_id_shadow[i]
-                s.end_cfg_by_load_pc @= s.end_cfg_shadow[i]
-                s.tile_load_by_load_pc @= s.tile_load_shadow[i]
+                s.br_id_by_load_pc @= s.cfg_mem_shadow[i].br_id
+                s.end_cfg_by_load_pc @= s.cfg_mem_shadow[i].end_cfg
+                s.tile_load_by_load_pc @= s.cfg_mem_shadow[i].tile_load_count
             if s.pc_next == BitstreamAddrType(i):
-                s.br_id_by_next_pc @= s.br_id_shadow[i]
-                s.end_cfg_by_next_pc @= s.end_cfg_shadow[i]
-                s.tile_load_by_next_pc @= s.tile_load_shadow[i]
+                s.br_id_by_next_pc @= s.cfg_mem_shadow[i].br_id
+                s.end_cfg_by_next_pc @= s.cfg_mem_shadow[i].end_cfg
+                s.tile_load_by_next_pc @= s.cfg_mem_shadow[i].tile_load_count
             if s.active_meta.branch_true_cfg_id == BitstreamAddrType(i):
-                s.tile_load_by_branch_true_meta @= s.tile_load_shadow[i]
+                s.tile_load_by_branch_true_meta @= s.cfg_mem_shadow[i].tile_load_count
             if s.active_meta.branch_false_cfg_id == BitstreamAddrType(i):
-                s.tile_load_by_branch_false_meta @= s.tile_load_shadow[i]
-            if s.branch_false_cfg == BitstreamAddrType(i):
-                s.tile_load_by_branch_false_reg @= s.tile_load_shadow[i]
+                s.tile_load_by_branch_false_meta @= s.cfg_mem_shadow[i].tile_load_count
             if s.active_meta.reconverge_cfg_id == BitstreamAddrType(i):
-                s.end_cfg_by_branch_reconverge @= s.end_cfg_shadow[i]
-                s.tile_load_by_branch_reconverge @= s.tile_load_shadow[i]
+                s.end_cfg_by_branch_reconverge @= s.cfg_mem_shadow[i].end_cfg
+                s.tile_load_by_branch_reconverge @= s.cfg_mem_shadow[i].tile_load_count
             if s.active_meta.loop_start_cfg_id == BitstreamAddrType(i):
-                s.tile_load_by_loop_start_meta @= s.tile_load_shadow[i]
+                s.tile_load_by_loop_start_meta @= s.cfg_mem_shadow[i].tile_load_count
             if s.active_meta.loop_exit_cfg_id == BitstreamAddrType(i):
-                s.tile_load_by_loop_exit_meta @= s.tile_load_shadow[i]
+                s.tile_load_by_loop_exit_meta @= s.cfg_mem_shadow[i].tile_load_count
 
     @update
     def update_scan_chain():
@@ -461,14 +445,6 @@ class STEP_ControllerRTL(Component):
             s.rf_done_pending <<= 0
             s.rf_wait_for_busy <<= 0
             s.rf_active <<= 0
-            s.branch_active <<= 0
-            s.branch_need_false <<= 0
-            s.branch_phase <<= 0
-            s.branch_true_cfg <<= BitstreamAddrType(0)
-            s.branch_false_cfg <<= BitstreamAddrType(0)
-            s.branch_reconverge_cfg <<= BitstreamAddrType(0)
-            s.branch_true_count <<= LoopCountType(0)
-            s.branch_false_count <<= LoopCountType(0)
             s.load_thread_mask_override <<= MaskType(0)
             s.load_thread_mask_override_valid <<= Bits1(0)
             s.active_thread_mask <<= MaskType(0)
@@ -490,9 +466,6 @@ class STEP_ControllerRTL(Component):
             s.cfg_bank_commit <<= 0
             for i in range(MAX_BITSTREAM_COUNT):
                 s.cfg_mem_shadow[i] <<= s.cfg_mem_shadow[i]
-                s.br_id_shadow[i] <<= BitstreamAddrType(0)
-                s.end_cfg_shadow[i] <<= Bits1(0)
-                s.tile_load_shadow[i] <<= TileCountType(0)
                 s.deferred_cfg[i] <<= BitstreamAddrType(0)
                 s.deferred_tile_count[i] <<= TileCountType(0)
                 s.deferred_thread_mask[i] <<= MaskType(0)
@@ -522,10 +495,6 @@ class STEP_ControllerRTL(Component):
                     s.cfg_mem_metadata.wdata <<= s.recv_from_cpu_metadata_pkt.msg
                     s.cfg_mem_metadata.wen <<= 1
                     s.cfg_mem_shadow[s.recv_from_cpu_metadata_pkt.msg.cfg_id] <<= s.recv_from_cpu_metadata_pkt.msg
-                    s.br_id_shadow[s.recv_from_cpu_metadata_pkt.msg.cfg_id] <<= s.recv_from_cpu_metadata_pkt.msg.br_id
-                    s.end_cfg_shadow[s.recv_from_cpu_metadata_pkt.msg.cfg_id] <<= s.recv_from_cpu_metadata_pkt.msg.end_cfg
-                    s.tile_load_shadow[s.recv_from_cpu_metadata_pkt.msg.cfg_id] <<= \
-                        s.recv_from_cpu_metadata_pkt.msg.tile_load_count
                     if s.recv_from_cpu_metadata_pkt.msg.end_cfg:
                         s.last_cfg_id <<= s.recv_from_cpu_metadata_pkt.msg.cfg_id
                     if s.recv_from_cpu_metadata_pkt.msg.start_cfg:
@@ -615,7 +584,6 @@ class STEP_ControllerRTL(Component):
                         s.rf_done_pending <<= Bits1(1)
                     s.load_meta_valid <<= 0
                     s.fabric_cfg_load_done <<= 0
-                    s.load_tile_count_next <<= s.load_meta.tile_load_count
                     s.prefetch_inflight <<= 0
                 elif (~s.rf_active) | s.rf_done_pending | s.rf_cfg_done:
                     # Active-bank load complete: start config when allowed
@@ -650,7 +618,6 @@ class STEP_ControllerRTL(Component):
                     s.pc <<= s.load_pc
                     s.last_pc <<= s.load_pc == s.last_cfg_id
                     s.pc_next <<= s.load_meta.br_id
-                    s.load_tile_count_next <<= s.load_meta.tile_load_count
                     s.rf_done_pending <<= 0
 
             # Issue prefetch for predicted pc (static br_id) while current cfg executes.
@@ -1044,7 +1011,6 @@ class STEP_ControllerRTL(Component):
                     s.active_skip_next_end_cfg <<= s.next_skip_next_end_cfg
                     s.last_pc <<= s.next_pc == s.last_cfg_id
                     s.pc_next <<= s.next_meta.br_id
-                    s.load_tile_count_next <<= s.next_meta.tile_load_count
                     s.next_ready <<= 0
                     s.rf_done_pending <<= 0
                     s.rf_active <<= 1

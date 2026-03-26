@@ -56,6 +56,7 @@ def _resolve_opt_type(opt_name):
     opt_aliases = {
         'OPT_EXT': 'OPT_PAS',
         'OPT_TRUNC': 'OPT_PAS',
+        'OPT_SHL_CONST': 'OPT_LLS',
     }
     resolved_name = opt_aliases.get(opt_name, opt_name)
     return globals()[resolved_name]
@@ -394,6 +395,13 @@ def generateCPUPktFromJSON(json_path):
         # No Longer needed
         # Cfg Bitstream Pkt
         # cfg_bitstream_pkt = CfgBitstreamType(bitstream = tile_bitstream_pkts)
+
+        for tile_id in range(cgra_def['num_tiles']):
+            if tile_id not in tile_bitstream_pkts:
+                tile_bitstream_pkts[tile_id] = TileBitstreamType(
+                    tile_id=TileIdType(tile_id),
+                    opt_type=OPT_NAH,
+                )
 
         ordered_tile_pkts = []
         for i in range(cgra_def['num_tile_rows']):

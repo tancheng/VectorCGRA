@@ -1,0 +1,5595 @@
+{
+  "benchmark": "kernel",
+  "cgra_def": {
+    "data_width": 32,
+    "num_consts": 16,
+    "num_fu_inports": 3,
+    "num_fu_outports": 1,
+    "num_ld_ports": 2,
+    "num_pred_registers": 16,
+    "num_rd_ports": 16,
+    "num_register_banks": 8,
+    "num_registers": 16,
+    "num_st_ports": 2,
+    "num_tile_cols": 4,
+    "num_tile_inports": 8,
+    "num_tile_outports": 8,
+    "num_tile_rows": 4,
+    "num_tiles": 16,
+    "num_wr_ports": 8
+  },
+  "configs": [
+    {
+      "active_tile_count": 15,
+      "branches": [
+        {
+          "cycle": 0,
+          "dfg_node_id": 42,
+          "predicate_inputs": [],
+          "recurrent_successor_node_ids": [],
+          "schedule_cycle": 18,
+          "successor_node_ids": [],
+          "successor_schedule_cycles": [],
+          "tile_id": 7
+        }
+      ],
+      "cfg_id": 0,
+      "comments": [],
+      "cycle": 0,
+      "kind": "prologue",
+      "loads": [],
+      "predicates": [
+        {
+          "cycle": 0,
+          "dfg_node_id": 42,
+          "predicatee_node_ids": [],
+          "schedule_cycle": 18,
+          "tile_id": 7
+        }
+      ],
+      "stores": [
+        {
+          "cycle": 0,
+          "dfg_node_id": 39,
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "schedule_cycle": 24,
+          "tile_id": 12
+        }
+      ],
+      "tiles": [
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 19,
+          "notes": [],
+          "opt_type": "OPT_LT_CONST",
+          "original_opcode": "vcmp",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 15,
+              "src_org_opt": "zext",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 14,
+              "src_org_opt": "zext",
+              "src_tile_id": 2
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            },
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 1,
+              "out_port": 2,
+              "src_dfg_node_id": 14
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 42,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            0
+          ],
+          "predicate_source_node_ids": [
+            42
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 19,
+              "src_org_opt": "vcmp",
+              "src_tile_id": 0
+            },
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 32,
+              "src_org_opt": "zext",
+              "src_tile_id": 5
+            },
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 33,
+              "src_org_opt": "zext",
+              "src_tile_id": 8
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            },
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 1,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 9
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 32,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": 18,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 42,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            },
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 0,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            3
+          ],
+          "predicate_source_node_ids": [
+            42
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            },
+            {
+              "slot": 3,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            1,
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 42,
+          "notes": [],
+          "opt_type": "OPT_BRH",
+          "original_opcode": "br",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 11,
+              "out_port": 0,
+              "src_dfg_node_id": 7
+            },
+            {
+              "dst_port": 0,
+              "dst_tile_id": 3,
+              "out_port": 1,
+              "src_dfg_node_id": 42
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 6,
+              "out_port": 2,
+              "src_dfg_node_id": 42
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 33,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 1,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 5,
+              "out_port": 1,
+              "src_dfg_node_id": 1
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [
+            1,
+            3
+          ],
+          "predicate_source_node_ids": [
+            7,
+            26
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 2,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": 0,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 0,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 6,
+              "out_port": 1,
+              "src_dfg_node_id": 0
+            },
+            {
+              "dst_port": 2,
+              "dst_tile_id": 11,
+              "out_port": 3,
+              "src_dfg_node_id": 26
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 9,
+              "out_port": 2,
+              "src_dfg_node_id": 26
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 0,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            },
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            1,
+            2
+          ],
+          "predicate_source_node_ids": [
+            7,
+            26
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            },
+            {
+              "slot": 1,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 39,
+          "notes": [],
+          "opt_type": "OPT_STR",
+          "original_opcode": "store",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 24,
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 8,
+          "notes": [],
+          "opt_type": "OPT_PHI_CONST",
+          "original_opcode": "phi",
+          "output_routes": [],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 12,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 10
+            },
+            {
+              "input_port": 2,
+              "is_bypass": true,
+              "src_dfg_node_id": 8,
+              "src_org_opt": "phi",
+              "src_tile_id": 13
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 14,
+      "branches": [
+        {
+          "cycle": 1,
+          "dfg_node_id": 9,
+          "predicate_inputs": [],
+          "recurrent_successor_node_ids": [],
+          "schedule_cycle": 13,
+          "successor_node_ids": [],
+          "successor_schedule_cycles": [],
+          "tile_id": 11
+        }
+      ],
+      "cfg_id": 1,
+      "comments": [],
+      "cycle": 1,
+      "kind": "kernel",
+      "loads": [],
+      "predicates": [
+        {
+          "cycle": 1,
+          "dfg_node_id": 9,
+          "predicatee_node_ids": [],
+          "schedule_cycle": 13,
+          "tile_id": 11
+        }
+      ],
+      "stores": [],
+      "tiles": [
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 33,
+              "src_org_opt": "zext",
+              "src_tile_id": 4
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            },
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 2,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 5
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 16,
+          "notes": [],
+          "opt_type": "OPT_ADD",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 5,
+              "out_port": 0,
+              "src_dfg_node_id": 16
+            },
+            {
+              "dst_port": 2,
+              "dst_tile_id": 2,
+              "out_port": 3,
+              "src_dfg_node_id": 15
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": 13,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 15,
+              "src_org_opt": "zext",
+              "src_tile_id": 1
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 27,
+          "notes": [],
+          "opt_type": "OPT_RET",
+          "original_opcode": "ret",
+          "output_routes": [],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 19,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 34,
+          "notes": [],
+          "opt_type": "OPT_ADD",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 8,
+              "out_port": 0,
+              "src_dfg_node_id": 19
+            },
+            {
+              "dst_port": 0,
+              "dst_tile_id": 0,
+              "out_port": 1,
+              "src_dfg_node_id": 33
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 4
+            }
+          ],
+          "schedule_cycle": 19,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 16,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 1
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 2,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "bitcast",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 1,
+              "out_port": 1,
+              "src_dfg_node_id": 2
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": 1,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            3
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 4,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "bitcast",
+          "output_routes": [
+            {
+              "dst_port": 2,
+              "dst_tile_id": 7,
+              "out_port": 3,
+              "src_dfg_node_id": 4
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 1,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 9,
+              "src_org_opt": "br",
+              "src_tile_id": 11
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 4,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 6
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            0
+          ],
+          "predicate_source_node_ids": [
+            9
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 19,
+              "src_org_opt": "vcmp",
+              "src_tile_id": 4
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 10,
+          "notes": [],
+          "opt_type": "OPT_PHI_CONST",
+          "original_opcode": "phi",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 13,
+              "out_port": 0,
+              "src_dfg_node_id": 7
+            }
+          ],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 7,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 2,
+              "is_bypass": true,
+              "src_dfg_node_id": 10,
+              "src_org_opt": "phi",
+              "src_tile_id": 9
+            },
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 8,
+              "src_org_opt": "phi",
+              "src_tile_id": 14
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 9,
+          "notes": [],
+          "opt_type": "OPT_BRH",
+          "original_opcode": "br",
+          "output_routes": [],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 13,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 14
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 9
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            1
+          ],
+          "predicate_source_node_ids": [
+            7
+          ],
+          "register_slots": [
+            {
+              "slot": 1,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 15,
+      "branches": [],
+      "cfg_id": 2,
+      "comments": [],
+      "cycle": 2,
+      "kind": "kernel",
+      "loads": [
+        {
+          "const_operand_count": 0,
+          "cycle": 2,
+          "dfg_node_id": 35,
+          "output_ports": [],
+          "schedule_cycle": 20,
+          "tile_id": 4
+        }
+      ],
+      "predicates": [],
+      "stores": [],
+      "tiles": [
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 38,
+          "notes": [],
+          "opt_type": "OPT_ADD",
+          "original_opcode": "getelementptr",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 20,
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            3
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 3,
+          "notes": [],
+          "opt_type": "OPT_GT_CONST",
+          "original_opcode": "cmp",
+          "output_routes": [
+            {
+              "dst_port": 2,
+              "dst_tile_id": 2,
+              "out_port": 3,
+              "src_dfg_node_id": 3
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 2,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            3
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 3,
+              "src_org_opt": "cmp",
+              "src_tile_id": 1
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 21,
+          "notes": [],
+          "opt_type": "OPT_ADD",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 2,
+              "dst_tile_id": 3,
+              "out_port": 3,
+              "src_dfg_node_id": 21
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 1,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": 14,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 5,
+              "src_org_opt": "cmp",
+              "src_tile_id": 7
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 21,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 2
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 38,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 0
+            },
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 17,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 35,
+          "notes": [],
+          "opt_type": "OPT_LD",
+          "original_opcode": "load",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 20,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 2,
+              "is_bypass": true,
+              "src_dfg_node_id": 35,
+              "src_org_opt": "load",
+              "src_tile_id": 4
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 17,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "bitcast",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 14,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 9,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            },
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 8,
+              "src_org_opt": "phi",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            3
+          ],
+          "predicate_source_node_ids": [
+            9
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            },
+            {
+              "slot": 1,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 5,
+          "notes": [],
+          "opt_type": "OPT_GT_CONST",
+          "original_opcode": "cmp",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 6,
+              "out_port": 2,
+              "src_dfg_node_id": 9
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 2,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 20,
+          "notes": [],
+          "opt_type": "OPT_SEL",
+          "original_opcode": "vselect",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 12,
+              "out_port": 0,
+              "src_dfg_node_id": 20
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 20,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 11,
+              "src_org_opt": "trunc",
+              "src_tile_id": 10
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            3
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 11,
+          "notes": [],
+          "opt_type": "OPT_TRUNC",
+          "original_opcode": "trunc",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 14,
+              "out_port": 0,
+              "src_dfg_node_id": 10
+            },
+            {
+              "dst_port": 0,
+              "dst_tile_id": 6,
+              "out_port": 1,
+              "src_dfg_node_id": 8
+            },
+            {
+              "dst_port": 2,
+              "dst_tile_id": 11,
+              "out_port": 3,
+              "src_dfg_node_id": 11
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 8,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 11,
+              "src_org_opt": "trunc",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 20,
+              "src_org_opt": "vselect",
+              "src_tile_id": 8
+            },
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 13
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 1,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 12,
+              "out_port": 2,
+              "src_dfg_node_id": 22
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 10,
+              "src_org_opt": "phi",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 14,
+      "branches": [],
+      "cfg_id": 3,
+      "comments": [],
+      "cycle": 3,
+      "kind": "kernel",
+      "loads": [],
+      "predicates": [],
+      "stores": [
+        {
+          "cycle": 3,
+          "dfg_node_id": 23,
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "schedule_cycle": 21,
+          "tile_id": 12
+        }
+      ],
+      "tiles": [
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 5,
+              "src_org_opt": "cmp",
+              "src_tile_id": 3
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 22,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "bitcast",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 2,
+              "out_port": 2,
+              "src_dfg_node_id": 5
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 15,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 8,
+              "out_port": 0,
+              "src_dfg_node_id": 38
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "outgoing_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 28,
+              "src_org_opt": "phi",
+              "src_tile_id": 6
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            3,
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 28,
+          "notes": [],
+          "opt_type": "OPT_PHI",
+          "original_opcode": "phi",
+          "output_routes": [
+            {
+              "dst_port": 2,
+              "dst_tile_id": 7,
+              "out_port": 3,
+              "src_dfg_node_id": 28
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 5,
+              "out_port": 2,
+              "src_dfg_node_id": 28
+            }
+          ],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 15,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 3
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 28,
+              "src_org_opt": "phi",
+              "src_tile_id": 6
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 38,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 4
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 2,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 35,
+              "src_org_opt": "load",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 13,
+              "out_port": 0,
+              "src_dfg_node_id": 11
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 24,
+              "src_org_opt": "add",
+              "src_tile_id": 14
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 12,
+              "src_org_opt": "udiv",
+              "src_tile_id": 11
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 12,
+          "notes": [],
+          "opt_type": "OPT_DIV",
+          "original_opcode": "udiv",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 10,
+              "out_port": 2,
+              "src_dfg_node_id": 12
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 9,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 23,
+          "notes": [],
+          "opt_type": "OPT_STR",
+          "original_opcode": "store",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 21,
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 11,
+              "src_org_opt": "trunc",
+              "src_tile_id": 9
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            3
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 24,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "add",
+          "output_routes": [
+            {
+              "dst_port": 2,
+              "dst_tile_id": 15,
+              "out_port": 3,
+              "src_dfg_node_id": 24
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 9,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 24,
+              "src_org_opt": "add",
+              "src_tile_id": 14
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 15,
+          "x": 3,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 14,
+      "branches": [],
+      "cfg_id": 4,
+      "comments": [],
+      "cycle": 4,
+      "kind": "kernel",
+      "loads": [
+        {
+          "const_operand_count": 0,
+          "cycle": 4,
+          "dfg_node_id": 18,
+          "output_ports": [],
+          "schedule_cycle": 16,
+          "tile_id": 8
+        }
+      ],
+      "predicates": [],
+      "stores": [],
+      "tiles": [
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 29,
+              "src_org_opt": "trunc",
+              "src_tile_id": 5
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 6,
+          "notes": [],
+          "opt_type": "OPT_AND",
+          "original_opcode": "and",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 6,
+              "out_port": 0,
+              "src_dfg_node_id": 6
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 4,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 40,
+              "src_org_opt": "add",
+              "src_tile_id": 7
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 18,
+              "src_org_opt": "vload",
+              "src_tile_id": 8
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 29,
+              "src_org_opt": "trunc",
+              "src_tile_id": 5
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            1,
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 29,
+          "notes": [],
+          "opt_type": "OPT_TRUNC",
+          "original_opcode": "trunc",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 1,
+              "out_port": 1,
+              "src_dfg_node_id": 29
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 4,
+              "out_port": 2,
+              "src_dfg_node_id": 29
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 16,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 14,
+              "src_org_opt": "zext",
+              "src_tile_id": 10
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 6,
+              "src_org_opt": "and",
+              "src_tile_id": 2
+            },
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 40,
+              "src_org_opt": "add",
+              "src_tile_id": 7
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 2,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            1,
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 40,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "add",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 3,
+              "out_port": 1,
+              "src_dfg_node_id": 40
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 6,
+              "out_port": 2,
+              "src_dfg_node_id": 40
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 16,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 18,
+          "notes": [],
+          "opt_type": "OPT_LD",
+          "original_opcode": "vload",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 1,
+              "source_port": 4
+            }
+          ],
+          "schedule_cycle": 16,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 24,
+              "src_org_opt": "add",
+              "src_tile_id": 10
+            },
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 13,
+              "src_org_opt": "urem",
+              "src_tile_id": 13
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 36,
+          "notes": [],
+          "opt_type": "OPT_LT_CONST",
+          "original_opcode": "cmp",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 13,
+              "out_port": 0,
+              "src_dfg_node_id": 35
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            },
+            {
+              "slot": 1,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": 22,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 14,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 9,
+              "out_port": 2,
+              "src_dfg_node_id": 24
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 10,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 7
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 35,
+              "src_org_opt": "load",
+              "src_tile_id": 9
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 13,
+          "notes": [],
+          "opt_type": "OPT_MOD",
+          "original_opcode": "urem",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 9,
+              "out_port": 1,
+              "src_dfg_node_id": 13
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 2,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": 10,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 25,
+              "src_org_opt": "cmp",
+              "src_tile_id": 15
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 25,
+          "notes": [],
+          "opt_type": "OPT_EQ_CONST",
+          "original_opcode": "cmp",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 14,
+              "out_port": 2,
+              "src_dfg_node_id": 25
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 10,
+          "tile_id": 15,
+          "x": 3,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 15,
+      "branches": [
+        {
+          "cycle": 5,
+          "dfg_node_id": 7,
+          "predicate_inputs": [],
+          "recurrent_successor_node_ids": [],
+          "schedule_cycle": 5,
+          "successor_node_ids": [],
+          "successor_schedule_cycles": [],
+          "tile_id": 6
+        },
+        {
+          "cycle": 5,
+          "dfg_node_id": 26,
+          "predicate_inputs": [],
+          "recurrent_successor_node_ids": [],
+          "schedule_cycle": 11,
+          "successor_node_ids": [],
+          "successor_schedule_cycles": [],
+          "tile_id": 14
+        }
+      ],
+      "cfg_id": 5,
+      "comments": [],
+      "cycle": 5,
+      "kind": "kernel",
+      "loads": [],
+      "predicates": [
+        {
+          "cycle": 5,
+          "dfg_node_id": 7,
+          "predicatee_node_ids": [],
+          "schedule_cycle": 5,
+          "tile_id": 6
+        },
+        {
+          "cycle": 5,
+          "dfg_node_id": 26,
+          "predicatee_node_ids": [],
+          "schedule_cycle": 11,
+          "tile_id": 14
+        }
+      ],
+      "stores": [],
+      "tiles": [
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 18,
+              "src_org_opt": "vload",
+              "src_tile_id": 4
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 30,
+          "notes": [],
+          "opt_type": "OPT_DIV",
+          "original_opcode": "udiv",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 5,
+              "out_port": 0,
+              "src_dfg_node_id": 30
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 17,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 14,
+              "src_org_opt": "zext",
+              "src_tile_id": 6
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 41,
+          "notes": [],
+          "opt_type": "OPT_EQ_CONST",
+          "original_opcode": "cmp",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 7,
+              "out_port": 0,
+              "src_dfg_node_id": 41
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 17,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 1,
+          "direct_output_ports": [
+            0
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 31,
+          "notes": [],
+          "opt_type": "OPT_MOD",
+          "original_opcode": "urem",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 8,
+              "out_port": 0,
+              "src_dfg_node_id": 31
+            },
+            {
+              "dst_port": 0,
+              "dst_tile_id": 0,
+              "out_port": 1,
+              "src_dfg_node_id": 18
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 17,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 6
+            },
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 15,
+              "src_org_opt": "zext",
+              "src_tile_id": 9
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 30,
+              "src_org_opt": "udiv",
+              "src_tile_id": 1
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            3
+          ],
+          "predicate_source_node_ids": [
+            7
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 7,
+          "notes": [],
+          "opt_type": "OPT_BRH",
+          "original_opcode": "br",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 5,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 2,
+              "is_bypass": true,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 6
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 41,
+              "src_org_opt": "cmp",
+              "src_tile_id": 3
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            2
+          ],
+          "predicate_source_node_ids": [
+            7
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 31,
+              "src_org_opt": "urem",
+              "src_tile_id": 4
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 12,
+              "out_port": 0,
+              "src_dfg_node_id": 38
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 15,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 11,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 11
+            },
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 14
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            0
+          ],
+          "predicate_source_node_ids": [
+            26
+          ],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 38,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 8
+            },
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 37,
+              "src_org_opt": "select",
+              "src_tile_id": 13
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            },
+            {
+              "slot": 1,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 14
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 37,
+          "notes": [],
+          "opt_type": "OPT_SEL",
+          "original_opcode": "select",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 12,
+              "out_port": 2,
+              "src_dfg_node_id": 37
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [
+            3
+          ],
+          "predicate_source_node_ids": [
+            26
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": 23,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 26,
+          "notes": [],
+          "opt_type": "OPT_BRH",
+          "original_opcode": "br",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 13,
+              "out_port": 2,
+              "src_dfg_node_id": 26
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 11,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "active_tile_count": 15,
+      "branches": [
+        {
+          "cycle": 6,
+          "dfg_node_id": 42,
+          "predicate_inputs": [],
+          "recurrent_successor_node_ids": [],
+          "schedule_cycle": 18,
+          "successor_node_ids": [],
+          "successor_schedule_cycles": [],
+          "tile_id": 7
+        }
+      ],
+      "cfg_id": 6,
+      "comments": [],
+      "cycle": 6,
+      "kind": "kernel",
+      "loads": [],
+      "predicates": [
+        {
+          "cycle": 6,
+          "dfg_node_id": 42,
+          "predicatee_node_ids": [],
+          "schedule_cycle": 18,
+          "tile_id": 7
+        }
+      ],
+      "stores": [
+        {
+          "cycle": 6,
+          "dfg_node_id": 39,
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "schedule_cycle": 24,
+          "tile_id": 12
+        }
+      ],
+      "tiles": [
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 19,
+          "notes": [],
+          "opt_type": "OPT_LT_CONST",
+          "original_opcode": "vcmp",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 15,
+              "src_org_opt": "zext",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 14,
+              "src_org_opt": "zext",
+              "src_tile_id": 2
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            },
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [
+            {
+              "dst_port": 3,
+              "dst_tile_id": 1,
+              "out_port": 2,
+              "src_dfg_node_id": 14
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 42,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            0
+          ],
+          "predicate_source_node_ids": [
+            42
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 19,
+              "src_org_opt": "vcmp",
+              "src_tile_id": 0
+            },
+            {
+              "input_port": 3,
+              "is_bypass": true,
+              "src_dfg_node_id": 32,
+              "src_org_opt": "zext",
+              "src_tile_id": 5
+            },
+            {
+              "input_port": 0,
+              "is_bypass": true,
+              "src_dfg_node_id": 33,
+              "src_org_opt": "zext",
+              "src_tile_id": 8
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 3
+            },
+            {
+              "slot": 1,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_bypass",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 1,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 9
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 32,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            }
+          ],
+          "schedule_cycle": 18,
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 42,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            },
+            {
+              "input_port": 0,
+              "is_bypass": false,
+              "src_dfg_node_id": 0,
+              "src_org_opt": "getelementptr",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            3
+          ],
+          "predicate_source_node_ids": [
+            42
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 0
+            },
+            {
+              "slot": 3,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [
+            1,
+            2
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 42,
+          "notes": [],
+          "opt_type": "OPT_BRH",
+          "original_opcode": "br",
+          "output_routes": [
+            {
+              "dst_port": 1,
+              "dst_tile_id": 11,
+              "out_port": 0,
+              "src_dfg_node_id": 7
+            },
+            {
+              "dst_port": 0,
+              "dst_tile_id": 3,
+              "out_port": 1,
+              "src_dfg_node_id": 42
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 6,
+              "out_port": 2,
+              "src_dfg_node_id": 42
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 33,
+          "notes": [],
+          "opt_type": "OPT_EXT",
+          "original_opcode": "zext",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 18,
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass",
+            "incoming_data",
+            "mapped_fu",
+            "outgoing_route",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 5
+            }
+          ],
+          "incoming_data": [
+            {
+              "input_port": 3,
+              "is_bypass": false,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 1,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 5,
+              "out_port": 1,
+              "src_dfg_node_id": 1
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [
+            1,
+            3
+          ],
+          "predicate_source_node_ids": [
+            7,
+            26
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 1
+            },
+            {
+              "slot": 2,
+              "source_port": 3
+            }
+          ],
+          "schedule_cycle": 0,
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass",
+            "outgoing_route"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [
+            1
+          ],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 0,
+          "notes": [],
+          "opt_type": "OPT_ADD_CONST",
+          "original_opcode": "getelementptr",
+          "output_routes": [
+            {
+              "dst_port": 0,
+              "dst_tile_id": 6,
+              "out_port": 1,
+              "src_dfg_node_id": 0
+            },
+            {
+              "dst_port": 2,
+              "dst_tile_id": 11,
+              "out_port": 3,
+              "src_dfg_node_id": 26
+            },
+            {
+              "dst_port": 3,
+              "dst_tile_id": 9,
+              "out_port": 2,
+              "src_dfg_node_id": 26
+            }
+          ],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 0,
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "incoming_data",
+            "register_hold"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [
+            {
+              "input_port": 1,
+              "is_bypass": false,
+              "src_dfg_node_id": 7,
+              "src_org_opt": "br",
+              "src_tile_id": 7
+            },
+            {
+              "input_port": 2,
+              "is_bypass": false,
+              "src_dfg_node_id": 26,
+              "src_org_opt": "br",
+              "src_tile_id": 10
+            }
+          ],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [
+            1,
+            2
+          ],
+          "predicate_source_node_ids": [
+            7,
+            26
+          ],
+          "register_slots": [
+            {
+              "slot": 0,
+              "source_port": 2
+            },
+            {
+              "slot": 1,
+              "source_port": 1
+            }
+          ],
+          "schedule_cycle": null,
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "active_reasons": [
+            "mapped_fu"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 39,
+          "notes": [],
+          "opt_type": "OPT_STR",
+          "original_opcode": "store",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 24,
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "mapped_fu",
+            "outgoing_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 2,
+          "direct_output_ports": [],
+          "incoming_bypass": [],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": 8,
+          "notes": [],
+          "opt_type": "OPT_PHI_CONST",
+          "original_opcode": "phi",
+          "output_routes": [],
+          "predicate": true,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": 12,
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        {
+          "active_reasons": [
+            "incoming_bypass"
+          ],
+          "bypass_routes": [],
+          "const_operand_count": 0,
+          "direct_output_ports": [],
+          "incoming_bypass": [
+            {
+              "input_port": 1,
+              "is_bypass": true,
+              "src_dfg_node_id": 22,
+              "src_org_opt": "bitcast",
+              "src_tile_id": 10
+            },
+            {
+              "input_port": 2,
+              "is_bypass": true,
+              "src_dfg_node_id": 8,
+              "src_org_opt": "phi",
+              "src_tile_id": 13
+            }
+          ],
+          "incoming_data": [],
+          "local_predicatee_node_ids": [],
+          "mapped_dfg_node_id": null,
+          "notes": [],
+          "opt_type": "OPT_NAH",
+          "original_opcode": "none",
+          "output_routes": [],
+          "predicate": false,
+          "predicate_inputs": [],
+          "predicate_source_node_ids": [],
+          "register_slots": [],
+          "schedule_cycle": null,
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        }
+      ]
+    }
+  ],
+  "dfg": {
+    "backedges": [],
+    "control_edges": [],
+    "cycle_edges": [],
+    "data_edges": [],
+    "node_to_cycle": {
+      "0": 0,
+      "1": 0,
+      "10": 7,
+      "11": 8,
+      "12": 9,
+      "13": 10,
+      "14": 10,
+      "15": 11,
+      "16": 13,
+      "17": 14,
+      "18": 16,
+      "19": 18,
+      "2": 1,
+      "20": 20,
+      "21": 14,
+      "22": 15,
+      "23": 21,
+      "24": 9,
+      "25": 10,
+      "26": 11,
+      "27": 19,
+      "28": 15,
+      "29": 16,
+      "3": 2,
+      "30": 17,
+      "31": 17,
+      "32": 18,
+      "33": 18,
+      "34": 19,
+      "35": 20,
+      "36": 22,
+      "37": 23,
+      "38": 20,
+      "39": 24,
+      "4": 1,
+      "40": 16,
+      "41": 17,
+      "42": 18,
+      "5": 2,
+      "6": 4,
+      "7": 5,
+      "8": 12,
+      "9": 13
+    },
+    "node_to_tile": {
+      "0": 10,
+      "1": 9,
+      "10": 9,
+      "11": 10,
+      "12": 11,
+      "13": 13,
+      "14": 10,
+      "15": 9,
+      "16": 1,
+      "17": 5,
+      "18": 8,
+      "19": 0,
+      "2": 5,
+      "20": 8,
+      "21": 2,
+      "22": 3,
+      "23": 12,
+      "24": 14,
+      "25": 15,
+      "26": 14,
+      "27": 3,
+      "28": 6,
+      "29": 5,
+      "3": 1,
+      "30": 1,
+      "31": 4,
+      "32": 5,
+      "33": 8,
+      "34": 4,
+      "35": 4,
+      "36": 9,
+      "37": 13,
+      "38": 0,
+      "39": 12,
+      "4": 6,
+      "40": 7,
+      "41": 3,
+      "42": 7,
+      "5": 7,
+      "6": 2,
+      "7": 6,
+      "8": 13,
+      "9": 11
+    },
+    "nodes": [
+      {
+        "bb_id": 0,
+        "const_operand_count": 2,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 0,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD_CONST",
+        "mapped_tile": {
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 0,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 2,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 1,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD_CONST",
+        "mapped_tile": {
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 0,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 2,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_NAH",
+        "mapped_tile": {
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        "org_opt": "bitcast",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 1,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 4,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_NAH",
+        "mapped_tile": {
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        "org_opt": "bitcast",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 1,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Comp",
+        "id": 3,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_GT_CONST",
+        "mapped_tile": {
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        "org_opt": "cmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 2,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Comp",
+        "id": 5,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_GT_CONST",
+        "mapped_tile": {
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        "org_opt": "cmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 2,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Logic",
+        "id": 6,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_AND",
+        "mapped_tile": {
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        "org_opt": "and",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 4,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 0,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Branch",
+        "id": 7,
+        "is_branch": true,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": true,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_BRH",
+        "mapped_tile": {
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        "org_opt": "br",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 5,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 1,
+        "cycle_ids": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "fu": "Phi",
+        "id": 10,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": true,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_PHI_CONST",
+        "mapped_tile": {
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        "org_opt": "phi",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 7,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 11,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_TRUNC",
+        "mapped_tile": {
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        "org_opt": "trunc",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 8,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 1,
+        "cycle_ids": [
+          0,
+          1,
+          0,
+          1
+        ],
+        "fu": "Alu",
+        "id": 24,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD_CONST",
+        "mapped_tile": {
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        },
+        "org_opt": "add",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 9,
+        "schedule_modulo_cycle": 3,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 1,
+        "cycle_ids": [],
+        "fu": "Div",
+        "id": 12,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_DIV",
+        "mapped_tile": {
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        "org_opt": "udiv",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 9,
+        "schedule_modulo_cycle": 3,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 1,
+        "cycle_ids": [],
+        "fu": "Div",
+        "id": 13,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_MOD",
+        "mapped_tile": {
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        "org_opt": "urem",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 10,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 1,
+        "cycle_ids": [
+          1,
+          1
+        ],
+        "fu": "Comp",
+        "id": 25,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EQ_CONST",
+        "mapped_tile": {
+          "tile_id": 15,
+          "x": 3,
+          "y": 3
+        },
+        "org_opt": "cmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 10,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "zext",
+        "id": 14,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EXT",
+        "mapped_tile": {
+          "tile_id": 10,
+          "x": 2,
+          "y": 2
+        },
+        "org_opt": "zext",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 10,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "zext",
+        "id": 15,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EXT",
+        "mapped_tile": {
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        "org_opt": "zext",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 11,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [
+          1,
+          1
+        ],
+        "fu": "Branch",
+        "id": 26,
+        "is_branch": true,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": true,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_BRH",
+        "mapped_tile": {
+          "tile_id": 14,
+          "x": 2,
+          "y": 3
+        },
+        "org_opt": "br",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 11,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 1,
+        "const_operand_count": 2,
+        "cycle_ids": [],
+        "fu": "Phi",
+        "id": 8,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": true,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_PHI_CONST",
+        "mapped_tile": {
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        "org_opt": "phi",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 12,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 1,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Branch",
+        "id": 9,
+        "is_branch": true,
+        "is_load": false,
+        "is_predicatee": true,
+        "is_predicater": true,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_BRH",
+        "mapped_tile": {
+          "tile_id": 11,
+          "x": 3,
+          "y": 2
+        },
+        "org_opt": "br",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 13,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 16,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD",
+        "mapped_tile": {
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 13,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 21,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD",
+        "mapped_tile": {
+          "tile_id": 2,
+          "x": 2,
+          "y": 0
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 14,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 17,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_NAH",
+        "mapped_tile": {
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        "org_opt": "bitcast",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 14,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 22,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_NAH",
+        "mapped_tile": {
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        "org_opt": "bitcast",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 15,
+        "schedule_modulo_cycle": 3,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [
+          2,
+          3,
+          2,
+          3
+        ],
+        "fu": "Phi",
+        "id": 28,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": true,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_PHI",
+        "mapped_tile": {
+          "tile_id": 6,
+          "x": 2,
+          "y": 1
+        },
+        "org_opt": "phi",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 15,
+        "schedule_modulo_cycle": 3,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "MemUnit",
+        "id": 18,
+        "is_branch": false,
+        "is_load": true,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_LD",
+        "mapped_tile": {
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        "org_opt": "vload",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 16,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 29,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_TRUNC",
+        "mapped_tile": {
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        "org_opt": "trunc",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 16,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 1,
+        "cycle_ids": [
+          2,
+          3,
+          2,
+          3
+        ],
+        "fu": "Alu",
+        "id": 40,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD_CONST",
+        "mapped_tile": {
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        "org_opt": "add",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 16,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Comp",
+        "id": 19,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_LT_CONST",
+        "mapped_tile": {
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        "org_opt": "vcmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 18,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 1,
+        "cycle_ids": [],
+        "fu": "Div",
+        "id": 30,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_DIV",
+        "mapped_tile": {
+          "tile_id": 1,
+          "x": 1,
+          "y": 0
+        },
+        "org_opt": "udiv",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 17,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 1,
+        "cycle_ids": [],
+        "fu": "Div",
+        "id": 31,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_MOD",
+        "mapped_tile": {
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        "org_opt": "urem",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 17,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 1,
+        "cycle_ids": [
+          3,
+          3
+        ],
+        "fu": "Comp",
+        "id": 41,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EQ_CONST",
+        "mapped_tile": {
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        "org_opt": "cmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 17,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Select",
+        "id": 20,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_SEL",
+        "mapped_tile": {
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        "org_opt": "vselect",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 20,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "zext",
+        "id": 32,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EXT",
+        "mapped_tile": {
+          "tile_id": 5,
+          "x": 1,
+          "y": 1
+        },
+        "org_opt": "zext",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 18,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "zext",
+        "id": 33,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_EXT",
+        "mapped_tile": {
+          "tile_id": 8,
+          "x": 0,
+          "y": 2
+        },
+        "org_opt": "zext",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 18,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [
+          3,
+          3
+        ],
+        "fu": "Branch",
+        "id": 42,
+        "is_branch": true,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": true,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_BRH",
+        "mapped_tile": {
+          "tile_id": 7,
+          "x": 3,
+          "y": 1
+        },
+        "org_opt": "br",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 18,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 2,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "MemUnit",
+        "id": 23,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": true,
+        "json_opt": "OPT_STR",
+        "mapped_tile": {
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        "org_opt": "store",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 21,
+        "schedule_modulo_cycle": 3,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 3,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Return",
+        "id": 27,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": true,
+        "is_predicater": false,
+        "is_return": true,
+        "is_store": false,
+        "json_opt": "OPT_RET",
+        "mapped_tile": {
+          "tile_id": 3,
+          "x": 3,
+          "y": 0
+        },
+        "org_opt": "ret",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 19,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 34,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD",
+        "mapped_tile": {
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 19,
+        "schedule_modulo_cycle": 1,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Alu",
+        "id": 38,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_ADD",
+        "mapped_tile": {
+          "tile_id": 0,
+          "x": 0,
+          "y": 0
+        },
+        "org_opt": "getelementptr",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 20,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "MemUnit",
+        "id": 35,
+        "is_branch": false,
+        "is_load": true,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_LD",
+        "mapped_tile": {
+          "tile_id": 4,
+          "x": 0,
+          "y": 1
+        },
+        "org_opt": "load",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 20,
+        "schedule_modulo_cycle": 2,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Comp",
+        "id": 36,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_LT_CONST",
+        "mapped_tile": {
+          "tile_id": 9,
+          "x": 1,
+          "y": 2
+        },
+        "org_opt": "cmp",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 22,
+        "schedule_modulo_cycle": 4,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "Select",
+        "id": 37,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": false,
+        "json_opt": "OPT_SEL",
+        "mapped_tile": {
+          "tile_id": 13,
+          "x": 1,
+          "y": 3
+        },
+        "org_opt": "select",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 23,
+        "schedule_modulo_cycle": 5,
+        "succ_nodes": []
+      },
+      {
+        "bb_id": 4,
+        "const_operand_count": 0,
+        "cycle_ids": [],
+        "fu": "MemUnit",
+        "id": 39,
+        "is_branch": false,
+        "is_load": false,
+        "is_predicatee": false,
+        "is_predicater": false,
+        "is_return": false,
+        "is_store": true,
+        "json_opt": "OPT_STR",
+        "mapped_tile": {
+          "tile_id": 12,
+          "x": 0,
+          "y": 3
+        },
+        "org_opt": "store",
+        "pred_nodes": [],
+        "predicatee_node_ids": [],
+        "schedule_cycle": 24,
+        "schedule_modulo_cycle": 0,
+        "succ_nodes": []
+      }
+    ]
+  },
+  "kernel": "kernel",
+  "mapping": {
+    "cols": 4,
+    "cycles_emitted": 7,
+    "ii": 6,
+    "notes": [
+      "Parser-oriented export derived from mapper MRRG state.",
+      "This file is additive and does not replace the legacy mapper outputs."
+    ],
+    "num_tiles": 16,
+    "rows": 4,
+    "source_files": [
+      "dfg.json",
+      "config.json",
+      "increMapInput.json",
+      "rtl_mapping.json"
+    ]
+  },
+  "profile": "vectorcgra_mapped_v1",
+  "route_legend": {
+    "cardinal_ports": {
+      "0": "north",
+      "1": "south",
+      "2": "west",
+      "3": "east"
+    },
+    "notes": [
+      "Cardinal port numbering follows the mapper's existing getDirectionID convention.",
+      "Register slots capture local register holds that feed future cycles."
+    ],
+    "register_slots": {
+      "0": "slot0",
+      "1": "slot1",
+      "2": "slot2",
+      "3": "slot3"
+    },
+    "special_sources": {
+      "4": "local_fu_output"
+    }
+  },
+  "schema_version": "rtl_mapping_v1"
+}

@@ -25,10 +25,12 @@ class STEP_RegisterFileControllerRTL( Component ):
                     debug = True,
                     ):
 
+        def _diag_signal(Type):
+            return OutPort(Type) if debug else Wire(Type)
+
         # -------------------------------------------------------------------------
         # Submodules
         # -------------------------------------------------------------------------
-        print("total read ports", num_rd_ports)
 
         # s.register_file = STEP_RegisterFileRTL(
         #     RegDataType, RegAddrType,
@@ -49,7 +51,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.rd_data            = [ OutPort(RegDataType) for _ in range(num_rd_ports) ]
         s.wr_data            = [ InPort(RegDataType) for _ in range(num_wr_ports) ]
         s.cfg_done           = OutPort( 1 )                # level-true when RUN complete this cycle
-        s.cfg_ready_for_next = OutPort( 1 )
+        s.cfg_ready_for_next = _diag_signal( Bits1 )
         s.dep_mode_out       = OutPort( 1 )
         s.recv_pred_port = [ InPort(1) for _ in range(num_wr_ports)]
         s.send_tile_preds = [ OutPort(Bits1) for _ in range(num_tiles)]
@@ -208,8 +210,8 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.recv_cfg_thread_min_resolved = Wire(MaxThreadType)
         s.recv_cfg_thread_max_resolved = Wire(MaxThreadType)
 
-        s.wr_addr_valcfg_o   = [ OutPort(Bits1)       for _ in range(num_wr_ports) ]
-        s.ld_addr            = [ OutPort(RegAddrType) for _ in range(num_ld_ports) ]
+        s.wr_addr_valcfg_o   = [ _diag_signal(Bits1)       for _ in range(num_wr_ports) ]
+        s.ld_addr            = [ _diag_signal(RegAddrType) for _ in range(num_ld_ports) ]
 
         # Ld/St Unit Configuration
         s.ld_enable_active = [ Wire(Bits1) for _ in range(num_ld_ports) ]
@@ -237,7 +239,7 @@ class STEP_RegisterFileControllerRTL( Component ):
 
         # State reg
         s.state    = Wire( 1 )
-        s.state_n  = OutPort( 1 )
+        s.state_n  = _diag_signal( Bits1 )
 
         # Latched configuration (stable during RUN)
         s.rd_addr_cfg    = [ Wire(RegAddrType) for _ in range(num_rd_ports) ]
@@ -342,12 +344,12 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.wr_count = [ Wire(MaxThreadType) for _ in range(num_wr_ports) ]
 
         # Next values
-        s.rd_count_n = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
-        s.wr_count_n = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]
-        s.rd_addr_valcfg_n = [ OutPort(Bits1) for _ in range(num_rd_ports) ]
-        s.wr_addr_valcfg_n = [ OutPort(Bits1) for _ in range(num_wr_ports) ]
-        s.rd_addr_cfg_n    = [ OutPort(RegAddrType) for _ in range(num_rd_ports) ]
-        s.wr_addr_cfg_n    = [ OutPort(RegAddrType) for _ in range(num_wr_ports) ]
+        s.rd_count_n = [ _diag_signal(MaxThreadType) for _ in range(num_rd_ports) ]
+        s.wr_count_n = [ _diag_signal(MaxThreadType) for _ in range(num_wr_ports) ]
+        s.rd_addr_valcfg_n = [ _diag_signal(Bits1) for _ in range(num_rd_ports) ]
+        s.wr_addr_valcfg_n = [ _diag_signal(Bits1) for _ in range(num_wr_ports) ]
+        s.rd_addr_cfg_n    = [ _diag_signal(RegAddrType) for _ in range(num_rd_ports) ]
+        s.wr_addr_cfg_n    = [ _diag_signal(RegAddrType) for _ in range(num_wr_ports) ]
         s.tid_enabled_n    = [ Wire(Bits1)       for _ in range(num_rd_ports) ]
         s.rd_pred_addr_cfg = [ Wire(PredAddrType) for _ in range(num_rd_ports) ]
         s.rd_pred_en = [ Wire(Bits1) for _ in range(num_rd_ports) ]
@@ -804,10 +806,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         # Completion check (comb)
         # -------------------------------------------------------------------------
 
-        s.cfg_writeback_complete = OutPort( 1 )
+        s.cfg_writeback_complete = _diag_signal( Bits1 )
         s.cfg_issue_ready = OutPort( 1 )
-        s.rd_regs_complete = OutPort( num_rd_ports )
-        s.wr_regs_complete = OutPort( num_wr_ports )
+        s.rd_regs_complete = _diag_signal( mk_bits(num_rd_ports) )
+        s.wr_regs_complete = _diag_signal( mk_bits(num_wr_ports) )
 
         @update
         def comb_nonmem_masks():
@@ -1414,3 +1416,9 @@ class STEP_RegisterFileControllerRTL( Component ):
                 & pred_issue_complete
                 & (thread_complete == target_mask)
             )
+
+    def line_trace(s):
+        state = int(s.state) if hasattr(s, "state") else 0
+        issue = int(s.issue_count) if hasattr(s, "issue_count") else 0
+        expected = int(s.expected_count) if hasattr(s, "expected_count") else 0
+        return f"rf(st={state} issue={issue}/{expected})"
