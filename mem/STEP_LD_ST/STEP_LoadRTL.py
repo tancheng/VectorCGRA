@@ -12,7 +12,7 @@ class STEP_LoadRTL( Component ):
         s.load_ifc = RecvAxiLoadIfcRTL(DataType)
         
         # Add tile tracking interface
-        s.thread_span = InPort( clog2(MAX_THREAD_COUNT) )
+        s.thread_span = InPort( clog2(MAX_THREAD_COUNT + 1) )
         s.enable = InPort( 1 )
         s.i_tile_pred = InPort( 1 )             # Tile data indicator  
         s.issue_tid = InPort( clog2(MAX_THREAD_COUNT) )
@@ -34,7 +34,7 @@ class STEP_LoadRTL( Component ):
         s.outstanding_reqs = OutPort( LdCountType )
         
         # Tile tracking
-        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT + 1) )
         s.tile_last_seen = OutPort( 1 )
         s.loads_in_tile = OutPort( LdCountType )  # Loads from current tile
         

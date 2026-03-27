@@ -5,19 +5,16 @@ from ...lib.util.common import *
 class STEP_LdStScoreboardRTL(Component):
     def construct(s):
         TidType = mk_bits(clog2(MAX_THREAD_COUNT))
-        CountType = mk_bits(clog2(MAX_THREAD_COUNT))
+        CountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
         QueueIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
         QueueCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
         MaskType = mk_bits(MAX_THREAD_COUNT)
 
-        s.mem_dispatch_tid_val = InPort(1)
-        s.mem_dispatch_tid = InPort(TidType)
-        s.ld_done_tid_val = InPort(1)
-        s.ld_done_tid = InPort(TidType)
-        s.st_done_tid_val = InPort(1)
-        s.st_done_tid = InPort(TidType)
-        s.thread_count_min = InPort(TidType)
-        s.thread_count_max = InPort(TidType)
+        s.mem_dispatch_event_mask = InPort(MaskType)
+        s.ld_done_event_mask = InPort(MaskType)
+        s.st_done_event_mask = InPort(MaskType)
+        s.thread_count_min = InPort(CountType)
+        s.thread_count_max = InPort(CountType)
         s.thread_mask = InPort(MaskType)
         s.require_load = InPort(1)
         s.require_store = InPort(1)
@@ -50,7 +47,7 @@ class STEP_LdStScoreboardRTL(Component):
             if s.thread_mask == zero_mask:
                 target_mask = zero_mask
                 for i in range(MAX_THREAD_COUNT):
-                    tid_bits = TidType(i)
+                    tid_bits = CountType(i)
                     if (tid_bits >= s.thread_count_min) & (tid_bits < s.thread_count_max):
                         target_mask = target_mask | MaskType(1 << i)
             s.target_mask @= target_mask
@@ -80,14 +77,9 @@ class STEP_LdStScoreboardRTL(Component):
                 complete_after_events = zero_mask
                 target_mask = s.target_mask
 
-                for i in range(MAX_THREAD_COUNT):
-                    one_hot_i = MaskType(1 << i)
-                    if s.mem_dispatch_tid_val & (s.mem_dispatch_tid == TidType(i)):
-                        mem_dispatch_next = mem_dispatch_next | one_hot_i
-                    if s.ld_done_tid_val & (s.ld_done_tid == TidType(i)):
-                        ld_done_next = ld_done_next | one_hot_i
-                    if s.st_done_tid_val & (s.st_done_tid == TidType(i)):
-                        st_done_next = st_done_next | one_hot_i
+                mem_dispatch_next = mem_dispatch_next | s.mem_dispatch_event_mask
+                ld_done_next = ld_done_next | s.ld_done_event_mask
+                st_done_next = st_done_next | s.st_done_event_mask
 
                 if s.require_load | s.require_store:
                     ready_after_events = mem_dispatch_next

@@ -14,7 +14,7 @@ class STEP_StoreRTL( Component ):
         s.store_ifc = RecvAxiStoreIfcRTL(DataType)
         
         # Add tile tracking interface
-        s.thread_span = InPort( clog2(MAX_THREAD_COUNT) )
+        s.thread_span = InPort( clog2(MAX_THREAD_COUNT + 1) )
         s.enable = InPort( 1 )
         s.i_tile_pred = InPort( 1 )             # Tile data indicator  
         s.issue_tid = InPort( clog2(MAX_THREAD_COUNT) )
@@ -32,13 +32,13 @@ class STEP_StoreRTL( Component ):
         s.store_queue = NormalQueueRTL( StoreReqType, queue_depth )
         s.bank_queue = NormalQueueRTL( Bits1, queue_depth )
         s.outstanding_stores = OutPort( StCountType )
-        s.resp_counter = Wire( clog2(MAX_THREAD_COUNT) )
+        s.resp_counter = Wire( clog2(MAX_THREAD_COUNT + 1) )
         ## DEBUG
         s.store_queue_rdy = OutPort( 1 )
         s.store_queue_rdy //= s.store_queue.recv.rdy
         
         # Tile tracking
-        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.tile_counter = OutPort( clog2(MAX_THREAD_COUNT + 1) )
         s.tile_last_seen = OutPort( 1 )
         s.stores_in_tile = OutPort( StCountType )  # Stores from current tile
         

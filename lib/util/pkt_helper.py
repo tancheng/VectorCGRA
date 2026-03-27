@@ -28,6 +28,7 @@ def _mapped_wr_tokenizer_idx(wr_port_idx):
 
 def _get_thread_range(metadata, overflow_thread_cap=None):
     max_thread_idx = MAX_THREAD_COUNT - 1
+    max_thread_exclusive = MAX_THREAD_COUNT
     thread_count_min = int(metadata.get('thread_count_min', 0))
     thread_count_max = int(metadata.get('thread_count_max', thread_count_min))
     if 'thread_count' in metadata:
@@ -35,7 +36,7 @@ def _get_thread_range(metadata, overflow_thread_cap=None):
     if (thread_count_max > max_thread_idx) and (overflow_thread_cap is not None):
         thread_count_max = min(thread_count_max, thread_count_min + int(overflow_thread_cap))
     thread_count_min = max(0, min(thread_count_min, max_thread_idx))
-    thread_count_max = max(thread_count_min, min(thread_count_max, max_thread_idx))
+    thread_count_max = max(thread_count_min, min(thread_count_max, max_thread_exclusive))
     thread_span = max(0, thread_count_max - thread_count_min)
     return thread_span, thread_count_min, thread_count_max
 
@@ -56,10 +57,20 @@ def _resolve_opt_type(opt_name):
     opt_aliases = {
         'OPT_EXT': 'OPT_PAS',
         'OPT_TRUNC': 'OPT_PAS',
-        'OPT_SHL_CONST': 'OPT_LLS',
+        'OPT_SHL_CONST': 'OPT_LLS_CONST',
     }
     resolved_name = opt_aliases.get(opt_name, opt_name)
     return globals()[resolved_name]
+
+
+def _is_terminal_cfg(metadata, bitstream):
+    if not metadata.get('end_cfg', 0):
+        return False
+    if metadata.get('branch_en', 0):
+        return False
+    if int(metadata.get('br_id', -1)) != int(metadata.get('cfg_id', -2)):
+        return False
+    return all(tile.get('opt_type') == 'OPT_NAH' for tile in bitstream.values())
 
 
 def _augment_tokenizer_routes(metadata, num_rd_ports, num_wr_ports, num_ld_ports, num_st_ports):
@@ -176,6 +187,7 @@ def generateCPUPktFromJSON(json_path):
     CfgBitstreamType = mk_bitstream_pkt(cgra_def['num_tiles'], TileBitstreamType)
 
     ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
+    ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     CfgMetadataType = mk_cfg_metadata_pkt(cgra_def['num_tiles'],
                                             cgra_def['num_consts'],
@@ -267,15 +279,21 @@ def generateCPUPktFromJSON(json_path):
                 in_regs.append(reg)
                 in_tid.append(explicit_in_tid[idx])
 
-        thread_span, thread_count_min, thread_count_max = _get_thread_range(
-            metadata,
-            overflow_thread_cap=cgra_def['num_wr_ports'],
-        )
+        thread_span, thread_count_min, thread_count_max = _get_thread_range(metadata)
 
         # Metadata Pkt
+        active_tile_count = sum(
+            1 for tile in pkt['bitstream'].values()
+            if tile.get('opt_type') != 'OPT_NAH'
+        )
+        is_terminal_cfg = _is_terminal_cfg(metadata, pkt['bitstream'])
+        tile_load_count = metadata.get('tile_load_count', 0)
+        if is_terminal_cfg:
+            tile_load_count = active_tile_count
+
         cfg_metadata_pkt = CfgMetadataType(
             cmd = metadata.get('cmd', CMD_CONFIG),
-            tile_load_count = metadata.get('tile_load_count', 0),
+            tile_load_count = tile_load_count,
             pred_tile_valid = [Bits1(bit) for bit in metadata['pred_tile_valid']],
             ld_enable = [Bits1(bit) for bit in metadata['ld_enable']],
             st_enable = [Bits1(bit) for bit in metadata['st_enable']],
@@ -298,8 +316,8 @@ def generateCPUPktFromJSON(json_path):
             tokenizer_cfg = cfg_tokenizer_pkt,
             cfg_id = CfgIdType(metadata['cfg_id']),
             br_id = CfgIdType(metadata['br_id']),
-            thread_count_min = ThreadIdxType(thread_count_min),
-            thread_count_max = ThreadIdxType(thread_count_max),
+            thread_count_min = ThreadCountType(thread_count_min),
+            thread_count_max = ThreadCountType(thread_count_max),
             start_cfg = Bits1(metadata['start_cfg']),
             end_cfg = Bits1(metadata['end_cfg']),
             branch_en = Bits1(metadata.get('branch_en', 0)),
@@ -312,7 +330,7 @@ def generateCPUPktFromJSON(json_path):
             loop_en = Bits1(metadata.get('loop_en', 0)),
             loop_start_cfg_id = CfgIdType(metadata.get('loop_start_cfg_id', 0)),
             loop_exit_cfg_id = CfgIdType(metadata.get('loop_exit_cfg_id', 0)),
-            loop_max = ThreadIdxType(metadata.get('loop_max', 0)),
+            loop_max = ThreadCountType(metadata.get('loop_max', 0)),
         )
 
         # Tile Bitstream Pkts
@@ -434,10 +452,7 @@ def generateCPUPktFromJSON(json_path):
     #####################
     ld_pkts = defaultdict(list)
     for _, pkt in _iter_cfg_entries(data):
-        thread_span, _, _ = _get_thread_range(
-            pkt['metadata'],
-            overflow_thread_cap=cgra_def['num_wr_ports'],
-        )
+        thread_span, _, _ = _get_thread_range(pkt['metadata'])
         for index, ld_enable in enumerate(pkt['metadata']['ld_enable']):
             if ld_enable:
                 ld_pkts[index] += [5] * (thread_span*20)  # Dummy ld pkt
@@ -447,10 +462,7 @@ def generateCPUPktFromJSON(json_path):
     #####################
     st_pkts = defaultdict(int)
     for _, pkt in _iter_cfg_entries(data):
-        thread_span, _, _ = _get_thread_range(
-            pkt['metadata'],
-            overflow_thread_cap=cgra_def['num_wr_ports'],
-        )
+        thread_span, _, _ = _get_thread_range(pkt['metadata'])
         for index, st_enable in enumerate(pkt['metadata']['st_enable']):
             if st_enable:
                 st_pkts[index] += thread_span  # Dummy st pkt count

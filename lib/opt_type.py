@@ -64,6 +64,7 @@ OPT_FADD_CONST            = Bits6( 39 )
 OPT_FINC                  = Bits6( 40 )
 OPT_FMUL                  = Bits6( 41 )
 OPT_FMUL_CONST            = Bits6( 42 )
+OPT_LLS_CONST             = Bits6( 43 )
 
 # OPT_VEC_ADD          = Bits6( 50 )
 # OPT_VEC_INC          = Bits6( 51 )
@@ -131,6 +132,7 @@ OPT_SYMBOL_DICT = {
   OPT_FSUB           : "(f-)",
   OPT_FMUL           : "(f*)",
   OPT_FMUL_CONST     : "(f*')",
+  OPT_LLS_CONST      : "(<<')",
 
   OPT_LT_CONST        : "(?<cst)",
   OPT_VEC_INC         : "(v1++)",

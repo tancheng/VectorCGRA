@@ -410,8 +410,8 @@ class STEP_CgraRTL(Component):
                 s.st_complete[i] //= s.ld_st_unit.st_complete[i]
             s.lds_outstanding = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
             s.lds_in_tile     = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
-            s.lds_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
-            s.sts_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ld_ports) ]
+            s.lds_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
+            s.sts_tile_counter     = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
             s.store_queue_rdy   = [ OutPort(1) for _ in range(num_ld_ports) ]
             s.sts_outstanding= [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
             s.stores_in_tile    = [ OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ld_ports) ]
@@ -427,8 +427,8 @@ class STEP_CgraRTL(Component):
                 s.stores_in_tile[i] //= s.ld_st_unit.stores_in_tile[i]
                 s.ld_tile_last_seen[i] //= s.ld_st_unit.ld_tile_last_seen[i]
                 s.ld_i_req[i] //= s.tokenizer.token_shifter_out[num_wr_ports + i] # fabric -> ld/st
-            s.recv_ld_st_thread_min = OutPort( clog2(MAX_THREAD_COUNT) )
-            s.recv_ld_st_thread_max = OutPort( clog2(MAX_THREAD_COUNT) )
+            s.recv_ld_st_thread_min = OutPort( clog2(MAX_THREAD_COUNT + 1) )
+            s.recv_ld_st_thread_max = OutPort( clog2(MAX_THREAD_COUNT + 1) )
             s.recv_ld_st_thread_min //= s.rf_controller.send_thread_min
             s.recv_ld_st_thread_max //= s.rf_controller.send_thread_max
             s.st_i_req = [OutPort(1) for _ in range(num_st_ports)]
@@ -455,8 +455,10 @@ class STEP_CgraRTL(Component):
             s.rf_cfg_writeback_complete //= s.rf_controller.cfg_writeback_complete
             s.rf_issue_fire = OutPort(Bits1)
             s.rf_issue_tid = OutPort(mk_bits(clog2(MAX_THREAD_COUNT)))
+            s.rf_expected_count = OutPort(mk_bits(clog2(MAX_THREAD_COUNT + 1)))
             s.rf_issue_fire //= s.rf_controller.rf_issue_fire
             s.rf_issue_tid //= s.rf_controller.rf_issue_tid
+            s.rf_expected_count //= s.rf_controller.rf_expected_count
             s.rf_wr_track_en = [OutPort(Bits1) for _ in range(num_wr_ports)]
             s.rf_wr_commit_valid = [OutPort(Bits1) for _ in range(num_wr_ports)]
             s.rf_wr_commit_tid = [OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_wr_ports)]
@@ -467,7 +469,7 @@ class STEP_CgraRTL(Component):
             s.rf_rd_addr_valcfg_n  = [OutPort(Bits1)         for _ in range(num_rd_ports)]
             s.rf_rd_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_rd_ports)]
             s.rf_wr_addr_cfg_n  = [OutPort(RegAddrType)         for _ in range(num_wr_ports)]
-            s.rf_rd_count_n = [OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_rd_ports)]
+            s.rf_rd_count_n = [OutPort(mk_bits(clog2(MAX_THREAD_COUNT + 1))) for _ in range(num_rd_ports)]
             for i in range(num_rd_ports):
                 s.rf_rd_addr_valcfg_n[i] //= s.rf_controller.rd_addr_valcfg_n[i]
                 s.rf_rd_addr_cfg_n[i] //= s.rf_controller.rd_addr_cfg_n[i]

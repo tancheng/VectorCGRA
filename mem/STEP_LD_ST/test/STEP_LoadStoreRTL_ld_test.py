@@ -37,6 +37,7 @@ class TestHarness(Component):
         s.recv_from_ld_axi = AxiLdSourceRTL(DataType, ld_data_msgs, num_empty, initial_delay)
         s.recv_from_tile = TestSrcRTL(Bits1, [1] * num_req + [0])
         s.recv_from_tile_pred = TestSrcRTL(Bits1, [0] * (num_empty)  + [1]* (num_req - num_empty) + [0])
+        s.recv_from_tile_tid = TestSrcRTL(mk_bits(clog2(MAX_THREAD_COUNT)), list(range(num_req)) + [0])
 
         s.recv_from_st_axi = AxiStSourceRTL(DataType, [])
 
@@ -55,9 +56,11 @@ class TestHarness(Component):
         s.dut.ld_ifc[0].o_data_id //= s.o_data_id.recv.msg
         s.dut.ld_ifc[0].i_addr //= 0
         s.dut.ld_ifc[0].i_req //= s.recv_from_tile.send.msg
+        s.dut.ld_issue_tid[0] //= s.recv_from_tile_tid.send.msg
         s.dut.ld_tile_pred[0] //= s.recv_from_tile_pred.send.msg
         s.recv_from_tile.send.rdy //= 1
         s.recv_from_tile_pred.send.rdy //= 1
+        s.recv_from_tile_tid.send.rdy //= 1
         s.dut.ld_axi[0] //= s.recv_from_ld_axi.send
         s.dut.ld_token_return[0] //= s.ld_token_return.recv.msg
         s.dut.ld_token_return[0] //= s.ld_token_return.recv.val
@@ -67,6 +70,7 @@ class TestHarness(Component):
         s.dut.st_ifc[0].i_addr //= 0
         s.dut.st_ifc[0].i_data //= 0
         s.dut.st_ifc[0].i_req //= 0
+        s.dut.st_issue_tid[0] //= 0
         s.dut.st_tile_pred[0] //= 0
         s.dut.st_token_return[0] //= s.st_token_return.recv.msg
         s.st_token_return.recv.val //= 0
@@ -100,7 +104,13 @@ class TestHarness(Component):
             s.o_data_id.recv.val @= s.dut.ld_ifc[0].o_data > 0
 
     def done(s):
-        return s.recv_from_ld_axi.done() and s.o_data.done() and s.o_data_id.done() and s.ld_complete.done()
+        return (
+            s.recv_from_ld_axi.done()
+            and s.o_data.done()
+            and s.o_data_id.done()
+            and s.ld_complete.done()
+            and s.recv_from_tile_tid.done()
+        )
 
 def init_param():
     #-------------------------------------------------------------------------

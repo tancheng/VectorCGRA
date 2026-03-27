@@ -58,8 +58,8 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.pred_any_true = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
         s.pred_any_false = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
         s.pred_complete = [ OutPort(Bits1) for _ in range(num_pred_registers) ]
-        s.pred_true_count = [ OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_pred_registers) ]
-        s.pred_false_count = [ OutPort(mk_bits(clog2(MAX_THREAD_COUNT))) for _ in range(num_pred_registers) ]
+        s.pred_true_count = [ OutPort(mk_bits(clog2(MAX_THREAD_COUNT + 1))) for _ in range(num_pred_registers) ]
+        s.pred_false_count = [ OutPort(mk_bits(clog2(MAX_THREAD_COUNT + 1))) for _ in range(num_pred_registers) ]
         s.pred_true_mask = [ OutPort(mk_bits(MAX_THREAD_COUNT)) for _ in range(num_pred_registers) ]
         s.pred_false_mask = [ OutPort(mk_bits(MAX_THREAD_COUNT)) for _ in range(num_pred_registers) ]
         s.cfg_active_sel_w = Wire(Bits1)
@@ -84,8 +84,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.cfg_load_sel_w @= Bits1(0)
                 s.cfg_swap_w @= Bits1(0)
                 s.cfg_dep_start_w @= Bits1(0)
-        s.send_thread_min = OutPort( clog2(MAX_THREAD_COUNT) )
-        s.send_thread_max = OutPort( clog2(MAX_THREAD_COUNT) )
+        s.send_thread_min = OutPort( clog2(MAX_THREAD_COUNT + 1) )
+        s.send_thread_max = OutPort( clog2(MAX_THREAD_COUNT + 1) )
         s.ld_enable = [OutPort(1) for _ in range(num_ld_ports)]
         s.st_enable = [OutPort(1) for _ in range(num_st_ports)]
         s.ld_st_complete = InPort(1)
@@ -96,10 +96,10 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.mem_release_valid = InPort(1)
         s.mem_release_tid = InPort(clog2(MAX_THREAD_COUNT))
         s.mem_release_take = OutPort(1)
-        s.cfg_thread_min_bank0 = OutPort(clog2(MAX_THREAD_COUNT))
-        s.cfg_thread_max_bank0 = OutPort(clog2(MAX_THREAD_COUNT))
-        s.cfg_thread_min_bank1 = OutPort(clog2(MAX_THREAD_COUNT))
-        s.cfg_thread_max_bank1 = OutPort(clog2(MAX_THREAD_COUNT))
+        s.cfg_thread_min_bank0 = OutPort(clog2(MAX_THREAD_COUNT + 1))
+        s.cfg_thread_max_bank0 = OutPort(clog2(MAX_THREAD_COUNT + 1))
+        s.cfg_thread_min_bank1 = OutPort(clog2(MAX_THREAD_COUNT + 1))
+        s.cfg_thread_max_bank1 = OutPort(clog2(MAX_THREAD_COUNT + 1))
         s.cfg_thread_mask_bank0 = OutPort(mk_bits(MAX_THREAD_COUNT))
         s.cfg_thread_mask_bank1 = OutPort(mk_bits(MAX_THREAD_COUNT))
         s.cfg_bank_has_load0 = OutPort(Bits1)
@@ -121,6 +121,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.tile_token_take_pair_req = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.tile_token_take_pair_mirror = [ Wire(Bits1) for _ in range(num_rd_ports) ]
         s.tile_token_avail_pair = [ Wire(Bits1) for _ in range(num_rd_ports) ]
+        s.tile_token_pair_required = [ Wire(Bits1) for _ in range(num_rd_ports) ]
 
         s.pred_tile_valid_active = [ Wire(Bits1) for _ in range(num_tiles) ]
         s.pred_tile_valid_bank0 = [ Wire(Bits1) for _ in range(num_tiles) ]
@@ -129,7 +130,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.cfg_bank_valid1 = Wire(Bits1)
 
         # Predicate register file
-        PredCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+        PredCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
         MaskType = mk_bits(MAX_THREAD_COUNT)
         PredResetMaskType = mk_bits(num_pred_registers)
         s.pred_count = [ Wire(PredCountType) for _ in range(num_pred_registers) ]
@@ -161,6 +162,11 @@ class STEP_RegisterFileControllerRTL( Component ):
         for i in range(num_rd_ports):
             s.tile_token_take_pair_mirror[i] //= s.tile_token_take_pair_req[i ^ 2]
             s.tile_token_avail_pair[i] //= s.tile_token_avail[i ^ 2]
+
+        @update
+        def comb_pair_requirements():
+            for i in range(num_rd_ports):
+                s.tile_token_pair_required[i] @= s.rd_port_active[i] & s.rd_port_active[i ^ 2]
 
         @update
         def select_predicates():
@@ -203,7 +209,8 @@ class STEP_RegisterFileControllerRTL( Component ):
 
         # Helpful observability (optional)
         # Debug Flags TODO: @darrenl to delete
-        MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
+        ThreadIdType         = mk_bits( clog2( MAX_THREAD_COUNT ) )
+        MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT + 1 ) )
         ConstImmType = mk_bits(min(8, RegDataType.nbits))
         s.recv_cfg_thread_mask_resolved = Wire(MaskType)
         s.recv_cfg_thread_count_resolved = Wire(MaxThreadType)
@@ -300,7 +307,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.dep_mode_n = Wire(Bits1)
         s.run_primed = Wire(Bits1)
         s.run_primed_n = Wire(Bits1)
-        s.current_issue_tid = Wire(MaxThreadType)
+        s.current_issue_tid = Wire(ThreadIdType)
         s.current_issue_tid_data = Wire(RegDataType)
         s.issue_fire = Wire(Bits1)
         s.any_wr_enabled = Wire(Bits1)
@@ -308,18 +315,18 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.st_seq_count = [Wire(MaxThreadType) for _ in range(num_st_ports)]
         s.ld_seq_count_n = [Wire(MaxThreadType) for _ in range(num_ld_ports)]
         s.st_seq_count_n = [Wire(MaxThreadType) for _ in range(num_st_ports)]
-        s.wr_thread_tid = [Wire(MaxThreadType) for _ in range(num_wr_ports)]
+        s.wr_thread_tid = [Wire(ThreadIdType) for _ in range(num_wr_ports)]
         s.wr_track_en = [Wire(Bits1) for _ in range(num_wr_ports)]
         s.wr_token_fire = [Wire(Bits1) for _ in range(num_wr_ports)]
         s.wr_commit_valid = [Wire(Bits1) for _ in range(num_wr_ports)]
-        s.wr_commit_tid = [Wire(MaxThreadType) for _ in range(num_wr_ports)]
+        s.wr_commit_tid = [Wire(ThreadIdType) for _ in range(num_wr_ports)]
         TidQueuePtrType = mk_bits(max(1, clog2(MAX_THREAD_COUNT)))
         TidQueueCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
         s.wr_tid_fifo_head = [Wire(TidQueuePtrType) for _ in range(num_wr_ports)]
         s.wr_tid_fifo_tail = [Wire(TidQueuePtrType) for _ in range(num_wr_ports)]
         s.wr_tid_fifo_count = [Wire(TidQueueCountType) for _ in range(num_wr_ports)]
         s.wr_tid_fifo_data = [
-            [Wire(MaxThreadType) for _ in range(MAX_THREAD_COUNT)]
+            [Wire(ThreadIdType) for _ in range(MAX_THREAD_COUNT)]
             for _ in range(num_wr_ports)
         ]
         s.wr_seen_mask = [Wire(MaskType) for _ in range(num_wr_ports)]
@@ -330,7 +337,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.send_thread_min //= s.active_thread_min
         s.send_thread_max //= s.active_thread_max
 
-        if RegDataType.nbits >= MaxThreadType.nbits:
+        if RegDataType.nbits >= ThreadIdType.nbits:
             @update
             def comb_current_issue_tid_data():
                 s.current_issue_tid_data @= zext(s.current_issue_tid, RegDataType.nbits)
@@ -373,17 +380,18 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.wr_addr_valcfg_o[i] //= s.wr_addr_valcfg_n[i]
             
             s.rf_ld_wr_reg_addr = [OutPort(RegAddrType)   for _ in range(num_ld_ports)]
-            s.rf_ld_wr_tid_addr = [OutPort(MaxThreadType) for _ in range(num_ld_ports)]
+            s.rf_ld_wr_tid_addr = [OutPort(ThreadIdType) for _ in range(num_ld_ports)]
             s.rf_ld_wr_data     = [OutPort(RegDataType)   for _ in range(num_ld_ports)]
             s.rf_ld_wr_enable   = [OutPort(Bits1)         for _ in range(num_ld_ports)]
-            s.rf_rd_tid_addr = [OutPort(MaxThreadType) for _ in range(num_rd_ports)]
+            s.rf_rd_tid_addr = [OutPort(ThreadIdType) for _ in range(num_rd_ports)]
             s.rf_rd_data = [OutPort(RegDataType) for _ in range(num_rd_ports)]
             s.rf_rd_addr = [OutPort(RegAddrType) for _ in range(num_rd_ports)]
             s.rf_issue_fire = OutPort(Bits1)
-            s.rf_issue_tid = OutPort(MaxThreadType)
+            s.rf_issue_tid = OutPort(ThreadIdType)
+            s.rf_expected_count = OutPort(MaxThreadType)
             s.rf_wr_track_en = [OutPort(Bits1) for _ in range(num_wr_ports)]
             s.rf_wr_commit_valid = [OutPort(Bits1) for _ in range(num_wr_ports)]
-            s.rf_wr_commit_tid = [OutPort(MaxThreadType) for _ in range(num_wr_ports)]
+            s.rf_wr_commit_tid = [OutPort(ThreadIdType) for _ in range(num_wr_ports)]
             s.rf_wr_seen_mask = [OutPort(MaskType) for _ in range(num_wr_ports)]
             for i in range(num_ld_ports):
                 s.rf_ld_wr_reg_addr[i] //= s.ld_reg_addr_active[i]
@@ -392,6 +400,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.rf_ld_wr_enable[i] //= s.ld_data_valid[i]
             s.rf_issue_fire //= s.issue_fire
             s.rf_issue_tid //= s.current_issue_tid
+            s.rf_expected_count //= s.expected_count
             for i in range(num_wr_ports):
                 s.rf_wr_track_en[i] //= s.wr_track_en[i]
                 s.rf_wr_commit_valid[i] //= s.wr_commit_valid[i]
@@ -416,7 +425,7 @@ class STEP_RegisterFileControllerRTL( Component ):
             for i in range(num_rd_ports):
                 s.register_file.rd_thread_idx[i] @= s.current_issue_tid
             for i in range(num_wr_ports):
-                head_tid = MaxThreadType(0)
+                head_tid = ThreadIdType(0)
                 for q in range(MAX_THREAD_COUNT):
                     if s.wr_tid_fifo_head[i] == TidQueuePtrType(q):
                         head_tid = s.wr_tid_fifo_data[i][q]
@@ -426,47 +435,47 @@ class STEP_RegisterFileControllerRTL( Component ):
                 s.register_file.wr_thread_idx[i + num_wr_ports] @= s.ld_data_id[i]
 
             for i in range(num_ld_ports):
-                ld_tid = MaxThreadType(0)
+                ld_tid = ThreadIdType(0)
                 rank = MaxThreadType(0)
                 for tid in range(MAX_THREAD_COUNT):
                     if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
                         if s.ld_seq_count[i] == rank:
-                            ld_tid = MaxThreadType(tid)
+                            ld_tid = ThreadIdType(tid)
                         rank = rank + MaxThreadType(1)
                 for tid in range(MAX_THREAD_COUNT):
                     if s.dep_thread_mask[tid]:
                         if s.ld_seq_count[i] == rank:
-                            ld_tid = MaxThreadType(tid)
+                            ld_tid = ThreadIdType(tid)
                         rank = rank + MaxThreadType(1)
                 s.ld_issue_tid[i] @= ld_tid
             for i in range(num_st_ports):
-                st_tid = MaxThreadType(0)
+                st_tid = ThreadIdType(0)
                 rank = MaxThreadType(0)
                 for tid in range(MAX_THREAD_COUNT):
                     if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
                         if s.st_seq_count[i] == rank:
-                            st_tid = MaxThreadType(tid)
+                            st_tid = ThreadIdType(tid)
                         rank = rank + MaxThreadType(1)
                 for tid in range(MAX_THREAD_COUNT):
                     if s.dep_thread_mask[tid]:
                         if s.st_seq_count[i] == rank:
-                            st_tid = MaxThreadType(tid)
+                            st_tid = ThreadIdType(tid)
                         rank = rank + MaxThreadType(1)
                 s.st_issue_tid[i] @= st_tid
 
         @update
         def comb_issue_tid():
-            issue_tid = MaxThreadType(0)
+            issue_tid = ThreadIdType(0)
             rank = MaxThreadType(0)
             for tid in range(MAX_THREAD_COUNT):
                 if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
                     if s.issue_count == rank:
-                        issue_tid = MaxThreadType(tid)
+                        issue_tid = ThreadIdType(tid)
                     rank = rank + MaxThreadType(1)
             for tid in range(MAX_THREAD_COUNT):
                 if s.dep_thread_mask[tid]:
                     if s.issue_count == rank:
-                        issue_tid = MaxThreadType(tid)
+                        issue_tid = ThreadIdType(tid)
                     rank = rank + MaxThreadType(1)
             s.current_issue_tid @= issue_tid
 
@@ -483,7 +492,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         pred_mask = s.pred_true_mask_reg[r]
                         force_const_mask = s.pred_force_const_mask_reg[r]
                 for tid in range(MAX_THREAD_COUNT):
-                    if s.current_issue_tid == MaxThreadType(tid):
+                    if s.current_issue_tid == ThreadIdType(tid):
                         pred_true = Bits1(pred_mask[tid])
                         force_const = Bits1(force_const_mask[tid])
                 reset_const_en = s.rd_pred_reset_const_en[i]
@@ -503,13 +512,16 @@ class STEP_RegisterFileControllerRTL( Component ):
             rd_issue_ok = Bits1(1)
             for i in range(num_rd_ports):
                 if s.rd_port_active[i]:
-                    rd_issue_ok = rd_issue_ok & s.tile_token_avail[i] & s.tile_token_avail_pair[i]
+                    pair_avail = Bits1(1)
+                    if s.tile_token_pair_required[i]:
+                        pair_avail = s.tile_token_avail_pair[i]
+                    rd_issue_ok = rd_issue_ok & s.tile_token_avail[i] & pair_avail
             s.issue_fire @= Bits1(0)
             if (s.state == ST_RUN) & s.run_primed & (s.issue_count < s.expected_count):
                 if s.dep_mode:
                     dep_tid_ready = Bits1(0)
                     for tid in range(MAX_THREAD_COUNT):
-                        if s.current_issue_tid == MaxThreadType(tid):
+                        if s.current_issue_tid == ThreadIdType(tid):
                             dep_tid_ready = Bits1((s.dep_thread_mask[tid] == Bits1(0)) | s.dep_complete_mask[tid])
                     if dep_tid_ready & rd_issue_ok:
                         s.issue_fire @= Bits1(1)
@@ -936,7 +948,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                             if s.rd_port_active[i]:
                                 s.rd_count_n[i] @= s.rd_count[i] + MaxThreadType(1)
                                 s.tile_token_take_req[i] @= Bits1(1)
-                                s.tile_token_take_pair_req[i] @= Bits1(1)
+                                s.tile_token_take_pair_req[i] @= s.tile_token_pair_required[i]
 
                     for i in range(num_wr_ports):
                         mapped_idx = i
@@ -1110,7 +1122,14 @@ class STEP_RegisterFileControllerRTL( Component ):
                         s.wr_addr_cfg[i] <<= s.wr_addr_cfg_n[i]
                         s.wr_addr_valcfg[i] <<= s.wr_addr_valcfg_n[i]
                         if s.recv_cfg_from_ctrl.val & s.recv_cfg_from_ctrl.rdy & (s.cfg_active_sel_w == s.cfg_load_sel_w) & (s.state == ST_IDLE):
-                            s.pred_wr_valcfg[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i]
+                            mapped_idx = i
+                            if i < 4:
+                                mapped_idx = ((i & 0x1) << 1) + ((i & 0x2) >> 1)
+                            has_pred_route = Bits1(0)
+                            route_bit_idx = Bits4(num_returner_ports - mapped_idx - 1)
+                            for r in range(num_rd_ports):
+                                has_pred_route = has_pred_route | s.recv_cfg_from_ctrl.msg.tokenizer_cfg.token_route_sink_enable[r][route_bit_idx]
+                            s.pred_wr_valcfg[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs_val[i] & has_pred_route
                             s.pred_wr_addr_cfg[i] <<= s.recv_cfg_from_ctrl.msg.out_pred_regs[i]
                     for i in range(num_ld_ports):
                         s.ld_seq_count[i] <<= s.ld_seq_count_n[i]
@@ -1164,7 +1183,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     s.wr_tid_fifo_count[i] <<= TidQueueCountType(0)
                     s.wr_seen_mask[i] <<= MaskType(0)
                     for q in range(MAX_THREAD_COUNT):
-                        s.wr_tid_fifo_data[i][q] <<= MaxThreadType(0)
+                        s.wr_tid_fifo_data[i][q] <<= ThreadIdType(0)
             else:
                 for i in range(num_wr_ports):
                     count = s.wr_tid_fifo_count[i]
@@ -1172,7 +1191,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                     can_push = s.issue_fire & s.run_primed & (s.state == ST_RUN) & s.wr_track_en[i]
                     commit_mask = MaskType(0)
                     for tid in range(MAX_THREAD_COUNT):
-                        if s.wr_commit_tid[i] == MaxThreadType(tid):
+                        if s.wr_commit_tid[i] == ThreadIdType(tid):
                             commit_mask = MaskType(1 << tid)
 
                     if can_push:
@@ -1304,7 +1323,7 @@ class STEP_RegisterFileControllerRTL( Component ):
                         if s.pred_wr_valcfg[i] & (s.pred_wr_addr_cfg[i] == PredAddrType(r)) & s.wr_commit_valid[i]:
                             tid_mask = MaskType(0)
                             for tid in range(MAX_THREAD_COUNT):
-                                if s.wr_commit_tid[i] == MaxThreadType(tid):
+                                if s.wr_commit_tid[i] == ThreadIdType(tid):
                                     tid_mask = MaskType(1 << tid)
                             force_const_mask = force_const_mask & ~tid_mask
                             if (tid_mask != MaskType(0)) & ((seen_mask & tid_mask) == MaskType(0)):

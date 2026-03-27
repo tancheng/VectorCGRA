@@ -395,6 +395,7 @@ def mk_cfg_metadata_pkt(
                         prefix="CfgMetadataPkt"):
     
     ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
+    ThreadCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
     CfgIdType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     CmdType = mk_bits(max(1, NUM_CMDS))
     ConstImmType = mk_bits(min(8, DataType.nbits))
@@ -432,8 +433,8 @@ def mk_cfg_metadata_pkt(
     field_dict['tokenizer_cfg'] = CfgTokenizerType
     field_dict['cfg_id'] = CfgIdType
     field_dict['br_id'] = CfgIdType
-    field_dict['thread_count_min'] = ThreadIdxType
-    field_dict['thread_count_max'] = ThreadIdxType
+    field_dict['thread_count_min'] = ThreadCountType
+    field_dict['thread_count_max'] = ThreadCountType
     field_dict['start_cfg'] = Bits1
     field_dict['end_cfg'] = Bits1
     # Branching / predication control
@@ -447,7 +448,7 @@ def mk_cfg_metadata_pkt(
     field_dict['loop_en'] = Bits1
     field_dict['loop_start_cfg_id'] = CfgIdType
     field_dict['loop_exit_cfg_id'] = CfgIdType
-    field_dict['loop_max'] = ThreadIdxType
+    field_dict['loop_max'] = ThreadCountType
 
     return mk_bitstruct(new_name, field_dict,
         namespace = {'__str__': str_func}

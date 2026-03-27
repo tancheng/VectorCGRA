@@ -40,6 +40,10 @@ class TestHarness(Component):
         s.recv_from_st_axi = AxiStSourceRTL(DataType, [1]*(num_req-num_empty), initial_delay)
         s.recv_from_tile_data = TestSrcRTL(DataType, st_data_msgs)
         s.recv_from_tile_pred = TestSrcRTL(Bits1, [0] * (num_empty)  + [1] * (num_req - num_empty) + [0])
+        s.recv_from_tile_tid = TestSrcRTL(
+            mk_bits(clog2(MAX_THREAD_COUNT)),
+            ([0] * num_empty) + list(range(num_req - num_empty))
+        )
 
         # Sink Pkts
         cmp_fn = lambda a, b : a == b
@@ -51,6 +55,7 @@ class TestHarness(Component):
         # Load Connections
         s.dut.ld_ifc[0].i_addr //= 0
         s.dut.ld_ifc[0].i_req //= 0
+        s.dut.ld_issue_tid[0] //= 0
         s.dut.ld_tile_pred[0] //= 0
         s.dut.ld_axi[0] //= s.recv_from_ld_axi.send
 
@@ -59,8 +64,10 @@ class TestHarness(Component):
         s.dut.st_ifc[0].i_addr //= 0
         s.dut.st_ifc[0].i_data //= s.recv_from_tile_data.send.msg
         s.dut.st_ifc[0].i_req //= s.recv_from_tile_data.send.val
+        s.dut.st_issue_tid[0] //= s.recv_from_tile_tid.send.msg
         s.recv_from_tile_data.send.rdy //= 1
         s.recv_from_tile_pred.send.rdy //= 1
+        s.recv_from_tile_tid.send.rdy //= 1
         s.dut.st_tile_pred[0] //= s.recv_from_tile_pred.send.msg
 
         # Enablement Connections
@@ -76,7 +83,7 @@ class TestHarness(Component):
             s.dut.cfg_bank_commit @= 0
             s.dut.release_take @= 0
             s.dut.cfg_thread_min_bank0 @= 0
-            s.dut.cfg_thread_max_bank0 @= num_req
+            s.dut.cfg_thread_max_bank0 @= num_req - num_empty
             s.dut.cfg_thread_min_bank1 @= 0
             s.dut.cfg_thread_max_bank1 @= 0
             s.dut.cfg_thread_mask_bank0 @= 0
@@ -87,7 +94,7 @@ class TestHarness(Component):
             s.dut.cfg_bank_has_store1 @= 0
 
     def done(s):
-        return s.recv_from_st_axi.done() and s.ld_complete.done()
+        return s.recv_from_st_axi.done() and s.ld_complete.done() and s.recv_from_tile_tid.done()
 
 def init_param():
     #-------------------------------------------------------------------------

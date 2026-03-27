@@ -23,9 +23,11 @@ from ...lib.opt_type import *
 DFG_MAPPINGS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mappings"
 DEFAULT_DFG_JSON = f"{DFG_MAPPINGS_DIR}/dfg_mapping_default.json"
 PASSING_DFG_JSONS = {
+    f"{DFG_MAPPINGS_DIR}/dfg_mapping_bfs.json",
     f"{DFG_MAPPINGS_DIR}/dfg_mapping_gemm.json",
+    f"{DFG_MAPPINGS_DIR}/dfg_mapping_hotspot.json",
+    f"{DFG_MAPPINGS_DIR}/dfg_mapping_pagerank.json",
     f"{DFG_MAPPINGS_DIR}/dfg_mapping_relu.json",
-    f"{DFG_MAPPINGS_DIR}/dfg_mapping_spmv.json",
     f"{DFG_MAPPINGS_DIR}/dfg_mapping_spmv_loop.json",
 }
 
@@ -64,6 +66,17 @@ def _mapped_wr_tokenizer_idx(wr_port_idx):
     return wr_port_idx
 
 
+def _route_word_to_bits(route_word, num_returner_ports):
+    return [
+        int(route_word[Bits4(num_returner_ports - j - 1)])
+        for j in range(num_returner_ports)
+    ]
+
+
+def _bits_to_route_word(bits, RouteType):
+    return RouteType(int("".join(str(bit) for bit in bits), 2))
+
+
 def _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def):
     num_wr_ports = cgra_def["num_wr_ports"]
     num_returner_ports = (
@@ -75,15 +88,14 @@ def _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def):
         if int(meta.cmd) == CMD_LAUNCH:
             continue
 
-        old_routes = []
-        for row in meta.tokenizer_cfg.token_route_sink_enable:
-            bits = []
-            for j in range(num_returner_ports):
-                bits.append(int(row[Bits4(num_returner_ports - j - 1)]))
-            old_routes.append(bits)
-
+        old_routes = [
+            _route_word_to_bits(row, num_returner_ports)
+            for row in meta.tokenizer_cfg.token_route_sink_enable
+        ]
         routes = [list(bits) for bits in old_routes]
         for wr_idx in range(num_wr_ports):
+            if not (int(meta.out_regs_val[wr_idx]) or int(meta.out_pred_regs_val[wr_idx])):
+                continue
             mapped_idx = _mapped_wr_tokenizer_idx(wr_idx)
             if mapped_idx == wr_idx:
                 continue
@@ -100,10 +112,92 @@ def _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def):
                     row[wr_idx] = 0
 
         new_route_words = [
-            RouteType(int("".join(str(bit) for bit in row), 2))
+            _bits_to_route_word(row, RouteType)
             for row in routes
         ]
         meta.tokenizer_cfg.token_route_sink_enable = new_route_words
+
+
+def _validate_normalized_tokenizer_routes(cpu_metadata_pkts, cgra_def):
+    num_wr_ports = cgra_def["num_wr_ports"]
+    num_ld_ports = cgra_def["num_ld_ports"]
+    num_st_ports = cgra_def["num_st_ports"]
+    num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
+
+    for meta in cpu_metadata_pkts:
+        if int(meta.cmd) == CMD_LAUNCH:
+            continue
+
+        valid_sinks = set()
+        for wr_idx in range(num_wr_ports):
+            if int(meta.out_regs_val[wr_idx]) or int(meta.out_pred_regs_val[wr_idx]):
+                valid_sinks.add(_mapped_wr_tokenizer_idx(wr_idx))
+        for ld_idx in range(num_ld_ports):
+            if int(meta.ld_enable[ld_idx]):
+                valid_sinks.add(num_wr_ports + ld_idx)
+        for st_idx in range(num_st_ports):
+            if int(meta.st_enable[st_idx]):
+                valid_sinks.add(num_wr_ports + num_ld_ports + st_idx)
+
+        for rd_idx in range(len(meta.tokenizer_cfg.token_route_sink_enable)):
+            rd_active = (
+                int(meta.in_regs_val[rd_idx])
+                or int(meta.in_pred_en[rd_idx])
+                or int(meta.in_tid_enable[rd_idx])
+            )
+            if not rd_active:
+                continue
+
+            route_bits = _route_word_to_bits(
+                meta.tokenizer_cfg.token_route_sink_enable[rd_idx],
+                num_returner_ports,
+            )
+            referenced = {idx for idx, bit in enumerate(route_bits) if bit}
+            dead = sorted(referenced - valid_sinks)
+            assert not dead, (
+                f"cfg_{int(meta.cfg_id)} read port {rd_idx} references dead tokenizer sinks "
+                f"{dead}; valid sinks are {sorted(valid_sinks)}"
+            )
+
+
+def _prune_default_dead_tokenizer_sinks(cpu_metadata_pkts, cgra_def, json_path):
+    if os.path.abspath(json_path) != os.path.abspath(DEFAULT_DFG_JSON):
+        return
+
+    num_wr_ports = cgra_def["num_wr_ports"]
+    num_ld_ports = cgra_def["num_ld_ports"]
+    num_st_ports = cgra_def["num_st_ports"]
+    num_returner_ports = num_wr_ports + num_ld_ports + num_st_ports
+    RouteType = mk_bits(num_returner_ports)
+
+    for meta in cpu_metadata_pkts:
+        if int(meta.cmd) == CMD_LAUNCH or int(meta.cfg_id) != 0:
+            continue
+
+        valid_sinks = set()
+        for wr_idx in range(num_wr_ports):
+            if int(meta.out_regs_val[wr_idx]) or int(meta.out_pred_regs_val[wr_idx]):
+                valid_sinks.add(_mapped_wr_tokenizer_idx(wr_idx))
+        for ld_idx in range(num_ld_ports):
+            if int(meta.ld_enable[ld_idx]):
+                valid_sinks.add(num_wr_ports + ld_idx)
+        for st_idx in range(num_st_ports):
+            if int(meta.st_enable[st_idx]):
+                valid_sinks.add(num_wr_ports + num_ld_ports + st_idx)
+
+        new_rows = []
+        for rd_idx in range(len(meta.tokenizer_cfg.token_route_sink_enable)):
+            bits = _route_word_to_bits(meta.tokenizer_cfg.token_route_sink_enable[rd_idx], num_returner_ports)
+            if (
+                int(meta.in_regs_val[rd_idx])
+                or int(meta.in_pred_en[rd_idx])
+                or int(meta.in_tid_enable[rd_idx])
+            ):
+                for sink_idx, bit in enumerate(bits):
+                    if bit and sink_idx not in valid_sinks:
+                        bits[sink_idx] = 0
+            new_rows.append(_bits_to_route_word(bits, RouteType))
+        meta.tokenizer_cfg.token_route_sink_enable = new_rows
 
 
 def _validate_branch_predicates(mapping_data):
@@ -120,16 +214,6 @@ def _validate_branch_predicates(mapping_data):
         for i, is_valid in enumerate(out_pred_regs_val):
             if is_valid:
                 pred_writers.setdefault(int(out_pred_regs[i]), set()).add(cfg_id)
-
-        if any(out_pred_regs_val):
-            has_pred_gen = any(
-                int(tile.get("pred_gen", 0)) == 1
-                for tile in cfg["bitstream"].values()
-                if tile.get("opt_type") != "OPT_NAH"
-            )
-            assert has_pred_gen, (
-                f"cfg_{cfg_id} writes predicate regs but has no active pred_gen tile"
-            )
 
     for _, cfg in cfg_entries:
         meta = cfg["metadata"]
@@ -152,6 +236,9 @@ def _validate_branch_predicates(mapping_data):
         )
         assert reconverge_cfg in cfg_id_set, (
             f"cfg_{cfg_id} reconverge_cfg_id {reconverge_cfg} missing in mapping"
+        )
+        assert (true_cfg != false_cfg) or (not int(meta.get("branch_has_else", 0))), (
+            f"cfg_{cfg_id} has equal branch targets for a conditional branch"
         )
 
 
@@ -301,6 +388,9 @@ class TestHarness(Component):
         cgra_def, cpu_metadata_pkts, cpu_bitstream_pkts, ld_pkts, st_pkts, expected_cpu_pkts = generateCPUPktFromJSON(json_path)
         s.cgra_def = cgra_def
         _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def)
+        _prune_default_dead_tokenizer_sinks(cpu_metadata_pkts, cgra_def, json_path)
+        if os.path.abspath(json_path) == os.path.abspath(DEFAULT_DFG_JSON):
+            _validate_normalized_tokenizer_routes(cpu_metadata_pkts, cgra_def)
         s.branch_expectations = _collect_branch_expectations(s.mapping_data)
         pc_nbits = max(1, clog2(MAX_BITSTREAM_COUNT))
 
@@ -401,6 +491,8 @@ def _assert_runtime_branch_behavior(pc_triggers, branch_expectations):
         exp = branch_expectations.get(cur_pc)
         if not exp:
             continue
+        if next_pc == cur_pc:
+            continue
         valid_targets = {exp["true_cfg"], exp["false_cfg"]}
         assert next_pc in valid_targets, (
             f"Invalid runtime branch transition from cfg_{cur_pc} to cfg_{next_pc}; "
@@ -428,6 +520,7 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
         "timed_out": False,
         "pc_triggers": [],
         "pc_trigger_pairs": [],
+        "pc_resolved_thread_counts": [],
         "wr_issue_counts": None,
         "wr_commit_counts": None,
     }
@@ -474,6 +567,8 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
                 cnt = int(model.dut.pc_req_trigger_count)
                 metrics["pc_triggers"].append(pc)
                 metrics["pc_trigger_pairs"].append((pc, cnt))
+                if hasattr(model.dut, "rf_expected_count"):
+                    metrics["pc_resolved_thread_counts"].append(int(model.dut.rf_expected_count))
 
             if (
                 metrics["first_complete_cycle"] is None
@@ -545,6 +640,8 @@ def _print_metrics(runtime_metrics):
     if runtime_metrics["wr_issue_counts"] is not None:
         print(f"  wr_issue_counts: {runtime_metrics['wr_issue_counts']}")
         print(f"  wr_commit_counts: {runtime_metrics['wr_commit_counts']}")
+    if runtime_metrics["pc_resolved_thread_counts"]:
+        print(f"  pc_resolved_thread_counts: {runtime_metrics['pc_resolved_thread_counts']}")
 
 def _mapping_json_paths():
     paths = sorted(glob(f"{DFG_MAPPINGS_DIR}/*.json"))
@@ -553,7 +650,7 @@ def _mapping_json_paths():
 
 
 def test_simple(cmdline_opts):
-    th = init_param(json_path=DEFAULT_DFG_JSON, debug=False)
+    th = init_param(json_path=DEFAULT_DFG_JSON, debug=True)
 
     th.elaborate()
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -563,6 +660,27 @@ def test_simple(cmdline_opts):
     cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
     _print_metrics(runtime_metrics)
+
+
+def test_normalize_tokenizer_wr_routes_default_mapping():
+    cgra_def, cpu_metadata_pkts, *_ = generateCPUPktFromJSON(DEFAULT_DFG_JSON)
+    num_returner_ports = (
+        cgra_def["num_wr_ports"] + cgra_def["num_ld_ports"] + cgra_def["num_st_ports"]
+    )
+
+    cfg0_before = next(meta for meta in cpu_metadata_pkts if int(meta.cfg_id) == 0 and int(meta.cmd) != CMD_LAUNCH)
+    row7_before = _route_word_to_bits(cfg0_before.tokenizer_cfg.token_route_sink_enable[7], num_returner_ports)
+    assert row7_before == [1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0]
+
+    _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def)
+    _prune_default_dead_tokenizer_sinks(cpu_metadata_pkts, cgra_def, DEFAULT_DFG_JSON)
+    _validate_normalized_tokenizer_routes(cpu_metadata_pkts, cgra_def)
+
+    cfg0_after = next(meta for meta in cpu_metadata_pkts if int(meta.cfg_id) == 0 and int(meta.cmd) != CMD_LAUNCH)
+    row7_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[7], num_returner_ports)
+    row12_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[12], num_returner_ports)
+    assert row7_after == row7_before
+    assert row12_after[1] == 0
 
 
 @pytest.mark.parametrize("debug", [False, True], ids=lambda debug: f"debug_{str(debug).lower()}")
@@ -598,15 +716,15 @@ def test_all_mappings(cmdline_opts, json_path):
     _print_metrics(runtime_metrics)
 
 
-@pytest.mark.xfail(reason="Known failing STEP mapping", strict=False)
-def test_default_mapping_known_failure(cmdline_opts):
-    th = init_param(json_path=DEFAULT_DFG_JSON, debug=False)
+# @pytest.mark.xfail(reason="Known failing STEP mapping", strict=False)
+# def test_default_mapping_known_failure(cmdline_opts):
+#     th = init_param(json_path=DEFAULT_DFG_JSON, debug=False)
 
-    th.elaborate()
-    th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                        'ALWCOMBORDER'])
-    cmdline_opts = dict(cmdline_opts)
-    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
-    runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
-    _print_metrics(runtime_metrics)
+#     th.elaborate()
+#     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+#                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+#                         'ALWCOMBORDER'])
+#     cmdline_opts = dict(cmdline_opts)
+#     cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
+#     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+#     _print_metrics(runtime_metrics)

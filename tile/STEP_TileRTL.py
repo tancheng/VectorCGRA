@@ -246,6 +246,8 @@ class STEP_TileRTL(Component):
                     s.fu_out[i] @= ~s.crossbar.send_to_fu[0]
                 elif s.opt_type == OPT_LLS:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] << s.crossbar.send_to_fu[1]
+                elif s.opt_type == OPT_LLS_CONST:
+                    s.fu_out[i] @= s.crossbar.send_to_fu[0] << s.tile_bitstream.const_val
                 elif s.opt_type == OPT_LRS:
                     s.fu_out[i] @= s.crossbar.send_to_fu[0] >> s.crossbar.send_to_fu[1]
                 

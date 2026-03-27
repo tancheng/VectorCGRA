@@ -25,7 +25,7 @@ class STEP_ControllerRTL(Component):
     BitstreamAddrType = mk_bits(clog2(MAX_BITSTREAM_COUNT))
     PredRegType = mk_bits(clog2(num_pred_registers))
     PredResetMaskType = mk_bits(num_pred_registers)
-    LoopCountType = mk_bits(clog2(MAX_THREAD_COUNT))
+    LoopCountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
     MaskType = mk_bits(MAX_THREAD_COUNT)
     TileCountType = mk_bits(clog2(num_tiles + 1))
     StackDepthType = mk_bits(clog2(MAX_BITSTREAM_COUNT + 1))
@@ -264,8 +264,8 @@ class STEP_ControllerRTL(Component):
 
     @update
     def prepare_cfg_messages():
-        base_thread_min = s.load_meta.thread_count_min
-        base_thread_max = s.load_meta.thread_count_max
+        base_thread_min = LoopCountType(s.load_meta.thread_count_min)
+        base_thread_max = LoopCountType(s.load_meta.thread_count_max)
 
         cfg_thread_min = base_thread_min
         cfg_thread_max = base_thread_max
@@ -607,6 +607,11 @@ class STEP_ControllerRTL(Component):
                     s.prefetch_inflight <<= 0
                     s.rf_active <<= 1
                     s.rf_wait_for_busy <<= 1
+                    # A same-bank demand load is starting a fresh active cfg.
+                    # Any previously prefetched next cfg belongs to the old
+                    # control-flow context and must not override branch/loop
+                    # resolution for the new active cfg.
+                    s.next_ready <<= 0
                     s.active_meta <<= s.load_meta
                     s.active_meta_valid <<= 1
                     s.active_thread_mask <<= s.cfg_to_rf_thread_mask
@@ -997,7 +1002,7 @@ class STEP_ControllerRTL(Component):
                                         s.load_inflight <<= 0
                                         s.fabric_cfg_load_done <<= 1
                                         s.cfg_packets_injection_done <<= 1
-                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.next_ready:
+                elif ~(s.last_pc | (s.pc == s.last_cfg_id)) & s.next_ready & cfg_complete_event:
                     s.cfg_swap <<= 1
                     s.rf_dep_start <<= s.rf_cfg_issue_ready & ~s.rf_cfg_done
                     # Present the post-swap active bank in the same cycle as cfg_swap

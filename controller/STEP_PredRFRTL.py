@@ -50,7 +50,7 @@ class STEP_PredRFRTL( Component ):
         s.send_tile_preds = [ OutPort(Bits1) for _ in range(num_tiles)]
 
         # Helpful observability (optional)
-        MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT ) )
+        MaxThreadType        = mk_bits( clog2( MAX_THREAD_COUNT + 1 ) )
         s.expected_count_o   = OutPort( MaxThreadType )
         s.rd_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_rd_ports) ]
         s.wr_counts_o        = [ OutPort(MaxThreadType) for _ in range(num_wr_ports) ]

@@ -29,10 +29,10 @@ class STEP_LoadStoreRTL( Component ):
         s.cfg_load_sel = InPort(Bits1)
         s.cfg_bank_commit = InPort(Bits1)
         s.release_take = InPort(1)
-        s.cfg_thread_min_bank0 = InPort(TidType)
-        s.cfg_thread_max_bank0 = InPort(TidType)
-        s.cfg_thread_min_bank1 = InPort(TidType)
-        s.cfg_thread_max_bank1 = InPort(TidType)
+        s.cfg_thread_min_bank0 = InPort(CountType)
+        s.cfg_thread_max_bank0 = InPort(CountType)
+        s.cfg_thread_min_bank1 = InPort(CountType)
+        s.cfg_thread_max_bank1 = InPort(CountType)
         s.cfg_thread_mask_bank0 = InPort(MaskType)
         s.cfg_thread_mask_bank1 = InPort(MaskType)
         s.cfg_bank_has_load0 = InPort(Bits1)
@@ -58,7 +58,7 @@ class STEP_LoadStoreRTL( Component ):
         s.ld_units = [STEP_LoadRTL(DataType) for _ in range(num_ports)]
         s.st_units = [STEP_StoreRTL(DataType) for _ in range(num_ports)]
         s.scoreboards = [STEP_LdStScoreboardRTL() for _ in range(2)]
-        s.active_thread_span = Wire(TidType)
+        s.active_thread_span = Wire(CountType)
 
         #### DEBUG
         if debug:
@@ -66,11 +66,11 @@ class STEP_LoadStoreRTL( Component ):
             s.st_complete = [OutPort(1) for _ in range(num_ports)]
             s.outstanding_reqs = [OutPort( CountType ) for _ in range(num_ports)]
             s.loads_in_tile = [OutPort( CountType ) for _ in range(num_ports)]
-            s.loads_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ports)]
+            s.loads_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ports)]
             s.store_queue_rdy = [OutPort(1) for _ in range(num_ports)]
             s.outstanding_stores = [OutPort( CountType ) for _ in range(num_ports)]
             s.stores_in_tile = [OutPort( CountType ) for _ in range(num_ports)]
-            s.store_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT) ) for _ in range(num_ports)]
+            s.store_tile_counter = [OutPort( clog2(MAX_THREAD_COUNT + 1) ) for _ in range(num_ports)]
             s.ld_tile_last_seen = [OutPort(1) for _ in range(num_ports)]
             s.st_tile_last_seen = [OutPort(1) for _ in range(num_ports)]
             for i in range(num_ports):
@@ -126,16 +126,16 @@ class STEP_LoadStoreRTL( Component ):
                 active_min = s.cfg_thread_min_bank1
                 active_max = s.cfg_thread_max_bank1
 
-            active_span = TidType(0)
+            active_span = CountType(0)
             if active_mask != MaskType(0):
                 for tid in range(MAX_THREAD_COUNT):
                     if active_mask[tid]:
-                        active_span = active_span + TidType(1)
+                        active_span = active_span + CountType(1)
             else:
                 for tid in range(MAX_THREAD_COUNT):
-                    tid_bits = TidType(tid)
+                    tid_bits = CountType(tid)
                     if (tid_bits >= active_min) & (tid_bits < active_max):
-                        active_span = active_span + TidType(1)
+                        active_span = active_span + CountType(1)
             s.active_thread_span @= active_span
 
         @update
@@ -148,91 +148,70 @@ class STEP_LoadStoreRTL( Component ):
                 else:
                     clear_bank1 = Bits1(1)
 
-            mem_dispatch_val0 = Bits1(0)
-            mem_dispatch_val1 = Bits1(0)
-            mem_dispatch_tid0 = TidType(0)
-            mem_dispatch_tid1 = TidType(0)
-            ld_done_val0 = Bits1(0)
-            ld_done_val1 = Bits1(0)
-            ld_done_tid0 = TidType(0)
-            ld_done_tid1 = TidType(0)
-            st_done_val0 = Bits1(0)
-            st_done_val1 = Bits1(0)
-            st_done_tid0 = TidType(0)
-            st_done_tid1 = TidType(0)
+            mem_dispatch_mask0 = MaskType(0)
+            mem_dispatch_mask1 = MaskType(0)
+            ld_done_mask0 = MaskType(0)
+            ld_done_mask1 = MaskType(0)
+            st_done_mask0 = MaskType(0)
+            st_done_mask1 = MaskType(0)
 
             for i in range(num_ports):
+                ld_issue_onehot = MaskType(0)
+                st_issue_onehot = MaskType(0)
+                ld_done_onehot = MaskType(0)
+                st_done_onehot = MaskType(0)
+                for tid in range(MAX_THREAD_COUNT):
+                    one_hot_tid = MaskType(1 << tid)
+                    if s.ld_issue_tid[i] == TidType(tid):
+                        ld_issue_onehot = one_hot_tid
+                    if s.st_issue_tid[i] == TidType(tid):
+                        st_issue_onehot = one_hot_tid
+                    if s.ld_ifc[i].o_data_id == TidType(tid):
+                        ld_done_onehot = one_hot_tid
+                    if s.st_units[i].o_done_tid == TidType(tid):
+                        st_done_onehot = one_hot_tid
+
                 if s.ld_ifc[i].i_req & s.ld_ifc[i].o_rdy:
                     if s.ld_units[i].issue_bank == Bits1(0):
-                        if ~mem_dispatch_val0:
-                            mem_dispatch_val0 = Bits1(1)
-                            mem_dispatch_tid0 = s.ld_issue_tid[i]
+                        mem_dispatch_mask0 = mem_dispatch_mask0 | ld_issue_onehot
                     else:
-                        if ~mem_dispatch_val1:
-                            mem_dispatch_val1 = Bits1(1)
-                            mem_dispatch_tid1 = s.ld_issue_tid[i]
+                        mem_dispatch_mask1 = mem_dispatch_mask1 | ld_issue_onehot
                     if ~(s.ld_enable[i] & s.ld_tile_pred[i]):
                         if s.ld_units[i].issue_bank == Bits1(0):
-                            if ~ld_done_val0:
-                                ld_done_val0 = Bits1(1)
-                                ld_done_tid0 = s.ld_issue_tid[i]
+                            ld_done_mask0 = ld_done_mask0 | ld_issue_onehot
                         else:
-                            if ~ld_done_val1:
-                                ld_done_val1 = Bits1(1)
-                                ld_done_tid1 = s.ld_issue_tid[i]
+                            ld_done_mask1 = ld_done_mask1 | ld_issue_onehot
                 if s.st_ifc[i].i_req & s.st_ifc[i].o_rdy:
                     if s.st_units[i].issue_bank == Bits1(0):
-                        if ~mem_dispatch_val0:
-                            mem_dispatch_val0 = Bits1(1)
-                            mem_dispatch_tid0 = s.st_issue_tid[i]
+                        mem_dispatch_mask0 = mem_dispatch_mask0 | st_issue_onehot
                     else:
-                        if ~mem_dispatch_val1:
-                            mem_dispatch_val1 = Bits1(1)
-                            mem_dispatch_tid1 = s.st_issue_tid[i]
+                        mem_dispatch_mask1 = mem_dispatch_mask1 | st_issue_onehot
                     if ~(s.st_enable[i] & s.st_tile_pred[i]):
                         if s.st_units[i].issue_bank == Bits1(0):
-                            if ~st_done_val0:
-                                st_done_val0 = Bits1(1)
-                                st_done_tid0 = s.st_issue_tid[i]
+                            st_done_mask0 = st_done_mask0 | st_issue_onehot
                         else:
-                            if ~st_done_val1:
-                                st_done_val1 = Bits1(1)
-                                st_done_tid1 = s.st_issue_tid[i]
+                            st_done_mask1 = st_done_mask1 | st_issue_onehot
                 if s.ld_ifc[i].o_done:
                     if s.ld_units[i].o_data_bank == Bits1(0):
-                        if ~ld_done_val0:
-                            ld_done_val0 = Bits1(1)
-                            ld_done_tid0 = s.ld_ifc[i].o_data_id
+                        ld_done_mask0 = ld_done_mask0 | ld_done_onehot
                     else:
-                        if ~ld_done_val1:
-                            ld_done_val1 = Bits1(1)
-                            ld_done_tid1 = s.ld_ifc[i].o_data_id
+                        ld_done_mask1 = ld_done_mask1 | ld_done_onehot
                 if s.st_ifc[i].o_done:
                     if s.st_units[i].o_done_bank == Bits1(0):
-                        if ~st_done_val0:
-                            st_done_val0 = Bits1(1)
-                            st_done_tid0 = s.st_units[i].o_done_tid
+                        st_done_mask0 = st_done_mask0 | st_done_onehot
                     else:
-                        if ~st_done_val1:
-                            st_done_val1 = Bits1(1)
-                            st_done_tid1 = s.st_units[i].o_done_tid
+                        st_done_mask1 = st_done_mask1 | st_done_onehot
 
             s.scoreboards[0].clear @= clear_bank0
             s.scoreboards[1].clear @= clear_bank1
-            s.scoreboards[0].mem_dispatch_tid_val @= mem_dispatch_val0
-            s.scoreboards[0].mem_dispatch_tid @= mem_dispatch_tid0
-            s.scoreboards[0].ld_done_tid_val @= ld_done_val0
-            s.scoreboards[0].ld_done_tid @= ld_done_tid0
-            s.scoreboards[0].st_done_tid_val @= st_done_val0
-            s.scoreboards[0].st_done_tid @= st_done_tid0
+            s.scoreboards[0].mem_dispatch_event_mask @= mem_dispatch_mask0
+            s.scoreboards[0].ld_done_event_mask @= ld_done_mask0
+            s.scoreboards[0].st_done_event_mask @= st_done_mask0
             s.scoreboards[0].release_take @= Bits1(0)
 
-            s.scoreboards[1].mem_dispatch_tid_val @= mem_dispatch_val1
-            s.scoreboards[1].mem_dispatch_tid @= mem_dispatch_tid1
-            s.scoreboards[1].ld_done_tid_val @= ld_done_val1
-            s.scoreboards[1].ld_done_tid @= ld_done_tid1
-            s.scoreboards[1].st_done_tid_val @= st_done_val1
-            s.scoreboards[1].st_done_tid @= st_done_tid1
+            s.scoreboards[1].mem_dispatch_event_mask @= mem_dispatch_mask1
+            s.scoreboards[1].ld_done_event_mask @= ld_done_mask1
+            s.scoreboards[1].st_done_event_mask @= st_done_mask1
             s.scoreboards[1].release_take @= Bits1(0)
 
             s.scoreboards[0].require_load @= s.cfg_bank_has_load0
