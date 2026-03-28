@@ -301,6 +301,14 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.dep_complete_mask = Wire(MaskType)
         s.nonmem_ready_mask = Wire(MaskType)
         s.active_target_mask = Wire(MaskType)
+        s.active_mem_ready = Wire(MaskType)
+        s.active_mem_complete = Wire(MaskType)
+        s.thread_ready_mask = Wire(MaskType)
+        s.thread_complete_mask = Wire(MaskType)
+        s.mem_issue_complete = Wire(Bits1)
+        s.pred_issue_complete = Wire(Bits1)
+        s.fabric_ready = Wire(Bits1)
+        s.dep_release_pending = Wire(Bits1)
         s.issue_count = Wire(MaxThreadType)
         s.issue_count_n = Wire(MaxThreadType)
         s.dep_mode = Wire(Bits1)
@@ -308,6 +316,7 @@ class STEP_RegisterFileControllerRTL( Component ):
         s.run_primed = Wire(Bits1)
         s.run_primed_n = Wire(Bits1)
         s.current_issue_tid = Wire(ThreadIdType)
+        s.current_issue_tid_mask = Wire(MaskType)
         s.current_issue_tid_data = Wire(RegDataType)
         s.issue_fire = Wire(Bits1)
         s.any_wr_enabled = Wire(Bits1)
@@ -466,18 +475,22 @@ class STEP_RegisterFileControllerRTL( Component ):
         @update
         def comb_issue_tid():
             issue_tid = ThreadIdType(0)
+            issue_tid_mask = MaskType(0)
             rank = MaxThreadType(0)
             for tid in range(MAX_THREAD_COUNT):
                 if s.active_thread_mask[tid] & ~s.dep_thread_mask[tid]:
                     if s.issue_count == rank:
                         issue_tid = ThreadIdType(tid)
+                        issue_tid_mask = MaskType(1 << tid)
                     rank = rank + MaxThreadType(1)
             for tid in range(MAX_THREAD_COUNT):
                 if s.dep_thread_mask[tid]:
                     if s.issue_count == rank:
                         issue_tid = ThreadIdType(tid)
+                        issue_tid_mask = MaskType(1 << tid)
                     rank = rank + MaxThreadType(1)
             s.current_issue_tid @= issue_tid
+            s.current_issue_tid_mask @= issue_tid_mask
 
         @update
         def comb_predicated_read_select():
@@ -491,10 +504,8 @@ class STEP_RegisterFileControllerRTL( Component ):
                     if s.rd_pred_addr_cfg[i] == PredAddrType(r):
                         pred_mask = s.pred_true_mask_reg[r]
                         force_const_mask = s.pred_force_const_mask_reg[r]
-                for tid in range(MAX_THREAD_COUNT):
-                    if s.current_issue_tid == ThreadIdType(tid):
-                        pred_true = Bits1(pred_mask[tid])
-                        force_const = Bits1(force_const_mask[tid])
+                pred_true = Bits1((pred_mask & s.current_issue_tid_mask) != MaskType(0))
+                force_const = Bits1((force_const_mask & s.current_issue_tid_mask) != MaskType(0))
                 reset_const_en = s.rd_pred_reset_const_en[i]
                 if s.rd_pred_inv[i]:
                     pred_true = ~pred_true
@@ -510,19 +521,21 @@ class STEP_RegisterFileControllerRTL( Component ):
         @update
         def comb_port_enables():
             rd_issue_ok = Bits1(1)
+            dep_tid_ready = Bits1(1)
             for i in range(num_rd_ports):
                 if s.rd_port_active[i]:
                     pair_avail = Bits1(1)
                     if s.tile_token_pair_required[i]:
                         pair_avail = s.tile_token_avail_pair[i]
                     rd_issue_ok = rd_issue_ok & s.tile_token_avail[i] & pair_avail
+            if s.dep_mode:
+                dep_tid_ready = Bits1(
+                    ((s.dep_thread_mask & s.current_issue_tid_mask) == MaskType(0))
+                    | ((s.dep_complete_mask & s.current_issue_tid_mask) != MaskType(0))
+                )
             s.issue_fire @= Bits1(0)
             if (s.state == ST_RUN) & s.run_primed & (s.issue_count < s.expected_count):
                 if s.dep_mode:
-                    dep_tid_ready = Bits1(0)
-                    for tid in range(MAX_THREAD_COUNT):
-                        if s.current_issue_tid == ThreadIdType(tid):
-                            dep_tid_ready = Bits1((s.dep_thread_mask[tid] == Bits1(0)) | s.dep_complete_mask[tid])
                     if dep_tid_ready & rd_issue_ok:
                         s.issue_fire @= Bits1(1)
                 elif rd_issue_ok:
@@ -1384,56 +1397,63 @@ class STEP_RegisterFileControllerRTL( Component ):
         # -------------------------------------------------------------------------
 
         @update
-        def comb_outputs():
-            active_mem_ready = MaskType(0)
-            active_mem_complete = MaskType(0)
-            mem_issue_complete = Bits1(1)
-            pred_issue_complete = Bits1(1)
+        def comb_active_mem_masks():
             if s.cfg_active_sel_w == Bits1(0):
-                active_mem_ready = s.mem_ready_mask_bank0
-                active_mem_complete = s.mem_complete_mask_bank0
+                s.active_mem_ready @= s.mem_ready_mask_bank0
+                s.active_mem_complete @= s.mem_complete_mask_bank0
             else:
-                active_mem_ready = s.mem_ready_mask_bank1
-                active_mem_complete = s.mem_complete_mask_bank1
+                s.active_mem_ready @= s.mem_ready_mask_bank1
+                s.active_mem_complete @= s.mem_complete_mask_bank1
 
+        @update
+        def comb_issue_completion_summary():
+            mem_issue_complete = Bits1(1)
             for i in range(num_ld_ports):
                 if s.ld_enable_active[i]:
                     mem_issue_complete = mem_issue_complete & Bits1(s.ld_seq_count[i] >= s.expected_count)
             for i in range(num_st_ports):
                 if s.st_enable_active[i]:
                     mem_issue_complete = mem_issue_complete & Bits1(s.st_seq_count[i] >= s.expected_count)
+            s.mem_issue_complete @= mem_issue_complete
 
-            thread_ready = s.nonmem_ready_mask & active_mem_ready
-            thread_complete = thread_ready & active_mem_complete
-            target_mask = s.active_target_mask
-
+        @update
+        def comb_pred_issue_summary():
+            pred_issue_complete = Bits1(1)
             if s.active_branch_en:
                 pred_issue_complete = Bits1(
                     (s.pred_expected[s.active_pred_reg] > PredCountType(0))
                     & (s.pred_count[s.active_pred_reg] >= s.pred_expected[s.active_pred_reg])
                 )
+            s.pred_issue_complete @= pred_issue_complete
 
-            fabric_ready = Bits1(
+        @update
+        def comb_thread_progress_summary():
+            s.thread_ready_mask @= s.nonmem_ready_mask & s.active_mem_ready
+            s.thread_complete_mask @= s.thread_ready_mask & s.active_mem_complete
+
+        @update
+        def comb_outputs():
+            s.fabric_ready @= Bits1(
                 (s.state == ST_RUN)
                 & (s.expected_count > MaxThreadType(0))
-                & mem_issue_complete
-                & pred_issue_complete
-                & (thread_ready == target_mask)
+                & s.mem_issue_complete
+                & s.pred_issue_complete
+                & (s.thread_ready_mask == s.active_target_mask)
             )
-            dep_release_pending = Bits1(
+            s.dep_release_pending @= Bits1(
                 (s.state == ST_RUN)
                 & s.dep_mode
                 & (s.issue_count < s.expected_count)
             )
-            s.cfg_issue_ready @= fabric_ready
-            s.cfg_ready_for_next @= fabric_ready
-            s.dep_mode_out @= dep_release_pending
+            s.cfg_issue_ready @= s.fabric_ready
+            s.cfg_ready_for_next @= s.fabric_ready
+            s.dep_mode_out @= s.dep_release_pending
             s.cfg_done @= Bits1(
                 (s.state == ST_RUN)
                 & (s.expected_count > MaxThreadType(0))
-                & mem_issue_complete
-                & pred_issue_complete
-                & (thread_complete == target_mask)
+                & s.mem_issue_complete
+                & s.pred_issue_complete
+                & (s.thread_complete_mask == s.active_target_mask)
             )
 
     def line_trace(s):

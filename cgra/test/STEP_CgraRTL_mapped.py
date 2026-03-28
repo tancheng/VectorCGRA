@@ -650,7 +650,7 @@ def _mapping_json_paths():
 
 
 def test_simple(cmdline_opts):
-    th = init_param(json_path=DEFAULT_DFG_JSON, debug=True)
+    th = init_param(json_path=DEFAULT_DFG_JSON, debug=False)
 
     th.elaborate()
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,

@@ -9,9 +9,11 @@ class STEP_StoreRTL( Component ):
    
     def construct( s, DataType, queue_depth=8):
         StCountType = mk_bits( clog2(MAX_THREAD_COUNT + 1) )
+        InternalAddrNbits = min(DataType.nbits, AXI_ADDR_BITWIDTH)
+        InternalAddrType = mk_bits(InternalAddrNbits)
         # Use the given interfaces
         s.axi = SendAxiReadStoreAddrIfcRTL(DataType)  # Note: This interface handles both read/write
-        s.store_ifc = RecvAxiStoreIfcRTL(DataType)
+        s.store_ifc = RecvAxiStoreIfcRTL(DataType, addr_nbits=InternalAddrNbits)
         
         # Add tile tracking interface
         s.thread_span = InPort( clog2(MAX_THREAD_COUNT + 1) )
@@ -27,7 +29,7 @@ class STEP_StoreRTL( Component ):
         s.token_return = OutPort( 1 )
 
         # Internal queues and state
-        StoreReqType = mk_st_req_pkt(DataType)
+        StoreReqType = mk_st_req_pkt(DataType, addr_nbits=InternalAddrNbits)
         
         s.store_queue = NormalQueueRTL( StoreReqType, queue_depth )
         s.bank_queue = NormalQueueRTL( Bits1, queue_depth )
@@ -86,7 +88,7 @@ class STEP_StoreRTL( Component ):
             handshake = s.store_ifc.i_req & s.store_queue.recv.rdy & s.i_tile_pred & s.enable
             # Queue the request when valid and queue has space
             s.store_queue.recv.val @= handshake
-            s.store_queue.recv.msg.addr @= s.store_ifc.i_addr
+            s.store_queue.recv.msg.addr @= trunc(s.store_ifc.i_addr, InternalAddrType)
             s.store_queue.recv.msg.data @= s.store_ifc.i_data
             s.store_queue.recv.msg.id @= s.issue_tid
             s.bank_queue.recv.val @= handshake
@@ -116,7 +118,7 @@ class STEP_StoreRTL( Component ):
         def addr_channel():
             # Send address directly when queue has data and AXI is ready
             s.axi.addr_val @= s.store_queue.send.val
-            s.axi.addr     @= s.store_queue.send.msg.addr
+            s.axi.addr     @= zext(s.store_queue.send.msg.addr, AXI_ADDR_BITWIDTH)
             s.axi.cache    @= 0b0011    # Cacheable, bufferable for coherency
             s.axi.len      @= 0         # Single beat transfer
             s.axi.size     @= transfer_size_bits

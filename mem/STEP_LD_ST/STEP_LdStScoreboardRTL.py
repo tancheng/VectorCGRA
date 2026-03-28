@@ -32,6 +32,12 @@ class STEP_LdStScoreboardRTL(Component):
         s.ld_done_mask = Wire(MaskType)
         s.st_done_mask = Wire(MaskType)
         s.release_seen_mask = Wire(MaskType)
+        s.mem_dispatch_mask_next = Wire(MaskType)
+        s.ld_done_mask_next = Wire(MaskType)
+        s.st_done_mask_next = Wire(MaskType)
+        s.ready_mask_next = Wire(MaskType)
+        s.complete_mask_next = Wire(MaskType)
+        s.new_complete_events = Wire(MaskType)
 
         s.release_q = [Wire(TidType) for _ in range(MAX_THREAD_COUNT)]
         s.release_head = Wire(QueueIdxType)
@@ -52,6 +58,28 @@ class STEP_LdStScoreboardRTL(Component):
                         target_mask = target_mask | MaskType(1 << i)
             s.target_mask @= target_mask
 
+        @update
+        def comb_event_masks():
+            s.mem_dispatch_mask_next @= s.mem_dispatch_mask | s.mem_dispatch_event_mask
+            s.ld_done_mask_next @= s.ld_done_mask | s.ld_done_event_mask
+            s.st_done_mask_next @= s.st_done_mask | s.st_done_event_mask
+
+        @update
+        def comb_progress_masks():
+            ready_mask_next = s.target_mask
+            if s.require_load | s.require_store:
+                ready_mask_next = s.mem_dispatch_mask_next & s.target_mask
+
+            complete_mask_next = ready_mask_next
+            if s.require_load:
+                complete_mask_next = complete_mask_next & s.ld_done_mask_next
+            if s.require_store:
+                complete_mask_next = complete_mask_next & s.st_done_mask_next
+
+            s.ready_mask_next @= ready_mask_next
+            s.complete_mask_next @= complete_mask_next
+            s.new_complete_events @= complete_mask_next & ~s.release_seen_mask
+
         @update_ff
         def ff_masks_and_queue():
             if s.reset | s.clear:
@@ -65,32 +93,10 @@ class STEP_LdStScoreboardRTL(Component):
                 for i in range(MAX_THREAD_COUNT):
                     s.release_q[i] <<= TidType(0)
             else:
-                mem_dispatch_next = s.mem_dispatch_mask
-                ld_done_next = s.ld_done_mask
-                st_done_next = s.st_done_mask
                 release_seen_next = s.release_seen_mask
                 release_head_next = s.release_head
                 release_tail_next = s.release_tail
                 release_count_next = s.release_count
-
-                ready_after_events = zero_mask
-                complete_after_events = zero_mask
-                target_mask = s.target_mask
-
-                mem_dispatch_next = mem_dispatch_next | s.mem_dispatch_event_mask
-                ld_done_next = ld_done_next | s.ld_done_event_mask
-                st_done_next = st_done_next | s.st_done_event_mask
-
-                if s.require_load | s.require_store:
-                    ready_after_events = mem_dispatch_next
-                else:
-                    ready_after_events = target_mask
-
-                complete_after_events = ready_after_events
-                if s.require_load:
-                    complete_after_events = complete_after_events & ld_done_next
-                if s.require_store:
-                    complete_after_events = complete_after_events & st_done_next
 
                 if s.release_take & (s.release_count > QueueCountType(0)):
                     if s.release_head == QueueIdxType(MAX_THREAD_COUNT - 1):
@@ -101,7 +107,7 @@ class STEP_LdStScoreboardRTL(Component):
 
                 for i in range(MAX_THREAD_COUNT):
                     one_hot_i = MaskType(1 << i)
-                    if (complete_after_events & one_hot_i) & ~(release_seen_next & one_hot_i):
+                    if s.new_complete_events & one_hot_i:
                         s.release_q[release_tail_next] <<= TidType(i)
                         release_seen_next = release_seen_next | one_hot_i
                         if release_tail_next == QueueIdxType(MAX_THREAD_COUNT - 1):
@@ -110,9 +116,9 @@ class STEP_LdStScoreboardRTL(Component):
                             release_tail_next = release_tail_next + QueueIdxType(1)
                         release_count_next = release_count_next + QueueCountType(1)
 
-                s.mem_dispatch_mask <<= mem_dispatch_next
-                s.ld_done_mask <<= ld_done_next
-                s.st_done_mask <<= st_done_next
+                s.mem_dispatch_mask <<= s.mem_dispatch_mask_next
+                s.ld_done_mask <<= s.ld_done_mask_next
+                s.st_done_mask <<= s.st_done_mask_next
                 s.release_seen_mask <<= release_seen_next
                 s.release_head <<= release_head_next
                 s.release_tail <<= release_tail_next
@@ -120,22 +126,20 @@ class STEP_LdStScoreboardRTL(Component):
 
         @update
         def comb_outs():
-            target_mask = s.target_mask
-
+            ready_mask = s.target_mask
             if s.require_load | s.require_store:
-                s.ready_mask @= s.mem_dispatch_mask & target_mask
-            else:
-                s.ready_mask @= target_mask
+                ready_mask = s.mem_dispatch_mask & s.target_mask
 
-            complete_mask = s.ready_mask
+            complete_mask = ready_mask
             if s.require_load:
                 complete_mask = complete_mask & s.ld_done_mask
             if s.require_store:
                 complete_mask = complete_mask & s.st_done_mask
 
+            s.ready_mask @= ready_mask
             s.complete_mask @= complete_mask
-            s.all_ready @= Bits1(s.ready_mask == target_mask)
-            s.all_complete @= Bits1(s.complete_mask == target_mask)
+            s.all_ready @= Bits1(ready_mask == s.target_mask)
+            s.all_complete @= Bits1(complete_mask == s.target_mask)
             s.release_valid @= Bits1(s.release_count > QueueCountType(0))
             if s.release_count > QueueCountType(0):
                 s.release_tid @= s.release_q[s.release_head]

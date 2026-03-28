@@ -7,9 +7,11 @@ from ...lib.util.common import *
 class STEP_LoadRTL( Component ):
     def construct( s, DataType, queue_depth=8 ):
         LdCountType = mk_bits( clog2(MAX_THREAD_COUNT + 1) )
+        InternalAddrNbits = min(DataType.nbits, AXI_ADDR_BITWIDTH)
+        InternalAddrType = mk_bits(InternalAddrNbits)
         # Interfaces
         s.axi = SendAxiReadLoadAddrIfcRTL(DataType)
-        s.load_ifc = RecvAxiLoadIfcRTL(DataType)
+        s.load_ifc = RecvAxiLoadIfcRTL(DataType, addr_nbits=InternalAddrNbits)
         
         # Add tile tracking interface
         s.thread_span = InPort( clog2(MAX_THREAD_COUNT + 1) )
@@ -24,7 +26,7 @@ class STEP_LoadRTL( Component ):
         s.token_return = OutPort( 1 )
 
         # Internal queues for streaming
-        LdReqType = mk_ld_req_pkt()
+        LdReqType = mk_ld_req_pkt(addr_nbits=InternalAddrNbits)
         LdRespType = mk_ld_resp_pkt(DataType)
         s.addr_queue = NormalQueueRTL( LdReqType, queue_depth )  # Store addresses
         s.data_queue = NormalQueueRTL( LdRespType, queue_depth ) # Store responses
@@ -79,7 +81,7 @@ class STEP_LoadRTL( Component ):
         def input_handling():
             # Queue the address when request is valid and queue has space
             s.addr_queue.recv.val @= s.load_ifc.i_req & s.addr_queue.recv.rdy & s.i_tile_pred & s.enable
-            s.addr_queue.recv.msg.addr @= s.load_ifc.i_addr
+            s.addr_queue.recv.msg.addr @= trunc(s.load_ifc.i_addr, InternalAddrType)
             s.addr_queue.recv.msg.id @= s.issue_tid
             s.bank_queue.recv.val @= s.load_ifc.i_req & s.addr_queue.recv.rdy & s.i_tile_pred & s.enable
             s.bank_queue.recv.msg @= s.issue_bank
@@ -107,7 +109,7 @@ class STEP_LoadRTL( Component ):
         def addr_channel():
             # Send address directly when queue has data and AXI is ready
             s.axi.addr_val @= s.addr_queue.send.val
-            s.axi.addr     @= s.addr_queue.send.msg.addr if s.addr_queue.send.val else 0
+            s.axi.addr     @= zext(s.addr_queue.send.msg.addr, AXI_ADDR_BITWIDTH) if s.addr_queue.send.val else 0
             s.axi.cache    @= 0b0011    # Cacheable, bufferable for coherency
             s.axi.len      @= 0         # Single beat
             s.axi.size     @= transfer_size_bits

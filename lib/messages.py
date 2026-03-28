@@ -513,14 +513,14 @@ def mk_bitstream_pkt(num_tiles,
         namespace = {'__str__': str_func}
 )
 
-def mk_ld_req_pkt(prefix="LdReqPkt"):
+def mk_ld_req_pkt(addr_nbits=AXI_ADDR_BITWIDTH, prefix="LdReqPkt"):
 
-    new_name = f"{prefix}_n_tiles"
+    new_name = f"{prefix}_{addr_nbits}"
 
     def str_func(s):
         return f"LdReqPkt: bitstream:\n"
 
-    AddrType = mk_bits( AXI_ADDR_BITWIDTH )
+    AddrType = mk_bits( addr_nbits )
     IdType = mk_bits( clog2(MAX_THREAD_COUNT) )
 
     field_dict = {}
@@ -549,14 +549,15 @@ def mk_ld_resp_pkt(DataType, prefix="LdRespPkt"):
 )
 
 def mk_st_req_pkt(DataType,
+                    addr_nbits=AXI_ADDR_BITWIDTH,
                     prefix="StReqPkt"):
 
-    new_name = f"{prefix}_n_tiles"
+    new_name = f"{prefix}_{addr_nbits}"
 
     def str_func(s):
         return f"StReqPkt: bitstream:\n"
 
-    AddrType = mk_bits( AXI_ADDR_BITWIDTH )
+    AddrType = mk_bits( addr_nbits )
     IdType = mk_bits( clog2(MAX_THREAD_COUNT) )
 
     field_dict = {}

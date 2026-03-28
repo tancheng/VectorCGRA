@@ -54,10 +54,10 @@ class SendAxiReadStoreAddrIfcRTL( Interface ):
         s.resp_id     = InPort( clog2(MAX_THREAD_COUNT) )    # Response ID (can ignore)
 
 class RecvAxiReadLoadAddrIfcRTL( Interface ):
-    def construct( s, DataType ):
+    def construct( s, DataType, addr_nbits=AXI_ADDR_BITWIDTH ):
         # Example uses 128 bit transfers
         # REQUIRED AXI Address Channel
-        s.addr     = InPort( AXI_ADDR_BITWIDTH )  # Load address
+        s.addr     = InPort( addr_nbits )  # Load address
         s.addr_val = InPort( 1 )   # Address valid
         s.addr_rdy = OutPort( 1 )    # Address ready
         
@@ -80,10 +80,10 @@ class RecvAxiReadLoadAddrIfcRTL( Interface ):
         s.resp_id     = OutPort( clog2(MAX_THREAD_COUNT) )    # Response ID (can ignore)
 
 class RecvAxiReadStoreAddrIfcRTL( Interface ):
-    def construct( s, DataType ):
+    def construct( s, DataType, addr_nbits=AXI_ADDR_BITWIDTH ):
         # Example uses 128 bit transfers
         # REQUIRED AXI Address Channel
-        s.addr     = InPort( AXI_ADDR_BITWIDTH )  # Load address
+        s.addr     = InPort( addr_nbits )  # Load address
         s.addr_val = InPort( 1 )   # Address valid
         s.addr_rdy = OutPort( 1 )    # Address ready
         
@@ -109,18 +109,18 @@ class RecvAxiReadStoreAddrIfcRTL( Interface ):
 
 
 class RecvAxiStoreIfcRTL( Interface ):
-    def construct( s, DataType ):
+    def construct( s, DataType, addr_nbits=AXI_ADDR_BITWIDTH ):
         # Load unit interface
-        s.i_addr = InPort( AXI_ADDR_BITWIDTH )                 # Store Address
+        s.i_addr = InPort( addr_nbits )                 # Store Address
         s.i_data = InPort( DataType )     # Store Data
         s.i_req = InPort( 1 )                   # Request Store
         s.o_rdy = OutPort( 1 )                   # Ready to receive store request
         s.o_done = OutPort( 1 )                 # Complete
 
 class RecvAxiLoadIfcRTL( Interface ):
-    def construct( s, DataType ):
+    def construct( s, DataType, addr_nbits=AXI_ADDR_BITWIDTH ):
         # Load unit interface
-        s.i_addr = InPort( AXI_ADDR_BITWIDTH )                 # Load Address
+        s.i_addr = InPort( addr_nbits )                 # Load Address
         s.i_req = InPort( 1 )                   # Request Load
         s.o_rdy = OutPort( 1 )                   # Ready to receive load request
         s.o_data = OutPort( DataType )    # Loaded Data

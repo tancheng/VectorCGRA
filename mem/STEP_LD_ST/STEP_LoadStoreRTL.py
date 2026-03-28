@@ -11,16 +11,17 @@ class STEP_LoadStoreRTL( Component ):
         TidType = mk_bits(clog2(MAX_THREAD_COUNT))
         MaskType = mk_bits(MAX_THREAD_COUNT)
         CountType = mk_bits(clog2(MAX_THREAD_COUNT + 1))
+        InternalAddrNbits = min(DataType.nbits, AXI_ADDR_BITWIDTH)
 
         ###### Interface #####
         s.ld_axi = [SendAxiReadLoadAddrIfcRTL(DataType) for _ in range(num_ports)]
-        s.ld_ifc = [RecvAxiLoadIfcRTL(DataType) for _ in range(num_ports)]
+        s.ld_ifc = [RecvAxiLoadIfcRTL(DataType, addr_nbits=InternalAddrNbits) for _ in range(num_ports)]
         s.ld_tile_pred = [InPort(1) for _ in range(num_ports)]
         s.ld_issue_tid = [InPort(TidType) for _ in range(num_ports)]
         s.ld_token_return = [OutPort(1) for _ in range(num_ports)]
         
         s.st_axi = [SendAxiReadStoreAddrIfcRTL(DataType) for _ in range(num_ports)]
-        s.st_ifc = [RecvAxiStoreIfcRTL(DataType) for _ in range(num_ports)]
+        s.st_ifc = [RecvAxiStoreIfcRTL(DataType, addr_nbits=InternalAddrNbits) for _ in range(num_ports)]
         s.st_tile_pred = [InPort(1) for _ in range(num_ports)]
         s.st_issue_tid = [InPort(TidType) for _ in range(num_ports)]
         s.st_token_return = [OutPort(1) for _ in range(num_ports)]
@@ -59,6 +60,12 @@ class STEP_LoadStoreRTL( Component ):
         s.st_units = [STEP_StoreRTL(DataType) for _ in range(num_ports)]
         s.scoreboards = [STEP_LdStScoreboardRTL() for _ in range(2)]
         s.active_thread_span = Wire(CountType)
+        s.sb_mem_dispatch_mask0 = Wire(MaskType)
+        s.sb_mem_dispatch_mask1 = Wire(MaskType)
+        s.sb_ld_done_mask0 = Wire(MaskType)
+        s.sb_ld_done_mask1 = Wire(MaskType)
+        s.sb_st_done_mask0 = Wire(MaskType)
+        s.sb_st_done_mask1 = Wire(MaskType)
 
         #### DEBUG
         if debug:
@@ -139,22 +146,13 @@ class STEP_LoadStoreRTL( Component ):
             s.active_thread_span @= active_span
 
         @update
-        def drive_scoreboards():
-            clear_bank0 = Bits1(0)
-            clear_bank1 = Bits1(0)
-            if s.cfg_bank_commit:
-                if s.cfg_load_sel == Bits1(0):
-                    clear_bank0 = Bits1(1)
-                else:
-                    clear_bank1 = Bits1(1)
-
+        def collect_scoreboard_events():
             mem_dispatch_mask0 = MaskType(0)
             mem_dispatch_mask1 = MaskType(0)
             ld_done_mask0 = MaskType(0)
             ld_done_mask1 = MaskType(0)
             st_done_mask0 = MaskType(0)
             st_done_mask1 = MaskType(0)
-
             for i in range(num_ports):
                 ld_issue_onehot = MaskType(0)
                 st_issue_onehot = MaskType(0)
@@ -202,16 +200,33 @@ class STEP_LoadStoreRTL( Component ):
                     else:
                         st_done_mask1 = st_done_mask1 | st_done_onehot
 
+            s.sb_mem_dispatch_mask0 @= mem_dispatch_mask0
+            s.sb_mem_dispatch_mask1 @= mem_dispatch_mask1
+            s.sb_ld_done_mask0 @= ld_done_mask0
+            s.sb_ld_done_mask1 @= ld_done_mask1
+            s.sb_st_done_mask0 @= st_done_mask0
+            s.sb_st_done_mask1 @= st_done_mask1
+
+        @update
+        def drive_scoreboards():
+            clear_bank0 = Bits1(0)
+            clear_bank1 = Bits1(0)
+            if s.cfg_bank_commit:
+                if s.cfg_load_sel == Bits1(0):
+                    clear_bank0 = Bits1(1)
+                else:
+                    clear_bank1 = Bits1(1)
+
             s.scoreboards[0].clear @= clear_bank0
             s.scoreboards[1].clear @= clear_bank1
-            s.scoreboards[0].mem_dispatch_event_mask @= mem_dispatch_mask0
-            s.scoreboards[0].ld_done_event_mask @= ld_done_mask0
-            s.scoreboards[0].st_done_event_mask @= st_done_mask0
+            s.scoreboards[0].mem_dispatch_event_mask @= s.sb_mem_dispatch_mask0
+            s.scoreboards[0].ld_done_event_mask @= s.sb_ld_done_mask0
+            s.scoreboards[0].st_done_event_mask @= s.sb_st_done_mask0
             s.scoreboards[0].release_take @= Bits1(0)
 
-            s.scoreboards[1].mem_dispatch_event_mask @= mem_dispatch_mask1
-            s.scoreboards[1].ld_done_event_mask @= ld_done_mask1
-            s.scoreboards[1].st_done_event_mask @= st_done_mask1
+            s.scoreboards[1].mem_dispatch_event_mask @= s.sb_mem_dispatch_mask1
+            s.scoreboards[1].ld_done_event_mask @= s.sb_ld_done_mask1
+            s.scoreboards[1].st_done_event_mask @= s.sb_st_done_mask1
             s.scoreboards[1].release_take @= Bits1(0)
 
             s.scoreboards[0].require_load @= s.cfg_bank_has_load0

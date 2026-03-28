@@ -17,6 +17,7 @@ from ...lib.util.common import *
 class STEP_RegisterFileFullBankRTL(Component):
   def construct(s, DataType, AddrType, num_registers, num_rd_ports=2, num_wr_ports=2,
                 num_registers_per_reg_bank=4):
+    ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
     # Interface
     s.rd_addr = [RecvIfcRTL(AddrType) for _ in range(num_rd_ports)]
     s.wr_addr = [RecvIfcRTL(AddrType) for _ in range(num_wr_ports)]
@@ -39,26 +40,29 @@ class STEP_RegisterFileFullBankRTL(Component):
     # Handle Connections
     @update
     def update_register_access():
-        # Keep the synchronous BRAM outputs visible even after the request pulse drops.
+        # Drive each BRAM instance from local bank-hit signals instead of
+        # dynamically indexing the bank array. This keeps the generated muxing
+        # shallow without changing the visible RF timing contract.
         for i in range(num_rd_ports):
-            s.rd_data[i] @= s.reg_bank[s.rd_addr[i].msg].rdata
-        for i in range(num_registers):
-            s.reg_bank[i].wen @= 0
-        if s.reset:
+            s.rd_data[i] @= DataType(0)
+            for bank in range(num_registers):
+                if s.rd_addr[i].msg == AddrType(bank):
+                    s.rd_data[i] @= s.reg_bank[bank].rdata
+
+        for bank in range(num_registers):
+            s.reg_bank[bank].wen @= Bits1(0)
+            s.reg_bank[bank].waddr @= ThreadIdxType(0)
+            s.reg_bank[bank].wdata @= DataType(0)
+            if s.reset:
+                s.reg_bank[bank].raddr @= ThreadIdxType(0)
             for i in range(num_rd_ports):
-                s.reg_bank[s.rd_addr[i].msg].raddr @= 0
-
-        # Handle read ports
-        for i in range(num_rd_ports):
-            if s.rd_addr[i].val:
-                s.reg_bank[s.rd_addr[i].msg].raddr @= s.rd_thread_idx[i]
-
-        # Handle write ports
-        for i in range(num_wr_ports):
-            if s.wr_addr[i].val & s.wr_data[i].val:
-                s.reg_bank[s.wr_addr[i].msg].wen @= 1
-                s.reg_bank[s.wr_addr[i].msg].waddr @= s.wr_thread_idx[i]
-                s.reg_bank[s.wr_addr[i].msg].wdata @= s.wr_data[i].msg
+                if s.rd_addr[i].val & (s.rd_addr[i].msg == AddrType(bank)):
+                    s.reg_bank[bank].raddr @= s.rd_thread_idx[i]
+            for i in range(num_wr_ports):
+                if s.wr_addr[i].val & s.wr_data[i].val & (s.wr_addr[i].msg == AddrType(bank)):
+                    s.reg_bank[bank].wen @= Bits1(1)
+                    s.reg_bank[bank].waddr @= s.wr_thread_idx[i]
+                    s.reg_bank[bank].wdata @= s.wr_data[i].msg
   
   def line_trace(s):
     reg_bank_str = "reg_banks: " + "|".join([reg_bank.line_trace() for reg_bank in s.reg_bank])
