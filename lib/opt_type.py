@@ -106,7 +106,7 @@ OPT_REM_INCLUSIVE_START          = OpCodeType( 59 )
 OPT_REM_INCLUSIVE_END            = OpCodeType( 15 )
 
 OPT_LOOP_CONTROL                 = OpCodeType( 83 )
-OPT_STREAM_LD                    = OpCodeType( 84 )
+OPT_STREAM_LD                    = OpCodeType( 88 )
 OPT_LOOP_COUNT                   = OpCodeType( 85 )
 OPT_LOOP_DELIVERY                = OpCodeType( 86 )
 OPT_EXTRACT_PREDICATE            = OpCodeType( 87 )
