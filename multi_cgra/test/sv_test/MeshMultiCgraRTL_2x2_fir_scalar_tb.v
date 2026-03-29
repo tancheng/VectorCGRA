@@ -11,11 +11,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -24,9 +24,9 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed in bits (185).
+  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload in bits (197).
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [185-1:0] pkt_queue [$];
+  logic [198-1:0] pkt_queue [$];
 
   initial
   begin
@@ -72,7 +72,7 @@ module cgra_test
       '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}, // routing_xbar_outport (TileInType list)
       '{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}, // fu_xbar_outport (FuOutType list)
       '{2'd0, 2'd0, 2'd2, 2'd0},  // write_reg_from (b2(0), b2(2), ...)
-      '{1'd0, 1'd0, 1'd0, 1'd1},           // read_reg_from
+      '{1'd0, 1'd0, 1'd0, 1'd1},           // read_reg_towards
       '{ default: 4'd0 },           // write_reg_idx (not specified, zeroed)
       '{ default: 4'd0 },           // read_reg_idx  (not specified, zeroed)
       1) );                         // ctrl_addr = 1
@@ -180,13 +180,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
       .src(5'd0),
       .dst(5'd1),
-      .cmd(5'd8),                 // CMD_CONFIG_COUNT_PER_ITER = 8
+      .cmd(6'd8),                 // CMD_CONFIG_COUNT_PER_ITER = 8
       .operation(7'd0),
       .fu_in_code('{default:3'd0}),
       .routing_xbar_outport('{default:3'd0}),
       .fu_xbar_outport('{default:2'd0}),
       .write_reg_from('{default:2'd0}),
-      .read_reg_from('{default:1'd0}),
+      .read_reg_towards('{default:1'd0}),
       .write_reg_idx('{default:4'd0}),
       .read_reg_idx('{default:4'd0}),
       .ctrl_addr(4'd0),
@@ -197,13 +197,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd7),             // CMD_CONFIG_TOTAL_CTRL_COUNT = 7
+          .cmd(6'd7),             // CMD_CONFIG_TOTAL_CTRL_COUNT = 7
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd0),
@@ -214,13 +214,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),             // CMD_CONFIG = 3
+          .cmd(6'd3),             // CMD_CONFIG = 3
           .operation(7'd1),       // OPT_NAH 1
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd0),
@@ -231,13 +231,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd16),       // OPT_GRT_PRED = 16
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0, 3'd0, 3'd1, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
           .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0}),
           .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd1),
@@ -249,13 +249,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd35),
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
           .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
           .write_reg_from('{2'd0,2'd0,2'd0,2'd0}),
-          .read_reg_from('{1'b0, 1'b0, 1'b0, 1'b1}),
+          .read_reg_towards('{1'b0, 1'b0, 1'b0, 1'b1}),
           .write_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
           .read_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
           .ctrl_addr(4'd2),
@@ -267,13 +267,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd3),
+          .cmd(6'd3),
           .operation(7'd1),
           .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
           .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
           .write_reg_from('{2'd0,2'd0,2'd0,2'd0}),
-          .read_reg_from('{1'd0,1'd0,1'd0,1'd0}),
+          .read_reg_towards('{1'd0,1'd0,1'd0,1'd0}),
           .write_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
           .read_reg_idx('{4'd0,4'd0,4'd0,4'd0}),
           .ctrl_addr(4'd3),
@@ -285,13 +285,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd4),
+          .cmd(6'd4),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd1),
@@ -303,13 +303,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd4),
+          .cmd(6'd4),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd2),
@@ -321,13 +321,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd6),
+          .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd1),
@@ -339,13 +339,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd6),
+          .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd2}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd1),
@@ -357,13 +357,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd5),
+          .cmd(6'd5),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd1),
@@ -375,13 +375,13 @@ module cgra_test
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
-          .cmd(5'd0),
+          .cmd(6'd0),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
           .routing_xbar_outport('{default:3'd0}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
-          .read_reg_from('{default:1'd0}),
+          .read_reg_towards('{default:1'd0}),
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd0),
@@ -396,13 +396,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd13), // CMD_CONST
+        .cmd(6'd13), // CMD_CONST
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}), // write_reg_from_code (do not reverse)
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_from_code (do not reverse)
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_towards_code (do not reverse)
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -415,13 +415,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd8), // CMD_CONFIG_COUNT_PER_ITER
+        .cmd(6'd8), // CMD_CONFIG_COUNT_PER_ITER
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -434,13 +434,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd7), // CMD_CONFIG_TOTAL_CTRL_COUNT
+        .cmd(6'd7), // CMD_CONFIG_TOTAL_CTRL_COUNT
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -453,7 +453,7 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd1), // OPT_NAH
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         // reverse of [0,0,0,0,0,0,0,0] is itself
@@ -461,7 +461,7 @@ module cgra_test
         // reverse of [0,0,0,0,0,0,0,0] is itself
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}), // keep provided code
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // keep provided code
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),  // keep provided code
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -476,13 +476,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd25), // OPT_ADD_CONST
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}), // write_reg_from_code (keep order)
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_from_code
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),  // read_reg_towards_code
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd1),
@@ -497,13 +497,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd12), // OPT_LD
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}), // read_reg_from_code
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd1}), // read_reg_towards_code
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd2),
@@ -514,18 +514,18 @@ module cgra_test
     // CMD_CONFIG @ ctrl_addr=3, OPT_MUL
     // routing: reverse of [0,0,0,0,1,0,0,0] -> [0,0,0,1,0,0,0,0]
     // fu_xbar : reverse of [0,1,0,0,0,0,0,0] -> [0,0,0,0,0,0,1,0]
-    // read_reg_from inline [0,1,0,0] -> reverse -> [0,0,1,0]
+    // read_reg_towards inline [0,1,0,0] -> reverse -> [0,0,1,0]
     pkt_queue.push_back(
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd3), // CMD_CONFIG
+        .cmd(6'd3), // CMD_CONFIG
         .operation(7'd7), // OPT_MUL
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd1, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd3),
@@ -538,13 +538,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd4),
-        .cmd(5'd0), // CMD_LAUNCH
+        .cmd(6'd0), // CMD_LAUNCH
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -560,13 +560,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -579,13 +579,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -598,13 +598,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -618,13 +618,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -637,13 +637,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd1),
@@ -658,13 +658,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd46),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd1, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd1}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd2),
@@ -679,13 +679,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd11),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd1}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd3),
@@ -698,13 +698,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd5),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -720,13 +720,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -739,13 +739,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -758,13 +758,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -777,13 +777,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -798,13 +798,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd32),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd4, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd1, 2'd1, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd2}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -819,13 +819,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd25),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd1}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd1}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd1),
@@ -836,18 +836,18 @@ module cgra_test
     // CMD_CONFIG @ ctrl_addr=2, OPT_LD
     // fu_in_code inline [2,0,0,0] -> reversed -> [0,0,0,2]
     // fu_xbar     [0,1,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,1,0]
-    // read_reg_from inline [0,1,0,0] -> reversed -> [0,0,1,0]
+    // read_reg_towards inline [0,1,0,0] -> reversed -> [0,0,1,0]
     pkt_queue.push_back(
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd12),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd2}), // Hand-coded.
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd1, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd2),
@@ -860,13 +860,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd3),
@@ -881,13 +881,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd6),
+        .cmd(6'd6),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd3}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -900,13 +900,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd8),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -922,13 +922,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd13),
+        .cmd(6'd13),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -941,13 +941,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd8),
+        .cmd(6'd8),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -960,13 +960,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd7),
+        .cmd(6'd7),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -981,13 +981,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -1003,13 +1003,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd25),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd3, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd1, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd2, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd1),
@@ -1022,13 +1022,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd1),
         .fu_in_code('{3'd4, 3'd3, 3'd2, 3'd1}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd2),
@@ -1040,18 +1040,18 @@ module cgra_test
     // fu_in    [2,1,0,0]         . -> reversed -> [0,0,1,2]
     // routing  [0,0,0,0,2,0,0,0]   -> reversed -> [0,0,0,2,0,0,0,0]
     // fu_xbar  [0,0,1,0,0,0,0,0]   -> reversed -> [0,0,0,0,0,1,0,0]
-    // read_reg_from [0,1,0,0]      -> reversed -> [0,0,1,0]
+    // read_reg_towards [0,1,0,0]      -> reversed -> [0,0,1,0]
     pkt_queue.push_back(
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd3),
+        .cmd(6'd3),
         .operation(7'd16),
         .fu_in_code('{3'd0, 3'd0, 3'd1, 3'd2}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd2, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd1, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd1, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd1, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd3),
@@ -1064,13 +1064,13 @@ module cgra_test
       make_intra_cgra_config_pkt_w_data(
         .src(5'd0),
         .dst(5'd9),
-        .cmd(5'd0),
+        .cmd(6'd0),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
         .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
-        .read_reg_from('{1'd0, 1'd0, 1'd0, 1'd0}),
+        .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
@@ -1145,11 +1145,11 @@ typedef struct packed {
   logic [7:0] opaque;
   logic [0:0] vc_id;
   MultiCgraPayload_Cmd_Data_DataAddr_Ctrl_CtrlAddr__d9140faa89010e06 payload;
-} IntraCgraPacket_4_2x2_16_8_2_CgraPayload__432fde8bfb7da0ed;
+} IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
 */
 /*
 typedef struct packed {
-  logic [4:0] cmd;
+  logic [5:0] cmd;
   CgraData_32_1_1_1__payload_32__predicate_1__bypass_1__delay_1 data;
   logic [6:0] data_addr;
   CGRAConfig_7_4_2_4_4_3__49d22cda396bec88 ctrl;
@@ -1174,7 +1174,7 @@ typedef struct packed {
   logic [0:0] is_last_ctrl;
   logic [3:0][1:0] write_reg_from;
   logic [3:0][3:0] write_reg_idx;
-  logic [3:0][0:0] read_reg_from;
+  logic [3:0][0:0] read_reg_towards;
   logic [3:0][3:0] read_reg_idx;
 } CGRAConfig_7_4_2_4_4_3__49d22cda396bec88;
 */

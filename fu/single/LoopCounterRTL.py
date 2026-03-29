@@ -5,17 +5,25 @@ LoopCounterRTL.py
 Loop Counter (DCU) for CGRA tile.
 
 This FU manages loop counters indexed by ctrl_addr from control memory.
-Each ctrl_addr has:
+
+NOTE: `ctrl_addr` serves as a "Context ID" or "Loop ID" multiplexer.
+If ctrl_mem_size > 1, a single LoopCounter (DCU) can support MULTIPLE independent loops
+simultaneously by mapping each loop's state to a different `ctrl_addr`.
+In a spatial-only CGRA (where ctrl_mem_size == 1), this DCU only has 1 ctrl_addr 
+and thus can only support ONE loop. To support nested loops in spatial-only CGRAs,
+different loops must be mapped to different tiles.
+
+Each ctrl_addr (loop context) has:
 - Leaf counter state (lower_bound, upper_bound, step, current_value)
-- Shadow register (for relay/root counter values from AC)
+- Shadow register (for relay/root counter values from LC)
 
 Supports two operation modes per ctrl_addr:
 1. OPT_LOOP_COUNT: Loop-Driven Mode (Leaf counter execution)
 2. OPT_LOOP_DELIVERY: Loop-Delivery Mode (Shadow register output)
 
 Configuration methods:
-1. Initial config (via ConstQueue): Configure leaf counter parameters
-2. Runtime updates (via AC): Reset leaf counter or update shadow register
+1. Initial config (via Controller): Configure leaf counter parameters
+2. Runtime updates (via LC): Reset leaf counter or update shadow register
 
 Author : Shangkun Li
   Date : January 27, 2026
@@ -55,7 +63,7 @@ class LoopCounterRTL(Fu):
     s.current_ctrl_addr = Wire(s.CtrlAddrType)
     s.loop_terminated = Wire(1)
     
-    # Update triggers from AC (CMD).
+    # Update triggers from LC (CMD).
     s.cmd_reset_counter = Wire(1)
     s.cmd_update_shadow = Wire(1)
     s.cmd_config_lower = Wire(1)
@@ -138,7 +146,7 @@ class LoopCounterRTL(Fu):
             s.send_out[0].val @= b1(0)
             s.recv_opt.rdy @= b1(0)
       
-      # ===== Handle messages from AC (CMD updates) =====
+      # ===== Handle messages from LC (CMD updates) =====
       if s.recv_from_ctrl_mem.val:
         s.recv_from_ctrl_mem.rdy @= b1(1)
         s.target_ctrl_addr @= s.recv_from_ctrl_mem.msg.ctrl_addr
@@ -190,7 +198,7 @@ class LoopCounterRTL(Fu):
                s.leaf_current_value[addr].payload + s.leaf_step[addr].payload, b1(1)
              )
         
-        # Runtime reset from AC.
+        # Runtime reset from LC.
         if s.cmd_reset_counter:
           addr = s.target_ctrl_addr
           s.leaf_current_value[addr] <<= s.leaf_lower_bound[addr]
@@ -202,7 +210,7 @@ class LoopCounterRTL(Fu):
           s.shadow_regs[i] <<= s.DataType(0, 0)
           s.shadow_valid[i] <<= b1(0)
       else:
-        # Runtime update from AC.
+        # Runtime update from LC.
         if s.cmd_update_shadow:
           addr = s.target_ctrl_addr
           s.shadow_regs[addr] <<= s.target_ctrl_data
@@ -224,7 +232,7 @@ class LoopCounterRTL(Fu):
           addr = s.current_ctrl_addr
           s.already_done[addr] <<= b1(1)
         
-        # Resets done flag when counter is reset from AC.
+        # Resets done flag when counter is reset from LC.
         if s.cmd_reset_counter:
           addr = s.target_ctrl_addr
           s.already_done[addr] <<= b1(0)

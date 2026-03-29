@@ -34,14 +34,14 @@ class IntraCgraPktTypeDummy:
         return f"IntraCgraPktType({self.first}, {self.second},\n payload = {self.payload})"
 
 class CtrlTypeDummy:
-    def __init__(self, op_code = None, fu_in_code = None, tile_in = None, fu_out = None, write_reg_from = None, write_reg_idx = None, read_reg_from = None, read_reg_idx = None, routing_xbar_outport = None, fu_xbar_outport = None):
+    def __init__(self, op_code = None, fu_in_code = None, tile_in = None, fu_out = None, write_reg_from = None, write_reg_idx = None, read_reg_towards = None, read_reg_idx = None, routing_xbar_outport = None, fu_xbar_outport = None):
         self.op_code = op_code
         self.fu_in_code = fu_in_code
         self.tile_in = tile_in
         self.fu_out = fu_out
         self.write_reg_from = write_reg_from
         self.write_reg_idx = write_reg_idx
-        self.read_reg_from = read_reg_from
+        self.read_reg_towards = read_reg_towards
         self.read_reg_idx = read_reg_idx
         self.routing_xbar_outport = routing_xbar_outport
         self.fu_xbar_outport = fu_xbar_outport
@@ -77,10 +77,10 @@ class CtrlTypeDummy:
             write_reg_idx_str = f"write_reg_idx = [{', '.join(str(w) for w in self.write_reg_idx)}], \n"
         else:
             write_reg_idx_str = ""
-        if self.read_reg_from is not None:
-            read_reg_from_str = f"read_reg_from = [{', '.join(str(r) for r in self.read_reg_from)}], \n"
+        if self.read_reg_towards is not None:
+            read_reg_towards_str = f"read_reg_towards = [{', '.join(str(r) for r in self.read_reg_towards)}], \n"
         else:
-            read_reg_from_str = ""
+            read_reg_towards_str = ""
         if self.read_reg_idx is not None:
             read_reg_idx_str = f"read_reg_idx = [{', '.join(str(r) for r in self.read_reg_idx)}], \n"
         else:
@@ -94,7 +94,7 @@ class CtrlTypeDummy:
             fu_xbar_outport_str = f"fu_xbar_outport = [{', '.join(str(f) for f in self.fu_xbar_outport)}], \n"
         else:
             fu_xbar_outport_str = ""
-        return f"CtrlType({op_code_str} {fu_in_code_str} {tile_in_str_line0} {tile_in_str_line1} {fu_out_str_line0} {fu_out_str_line1} {write_reg_from_str} {write_reg_idx_str} {read_reg_from_str} {read_reg_idx_str} {routing_xbar_outport_str} {fu_xbar_outport_str})"
+        return f"CtrlType({op_code_str} {fu_in_code_str} {tile_in_str_line0} {tile_in_str_line1} {fu_out_str_line0} {fu_out_str_line1} {write_reg_from_str} {write_reg_idx_str} {read_reg_towards_str} {read_reg_idx_str} {routing_xbar_outport_str} {fu_xbar_outport_str})"
 
             
 class TileInTypeDummy:

@@ -17,6 +17,14 @@ from pymtl3.stdlib.primitive import RegisterFile
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
+from ...lib.util.common import *
+
+from ...lib.util.common import (
+  READ_TOWARDS_NOTHING,
+  READ_TOWARDS_FU,
+  READ_TOWARDS_ROUTING_XBAR,
+  READ_TOWARDS_BOTH,
+)
 
 class RegisterBankRTL(Component):
 
@@ -28,11 +36,11 @@ class RegisterBankRTL(Component):
 
     # Interface
     s.inport_opt = InPort(CtrlType)
-    s.send_data_to_fu = SendIfcRTL(DataType)
+    s.send_data = SendIfcRTL(DataType)
     # InPort is enough to expose the data. Recv ifc would complicate
     # the design and handshake.
     s.inport_wdata = [InPort(DataType) for _ in range(3)]
-    s.inport_valid = [InPort(b1) for _ in range(3)]
+    s.inport_valid = [InPort(mk_bits(1)) for _ in range(3)]
 
     # Component
     s.reg_file = RegisterFile(DataType, num_registers, rd_ports = 1,
@@ -42,14 +50,16 @@ class RegisterBankRTL(Component):
     def access_registers():
       # Initializes signals.
       s.reg_file.raddr[0] @= AddrType()
-      s.send_data_to_fu.msg @= DataType()
+      s.send_data.msg @= DataType()
       s.reg_file.waddr[0] @= AddrType()
       s.reg_file.wdata[0] @= DataType()
       s.reg_file.wen[0] @= 0
 
-      if s.inport_opt.read_reg_from[reg_bank_id]:
+      read_towards = s.inport_opt.read_reg_towards[reg_bank_id]
+      # Reads from register if towards FU (1), routing_xbar (2), or both (3)
+      if read_towards > 0:
         s.reg_file.raddr[0] @= s.inport_opt.read_reg_idx[reg_bank_id]
-        s.send_data_to_fu.msg @= s.reg_file.rdata[0]
+        s.send_data.msg @= s.reg_file.rdata[0]
 
       write_reg_from = s.inport_opt.write_reg_from[reg_bank_id]
       if ~s.reset & (write_reg_from > 0):
@@ -60,14 +70,16 @@ class RegisterBankRTL(Component):
 
     @update
     def update_send_val():
-      s.send_data_to_fu.val @= 0
-      if ~s.reset & s.inport_opt.read_reg_from[reg_bank_id]:
-        s.send_data_to_fu.val @= 1
+      s.send_data.val @= 0
+      read_towards = s.inport_opt.read_reg_towards[reg_bank_id]
+      # Sends if towards FU or both (i.e. read_towards > 0)
+      if ~s.reset & (read_towards > 0):
+        s.send_data.val @= 1
 
   def line_trace(s):
     inport_opt_str = "inport_opt: " + str(s.inport_opt)
     inport_wdata_str = "inport_wdata: " + str(s.inport_wdata)
     content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
-    send_data_to_fu_str = "send_data_to_fu: " +  str(s.send_data_to_fu.msg)
-    return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || {send_data_to_fu_str}'
+    send_data_str = "send_data: " + str(s.send_data.msg)
+    return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || {send_data_str}'
 

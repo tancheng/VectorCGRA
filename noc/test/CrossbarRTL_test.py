@@ -31,6 +31,9 @@ class TestHarness(Component):
     s.num_inports  = num_inports
     s.num_outports = num_outports
 
+    # InType for the crossbar's crossbar_outport: clog2(num_inports+1) bits.
+    InType = mk_bits(clog2(num_inports + 1))
+
     s.src_opt = TestSrcRTL(CtrlType, src_routing)
     s.src_data = [TestSrcRTL(DataType, src_data[i])
                   for i in range(num_inports)]
@@ -46,9 +49,16 @@ class TestHarness(Component):
         s.dut.prologue_count_inport[addr][i] //= 0
     s.src_opt.send //= s.dut.recv_opt
 
+    # routing_xbar_outport in CtrlType may be wider than the crossbar's InType
+    # (because mk_ctrl now uses clog2(num_tile_inports+num_fu_inports+1)).
+    # Truncate to InType width when connecting to crossbar_outport.
+    @update
+    def connect_crossbar_outports():
+      for i in range(num_outports):
+        s.dut.crossbar_outport[i] @= trunc(s.src_opt.send.msg.routing_xbar_outport[i], InType)
+
     for i in range(num_outports):
       s.dut.send_data[i] //= s.sink_out[i].recv
-      s.dut.crossbar_outport[i] //= s.src_opt.send.msg.routing_xbar_outport[i]
 
   def done(s):
     done = True
@@ -93,7 +103,8 @@ num_tile_inports = 3
 num_tile_outports = 1
 num_routing_outports = num_fu_inports + num_tile_outports
 num_ctrl_operations = 64
-TileInType = mk_bits(clog2(num_tile_inports + 1))
+TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
+CrossbarInType = mk_bits(clog2(num_tile_inports + 1))
 FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
 DataType = mk_data(16, 1)
