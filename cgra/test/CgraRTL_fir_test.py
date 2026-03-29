@@ -36,6 +36,8 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
+from ...lib.trace_logger import init_trace_logger, close_trace_logger
+
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -846,7 +848,14 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+
+  import os
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, f'trace_fir_terminate_{x_tiles}x{y_tiles}_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+
   run_sim(th)
+  close_trace_logger()
 
 def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   src_ctrl_pkt = []
@@ -1393,7 +1402,14 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+
+  import os
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, f'trace_fir_return_{x_tiles}x{y_tiles}_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+
   run_sim(th)
+  close_trace_logger()
 
 def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
 
@@ -1969,7 +1985,14 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+
+  import os
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, f'trace_fir_vector_terminate_{x_tiles}x{y_tiles}_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+
   run_sim(th)
+  close_trace_logger()
 
 def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
 
@@ -2572,7 +2595,14 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+
+  import os
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, f'trace_fir_vector_return_{x_tiles}x{y_tiles}_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+
   run_sim(th)
+  close_trace_logger()
 
 def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
   sim_fir_terminate(cmdline_opts, mem_access_is_combinational = True)
@@ -2586,7 +2616,7 @@ def test_homogeneous_4x4_fir_combinational_mem_access_return(cmdline_opts):
 def test_homogeneous_4x4_fir_multi_cycle_mem_access_return(cmdline_opts):
   sim_fir_return(cmdline_opts, mem_access_is_combinational = False)
 
-def test_homogeneous_4x4_fir_combinational_mem_access_terminate(cmdline_opts):
+def test_homogeneous_4x4_fir_combinational_mem_access_vector_terminate(cmdline_opts):
   sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational = True)
 
 def test_homogeneous_4x4_fir_combinational_mem_access_vector_return(cmdline_opts):

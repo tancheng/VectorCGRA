@@ -260,6 +260,12 @@ class CgraRTL(Component):
 
   # Line trace
   def line_trace(s):
+    # Structured JSONL logging for visualization.
+    from ..lib.trace_logger import get_trace_logger
+    logger = get_trace_logger()
+    if logger is not None:
+      logger.log_cycle(s)
+
     res = "||\n".join([(("\n[cgra"+str(s.cgra_id)+"_tile"+str(i)+"]: ") + x.line_trace() + x.ctrl_mem.line_trace())
                        for (i,x) in enumerate(s.tile)])
     if s.has_ctrl_ring:
