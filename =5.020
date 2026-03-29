@@ -1,0 +1,1599 @@
+Channels:
+ - conda-forge
+ - defaults
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: /data/angl7/bin/miniconda3/envs/step_cv6_test
+
+  added / updated specs:
+    - bison
+    - cmake
+    - flex
+    - gcc_linux-64
+    - gxx_linux-64
+    - make
+    - ninja
+    - pkg-config
+    - python=3.11
+    - verilator
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    _openmp_mutex-4.5          |           20_gnu          28 KB  conda-forge
+    binutils_impl_linux-64-2.45.1|default_hfdba357_102         3.5 MB  conda-forge
+    binutils_linux-64-2.45.1   |default_h4852527_102          35 KB  conda-forge
+    bison-3.8.2                |       h59595ed_0         755 KB  conda-forge
+    bzip2-1.0.8                |       hda65f42_9         254 KB  conda-forge
+    cmake-4.3.1                |       hc85cc9f_0        22.0 MB  conda-forge
+    flex-2.6.4                 |    h58526e2_1004         330 KB  conda-forge
+    gcc_impl_linux-64-15.2.0   |      he420e7e_18        78.0 MB  conda-forge
+    gcc_linux-64-15.2.0        |      h862fb80_22          28 KB  conda-forge
+    gxx_impl_linux-64-15.2.0   |      hda75c37_18        14.9 MB  conda-forge
+    gxx_linux-64-15.2.0        |      h58d974f_22          27 KB  conda-forge
+    icu-78.3                   |       h33c6efd_0        12.1 MB  conda-forge
+    krb5-1.22.2                |       ha1258a1_0         1.3 MB  conda-forge
+    ld_impl_linux-64-2.45.1    |default_hbd61a6d_102         711 KB  conda-forge
+    libcurl-8.19.0             |       hcf29cc6_0         456 KB  conda-forge
+    libexpat-2.7.5             |       hecca717_0          75 KB  conda-forge
+    libffi-3.5.2               |       h3435931_0          57 KB  conda-forge
+    libgcc-15.2.0              |      he0feb66_18        1017 KB  conda-forge
+    libgcc-devel_linux-64-15.2.0|     hcc6f6b0_118         2.9 MB  conda-forge
+    libgcc-ng-15.2.0           |      h69a702a_18          27 KB  conda-forge
+    libgomp-15.2.0             |      he0feb66_18         589 KB  conda-forge
+    liblzma-5.8.2              |       hb03c661_0         111 KB  conda-forge
+    libnghttp2-1.68.1          |       h877daf1_0         648 KB  conda-forge
+    libsanitizer-15.2.0        |      h90f66d4_18         7.7 MB  conda-forge
+    libsqlite-3.52.0           |       hf4e2dac_0         929 KB  conda-forge
+    libssh2-1.11.1             |       hcf80075_0         298 KB  conda-forge
+    libstdcxx-15.2.0           |      h934c35e_18         5.6 MB  conda-forge
+    libstdcxx-devel_linux-64-15.2.0|     hd446a21_118        19.7 MB  conda-forge
+    libstdcxx-ng-15.2.0        |      hdf11a46_18          27 KB  conda-forge
+    libuuid-2.41.3             |       h5347b49_0          39 KB  conda-forge
+    libuv-1.51.0               |       hb03c661_1         874 KB  conda-forge
+    libzlib-1.3.2              |       h25fd6f3_2          62 KB  conda-forge
+    m4-1.4.21                  |       hb03c661_0         284 KB  conda-forge
+    make-4.4.1                 |       hb9d3cd8_2         501 KB  conda-forge
+    ninja-1.13.2               |       h171cf75_0         182 KB  conda-forge
+    packaging-26.0             |     pyhcf101f3_0          70 KB  conda-forge
+    pip-26.0.1                 |     pyh8b19718_0         1.1 MB  conda-forge
+    pkg-config-0.29.2          |    h4bc722e_1009         112 KB  conda-forge
+    python-3.11.15             |hd63d673_0_cpython        29.5 MB  conda-forge
+    readline-8.3               |       h853b02a_0         337 KB  conda-forge
+    rhash-1.4.6                |       hb9d3cd8_1         189 KB  conda-forge
+    setuptools-82.0.1          |     pyh332efcf_0         625 KB  conda-forge
+    tk-8.6.13                  |noxft_h366c992_103         3.1 MB  conda-forge
+    tzdata-2025c               |       hc9c84f9_1         116 KB  conda-forge
+    verilator-5.044            |       h10c590a_0         4.5 MB  conda-forge
+    wheel-0.46.3               |     pyhd8ed1ab_0          31 KB  conda-forge
+    zstd-1.5.7                 |       hb78ec9c_6         587 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:       216.3 MB
+
+The following NEW packages will be INSTALLED:
+
+  _openmp_mutex      conda-forge/linux-64::_openmp_mutex-4.5-20_gnu 
+  binutils_impl_lin~ conda-forge/linux-64::binutils_impl_linux-64-2.45.1-default_hfdba357_102 
+  binutils_linux-64  conda-forge/linux-64::binutils_linux-64-2.45.1-default_h4852527_102 
+  bison              conda-forge/linux-64::bison-3.8.2-h59595ed_0 
+  bzip2              conda-forge/linux-64::bzip2-1.0.8-hda65f42_9 
+  c-ares             conda-forge/linux-64::c-ares-1.34.6-hb03c661_0 
+  ca-certificates    conda-forge/noarch::ca-certificates-2026.2.25-hbd8a1cb_0 
+  cmake              conda-forge/linux-64::cmake-4.3.1-hc85cc9f_0 
+  flex               conda-forge/linux-64::flex-2.6.4-h58526e2_1004 
+  gcc_impl_linux-64  conda-forge/linux-64::gcc_impl_linux-64-15.2.0-he420e7e_18 
+  gcc_linux-64       conda-forge/linux-64::gcc_linux-64-15.2.0-h862fb80_22 
+  gxx_impl_linux-64  conda-forge/linux-64::gxx_impl_linux-64-15.2.0-hda75c37_18 
+  gxx_linux-64       conda-forge/linux-64::gxx_linux-64-15.2.0-h58d974f_22 
+  icu                conda-forge/linux-64::icu-78.3-h33c6efd_0 
+  kernel-headers_li~ conda-forge/noarch::kernel-headers_linux-64-4.18.0-he073ed8_9 
+  keyutils           conda-forge/linux-64::keyutils-1.6.3-hb9d3cd8_0 
+  krb5               conda-forge/linux-64::krb5-1.22.2-ha1258a1_0 
+  ld_impl_linux-64   conda-forge/linux-64::ld_impl_linux-64-2.45.1-default_hbd61a6d_102 
+  libcurl            conda-forge/linux-64::libcurl-8.19.0-hcf29cc6_0 
+  libedit            conda-forge/linux-64::libedit-3.1.20250104-pl5321h7949ede_0 
+  libev              conda-forge/linux-64::libev-4.33-hd590300_2 
+  libexpat           conda-forge/linux-64::libexpat-2.7.5-hecca717_0 
+  libffi             conda-forge/linux-64::libffi-3.5.2-h3435931_0 
+  libgcc             conda-forge/linux-64::libgcc-15.2.0-he0feb66_18 
+  libgcc-devel_linu~ conda-forge/noarch::libgcc-devel_linux-64-15.2.0-hcc6f6b0_118 
+  libgcc-ng          conda-forge/linux-64::libgcc-ng-15.2.0-h69a702a_18 
+  libgomp            conda-forge/linux-64::libgomp-15.2.0-he0feb66_18 
+  liblzma            conda-forge/linux-64::liblzma-5.8.2-hb03c661_0 
+  libnghttp2         conda-forge/linux-64::libnghttp2-1.68.1-h877daf1_0 
+  libnsl             conda-forge/linux-64::libnsl-2.0.1-hb9d3cd8_1 
+  libsanitizer       conda-forge/linux-64::libsanitizer-15.2.0-h90f66d4_18 
+  libsqlite          conda-forge/linux-64::libsqlite-3.52.0-hf4e2dac_0 
+  libssh2            conda-forge/linux-64::libssh2-1.11.1-hcf80075_0 
+  libstdcxx          conda-forge/linux-64::libstdcxx-15.2.0-h934c35e_18 
+  libstdcxx-devel_l~ conda-forge/noarch::libstdcxx-devel_linux-64-15.2.0-hd446a21_118 
+  libstdcxx-ng       conda-forge/linux-64::libstdcxx-ng-15.2.0-hdf11a46_18 
+  libuuid            conda-forge/linux-64::libuuid-2.41.3-h5347b49_0 
+  libuv              conda-forge/linux-64::libuv-1.51.0-hb03c661_1 
+  libxcrypt          conda-forge/linux-64::libxcrypt-4.4.36-hd590300_1 
+  libzlib            conda-forge/linux-64::libzlib-1.3.2-h25fd6f3_2 
+  m4                 conda-forge/linux-64::m4-1.4.21-hb03c661_0 
+  make               conda-forge/linux-64::make-4.4.1-hb9d3cd8_2 
+  ncurses            conda-forge/linux-64::ncurses-6.5-h2d0b736_3 
+  ninja              conda-forge/linux-64::ninja-1.13.2-h171cf75_0 
+  openssl            conda-forge/linux-64::openssl-3.6.1-h35e630c_1 
+  packaging          conda-forge/noarch::packaging-26.0-pyhcf101f3_0 
+  perl               conda-forge/linux-64::perl-5.32.1-7_hd590300_perl5 
+  pip                conda-forge/noarch::pip-26.0.1-pyh8b19718_0 
+  pkg-config         conda-forge/linux-64::pkg-config-0.29.2-h4bc722e_1009 
+  python             conda-forge/linux-64::python-3.11.15-hd63d673_0_cpython 
+  readline           conda-forge/linux-64::readline-8.3-h853b02a_0 
+  rhash              conda-forge/linux-64::rhash-1.4.6-hb9d3cd8_1 
+  setuptools         conda-forge/noarch::setuptools-82.0.1-pyh332efcf_0 
+  sysroot_linux-64   conda-forge/noarch::sysroot_linux-64-2.28-h4ee821c_9 
+  tk                 conda-forge/linux-64::tk-8.6.13-noxft_h366c992_103 
+  tzdata             conda-forge/noarch::tzdata-2025c-hc9c84f9_1 
+  verilator          conda-forge/linux-64::verilator-5.044-h10c590a_0 
+  wheel              conda-forge/noarch::wheel-0.46.3-pyhd8ed1ab_0 
+  zstd               conda-forge/linux-64::zstd-1.5.7-hb78ec9c_6 
+
+
+
+Downloading and Extracting Packages: ...working...gcc_impl_linux-64-15 | 78.0 MB   |            |   0% 
+python-3.11.15       | 29.5 MB   |            |   0% [A
+
+cmake-4.3.1          | 22.0 MB   |            |   0% [A[A
+
+
+libstdcxx-devel_linu | 19.7 MB   |            |   0% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   |            |   0% [A[A[A[A
+
+
+
+
+icu-78.3             | 12.1 MB   |            |   0% [A[A[A[A[A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    |            |   0% [A[A[A[A[A[A
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    |            |   0% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+verilator-5.044      | 4.5 MB    |            |   0% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+binutils_impl_linux- | 3.5 MB    |            |   0% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+tk-8.6.13            | 3.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-devel_linux-6 | 2.9 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+krb5-1.22.2          | 1.3 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+pip-26.0.1           | 1.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgcc-15.2.0        | 1017 KB   |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.52.0     | 929 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libuv-1.51.0         | 874 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bison-3.8.2          | 755 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 711 KB    |            |   0% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   |            |   1% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | #1         |  11% [A[A[A
+python-3.11.15       | 29.5 MB   | 7          |   8% [A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | 5          |   5% [A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | 2          |   3% [A[Agcc_impl_linux-64-15 | 78.0 MB   | 3          |   3% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | ##5        |  26% [A[A[A
+python-3.11.15       | 29.5 MB   | #7         |  18% [A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | #8         |  19% [A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | #          |  11% [A[Agcc_impl_linux-64-15 | 78.0 MB   | 5          |   5% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | ###9       |  40% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | ###2       |  33% [A[A[A[A
+python-3.11.15       | 29.5 MB   | ##7        |  27% [A
+
+cmake-4.3.1          | 22.0 MB   | #9         |  20% [A[Agcc_impl_linux-64-15 | 78.0 MB   | 7          |   7% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | #####4     |  54% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | ####7      |  47% [A[A[A[A
+python-3.11.15       | 29.5 MB   | ###5       |  36% [A
+
+cmake-4.3.1          | 22.0 MB   | ##8        |  28% [A[Agcc_impl_linux-64-15 | 78.0 MB   | 9          |  10% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | ######8    |  68% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | ######2    |  62% [A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | ###6       |  36% [A[A
+python-3.11.15       | 29.5 MB   | ####4      |  45% [Agcc_impl_linux-64-15 | 78.0 MB   | #1         |  12% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | ########3  |  83% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | #######8   |  78% [A[A[A[A
+python-3.11.15       | 29.5 MB   | #####3     |  54% [A
+
+cmake-4.3.1          | 22.0 MB   | ####3      |  44% [A[Agcc_impl_linux-64-15 | 78.0 MB   | #4         |  14% 
+
+
+libstdcxx-devel_linu | 19.7 MB   | #########8 |  99% [A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | #########4 |  95% [A[A[A[A
+python-3.11.15       | 29.5 MB   | ######2    |  62% [A
+
+
+libstdcxx-devel_linu | 19.7 MB   | ########## | 100% [A[A[A
+
+cmake-4.3.1          | 22.0 MB   | #####1     |  51% [A[A
+
+
+
+
+icu-78.3             | 12.1 MB   |            |   0% [A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | #8         |  18% 
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | ########## | 100% [A[A[A[A
+python-3.11.15       | 29.5 MB   | #######3   |  74% [A
+
+cmake-4.3.1          | 22.0 MB   | ######3    |  63% [A[A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    |            |   0% [A[A[A[A[A[A
+
+
+
+
+icu-78.3             | 12.1 MB   | ##         |  21% [A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ##1        |  22% 
+python-3.11.15       | 29.5 MB   | ########3  |  83% [A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    | ###        |  31% [A[A[A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | #######2   |  72% [A[A
+
+
+
+
+icu-78.3             | 12.1 MB   | ####       |  40% [A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ##4        |  25% 
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    | ######4    |  65% [A[A[A[A[A[A
+python-3.11.15       | 29.5 MB   | #########2 |  93% [A
+
+
+
+
+icu-78.3             | 12.1 MB   | ######     |  61% [A[A[A[A[A
+
+
+
+gxx_impl_linux-64-15 | 14.9 MB   | ########## | 100% [A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ##7        |  28% 
+
+cmake-4.3.1          | 22.0 MB   | ########   |  80% [A[A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    | #########8 |  99% [A[A[A[A[A[A
+
+
+
+
+icu-78.3             | 12.1 MB   | ########7  |  87% [A[A[A[A[A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    | ########## | 100% [A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ###1       |  32% 
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    |            |   0% [A[A[A[A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | ########9  |  90% [A[Agcc_impl_linux-64-15 | 78.0 MB   | ###9       |  39% 
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    | #####3     |  53% [A[A[A[A[A[A[A
+python-3.11.15       | 29.5 MB   | ########## | 100% [A
+
+
+
+
+icu-78.3             | 12.1 MB   | ########## | 100% [A[A[A[A[A
+
+
+
+
+
+
+
+verilator-5.044      | 4.5 MB    |            |   0% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+binutils_impl_linux- | 3.5 MB    |            |   0% [A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ####6      |  47% 
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+verilator-5.044      | 4.5 MB    | ######9    |  69% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+tk-8.6.13            | 3.1 MB    |            |   0% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+libsanitizer-15.2.0  | 7.7 MB    | ########## | 100% [A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | #####2     |  52% 
+
+
+
+
+
+
+
+
+binutils_impl_linux- | 3.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+binutils_impl_linux- | 3.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-devel_linux-6 | 2.9 MB    |            |   1% [A[A[A[A[A[A[A[A[A[A[A
+
+
+libstdcxx-devel_linu | 19.7 MB   | ########## | 100% [A[A[A
+
+
+
+
+
+
+
+
+
+tk-8.6.13            | 3.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+tk-8.6.13            | 3.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+verilator-5.044      | 4.5 MB    | ########## | 100% [A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | #####9     |  60% 
+
+cmake-4.3.1          | 22.0 MB   | ########## | 100% [A[A
+
+cmake-4.3.1          | 22.0 MB   | ########## | 100% [A[A
+
+
+
+
+
+
+
+
+
+
+
+
+pip-26.0.1           | 1.1 MB    | 1          |   1% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+krb5-1.22.2          | 1.3 MB    | 1          |   1% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-devel_linux-6 | 2.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+pip-26.0.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgcc-15.2.0        | 1017 KB   | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+krb5-1.22.2          | 1.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.52.0     | 929 KB    | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libuv-1.51.0         | 874 KB    | 1          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ######8    |  68% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bison-3.8.2          | 755 KB    | 2          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgcc-15.2.0        | 1017 KB   | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.52.0     | 929 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libuv-1.51.0         | 874 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bison-3.8.2          | 755 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 711 KB    | 2          |   2% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+libstdcxx-15.2.0     | 5.6 MB    | ########## | 100% [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 711 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | #######5   |  75% gcc_impl_linux-64-15 | 78.0 MB   | ########3  |  84% gcc_impl_linux-64-15 | 78.0 MB   | #########1 |  91% 
+
+
+
+
+icu-78.3             | 12.1 MB   | ########## | 100% [A[A[A[A[A
+
+
+
+
+
+
+
+
+binutils_impl_linux- | 3.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | #########8 |  99% 
+
+
+
+
+
+
+
+verilator-5.044      | 4.5 MB    | ########## | 100% [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+tk-8.6.13            | 3.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-devel_linux-6 | 2.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+libgcc-devel_linux-6 | 2.9 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[Agcc_impl_linux-64-15 | 78.0 MB   | ########## | 100% 
+
+
+
+
+
+
+
+
+
+
+
+
+pip-26.0.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+pip-26.0.1           | 1.1 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+krb5-1.22.2          | 1.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+krb5-1.22.2          | 1.3 MB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgcc-15.2.0        | 1017 KB   | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+libgcc-15.2.0        | 1017 KB   | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.52.0     | 929 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libsqlite-3.52.0     | 929 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libuv-1.51.0         | 874 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+libuv-1.51.0         | 874 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bison-3.8.2          | 755 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bison-3.8.2          | 755 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+python-3.11.15       | 29.5 MB   | ########## | 100% [A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 711 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ld_impl_linux-64-2.4 | 711 KB    | ########## | 100% [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ... (more hidden) ...[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+cmake-4.3.1          | 22.0 MB   | ########## | 100% [A[Agcc_impl_linux-64-15 | 78.0 MB   | ########## | 100% 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                      [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A                                                     
+                                                     [A
+
+                                                     [A[A
+
+
+                                                     [A[A[A
+
+
+
+                                                     [A[A[A[A
+
+
+
+
+                                                     [A[A[A[A[A
+
+
+
+
+
+                                                     [A[A[A[A[A[A
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                     [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A
+[A
+
+[A[A
+
+
+[A[A[A
+
+
+
+[A[A[A[A
+
+
+
+
+[A[A[A[A[A
+
+
+
+
+
+[A[A[A[A[A[A
+
+
+
+
+
+
+[A[A[A[A[A[A[A
+
+
+
+
+
+
+
+[A[A[A[A[A[A[A[A done
+Preparing transaction: - \ done
+Verifying transaction: / - \ | / - \ | / - \ | / - \ done
+Executing transaction: / - \ | / - \ | / - \ | / - \ | / - \ | / - done
+#
+# To activate this environment, use
+#
+#     $ conda activate step_cv6_test
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+

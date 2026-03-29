@@ -1,0 +1,10 @@
+{
+  "exit_code": 1,
+  "timed_out": false,
+  "total_ticks": 10133,
+  "total_cycles": 5066,
+  "first_done_tick": 10079,
+  "first_done_cycle": 5039,
+  "sim_clock_period_ns": 2.0,
+  "assumed_frequency_mhz": 500.0
+}
