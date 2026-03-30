@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "step_packets_gemm.h"
+#include "step_packets.h"
 
 #define STEP_BASE        0x40000000u
 #define STEP_STATUS      (*(volatile uint32_t *)(STEP_BASE + 0x0004u))

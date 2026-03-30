@@ -57,10 +57,19 @@ def main():
     bit_idx = arg_names.index("inp_recv_from_cpu_bitstream_pkt__msg")
     bit_val_idx = arg_names.index("inp_recv_from_cpu_bitstream_pkt__val")
     bit_rdy_idx = arg_names.index("ref_recv_from_cpu_bitstream_pkt__rdy")
+    pc_idx = arg_names.index("ref_pc_req")
+    pc_trigger_idx = arg_names.index("ref_pc_req_trigger")
+    pc_trigger_count_idx = arg_names.index("ref_pc_req_trigger_count")
 
     meta_packets = []
-    bit_packets = []
-    cmds = []
+    bit_group_packets = {}
+    bit_group_order = []
+
+    prev_meta_active = 0
+    prev_meta_msg = 0
+    prev_pc_trigger = 0
+    capture_bit_key = None
+    capture_bit_remaining = 0
 
     for raw_line in lines:
         line = raw_line.strip()
@@ -69,14 +78,50 @@ def main():
         values = parse_case_line(line)
         meta_val = parse_hex_token(values[meta_val_idx])
         meta_rdy = parse_hex_token(values[meta_rdy_idx])
+        meta_msg = parse_hex_token(values[meta_idx])
         bit_val = parse_hex_token(values[bit_val_idx])
         bit_rdy = parse_hex_token(values[bit_rdy_idx])
-        if meta_val and meta_rdy:
-            meta_packets.append(words_from_payload(parse_hex_token(values[meta_idx]), META_WORDS))
-            cmds.append(("META", len(meta_packets) - 1))
-        if bit_val and bit_rdy:
-            bit_packets.append(words_from_payload(parse_hex_token(values[bit_idx]), BIT_WORDS))
-            cmds.append(("BIT", len(bit_packets) - 1))
+        bit_msg = parse_hex_token(values[bit_idx])
+        pc = parse_hex_token(values[pc_idx])
+        pc_trigger = parse_hex_token(values[pc_trigger_idx])
+        pc_trigger_count = parse_hex_token(values[pc_trigger_count_idx])
+        meta_active = 1 if (meta_val and meta_rdy) else 0
+        bit_active = 1 if (bit_val and bit_rdy) else 0
+        if meta_active and ((not prev_meta_active) or (meta_msg != prev_meta_msg)):
+            meta_packets.append(words_from_payload(meta_msg, META_WORDS))
+        if pc_trigger and not prev_pc_trigger:
+            key = (pc, pc_trigger_count)
+            if (pc_trigger_count > 0) and (key not in bit_group_packets):
+                bit_group_packets[key] = []
+                bit_group_order.append(key)
+                capture_bit_key = key
+                capture_bit_remaining = pc_trigger_count
+            else:
+                capture_bit_key = None
+                capture_bit_remaining = 0
+        if capture_bit_key is not None and bit_active and (bit_msg != 0):
+            bit_group_packets[capture_bit_key].append(words_from_payload(bit_msg, BIT_WORDS))
+            capture_bit_remaining -= 1
+            if capture_bit_remaining == 0:
+                capture_bit_key = None
+        prev_meta_active = meta_active
+        prev_meta_msg = meta_msg
+        prev_pc_trigger = pc_trigger
+
+    bit_packets = []
+    cmds = []
+    for idx in range(len(meta_packets)):
+        cmds.append(("META", idx))
+    for key in bit_group_order:
+        packets = bit_group_packets[key]
+        if len(packets) != key[1]:
+            raise RuntimeError(
+                f"bitstream group pc={key[0]} count={key[1]} captured {len(packets)} packets"
+            )
+        start_idx = len(bit_packets)
+        bit_packets.extend(packets)
+        for pkt_idx in range(len(packets)):
+            cmds.append(("BIT", start_idx + pkt_idx))
 
     out = []
     out.append("#pragma once")

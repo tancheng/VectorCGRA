@@ -2,6 +2,7 @@ import json
 import os
 from glob import glob
 from collections import deque
+from pathlib import Path
 
 import pytest
 from pymtl3 import *
@@ -21,6 +22,7 @@ from ...lib.messages import *
 from ...lib.opt_type import *
 
 DFG_MAPPINGS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mappings"
+BENCHMARKS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks"
 DEFAULT_DFG_JSON = f"{DFG_MAPPINGS_DIR}/dfg_mapping_default.json"
 PASSING_DFG_JSONS = {
     f"{DFG_MAPPINGS_DIR}/dfg_mapping_bfs.json",
@@ -643,10 +645,54 @@ def _print_metrics(runtime_metrics):
     if runtime_metrics["pc_resolved_thread_counts"]:
         print(f"  pc_resolved_thread_counts: {runtime_metrics['pc_resolved_thread_counts']}")
 
+
+def _metrics_summary(runtime_metrics, json_path):
+    e2e_cycles = None
+    launch_to_first_complete_cycles = None
+    if runtime_metrics["first_launch_cycle"] is not None:
+        e2e_cycles = runtime_metrics["done_cycle"] - runtime_metrics["first_launch_cycle"]
+    if (
+        runtime_metrics["first_complete_cycle"] is not None
+        and runtime_metrics["first_launch_cycle"] is not None
+    ):
+        launch_to_first_complete_cycles = (
+            runtime_metrics["first_complete_cycle"] - runtime_metrics["first_launch_cycle"]
+        )
+
+    return {
+        "benchmark_json": os.path.abspath(json_path),
+        "benchmark_name": Path(json_path).stem,
+        "first_launch_cycle": runtime_metrics["first_launch_cycle"],
+        "first_complete_cycle": runtime_metrics["first_complete_cycle"],
+        "done_cycle": runtime_metrics["done_cycle"],
+        "total_sim_cycles": runtime_metrics["done_cycle"],
+        "timed_out": runtime_metrics["timed_out"],
+        "e2e_cycles": e2e_cycles,
+        "launch_to_first_complete_cycles": launch_to_first_complete_cycles,
+        "pc_trigger_count": len(runtime_metrics["pc_triggers"]),
+        "pc_trigger_pairs": runtime_metrics["pc_trigger_pairs"],
+        "pc_resolved_thread_counts": runtime_metrics["pc_resolved_thread_counts"],
+        "wr_issue_counts": runtime_metrics["wr_issue_counts"],
+        "wr_commit_counts": runtime_metrics["wr_commit_counts"],
+    }
+
+
+def _maybe_dump_metrics(runtime_metrics, json_path):
+    metrics_path = os.environ.get("STEP_STANDALONE_METRICS_FILE", "")
+    if not metrics_path:
+        return
+    Path(metrics_path).write_text(json.dumps(_metrics_summary(runtime_metrics, json_path), indent=2) + "\n")
+
 def _mapping_json_paths():
     paths = sorted(glob(f"{DFG_MAPPINGS_DIR}/*.json"))
     assert paths, f"No mapping JSON files found under {DFG_MAPPINGS_DIR}"
     return [path for path in paths if path in PASSING_DFG_JSONS]
+
+
+def _benchmark_json_paths():
+    paths = sorted(glob(f"{BENCHMARKS_DIR}/*.json"))
+    assert paths, f"No benchmark JSON files found under {BENCHMARKS_DIR}"
+    return paths
 
 
 def test_simple(cmdline_opts):
@@ -657,8 +703,9 @@ def test_simple(cmdline_opts):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
     cmdline_opts = dict(cmdline_opts)
-    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
+    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 15000
     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    _maybe_dump_metrics(runtime_metrics, DEFAULT_DFG_JSON)
     _print_metrics(runtime_metrics)
 
 
@@ -694,6 +741,7 @@ def test_spmv_debug_modes(cmdline_opts, debug):
     cmdline_opts = dict(cmdline_opts)
     cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    _maybe_dump_metrics(runtime_metrics, f"{DFG_MAPPINGS_DIR}/dfg_mapping_spmv.json")
     _print_metrics(runtime_metrics)
 
 
@@ -712,7 +760,28 @@ def test_all_mappings(cmdline_opts, json_path):
     cmdline_opts = dict(cmdline_opts)
     cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 1500
     runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    _maybe_dump_metrics(runtime_metrics, json_path)
     print(f"Validated mapping: {json_path}")
+    _print_metrics(runtime_metrics)
+
+
+@pytest.mark.parametrize(
+    "json_path",
+    _benchmark_json_paths(),
+    ids=lambda p: os.path.basename(p),
+)
+def test_benchmark_mappings(cmdline_opts, json_path):
+    th = init_param(json_path=json_path, debug=False)
+
+    th.elaborate()
+    th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                        'ALWCOMBORDER'])
+    cmdline_opts = dict(cmdline_opts)
+    cmdline_opts["max_cycles"] = cmdline_opts.get("max_cycles") or 200000
+    runtime_metrics = _run_sim_with_metrics(th, cmdline_opts, print_line_trace=False, duts=['dut'])
+    _maybe_dump_metrics(runtime_metrics, json_path)
+    print(f"Validated benchmark mapping: {json_path}")
     _print_metrics(runtime_metrics)
 
 

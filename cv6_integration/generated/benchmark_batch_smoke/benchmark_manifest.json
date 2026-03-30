@@ -1,0 +1,20 @@
+[
+  {
+    "benchmark": "dfg_mapping_bfs_128x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_bfs_128x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch_smoke/dfg_mapping_bfs_128x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch_smoke/dfg_mapping_bfs_128x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch_smoke/dfg_mapping_bfs_128x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5_json_stats.json",
+      "error": ""
+    }
+  }
+]

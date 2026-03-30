@@ -1,6 +1,11 @@
 CV6_INT_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 STEP_ENV_NAME ?= step_cv6_test
 STEP_ENV_PREFIX ?= /data/angl7/bin/miniconda3/envs/$(STEP_ENV_NAME)
+PYTEST_ENV_PREFIX ?= /data/angl7/bin/miniconda3/envs/vector_cgra_base
+BENCHMARKS_DIR ?= $(CV6_INT_ROOT)/../cgra/test/benchmarks
+BENCHMARK_RESULTS_DIR ?= $(CV6_INT_ROOT)/generated/benchmark_batch
+BENCHMARK_STANDALONE_MAX_CYCLES ?= 200000
+BENCHMARK_LIMIT ?= 0
 ifeq ($(CONDA_DEFAULT_ENV),$(STEP_ENV_NAME))
 CONDA_RUN ?= env -u VERILATOR_ROOT
 else
@@ -8,6 +13,7 @@ CONDA_RUN ?= env -u VERILATOR_ROOT conda run -p $(STEP_ENV_PREFIX)
 endif
 VERILATOR ?= $(CONDA_RUN) verilator
 PYTHON ?= $(CONDA_RUN) python
+VERILATOR_BUILD_JOBS ?= 16
 
 ARA_ROOT := $(CV6_INT_ROOT)/ara
 CVA6_ROOT := $(ARA_ROOT)/hardware/deps/cva6
@@ -30,15 +36,17 @@ REPLAY_FILE := $(CV6_INT_ROOT)/rtl/peripherals/step_case_replay_master.sv
 WRAP_FILE := $(CV6_INT_ROOT)/rtl/peripherals/step_mmio_dma_wrapper.sv
 STEP_FILE := $(CV6_INT_ROOT)/rtl/step/STEP_CgraRTL__2c9482af1bbb680a__pickled.v
 
-GEMM_TB := $(CV6_INT_ROOT)/../cgra/test/STEP_CgraRTL__2c9482af1bbb680a_test_all_mappings_dfg_mapping_gemm.json_tb.v
-GEMM_CASES := $(CV6_INT_ROOT)/../cgra/test/STEP_CgraRTL__2c9482af1bbb680a_test_all_mappings_dfg_mapping_gemm.json_tb.v.cases
-GEMM_SCRIPT := $(CV6_INT_ROOT)/generated/gemm_replay.hex
-GEMM_HEADER := $(CV6_INT_ROOT)/generated/step_packets_gemm.h
+STEP_TB ?= $(CV6_INT_ROOT)/../cgra/test/STEP_CgraRTL__2c9482af1bbb680a_test_all_mappings_dfg_mapping_gemm.json_tb.v
+STEP_CASES ?= $(STEP_TB).cases
+STEP_NAME_RAW := $(notdir $(basename $(STEP_TB)))
+STEP_NAME := $(subst .,_,$(patsubst %_tb,%,$(STEP_NAME_RAW)))
+STEP_SCRIPT := $(CV6_INT_ROOT)/generated/$(STEP_NAME)_replay.hex
+STEP_HEADER := $(CV6_INT_ROOT)/generated/step_packets.h
 ACCEL_CASE_SVH := $(CV6_INT_ROOT)/generated/step_accel_case_model.svh
-CPU_ELF := $(CV6_INT_ROOT)/generated/step_gemm.elf
-CPU_BIN := $(CV6_INT_ROOT)/generated/step_gemm.bin
-CPU_MEMH := $(CV6_INT_ROOT)/generated/step_gemm.memh
-CPU_STATS := $(CV6_INT_ROOT)/generated/step_gemm_stats.json
+CPU_ELF := $(CV6_INT_ROOT)/generated/$(STEP_NAME).elf
+CPU_BIN := $(CV6_INT_ROOT)/generated/$(STEP_NAME).bin
+CPU_MEMH := $(CV6_INT_ROOT)/generated/$(STEP_NAME).memh
+CPU_STATS := $(CV6_INT_ROOT)/generated/$(STEP_NAME)_stats.json
 CPU_SIM_MAIN := $(CV6_INT_ROOT)/tb/sim_cpu_main.cpp
 CPU_FILELIST := $(CV6_INT_ROOT)/generated/cv6_cpu_files.f
 
@@ -61,29 +69,35 @@ COMMON_LOCAL_RTL := \
 	$(CV6_INT_ROOT)/rtl/cv6/cv6_step_core_boundary.sv \
 	$(CV6_INT_ROOT)/rtl/cv6/cv6_step_testharness.sv
 
-.PHONY: gen_gemm
-gen_gemm:
-	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_replay.py --tb $(GEMM_TB) --cases $(GEMM_CASES) --out $(GEMM_SCRIPT)
+.PHONY: gen_step
+gen_step:
+	mkdir -p $(CV6_INT_ROOT)/generated
+	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_replay.py --tb $(STEP_TB) --cases $(STEP_CASES) --out $(STEP_SCRIPT)
 
-.PHONY: sim_replay
-sim_replay: gen_gemm
-	$(VERILATOR) --cc --exe --build --sv -Wno-WIDTH -Wno-UNSIGNED -Wno-UNOPTFLAT \
+.PHONY: sim_replay_step
+sim_replay_step: gen_step
+	$(VERILATOR) --cc --exe --build --build-jobs $(VERILATOR_BUILD_JOBS) --sv -Wno-WIDTH -Wno-UNSIGNED -Wno-UNOPTFLAT \
 	  --top-module $(TB_TOP) \
 	  -o V$(TB_TOP) \
 	  -Mdir $(OBJ_DIR) \
 	  $(PKG_FILE) $(STEP_FILE) $(WRAP_FILE) $(REPLAY_FILE) $(TOP_FILE) $(SIM_MAIN)
-	$(OBJ_DIR)/V$(TB_TOP) +SCRIPT=$(GEMM_SCRIPT)
+	$(OBJ_DIR)/V$(TB_TOP) +SCRIPT=$(STEP_SCRIPT)
 
-$(GEMM_HEADER): $(CV6_INT_ROOT)/tb/gen_step_dma_header.py
-	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_dma_header.py --tb $(GEMM_TB) --cases $(GEMM_CASES) --out $(GEMM_HEADER)
+.PHONY: force_step_codegen
+force_step_codegen:
 
-$(ACCEL_CASE_SVH): $(CV6_INT_ROOT)/tb/gen_step_accel_case_model.py
-	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_accel_case_model.py --tb $(GEMM_TB) --cases $(GEMM_CASES) --out $(ACCEL_CASE_SVH)
+$(STEP_HEADER): force_step_codegen $(CV6_INT_ROOT)/tb/gen_step_dma_header.py $(STEP_TB) $(STEP_CASES)
+	mkdir -p $(CV6_INT_ROOT)/generated
+	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_dma_header.py --tb $(STEP_TB) --cases $(STEP_CASES) --out $(STEP_HEADER)
 
-.PHONY: gen_cpu_gemm
-gen_cpu_gemm: $(GEMM_HEADER) $(ACCEL_CASE_SVH)
+$(ACCEL_CASE_SVH): force_step_codegen $(CV6_INT_ROOT)/tb/gen_step_accel_case_model.py $(STEP_TB) $(STEP_CASES)
+	mkdir -p $(CV6_INT_ROOT)/generated
+	$(PYTHON) $(CV6_INT_ROOT)/tb/gen_step_accel_case_model.py --tb $(STEP_TB) --cases $(STEP_CASES) --out $(ACCEL_CASE_SVH)
 
-$(CPU_ELF): $(CV6_INT_ROOT)/Makefile $(CV6_INT_ROOT)/sw/start.S $(CV6_INT_ROOT)/sw/step_cpu_main.c $(CV6_INT_ROOT)/sw/link.ld $(GEMM_HEADER)
+.PHONY: gen_cpu_step
+gen_cpu_step: $(STEP_HEADER) $(ACCEL_CASE_SVH)
+
+$(CPU_ELF): $(CV6_INT_ROOT)/Makefile $(CV6_INT_ROOT)/sw/start.S $(CV6_INT_ROOT)/sw/step_cpu_main.c $(CV6_INT_ROOT)/sw/link.ld $(STEP_HEADER)
 	$(CLANG) --target=riscv32 -march=rv32imac_zicsr -mabi=ilp32 -mcmodel=medany -nostdlib -ffreestanding \
 	  -Wl,-T,$(CV6_INT_ROOT)/sw/link.ld -Wl,--no-relax \
 	  -I$(CV6_INT_ROOT)/generated \
@@ -96,8 +110,8 @@ $(CPU_BIN): $(CPU_ELF)
 $(CPU_MEMH): $(CPU_BIN)
 	$(PYTHON) $(CV6_INT_ROOT)/tb/bin_to_mem.py --bin $(CPU_BIN) --out $(CPU_MEMH)
 
-.PHONY: build_cpu_gemm
-build_cpu_gemm: $(CPU_MEMH) $(ACCEL_CASE_SVH)
+.PHONY: build_cpu_step
+build_cpu_step: $(CPU_MEMH) $(ACCEL_CASE_SVH)
 
 $(CPU_FILELIST): $(CV6_INT_ROOT)/Makefile $(CVA6_CORE_FLIST) $(CVA6_FLATTENER)
 	mkdir -p $(CV6_INT_ROOT)/generated
@@ -127,9 +141,9 @@ $(CPU_FILELIST): $(CV6_INT_ROOT)/Makefile $(CVA6_CORE_FLIST) $(CVA6_FLATTENER)
 	  printf '%s\n' $(COMMON_LOCAL_RTL); \
 	} > $(CPU_FILELIST)
 
-.PHONY: sim_cv6_gemm
-sim_cv6_gemm: build_cpu_gemm $(CPU_FILELIST)
-	$(VERILATOR) --cc --exe --build --sv -Wno-WIDTH -Wno-UNSIGNED -Wno-UNOPTFLAT -Wno-fatal \
+.PHONY: sim_cv6_step
+sim_cv6_step: build_cpu_step $(CPU_FILELIST)
+	$(VERILATOR) --cc --exe --build --build-jobs $(VERILATOR_BUILD_JOBS) --sv -Wno-WIDTH -Wno-UNSIGNED -Wno-UNOPTFLAT -Wno-fatal \
 	  -DSYNTHESIS \
 	  --language 1800-2012 \
 	  --top-module cv6_step_testharness \
@@ -142,6 +156,31 @@ sim_cv6_gemm: build_cpu_gemm $(CPU_FILELIST)
 	  $(CPU_SIM_MAIN)
 	STEP_STATS_FILE=$(CPU_STATS) $(OBJ_DIR)/Vcv6_step_testharness
 
+.PHONY: sim_cv6_benchmarks
+sim_cv6_benchmarks:
+	python3 $(CV6_INT_ROOT)/tb/run_step_benchmarks.py \
+	  --benchmark-dir $(BENCHMARKS_DIR) \
+	  --results-dir $(BENCHMARK_RESULTS_DIR) \
+	  --pytest-env-prefix $(PYTEST_ENV_PREFIX) \
+	  --cv6-env-prefix $(STEP_ENV_PREFIX) \
+	  --standalone-max-cycles $(BENCHMARK_STANDALONE_MAX_CYCLES) \
+	  --limit $(BENCHMARK_LIMIT)
+
+.PHONY: gen_gemm
+gen_gemm: gen_step
+
+.PHONY: gen_cpu_gemm
+gen_cpu_gemm: gen_cpu_step
+
+.PHONY: build_cpu_gemm
+build_cpu_gemm: build_cpu_step
+
+.PHONY: sim_cv6_gemm
+sim_cv6_gemm: sim_cv6_step
+
+.PHONY: sim_replay
+sim_replay: sim_replay_step
+
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(CV6_INT_ROOT)/generated/*.hex $(CV6_INT_ROOT)/generated/*.h $(CV6_INT_ROOT)/generated/*.elf $(CV6_INT_ROOT)/generated/*.bin $(CV6_INT_ROOT)/generated/*.memh $(CV6_INT_ROOT)/generated/*.f
+	rm -rf $(OBJ_DIR) $(CV6_INT_ROOT)/generated/*.hex $(CV6_INT_ROOT)/generated/*.h $(CV6_INT_ROOT)/generated/*.elf $(CV6_INT_ROOT)/generated/*.bin $(CV6_INT_ROOT)/generated/*.memh $(CV6_INT_ROOT)/generated/*.f $(BENCHMARK_RESULTS_DIR)

@@ -1,0 +1,308 @@
+[
+  {
+    "benchmark": "dfg_mapping_bfs_128x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_bfs_128x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_128x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_128x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_128x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_128x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_bfs_256x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_bfs_256x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_256x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_256x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_256x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_256x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_256x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_256x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_bfs_512x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_bfs_512x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_512x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_512x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_512x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_512x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_bfs_512x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_bfs_512x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_gemm_16x16",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_gemm_16x16.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_16x16/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_16x16/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_16x16.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_16x16.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_16x16/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_16x16_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_gemm_8x8",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_gemm_8x8.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_8x8/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_8x8/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_8x8.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_8x8.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_gemm_8x8/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_gemm_8x8_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_hotspot_128x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_hotspot_128x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_128x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_128x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_128x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_128x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_128x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_128x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_hotspot_256x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_hotspot_256x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_256x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_256x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_256x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_256x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_256x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_256x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_hotspot_512x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_hotspot_512x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_512x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_512x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_512x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_512x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_hotspot_512x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_hotspot_512x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_pagerank_128x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_pagerank_128x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_128x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_128x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_128x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_128x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_128x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_128x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_pagerank_256x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_pagerank_256x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_256x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_256x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_256x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_256x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_256x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_256x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_pagerank_512x5",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_pagerank_512x5.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_512x5/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_512x5/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_512x5.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_512x5.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_pagerank_512x5/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_pagerank_512x5_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_relu_128x128",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_relu_128x128.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_128x128/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_128x128/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_128x128.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_128x128.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_128x128/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_128x128_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_relu_32x32",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_relu_32x32.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_32x32/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_32x32/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_32x32.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_32x32.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_32x32/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_32x32_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_relu_64x64",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_relu_64x64.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_64x64/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_64x64/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_64x64.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_64x64.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_relu_64x64/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_relu_64x64_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_spmv_loop_128x8",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_spmv_loop_128x8.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_128x8/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_128x8/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_128x8.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_128x8.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_128x8/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_128x8_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_spmv_loop_256x8",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_spmv_loop_256x8.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_256x8/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_256x8/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_256x8.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_256x8.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_256x8/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_256x8_json_stats.json",
+      "error": ""
+    }
+  },
+  {
+    "benchmark": "dfg_mapping_spmv_loop_512x8",
+    "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_spmv_loop_512x8.json",
+    "standalone": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_512x8/standalone.log",
+      "metrics": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_512x8/standalone_metrics.json",
+      "tb": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_512x8.json_tb.v",
+      "cases": "/data/angl7/STEP_VectorCGRA/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_512x8.json_tb.v.cases",
+      "error": ""
+    },
+    "cv6": {
+      "returncode": 0,
+      "log": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/benchmark_batch/dfg_mapping_spmv_loop_512x8/cv6.log",
+      "stats": "/data/angl7/STEP_VectorCGRA/cv6_integration/generated/STEP_CgraRTL__2c9482af1bbb680a_test_benchmark_mappings_dfg_mapping_spmv_loop_512x8_json_stats.json",
+      "error": ""
+    }
+  }
+]

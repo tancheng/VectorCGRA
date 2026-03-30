@@ -1,0 +1,85 @@
+{
+  "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_gemm_8x8.json",
+  "benchmark_name": "dfg_mapping_gemm_8x8",
+  "first_launch_cycle": 8,
+  "first_complete_cycle": 1885,
+  "done_cycle": 1888,
+  "total_sim_cycles": 1888,
+  "timed_out": false,
+  "e2e_cycles": 1880,
+  "launch_to_first_complete_cycles": 1877,
+  "pc_trigger_count": 17,
+  "pc_trigger_pairs": [
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "pc_resolved_thread_counts": [],
+  "wr_issue_counts": null,
+  "wr_commit_counts": null
+}

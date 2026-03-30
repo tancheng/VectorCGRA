@@ -1,0 +1,149 @@
+{
+  "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_hotspot_512x5.json",
+  "benchmark_name": "dfg_mapping_hotspot_512x5",
+  "first_launch_cycle": 11,
+  "first_complete_cycle": 11737,
+  "done_cycle": 11740,
+  "total_sim_cycles": 11740,
+  "timed_out": false,
+  "e2e_cycles": 11729,
+  "launch_to_first_complete_cycles": 11726,
+  "pc_trigger_count": 33,
+  "pc_trigger_pairs": [
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      4,
+      4
+    ],
+    [
+      5,
+      9
+    ],
+    [
+      5,
+      9
+    ]
+  ],
+  "pc_resolved_thread_counts": [],
+  "wr_issue_counts": null,
+  "wr_commit_counts": null
+}

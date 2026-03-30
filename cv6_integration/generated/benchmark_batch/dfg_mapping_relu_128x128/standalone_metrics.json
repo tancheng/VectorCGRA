@@ -1,0 +1,25 @@
+{
+  "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_relu_128x128.json",
+  "benchmark_name": "dfg_mapping_relu_128x128",
+  "first_launch_cycle": 7,
+  "first_complete_cycle": 18481,
+  "done_cycle": 18484,
+  "total_sim_cycles": 18484,
+  "timed_out": false,
+  "e2e_cycles": 18477,
+  "launch_to_first_complete_cycles": 18474,
+  "pc_trigger_count": 2,
+  "pc_trigger_pairs": [
+    [
+      0,
+      9
+    ],
+    [
+      1,
+      4
+    ]
+  ],
+  "pc_resolved_thread_counts": [],
+  "wr_issue_counts": null,
+  "wr_commit_counts": null
+}

@@ -1,0 +1,29 @@
+{
+  "benchmark_json": "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks/dfg_mapping_spmv_loop_256x8.json",
+  "benchmark_name": "dfg_mapping_spmv_loop_256x8",
+  "first_launch_cycle": 8,
+  "first_complete_cycle": 4575,
+  "done_cycle": 4578,
+  "total_sim_cycles": 4578,
+  "timed_out": false,
+  "e2e_cycles": 4570,
+  "launch_to_first_complete_cycles": 4567,
+  "pc_trigger_count": 3,
+  "pc_trigger_pairs": [
+    [
+      0,
+      5
+    ],
+    [
+      1,
+      4
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "pc_resolved_thread_counts": [],
+  "wr_issue_counts": null,
+  "wr_commit_counts": null
+}
