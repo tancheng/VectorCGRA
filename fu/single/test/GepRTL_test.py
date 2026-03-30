@@ -160,8 +160,8 @@ def test_gep_1d_const():
 
 def test_gep_2d():
   """OPT_GEP_2D: result = base(in0) + index0(in1) * stride + index1(in2)
-  Simulates A[i][j] where A is int[N][10], element_size=4.
-  stride = 10 * 4 = 40.
+  Simulates A[i][j] where A has 10 elements per row.
+  Memory is element-addressed for now, so stride = 10 (elements, not bytes).
   """
   num_inports = 4
   num_outports = 1
@@ -170,13 +170,13 @@ def test_gep_2d():
       make_types(num_inports=num_inports, num_outports=num_outports)
 
   base_addr = 2000
-  stride = 40  # 10 elements * 4 bytes
+  stride = 10  # 10 elements per row (element-granular addressing)
 
-  # Test A[0][0], A[1][3], A[2][5]
+  # Test A[0][0], A[1][3], A[2][7]
   test_cases = [
-    (0, 0),   # offset = 0*40 + 0 = 0
-    (1, 12),  # offset = 1*40 + 12 = 52
-    (2, 20),  # offset = 2*40 + 20 = 100
+    (0, 0),  # offset = 0*10 + 0 = 0
+    (1, 3),  # offset = 1*10 + 3 = 13
+    (2, 7),  # offset = 2*10 + 7 = 27
   ]
 
   src_in0 =   [DataType(base_addr, 1)] * len(test_cases)
@@ -202,8 +202,9 @@ def test_gep_2d():
 
 def test_gep_2d_const():
   """OPT_GEP_2D_CONST: result = base(const) + index0(in0) * stride + index1(in1)
-  Simulates A[i][j] where A is int[N][8], element_size=4.
-  stride = 8 * 4 = 32, base from const_queue.
+  Simulates A[i][j] where A has 8 elements per row.
+  Memory is element-addressed for now, so stride = 8 (elements, not bytes).
+  Base address comes from const_queue.
   """
   num_inports = 4
   num_outports = 1
@@ -212,13 +213,13 @@ def test_gep_2d_const():
       make_types(num_inports=num_inports, num_outports=num_outports)
 
   base_addr = 4000
-  stride = 32  # 8 elements * 4 bytes
+  stride = 8  # 8 elements per row (element-granular addressing)
 
-  # Test A[0][0], A[1][2], A[3][4]
+  # Test A[0][0], A[1][2], A[3][5]
   test_cases = [
-    (0, 0),   # offset = 0*32 + 0 = 0
-    (1, 8),   # offset = 1*32 + 8 = 40
-    (3, 16),  # offset = 3*32 + 16 = 112
+    (0, 0),  # offset = 0*8 + 0 = 0
+    (1, 2),  # offset = 1*8 + 2 = 10
+    (3, 5),  # offset = 3*8 + 5 = 29
   ]
 
   src_in0 =   [DataType(i, 1) for i, j in test_cases]
