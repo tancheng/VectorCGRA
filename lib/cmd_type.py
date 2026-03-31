@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 43
+NUM_CMDS = 44
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -66,6 +66,9 @@ CMD_LC_CHILD_RESET                   = 41  # Parent LC (this CGRA) -> Child LC (
 # Loop Controller Status.
 CMD_LC_ALL_COMPLETE                  = 42  # LC -> Controller: all outer loops complete
 
+# GEP FU Configuration Commands.
+CMD_CONFIG_GEP_STRIDE                = 43  # Controller -> GEP FU: Configures stride for 2D GEP
+
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
   CMD_PAUSE:                            "(PAUSE_EXECUTION)",
@@ -110,5 +113,6 @@ CMD_SYMBOL_DICT = {
   CMD_LC_CHILD_COMPLETE:                "(LC_CHILD_COMPLETE)",
   CMD_LC_CHILD_RESET:                   "(LC_CHILD_RESET)",
   CMD_LC_ALL_COMPLETE:                  "(LC_ALL_COMPLETE)",
+  CMD_CONFIG_GEP_STRIDE:                "(CONFIG_GEP_STRIDE)",
 }
 
