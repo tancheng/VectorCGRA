@@ -102,6 +102,7 @@ yaml_to_VectorCGRA_map = {
     
     "RETURN": OPT_RET,
     "RETURN_VALUE": OPT_RET,
+    "RETURN_VOID": OPT_RET_VOID,
     "LDD": OPT_LD,
     "LOAD": OPT_LD,
     "STORE": OPT_STR,
@@ -116,6 +117,7 @@ yaml_to_VectorCGRA_map_const = {
     "NE": OPT_NE_CONST,
     "ADD": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
+    "MUL": OPT_MUL_CONST,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
@@ -869,7 +871,7 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/relu.yaml",
+        path = "./validation/test/axpy.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
