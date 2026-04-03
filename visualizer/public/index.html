@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CGRA Trace Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Consolas', 'Monaco', monospace; background: #1a1a2e; color: #e0e0e0; }
+
+/* Header */
+#header { background: #16213e; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #0f3460; }
+#header h1 { font-size: 18px; color: #e94560; white-space: nowrap; }
+#file-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#file-controls select, #file-controls input, #file-controls button {
+  padding: 5px 10px; border: 1px solid #0f3460; background: #1a1a2e; color: #e0e0e0;
+  border-radius: 4px; font-family: inherit; font-size: 13px;
+}
+#file-controls button { background: #0f3460; cursor: pointer; }
+#file-controls button:hover { background: #e94560; }
+
+/* Cycle nav */
+#cycle-nav { background: #16213e; padding: 8px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #0f3460; }
+#cycle-nav button { padding: 4px 12px; border: 1px solid #0f3460; background: #1a1a2e; color: #e0e0e0; cursor: pointer; border-radius: 3px; font-family: inherit; }
+#cycle-nav button:hover { background: #e94560; }
+#cycle-slider { flex: 1; max-width: 400px; }
+#cycle-info { color: #53d8fb; font-size: 14px; }
+#meta-info { color: #888; font-size: 12px; margin-left: auto; }
+
+/* Main content */
+#main { display: flex; flex-direction: column; height: calc(100vh - 95px); }
+#cgra-view { flex: 1; overflow: auto; padding: 20px; min-height: 0; }
+#raw-panel { height: 180px; border-top: 2px solid #0f3460; background: #0d1117; overflow: auto; padding: 10px; }
+#raw-panel pre { font-size: 11px; color: #8b949e; white-space: pre-wrap; word-break: break-all; }
+#raw-panel .label { color: #e94560; font-size: 12px; margin-bottom: 5px; }
+
+/* CGRA Grid */
+.cgra-container { display: flex; gap: 30px; align-items: flex-start; }
+.mesh-grid { display: inline-grid; gap: 2px; }
+.tile-cell { position: relative; }
+
+/* Tile box */
+.tile {
+  border: 2px solid #0f3460; border-radius: 6px; padding: 6px;
+  background: #16213e; width: 220px; min-height: 160px; font-size: 10px;
+  transition: border-color 0.2s;
+}
+.tile.active { border-color: #53d8fb; box-shadow: 0 0 8px rgba(83, 216, 251, 0.3); }
+.tile.prologue { border-color: #f0a500; box-shadow: 0 0 8px rgba(240, 165, 0, 0.3); }
+.tile.computing { border-color: #e94560; box-shadow: 0 0 8px rgba(233, 69, 96, 0.3); }
+.tile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; border-bottom: 1px solid #0f3460; padding-bottom: 3px; }
+.tile-id { font-weight: bold; color: #53d8fb; font-size: 12px; }
+.tile-op { color: #e94560; font-weight: bold; font-size: 11px; }
+
+/* Internal components */
+.component { margin: 2px 0; padding: 3px 4px; border-radius: 3px; background: #1a1a2e; }
+.component-label { color: #888; font-size: 9px; text-transform: uppercase; }
+.component-value { color: #53d8fb; font-size: 10px; }
+.component.highlight { background: #1a3a2e; border: 1px solid #2ea043; }
+
+/* Port indicators */
+.port-row { display: flex; gap: 3px; flex-wrap: wrap; }
+.port { display: inline-block; padding: 1px 4px; border-radius: 2px; font-size: 9px; }
+.port.active { background: #2ea043; color: #fff; }
+.port.inactive { background: #333; color: #666; }
+
+/* Interconnect lines (CSS arrows between tiles) */
+.link-h, .link-v { position: absolute; z-index: 1; }
+
+/* Side panels */
+.side-panel {
+  border: 2px solid #0f3460; border-radius: 6px; padding: 10px;
+  background: #16213e; min-width: 200px; font-size: 11px;
+}
+.side-panel h3 { color: #e94560; font-size: 13px; margin-bottom: 8px; border-bottom: 1px solid #0f3460; padding-bottom: 4px; }
+.side-panel .entry { margin: 3px 0; }
+.side-panel .entry .key { color: #888; }
+.side-panel .entry .val { color: #53d8fb; }
+.side-panel .entry .val.active-val { color: #2ea043; font-weight: bold; }
+
+/* Arrows between tiles */
+.arrow-container { position: relative; }
+.arrow-h {
+  width: 20px; height: 2px; background: #333; position: absolute;
+  top: 50%; left: -11px; transform: translateY(-50%);
+}
+.arrow-h.active { background: #2ea043; height: 3px; box-shadow: 0 0 4px #2ea043; }
+.arrow-v {
+  width: 2px; height: 20px; background: #333; position: absolute;
+  left: 50%; top: -11px; transform: translateX(-50%);
+}
+.arrow-v.active { background: #2ea043; width: 3px; box-shadow: 0 0 4px #2ea043; }
+
+/* Loading state */
+#loading { text-align: center; padding: 60px; color: #888; font-size: 16px; }
+
+/* Done flags */
+.done-flags { display: flex; gap: 4px; }
+.done-flag { padding: 1px 4px; border-radius: 2px; font-size: 8px; }
+.done-flag.done { background: #2ea043; color: #fff; }
+.done-flag.pending { background: #333; color: #666; }
+
+/* Ctrl mem state */
+.ctrl-state { display: flex; gap: 6px; flex-wrap: wrap; font-size: 9px; }
+.ctrl-state span { color: #888; }
+.ctrl-state .val-num { color: #e0e0e0; }
+
+/* Memory access */
+.mem-entry { font-size: 9px; color: #888; }
+.mem-entry .active-mem { color: #53d8fb; }
+
+/* Xbar config display */
+.xbar-config { font-size: 9px; color: #888; }
+.xbar-config .route-active { color: #2ea043; font-weight: bold; }
+
+/* Tab for details */
+.tile:hover { z-index: 10; }
+.tile-details { display: none; position: absolute; top: 100%; left: 0; background: #0d1117; border: 1px solid #0f3460; border-radius: 4px; padding: 8px; z-index: 100; width: 320px; max-height: 300px; overflow: auto; font-size: 10px; }
+.tile:hover .tile-details { display: block; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>CGRA Trace Visualizer</h1>
+  <div id="file-controls">
+    <select id="trace-select"><option value="">-- Select trace file --</option></select>
+    <span style="color:#666">or</span>
+    <input type="text" id="custom-path" placeholder="Enter .jsonl file path" style="width:300px">
+    <button onclick="loadCustomPath()">Load</button>
+  </div>
+</div>
+
+<div id="cycle-nav" style="display:none">
+  <button onclick="goCycle(0)">|&lt;</button>
+  <button onclick="stepCycle(-1)">&lt;</button>
+  <button onclick="stepCycle(1)">&gt;</button>
+  <button onclick="goCycle(totalCycles-1)">&gt;|</button>
+  <input type="range" id="cycle-slider" min="0" max="0" value="0" oninput="goCycle(+this.value)">
+  <span id="cycle-info">Cycle: 0 / 0</span>
+  <span id="meta-info"></span>
+</div>
+
+<div id="main">
+  <div id="cgra-view">
+    <div id="loading">Select a trace file to begin.</div>
+  </div>
+  <div id="raw-panel">
+    <div class="label">Raw JSONL Record</div>
+    <pre id="raw-json">No data loaded.</pre>
+  </div>
+</div>
+
+<script>
+const PORT_NAMES = ['N', 'S', 'W', 'E', 'NW', 'NE', 'SE', 'SW'];
+const CMD_NAMES = {
+  0: 'LAUNCH', 1: 'PAUSE', 2: 'TERMINATE', 3: 'CONFIG',
+  4: 'CFG_PRO_FU', 5: 'CFG_PRO_FX', 6: 'CFG_PRO_RX',
+  7: 'CFG_TOTAL', 8: 'CFG_ITER', 9: 'CFG_LOWER',
+  10: 'LD_REQ', 11: 'LD_RESP', 12: 'ST_REQ', 13: 'CONST',
+  14: 'COMPLETE', 15: 'RESUME', 16: 'REC_PHI',
+  17: 'GR_COUNT', 18: 'GR_ADD', 19: 'GR_MUL',
+  20: 'GR_ADD_R', 21: 'GR_MUL_R', 22: 'PRESERVE', 23: 'CLEAR',
+};
+
+let traceData = null;
+let currentCycle = 0;
+let totalCycles = 0;
+
+// Load trace file list
+async function loadTraceList() {
+  try {
+    const resp = await fetch('/api/traces');
+    const files = await resp.json();
+    const sel = document.getElementById('trace-select');
+    files.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.name;
+      opt.textContent = `${f.name} (${(f.size/1024).toFixed(1)}KB)`;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => { if (sel.value) loadTrace(sel.value); });
+  } catch(e) { console.error('Failed to load trace list:', e); }
+}
+
+async function loadTrace(filename) {
+  document.getElementById('loading').textContent = 'Loading...';
+  try {
+    const resp = await fetch(`/api/trace/${encodeURIComponent(filename)}`);
+    const data = await resp.json();
+    traceData = data.cycles;
+    totalCycles = data.totalCycles;
+    currentCycle = 0;
+    document.getElementById('cycle-slider').max = totalCycles - 1;
+    document.getElementById('cycle-nav').style.display = 'flex';
+    renderCycle();
+  } catch(e) {
+    document.getElementById('loading').textContent = 'Error loading trace: ' + e.message;
+  }
+}
+
+async function loadCustomPath() {
+  const filepath = document.getElementById('custom-path').value.trim();
+  if (!filepath) return;
+  document.getElementById('loading').textContent = 'Loading...';
+  try {
+    const resp = await fetch('/api/load', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({filepath})
+    });
+    const data = await resp.json();
+    if (data.error) { document.getElementById('loading').textContent = data.error; return; }
+    traceData = data.cycles;
+    totalCycles = data.totalCycles;
+    currentCycle = 0;
+    document.getElementById('cycle-slider').max = totalCycles - 1;
+    document.getElementById('cycle-nav').style.display = 'flex';
+    renderCycle();
+  } catch(e) {
+    document.getElementById('loading').textContent = 'Error: ' + e.message;
+  }
+}
+
+function stepCycle(delta) { goCycle(currentCycle + delta); }
+function goCycle(c) {
+  currentCycle = Math.max(0, Math.min(totalCycles - 1, c));
+  document.getElementById('cycle-slider').value = currentCycle;
+  renderCycle();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (!traceData) return;
+  if (e.key === 'ArrowRight' || e.key === 'l') stepCycle(1);
+  else if (e.key === 'ArrowLeft' || e.key === 'h') stepCycle(-1);
+  else if (e.key === 'Home') goCycle(0);
+  else if (e.key === 'End') goCycle(totalCycles - 1);
+});
+
+function renderCycle() {
+  if (!traceData || !traceData[currentCycle]) return;
+  const data = traceData[currentCycle];
+  const W = data.width;
+  const H = data.height;
+
+  document.getElementById('cycle-info').textContent = `Cycle: ${data.cycle} / ${totalCycles - 1}`;
+  document.getElementById('meta-info').textContent = `CGRA #${data.cgra_id} | ${W}x${H} ${data.topology} | ${W*H} tiles`;
+
+  // Raw JSON panel
+  document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
+
+  // Build CGRA view
+  const view = document.getElementById('cgra-view');
+  view.innerHTML = '';
+
+  const container = document.createElement('div');
+  container.className = 'cgra-container';
+
+  // Mesh grid
+  const grid = document.createElement('div');
+  grid.className = 'mesh-grid';
+  grid.style.gridTemplateColumns = `repeat(${W}, 224px)`;
+  grid.style.gridTemplateRows = `repeat(${H}, auto)`;
+
+  // Render tiles (row 0 = bottom, but grid row 0 = top, so reverse)
+  for (let row = H - 1; row >= 0; row--) {
+    for (let col = 0; col < W; col++) {
+      const tileIdx = row * W + col;
+      const tile = data.tiles[tileIdx];
+      if (!tile) continue;
+      const cell = document.createElement('div');
+      cell.className = 'tile-cell';
+      cell.innerHTML = renderTile(tile, data);
+      grid.appendChild(cell);
+    }
+  }
+
+  container.appendChild(grid);
+
+  // Side panels
+  const sidePanel = document.createElement('div');
+  sidePanel.style.display = 'flex';
+  sidePanel.style.flexDirection = 'column';
+  sidePanel.style.gap = '15px';
+
+  sidePanel.innerHTML = renderController(data.controller) + renderDataMem(data.data_mem);
+  container.appendChild(sidePanel);
+
+  view.appendChild(container);
+}
+
+function renderTile(tile, data) {
+  const fu = tile.fu;
+  const isPrologue = tile.prologue.fu_count > 0;
+  const isComputing = fu.recv_opt_val && fu.recv_opt_rdy && fu.operation > 1 && !isPrologue;
+  const isActive = tile.ctrl_mem.started && !tile.ctrl_mem.complete;
+  const tileClass = isPrologue ? 'prologue' : (isComputing ? 'computing' : (isActive ? 'active' : ''));
+
+  // Determine active ports
+  const portActivity = tile.send_data.map((sd, i) => ({
+    dir: PORT_NAMES[i] || `P${i}`,
+    active: sd.val && sd.rdy,
+    payload: sd.payload,
+  }));
+
+  // Routing xbar active routes
+  const routingRoutes = tile.routing_xbar.config.map((src, outIdx) => ({
+    outIdx, src, active: src > 0
+  }));
+
+  // FU xbar active routes
+  const fuRoutes = tile.fu_xbar.config.map((src, outIdx) => ({
+    outIdx, src, active: src > 0
+  }));
+
+  let html = `<div class="tile ${tileClass}">`;
+
+  // Header
+  html += `<div class="tile-header">`;
+  html += `<span class="tile-id">Tile ${tile.id} (${tile.col},${tile.row})</span>`;
+  html += `<span class="tile-op">${fu.operation_symbol}</span>`;
+  html += `</div>`;
+
+  // FU section
+  const fuInputs = fu.inputs.map((inp, i) =>
+    `<span class="port ${inp.val ? 'active' : 'inactive'}" title="FU in[${i}]: payload=${inp.payload}, pred=${inp.predicate}">`+
+    `in${i}:${inp.payload}</span>`
+  ).join('');
+  const fuOutputs = fu.outputs.map((out, i) =>
+    `<span class="port ${out.val ? 'active' : 'inactive'}" title="FU out[${i}]: payload=${out.payload}">`+
+    `out${i}:${out.payload}</span>`
+  ).join('');
+
+  html += `<div class="component ${isComputing ? 'highlight' : ''}">`;
+  html += `<span class="component-label">FU</span> `;
+  html += `<span class="component-value">${fu.operation_symbol}</span>`;
+  html += ` <span style="font-size:8px;color:#888">opt_v:${fu.recv_opt_val} r:${fu.recv_opt_rdy}</span>`;
+  html += `<div class="port-row">${fuInputs}</div>`;
+  html += `<div class="port-row">${fuOutputs}</div>`;
+  if (fu.const.val) {
+    html += `<div style="font-size:9px;color:#e0e0e0">const: ${fu.const.payload}</div>`;
+  }
+  html += `</div>`;
+
+  // Routing xbar summary
+  const activeRouting = routingRoutes.filter(r => r.active);
+  if (activeRouting.length > 0) {
+    const routeStr = activeRouting.map(r => `<span class="route-active">${r.src-1}→${r.outIdx}</span>`).join(' ');
+    html += `<div class="component"><span class="component-label">R-Xbar</span> <span class="xbar-config">${routeStr}</span></div>`;
+  }
+
+  // FU xbar summary
+  const activeFuRoutes = fuRoutes.filter(r => r.active);
+  if (activeFuRoutes.length > 0) {
+    const routeStr = activeFuRoutes.map(r => `<span class="route-active">${r.src-1}→${r.outIdx}</span>`).join(' ');
+    html += `<div class="component"><span class="component-label">FU-Xbar</span> <span class="xbar-config">${routeStr}</span></div>`;
+  }
+
+  // Tile ports (send)
+  const activePorts = portActivity.filter(p => p.active);
+  if (activePorts.length > 0) {
+    html += `<div class="component"><span class="component-label">Out</span> <div class="port-row">`;
+    html += activePorts.map(p => `<span class="port active">${p.dir}:${p.payload}</span>`).join('');
+    html += `</div></div>`;
+  }
+
+  // Tile ports (recv) - only active ones
+  const activeRecv = tile.recv_data.map((rd, i) => ({
+    dir: PORT_NAMES[i] || `P${i}`, ...rd
+  })).filter(p => p.val);
+  if (activeRecv.length > 0) {
+    html += `<div class="component"><span class="component-label">In</span> <div class="port-row">`;
+    html += activeRecv.map(p => `<span class="port active">${p.dir}:${p.payload}</span>`).join('');
+    html += `</div></div>`;
+  }
+
+  // Done flags
+  html += `<div class="done-flags">`;
+  html += `<span class="done-flag ${tile.done_flags.element ? 'done' : 'pending'}" title="element_done">FU${tile.done_flags.element ? '✓' : ''}</span>`;
+  html += `<span class="done-flag ${tile.done_flags.fu_xbar ? 'done' : 'pending'}" title="fu_xbar_done">FX${tile.done_flags.fu_xbar ? '✓' : ''}</span>`;
+  html += `<span class="done-flag ${tile.done_flags.routing_xbar ? 'done' : 'pending'}" title="routing_xbar_done">RX${tile.done_flags.routing_xbar ? '✓' : ''}</span>`;
+  html += `</div>`;
+
+  // Ctrl mem state
+  html += `<div class="ctrl-state">`;
+  html += `<span>pc:<span class="val-num">${tile.ctrl_mem.addr}</span></span>`;
+  html += `<span>t:<span class="val-num">${tile.ctrl_mem.times}/${tile.ctrl_mem.total_steps}</span></span>`;
+  html += `<span>${tile.ctrl_mem.started ? '<span style="color:#2ea043">RUN</span>' : '<span style="color:#666">IDLE</span>'}</span>`;
+  html += `<span>${tile.ctrl_mem.complete ? '<span style="color:#e94560">DONE</span>' : ''}</span>`;
+  if (tile.prologue) {
+    html += `<span>pro:<span class="val-num">r:${tile.prologue.routing_xbar} f:${tile.prologue.fu_xbar} c:${tile.prologue.fu_count}</span></span>`;
+  }
+  html += `</div>`;
+
+  // Memory access
+  const ma = tile.mem_access;
+  if (ma) {
+    const hasMemOp = (ma.raddr && ma.raddr.val) || (ma.waddr && ma.waddr.val);
+    if (hasMemOp) {
+      html += `<div class="component">`;
+      html += `<span class="component-label">Mem</span>`;
+      if (ma.raddr && ma.raddr.val) html += ` <span class="mem-entry active-mem">R@${ma.raddr.payload}→${ma.rdata ? ma.rdata.payload : '?'}</span>`;
+      if (ma.waddr && ma.waddr.val) html += ` <span class="mem-entry active-mem">W@${ma.waddr.payload}←${ma.wdata ? ma.wdata.payload : '?'}</span>`;
+      html += `</div>`;
+    }
+  }
+
+  // Ctrl packet
+  if (tile.ctrl_pkt.recv_val) {
+    html += `<div style="font-size:8px;color:#e94560">ctrl_pkt: ${CMD_NAMES[tile.ctrl_pkt.recv_cmd] || tile.ctrl_pkt.recv_cmd}</div>`;
+  }
+
+  // Hover details
+  html += `<div class="tile-details">`;
+  html += `<b>Tile ${tile.id} Details</b><br>`;
+  html += `<b>Routing Xbar Config:</b> [${tile.routing_xbar.config.join(', ')}]<br>`;
+  html += `<b>FU Xbar Config:</b> [${tile.fu_xbar.config.join(', ')}]<br>`;
+  html += `<b>Ctrl:</b> val=${tile.ctrl_mem.ctrl_val} rdy=${tile.ctrl_mem.ctrl_rdy}<br>`;
+
+  // Recv data detail
+  html += `<b>Recv Data:</b><br>`;
+  tile.recv_data.forEach((rd, i) => {
+    html += `  [${PORT_NAMES[i]||i}] p=${rd.payload} pred=${rd.predicate} v=${rd.val} r=${rd.rdy}<br>`;
+  });
+  html += `<b>Send Data:</b><br>`;
+  tile.send_data.forEach((sd, i) => {
+    html += `  [${PORT_NAMES[i]||i}] p=${sd.payload} pred=${sd.predicate} v=${sd.val} r=${sd.rdy}<br>`;
+  });
+
+  // Routing xbar detail
+  html += `<b>Routing Xbar Recv:</b><br>`;
+  tile.routing_xbar.recv.forEach((rd, i) => {
+    html += `  [${i}] p=${rd.payload} v=${rd.val} r=${rd.rdy}<br>`;
+  });
+  html += `<b>Routing Xbar Send:</b><br>`;
+  tile.routing_xbar.send.forEach((sd, i) => {
+    html += `  [${i}] p=${sd.payload} v=${sd.val} r=${sd.rdy}<br>`;
+  });
+
+  // FU xbar detail
+  html += `<b>FU Xbar Recv:</b><br>`;
+  tile.fu_xbar.recv.forEach((rd, i) => {
+    html += `  [${i}] p=${rd.payload} v=${rd.val} r=${rd.rdy}<br>`;
+  });
+  html += `<b>FU Xbar Send:</b><br>`;
+  tile.fu_xbar.send.forEach((sd, i) => {
+    html += `  [${i}] p=${sd.payload} v=${sd.val} r=${sd.rdy}<br>`;
+  });
+
+  html += `</div>`;
+
+  html += `</div>`; // .tile
+  return html;
+}
+
+function renderController(ctrl) {
+  if (!ctrl || Object.keys(ctrl).length === 0) return '';
+  let html = `<div class="side-panel"><h3>Controller</h3>`;
+
+  html += `<div class="entry"><span class="key">CPU Recv:</span> `;
+  html += `<span class="val ${ctrl.cpu_recv.val ? 'active-val' : ''}">`;
+  html += `v=${ctrl.cpu_recv.val} r=${ctrl.cpu_recv.rdy}`;
+  if (ctrl.cpu_recv.val) html += ` cmd=${CMD_NAMES[ctrl.cpu_recv.cmd] || ctrl.cpu_recv.cmd}`;
+  html += `</span></div>`;
+
+  html += `<div class="entry"><span class="key">CPU Send:</span> `;
+  html += `<span class="val ${ctrl.cpu_send.val ? 'active-val' : ''}">v=${ctrl.cpu_send.val} r=${ctrl.cpu_send.rdy}</span></div>`;
+
+  html += `<div class="entry"><span class="key">Ring Send:</span> `;
+  html += `<span class="val ${ctrl.ring_send.val ? 'active-val' : ''}">v=${ctrl.ring_send.val} r=${ctrl.ring_send.rdy}</span></div>`;
+
+  html += `<div class="entry"><span class="key">Ring Recv:</span> `;
+  html += `<span class="val ${ctrl.ring_recv.val ? 'active-val' : ''}">v=${ctrl.ring_recv.val} r=${ctrl.ring_recv.rdy}`;
+  if (ctrl.ring_recv.val) html += ` cmd=${CMD_NAMES[ctrl.ring_recv.cmd] || ctrl.ring_recv.cmd}`;
+  html += `</span></div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function renderDataMem(mem) {
+  if (!mem || Object.keys(mem).length === 0) return '';
+  let html = `<div class="side-panel"><h3>Data Memory</h3>`;
+
+  // Active reads
+  if (mem.tile_reads) {
+    const activeReads = mem.tile_reads.filter(tr => tr.addr && tr.addr.val);
+    if (activeReads.length > 0) {
+      html += `<div class="entry"><span class="key">Active Reads:</span></div>`;
+      activeReads.forEach((tr, i) => {
+        html += `<div class="entry">&nbsp;&nbsp;<span class="val active-val">port${i}: @${tr.addr.payload} → ${tr.data.payload}</span></div>`;
+      });
+    }
+  }
+
+  // Active writes
+  if (mem.tile_writes) {
+    const activeWrites = mem.tile_writes.filter(tw => tw.addr && tw.addr.val);
+    if (activeWrites.length > 0) {
+      html += `<div class="entry"><span class="key">Active Writes:</span></div>`;
+      activeWrites.forEach((tw, i) => {
+        html += `<div class="entry">&nbsp;&nbsp;<span class="val active-val">port${i}: @${tw.addr.payload} ← ${tw.data.payload}</span></div>`;
+      });
+    }
+  }
+
+  // Bank contents
+  if (mem.banks) {
+    mem.banks.forEach((bank, bIdx) => {
+      if (bank.length > 0) {
+        html += `<div class="entry"><span class="key">Bank ${bIdx}:</span>`;
+        html += ` <span class="val">${bank.map(e => `[${e.addr}]=${e.val}`).join(' ')}</span></div>`;
+      }
+    });
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// Init
+loadTraceList();
+</script>
+</body>
+</html>

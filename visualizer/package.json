@@ -1,0 +1,12 @@
+{
+  "name": "cgra-visualizer",
+  "version": "1.0.0",
+  "description": "CGRA Trace Visualizer for VectorCGRA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}
