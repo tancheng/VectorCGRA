@@ -106,10 +106,11 @@ OPT_REM_INCLUSIVE_START          = OpCodeType( 59 )
 OPT_REM_INCLUSIVE_END            = OpCodeType( 15 )
 
 OPT_LOOP_CONTROL                 = OpCodeType( 83 )
-OPT_STREAM_LD                    = OpCodeType( 84 )
+OPT_STREAM_LD                    = OpCodeType( 89 )
 OPT_LOOP_COUNT                   = OpCodeType( 85 )
 OPT_LOOP_DELIVERY                = OpCodeType( 86 )
 OPT_EXTRACT_PREDICATE            = OpCodeType( 87 )
+OPT_GRT_ONCE_CONST               = OpCodeType( 88 )
 
 OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
@@ -139,6 +140,7 @@ OPT_SYMBOL_DICT = {
   OPT_GRT_PRED                   : "(grant_pred)",
   OPT_GRT_ALWAYS                 : "(grant_always)",
   OPT_GRT_ONCE                   : "(grant_once)",
+  OPT_GRT_ONCE_CONST             : "(grant_once')",
   OPT_RET                        : "(ret)",
   OPT_RET_VOID                   : "(ret_void)",
   OPT_PHI                        : "(ph)",
