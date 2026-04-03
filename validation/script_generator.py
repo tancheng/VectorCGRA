@@ -77,6 +77,7 @@ yaml_to_VectorCGRA_map = {
     "OR": OPT_OR,
     "NOT": OPT_NOT,
     "ICMP_EQ": OPT_EQ, # ?
+    "ICMP_SGE": OPT_GTE,
     "FCMP": None, # ?
     "SEL": OPT_SEL,
     "CAST": None, # ?
@@ -103,6 +104,7 @@ yaml_to_VectorCGRA_map = {
     "RETURN_VALUE": OPT_RET,
     "LDD": OPT_LD,
     "LOAD": OPT_LD,
+    "STORE": OPT_STR,
     
     "NE": OPT_NE,
     "MUL_ADD": OPT_MUL_ADD,
@@ -866,7 +868,7 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/fir4x4.yaml",
+        path = "./validation/test/relu.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
