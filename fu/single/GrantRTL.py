@@ -107,6 +107,16 @@ class GrantRTL(Fu):
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+        elif s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST:
+          # GRANT_ONCE_CONST is used to apply `true` predicate onto a constant right
+          # from the constant queue only once.
+          s.send_out[0].msg @= s.recv_const.msg
+          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.already_grt_once
+
+          s.recv_all_val @= s.recv_const.val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:
           for j in range( num_outports ):
@@ -120,7 +130,7 @@ class GrantRTL(Fu):
       if s.reset | s.clear:
         s.already_grt_once <<= 0
       else:
-        if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & (s.recv_opt.msg.operation == OPT_GRT_ONCE):
+        if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & ((s.recv_opt.msg.operation == OPT_GRT_ONCE) | (s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST)):
           s.already_grt_once <<= 1
         else:
           s.already_grt_once <<= s.already_grt_once
