@@ -97,6 +97,7 @@ OPT_VEC_REDUCE_MUL_BASE_GLOBAL   = OpCodeType( 79 )
 
 OPT_LT                           = OpCodeType( 60 )
 OPT_GTE                          = OpCodeType( 61 )
+OPT_GTE_CONST                    = OpCodeType( 90 )
 OPT_GT                           = OpCodeType( 62 )
 OPT_LTE                          = OpCodeType( 63 )
 
@@ -191,6 +192,7 @@ OPT_SYMBOL_DICT = {
 
   OPT_LT                         : "(?<)",
   OPT_GTE                        : "(?>=)",
+  OPT_GTE_CONST                  : "(?>=')",
   OPT_GT                         : "(?>)",
   OPT_LTE                        : "(?<=)",
 

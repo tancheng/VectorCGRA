@@ -118,6 +118,7 @@ yaml_to_VectorCGRA_map_const = {
     "MUL_ADD": OPT_MUL_CONST_ADD,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
     "ICMP_EQ": OPT_EQ_CONST,
+    "ICMP_SGE": OPT_GTE_CONST,
     
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
 }
