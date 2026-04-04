@@ -126,6 +126,7 @@ OPT_SYMBOL_DICT = {
   OPT_LRS                        : "(>>)",
   OPT_MUL                        : "(*)",
   OPT_DIV                        : "(/)",
+  OPT_DIV_CONST                  : "(/')",
   OPT_REM                        : "(%)",
   OPT_OR                         : "(|)",
   OPT_XOR                        : "(^)",

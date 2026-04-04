@@ -118,10 +118,11 @@ yaml_to_VectorCGRA_map_const = {
     "ADD": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
     "MUL": OPT_MUL_CONST,
+    "DIV": OPT_DIV_CONST,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
-    
+
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
 }
 
@@ -420,7 +421,7 @@ class InstructionSignals:
                         if intra_index < 0 or intra_index >= REG_CLUSTER_SIZE:
                             raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {dst_operand['operand']} in operation {operation}")
                         if self.write_to_reg_idx[cluster_no - 1] != -1 and self.write_to_reg_idx[cluster_no - 1] != intra_index:
-                            raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
+                            raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA, cluster {cluster_no - 1} originally has intra index {self.write_to_reg_idx[cluster_no - 1]}, but now want to set intra index {intra_index}")
                         self.write_to_reg[cluster_no - 1] = FROM_FU
                         self.write_to_reg_idx[cluster_no - 1] = intra_index
                         if self.FuOutParams[cluster_no + 3] != -1:
@@ -569,57 +570,42 @@ class TileSignals:
         # check 2: prologue routing crossbar each port consistently either all ignore or not 
         routing_xbar_ports_if_prologued = {}
         for operation in instruction['operations']:
-            flag = operation['invalid_iterations'] > 0
+            invalid_cycle = operation['invalid_iterations']
             for src_operand in operation['src_operands']:
                 if _type(src_operand) == 'PORT':
                     if src_operand['operand'] in routing_xbar_ports_if_prologued:
-                        if routing_xbar_ports_if_prologued[src_operand['operand']] != flag:
+                        if routing_xbar_ports_if_prologued[src_operand['operand']] != invalid_cycle:
                             raise ValueError("Routing crossbar ports must be consistently either all ignore or not, panic in instruction ", instruction)
                     else:
-                        routing_xbar_ports_if_prologued[src_operand['operand']] = flag
+                        routing_xbar_ports_if_prologued[src_operand['operand']] = invalid_cycle
                         
         # check 3: all the time_steps are aligned with the index_per_ii
         for operation in instruction['operations']:
             if operation['time_step'] % self.ii != instruction['index_per_ii']:
+                print("Time step ", operation['time_step'], "ii", self.ii, " is not aligned with index per ii ", instruction['index_per_ii'])
                 raise ValueError("Time step is not aligned with index per ii, panic in instruction ", instruction, " at operation ", operation)
                         
         return routing_xbar_ports_if_prologued
-        
-    
-    def makePrologueOperationPackets(self, operation):
-        res = []
-        # make prologue packets for the operation
-        if _is_take_up_fu_operation(operation):
-            # prologue FU to ignore this packet
-            res.append(self.makePrologueFUPackets(operation['time_step']))
-            # also need to prologue the FU Output routing crossbar
-            res.append(self.makePrologueFUCrossbarPackets(operation['time_step']))
-        
-        # src operands' prologues are not here, avoid repetition.
-        # for src_operand in operation['src_operands']:
-        #     if _type(src_operand) == 'PORT': 
-        #         res.append(self.makePrologueRoutingCrossbarPackets(operation['time_step'], direction_to_idx(src_operand['operand']) + 1))
-    
-        return res
+
     
     
-    def makePrologueFUPackets(self, timestep):
+    def makePrologueFUPackets(self, timestep, prologue_count=1):
         # make prologue FU packet
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = self.CtrlAddrType(timestep % self.ii),
-                                                                     data = self.DataType(1, 1)))
+                                                                     data = self.DataType(prologue_count, 1)))
         
-    def makePrologueRoutingCrossbarPackets(self, timestep, routing_xbar_idx):
+    def makePrologueRoutingCrossbarPackets(self, timestep, routing_xbar_idx, prologue_count=1):
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = self.CtrlAddrType(timestep % self.ii),
                                                                      ctrl = self.CtrlType(routing_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * 7),
-                                                                     data = self.DataType(1, 1)))
-    def makePrologueFUCrossbarPackets(self, timestep):
+                                                                     data = self.DataType(prologue_count, 1)))
+    def makePrologueFUCrossbarPackets(self, timestep, prologue_count=1):
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = self.CtrlAddrType(timestep % self.ii),
                                                                      ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
                                                                      # WARN:by now, only support one result for each operation
-                                                                     data = self.DataType(1, 1)))
+                                                                     data = self.DataType(prologue_count, 1)))
     def makeTileSignals(self):
         consts = []
         all_signals = []
@@ -636,6 +622,9 @@ class TileSignals:
             
             # only when the take_up_fu_op exists and no prologue, then no prologue
             prologue_fu = False
+            prologue_fu_cycles = 0
+            has_take_up_fu_op = False
+            non_take_up_fu_prologue_cycle_max = 0
             
             for operation in instruction['operations']:
                 if operation['invalid_iterations'] > 1:
@@ -644,8 +633,18 @@ class TileSignals:
                     prologue_fu = True     
             
             for operation in instruction['operations']:
-                if _is_take_up_fu_operation(operation) and operation['invalid_iterations'] == 0:
-                    prologue_fu = False
+                if _is_take_up_fu_operation(operation):
+                    has_take_up_fu_op = True
+                    if operation['invalid_iterations'] == 0:
+                        prologue_fu = False
+                    else: # the prologue cycle depends on the comp instruction since only one take-up fu is allowed.
+                        prologue_fu_cycles = operation['invalid_iterations'] # this should only be executed once.
+                else:
+                    non_take_up_fu_prologue_cycle_max = max(non_take_up_fu_prologue_cycle_max, operation['invalid_iterations'])
+            
+            if not has_take_up_fu_op: # pure move operations, the prologue should be the max of them
+                prologue_fu_cycles = non_take_up_fu_prologue_cycle_max
+                        
             
             # only non-taken prologue -> still need prologue FU
             # only taken prologue -> need prologue FU
@@ -657,14 +656,14 @@ class TileSignals:
             #  +--------------------+----------+--------------+
                     
             if prologue_fu:
-                prologue_signals.append(self.makePrologueFUPackets(instruction['index_per_ii']))
-                prologue_signals.append(self.makePrologueFUCrossbarPackets(instruction['index_per_ii']))
+                prologue_signals.append(self.makePrologueFUPackets(instruction['index_per_ii'], prologue_fu_cycles))
+                prologue_signals.append(self.makePrologueFUCrossbarPackets(instruction['index_per_ii'], prologue_fu_cycles))
                 
             # add all routing crossbar prologues for all the operations (can not be op by op to avoid repetition)
-            for port_name, flag in prologued_ports.items():
-                if flag:
+            for port_name, cycles in prologued_ports.items():
+                if cycles > 0:
                     routing_xbar_idx = direction_to_idx(port_name)
-                    prologue_signals.append(self.makePrologueRoutingCrossbarPackets(instruction['index_per_ii'], routing_xbar_idx + 1))
+                    prologue_signals.append(self.makePrologueRoutingCrossbarPackets(instruction['index_per_ii'], routing_xbar_idx + 1, cycles))
                 
             # add an addtional prologue packet for PHI_CONST / PHI_START operation
             for operation in instruction['operations']:
@@ -672,7 +671,11 @@ class TileSignals:
                     # only src1 will be prologued once, and only if it is a port, it needs a routing crossbar prologue
                     if _type(operation['src_operands'][1]) == 'PORT':
                         routing_xbar_idx = direction_to_idx(operation['src_operands'][1]['operand'])
-                        prologue_signals.append(self.makePrologueRoutingCrossbarPackets(operation['time_step'], routing_xbar_idx + 1))
+                        if operation['src_operands'][1]['operand'] in prologued_ports:
+                            old_prologue_cycles = prologued_ports[operation['src_operands'][1]['operand']]
+                            prologue_signals.append(self.makePrologueRoutingCrossbarPackets(operation['time_step'], routing_xbar_idx + 1, old_prologue_cycles + 1))
+                        else:
+                            prologue_signals.append(self.makePrologueRoutingCrossbarPackets(operation['time_step'], routing_xbar_idx + 1, 1))
             
             # mark this time slot is not empty
             has_addrs.append(instruction['index_per_ii'])
@@ -874,7 +877,7 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/axpy.yaml",
+        path = "./validation/test/histogram.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
@@ -882,7 +885,7 @@ if __name__ == "__main__":
         FuOutType = FuOutTypeDummy,
         CMD_CONFIG_input = CMD_CONFIG_Dummy(),
         FuInType = FuInTypeDummy,
-        ii = 5,
+        ii = 6,
         loop_times = 2,
         CMD_CONST_input = CMD_CONST_Dummy(),
         CMD_CONFIG_COUNT_PER_ITER_input = CMD_CONFIG_COUNT_PER_ITER_Dummy(),

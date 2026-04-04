@@ -113,6 +113,10 @@ body { font-family: 'Consolas', 'Monaco', monospace; background: #1a1a2e; color:
 .xbar-config { font-size: 9px; color: #888; }
 .xbar-config .route-active { color: #2ea043; font-weight: bold; }
 
+/* Predicate indicator legend */
+.predicate-legend { font-size: 10px; color: #888; margin-left: 20px; }
+.predicate-legend .star { color: #e94560; font-weight: bold; }
+
 /* Tab for details */
 .tile:hover { z-index: 10; }
 .tile-details { display: none; position: absolute; top: 100%; left: 0; background: #0d1117; border: 1px solid #0f3460; border-radius: 4px; padding: 8px; z-index: 100; width: 320px; max-height: 300px; overflow: auto; font-size: 10px; }
@@ -129,6 +133,7 @@ body { font-family: 'Consolas', 'Monaco', monospace; background: #1a1a2e; color:
     <input type="text" id="custom-path" placeholder="Enter .jsonl file path" style="width:300px">
     <button onclick="loadCustomPath()">Load</button>
   </div>
+  <span class="predicate-legend"><span class="star">*</span> = predicate invalid</span>
 </div>
 
 <div id="cycle-nav" style="display:none">
@@ -301,6 +306,7 @@ function renderTile(tile, data) {
     dir: PORT_NAMES[i] || `P${i}`,
     active: sd.val && sd.rdy,
     payload: sd.payload,
+    predicate: sd.predicate,
   }));
 
   // Routing xbar active routes
@@ -324,11 +330,11 @@ function renderTile(tile, data) {
   // FU section
   const fuInputs = fu.inputs.map((inp, i) =>
     `<span class="port ${inp.val ? 'active' : 'inactive'}" title="FU in[${i}]: payload=${inp.payload}, pred=${inp.predicate}">`+
-    `in${i}:${inp.payload}</span>`
+    `in${i}:${inp.payload}${inp.predicate ? '' : '*'}</span>`
   ).join('');
   const fuOutputs = fu.outputs.map((out, i) =>
-    `<span class="port ${out.val ? 'active' : 'inactive'}" title="FU out[${i}]: payload=${out.payload}">`+
-    `out${i}:${out.payload}</span>`
+    `<span class="port ${out.val ? 'active' : 'inactive'}" title="FU out[${i}]: payload=${out.payload}, pred=${out.predicate}">`+
+    `out${i}:${out.payload}${out.predicate ? '' : '*'}</span>`
   ).join('');
 
   html += `<div class="component ${isComputing ? 'highlight' : ''}">`;
@@ -338,7 +344,7 @@ function renderTile(tile, data) {
   html += `<div class="port-row">${fuInputs}</div>`;
   html += `<div class="port-row">${fuOutputs}</div>`;
   if (fu.const.val) {
-    html += `<div style="font-size:9px;color:#e0e0e0">const: ${fu.const.payload}</div>`;
+    html += `<div style="font-size:9px;color:#e0e0e0">const: ${fu.const.payload}${fu.const.predicate ? '' : '*'}</div>`;
   }
   html += `</div>`;
 
@@ -360,7 +366,7 @@ function renderTile(tile, data) {
   const activePorts = portActivity.filter(p => p.active);
   if (activePorts.length > 0) {
     html += `<div class="component"><span class="component-label">Out</span> <div class="port-row">`;
-    html += activePorts.map(p => `<span class="port active">${p.dir}:${p.payload}</span>`).join('');
+    html += activePorts.map(p => `<span class="port active">${p.dir}:${p.payload}${p.predicate ? '' : '*'}</span>`).join('');
     html += `</div></div>`;
   }
 
@@ -370,7 +376,7 @@ function renderTile(tile, data) {
   })).filter(p => p.val);
   if (activeRecv.length > 0) {
     html += `<div class="component"><span class="component-label">In</span> <div class="port-row">`;
-    html += activeRecv.map(p => `<span class="port active">${p.dir}:${p.payload}</span>`).join('');
+    html += activeRecv.map(p => `<span class="port active">${p.dir}:${p.payload}${p.predicate ? '' : '*'}</span>`).join('');
     html += `</div></div>`;
   }
 
@@ -399,8 +405,8 @@ function renderTile(tile, data) {
     if (hasMemOp) {
       html += `<div class="component">`;
       html += `<span class="component-label">Mem</span>`;
-      if (ma.raddr && ma.raddr.val) html += ` <span class="mem-entry active-mem">R@${ma.raddr.payload}→${ma.rdata ? ma.rdata.payload : '?'}</span>`;
-      if (ma.waddr && ma.waddr.val) html += ` <span class="mem-entry active-mem">W@${ma.waddr.payload}←${ma.wdata ? ma.wdata.payload : '?'}</span>`;
+      if (ma.raddr && ma.raddr.val) html += ` <span class="mem-entry active-mem">R@${ma.raddr.payload}${ma.raddr.predicate ? '' : '*'}→${ma.rdata ? ma.rdata.payload + (ma.rdata.predicate ? '' : '*') : '?'}</span>`;
+      if (ma.waddr && ma.waddr.val) html += ` <span class="mem-entry active-mem">W@${ma.waddr.payload}${ma.waddr.predicate ? '' : '*'}←${ma.wdata ? ma.wdata.payload + (ma.wdata.predicate ? '' : '*') : '?'}</span>`;
       html += `</div>`;
     }
   }
