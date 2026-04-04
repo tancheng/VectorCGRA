@@ -286,7 +286,10 @@ class InstructionSignals:
                 
                 operation_opcode = operation['opcode']
                 try:
-                    src_operands = operation['src_operands']
+                    src_operands = operation['src_operands'].copy()
+                    if operation_opcode == 'STORE' and len(src_operands) >= 2:
+                        # HW expects address in0 and data in1, but YAML gives [data, addr]
+                        src_operands[0], src_operands[1] = src_operands[1], src_operands[0]
                 except Exception as e:
                     src_operands = []
                 try:
