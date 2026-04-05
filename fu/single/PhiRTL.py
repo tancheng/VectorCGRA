@@ -153,9 +153,10 @@ class PhiRTL(Fu):
         s.first <<= b1(1)
         s.prev_ctrl_addr <<= s.CtrlAddrType(0)
       else:
-        s.prev_ctrl_addr <<= s.ctrl_addr_inport
-        if s.first & (s.ctrl_addr_inport < s.prev_ctrl_addr):
-          s.first <<= b1(0)
+        if s.recv_opt.val & s.recv_opt.rdy:
+          s.prev_ctrl_addr <<= s.ctrl_addr_inport
+          if s.first & (s.ctrl_addr_inport < s.prev_ctrl_addr):
+            s.first <<= b1(0)
 
   def line_trace(s):
     opt_str = " #"

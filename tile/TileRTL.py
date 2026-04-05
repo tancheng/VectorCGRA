@@ -128,6 +128,9 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
+    # Tracks whether the FU consumed a const during the current ctrl step,
+    # before ctrl_proceed fires (i.e., before all sub-modules are done).
+    s.const_consumed = Wire(1)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -258,7 +261,8 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
@@ -300,6 +304,7 @@ class TileRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
+      s.const_mem.const_consumed_early @= s.const_consumed
 
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
@@ -308,6 +313,7 @@ class TileRTL(Component):
         s.element_done <<= 0
         s.fu_crossbar_done <<= 0
         s.routing_crossbar_done <<= 0
+        s.const_consumed <<= 0
       else:
         if s.element.recv_opt.rdy:
           s.element_done <<= 1
@@ -315,6 +321,10 @@ class TileRTL(Component):
           s.fu_crossbar_done <<= 1
         if s.routing_crossbar.recv_opt.rdy:
           s.routing_crossbar_done <<= 1
+        # Latch const consumed: if the FU asserts recv_const.rdy in this cycle,
+        # remember it so the const queue can advance when ctrl_proceed fires later.
+        if s.const_mem.send_const.rdy:
+          s.const_consumed <<= 1
 
     @update
     def notify_crossbars_compute_status():

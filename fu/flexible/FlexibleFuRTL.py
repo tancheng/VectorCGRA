@@ -74,6 +74,10 @@ class FlexibleFuRTL(Component):
     s.recv_from_controller_rdy_vector = Wire(s.fu_list_size)
     s.fu_recv_in_rdy_vector = [Wire(s.fu_list_size) for i in range(num_inports)]
 
+    # Wire to indicate whether the real operation (before prologue NAH override)
+    # consumes a const from the const queue.
+    s.op_uses_const = Wire(b1)
+
     # Connection.
     for i in range(len(FuList)):
       s.to_mem_raddr[i] //= s.fu[i].to_mem_raddr
@@ -108,6 +112,15 @@ class FlexibleFuRTL(Component):
         s.send_out[j].val @= b1(0)
         s.send_out[j].msg @= s.DataType()
 
+      # Determines if the REAL operation (before prologue NAH override) consumes
+      # a const from the const queue. This is needed so that during prologue,
+      # we can still advance the const queue rd_cur to keep it in sync with
+      # the ctrl pointer.
+      s.op_uses_const @= b1(0)
+      for const_op in OPT_USES_CONST_LIST:
+        if s.recv_opt.msg.operation == const_op:
+          s.op_uses_const @= b1(1)
+
       for i in range(s.fu_list_size):
         # const connection.
         s.fu[i].recv_const.msg @= s.recv_const.msg
@@ -131,7 +144,15 @@ class FlexibleFuRTL(Component):
             s.send_out[j].val @= s.fu[i].send_out[j].val
           s.fu[i].send_out[j].rdy @= s.send_out[j].rdy
 
-      s.recv_const.rdy @= reduce_or(s.fu_recv_const_rdy_vector)
+      # During prologue, FUs see OPT_NAH so none assert recv_const.rdy.
+      # But if the real operation would consume a const, we must still advance
+      # the const queue to keep it in sync with the ctrl pointer.
+      # We assert recv_const.rdy during prologue if:
+      #   1. prologue is active (prologue_count_inport != 0)
+      #   2. the real operation uses a const (op_uses_const)
+      #   3. the const queue has data (recv_const.val)
+      s.recv_const.rdy @= reduce_or(s.fu_recv_const_rdy_vector) | \
+                           ((s.prologue_count_inport != 0) & s.op_uses_const & s.recv_const.val)
       # Operation (especially mem access) won't perform more than once, because once the
       # operation is performance (i.e., the recv_opt.rdy would be set), the `element_done`
       # register would be set and be respected.

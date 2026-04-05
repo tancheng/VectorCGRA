@@ -117,10 +117,45 @@ OPT_GT_CONST                     = OpCodeType( 92 )
 OPT_AND_CONST                    = OpCodeType( 93 )
 OPT_OR_CONST                     = OpCodeType( 94 )
 
-OPT_GEP                          = OpCodeType( 92 )
-OPT_GEP_CONST                    = OpCodeType( 93 )
-OPT_GEP_2D                       = OpCodeType( 94 )
-OPT_GEP_2D_CONST                 = OpCodeType( 95 )
+OPT_REM_CONST                    = OpCodeType( 96 )
+
+OPT_GEP                          = OpCodeType( 97 )
+OPT_GEP_CONST                    = OpCodeType( 98 )
+OPT_GEP_2D                       = OpCodeType( 99 )
+OPT_GEP_2D_CONST                 = OpCodeType( 100 )
+
+# Tuple of all operations that consume a const from the const queue.
+# Used to advance const queue rd_cur during prologue cycles.
+OPT_USES_CONST_LIST = (
+  OPT_CONST,
+  OPT_ADD_CONST,
+  OPT_SUB_CONST,
+  OPT_DIV_CONST,
+  OPT_EQ_CONST,
+  OPT_NE_CONST,
+  OPT_PHI_CONST,
+  OPT_LD_CONST,
+  OPT_STR_CONST,
+  OPT_MUL_CONST,
+  OPT_MUL_CONST_ADD,
+  OPT_ADD_CONST_LD,
+  OPT_INC_NE_CONST_NOT_GRT,
+  OPT_FADD_CONST,
+  OPT_FMUL_CONST,
+  OPT_VEC_ADD_CONST,
+  OPT_VEC_SUB_CONST,
+  OPT_VEC_ADD_CONST_COMBINED,
+  OPT_VEC_SUB_CONST_COMBINED,
+  OPT_GTE_CONST,
+  OPT_GRT_ONCE_CONST,
+  OPT_LT_CONST,
+  OPT_GT_CONST,
+  OPT_AND_CONST,
+  OPT_OR_CONST,
+  OPT_REM_CONST,
+  OPT_GEP_CONST,
+  OPT_GEP_2D_CONST,
+)
 
 OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
@@ -214,6 +249,7 @@ OPT_SYMBOL_DICT = {
   OPT_REM_INCLUSIVE_START        : "(%st)",
   OPT_DIV_INCLUSIVE_END          : "(/ed)",
   OPT_REM_INCLUSIVE_END          : "(%ed)",
+  OPT_REM_CONST                  : "(%')",
 
   OPT_LOOP_CONTROL               : "(loop_ctrl)",
   OPT_STREAM_LD                  : "(streaming_ld)",

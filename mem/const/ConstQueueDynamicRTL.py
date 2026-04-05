@@ -40,6 +40,7 @@ class ConstQueueDynamicRTL(Component):
     s.recv_const = RecvIfcRTL(DataType)
 
     s.ctrl_proceed = InPort(b1)
+    s.const_consumed_early = InPort(b1)
     s.clear = InPort(b1)
 
     # Component
@@ -96,7 +97,10 @@ class ConstQueueDynamicRTL(Component):
       else:
         # Checks whether the "reader" successfully read the data at rd_cur,
         # and proceed rd_cur accordingly.
-        if s.send_const.rdy & s.ctrl_proceed:
+        # Use (send_const.rdy | const_consumed_early) to handle the case where
+        # the FU consumed the const in an earlier cycle (before routing/fu crossbar
+        # completed), so send_const.rdy is no longer asserted when ctrl_proceed fires.
+        if (s.send_const.rdy | s.const_consumed_early) & s.ctrl_proceed:
           if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
             s.rd_cur <<= s.rd_cur + 1
           else:
