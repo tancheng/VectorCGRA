@@ -113,6 +113,11 @@ OPT_LOOP_DELIVERY                = OpCodeType( 86 )
 OPT_EXTRACT_PREDICATE            = OpCodeType( 87 )
 OPT_GRT_ONCE_CONST               = OpCodeType( 88 )
 
+OPT_GEP                          = OpCodeType( 88 )
+OPT_GEP_CONST                    = OpCodeType( 89 )
+OPT_GEP_2D                       = OpCodeType( 90 )
+OPT_GEP_2D_CONST                 = OpCodeType( 91 )
+
 OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
   OPT_NAH                        : "(NAH)",
@@ -207,5 +212,10 @@ OPT_SYMBOL_DICT = {
 
   OPT_LOOP_COUNT                 : "(loop_cnt)",
   OPT_LOOP_DELIVERY              : "(loop_deli)",
-  OPT_EXTRACT_PREDICATE          : "(extract_pred)"
+  OPT_EXTRACT_PREDICATE          : "(extract_pred)",
+
+  OPT_GEP                        : "(gep)",
+  OPT_GEP_CONST                  : "(gep')",
+  OPT_GEP_2D                     : "(gep2d)",
+  OPT_GEP_2D_CONST               : "(gep2d')",
 }
