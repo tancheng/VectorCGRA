@@ -112,6 +112,10 @@ OPT_LOOP_COUNT                   = OpCodeType( 85 )
 OPT_LOOP_DELIVERY                = OpCodeType( 86 )
 OPT_EXTRACT_PREDICATE            = OpCodeType( 87 )
 OPT_GRT_ONCE_CONST               = OpCodeType( 88 )
+OPT_LT_CONST                     = OpCodeType( 91 )
+OPT_GT_CONST                     = OpCodeType( 92 )
+OPT_AND_CONST                    = OpCodeType( 93 )
+OPT_OR_CONST                     = OpCodeType( 94 )
 
 OPT_GEP                          = OpCodeType( 92 )
 OPT_GEP_CONST                    = OpCodeType( 93 )
@@ -197,10 +201,14 @@ OPT_SYMBOL_DICT = {
   OPT_VEC_REDUCE_MUL_BASE_GLOBAL : "(vreduce*base_global)",
 
   OPT_LT                         : "(?<)",
+  OPT_LT_CONST                   : "(?<')",
   OPT_GTE                        : "(?>=)",
   OPT_GTE_CONST                  : "(?>=')",
   OPT_GT                         : "(?>)",
+  OPT_GT_CONST                   : "(?>')",
   OPT_LTE                        : "(?<=)",
+  OPT_AND_CONST                  : "(&')",
+  OPT_OR_CONST                   : "(|')",
 
   OPT_DIV_INCLUSIVE_START        : "(/st)",
   OPT_REM_INCLUSIVE_START        : "(%st)",
