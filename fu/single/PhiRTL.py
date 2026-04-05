@@ -2,9 +2,11 @@
 ==========================================================================
 PhiRTL.py
 ==========================================================================
-Functional unit Phi for CGRA tile. Note that only one phi_const or
-phi_start can be mapped onto the same tile, as we only have one 'first'
-bit to record whether it is the first execution.
+Functional unit Phi for CGRA tile. The 'first' flag tracks whether we are
+in the first iteration. It is cleared when the ctrl_addr wraps from the
+last step back to an earlier step, signalling that the first iteration
+has completed. This allows multiple PHI_START / PHI_CONST operations to
+be mapped onto the same tile safely.
 
 Author : Cheng Tan
   Date : November 30, 2019
@@ -25,6 +27,7 @@ class PhiRTL(Fu):
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
     s.first = Wire(b1)
+    s.prev_ctrl_addr = Wire(s.CtrlAddrType)
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
@@ -122,6 +125,15 @@ class PhiRTL(Fu):
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.reached_vector_factor
  
+        elif s.recv_opt.msg.operation == OPT_CONST:
+          s.send_out[0].msg.payload @= s.recv_const.msg.payload
+          s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_const.val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)
@@ -130,13 +142,20 @@ class PhiRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= 0
 
     # branch_start could be the entry of a function, which is executed by
-    # only once.
+    # only once.  We detect the end of the first iteration by observing
+    # the ctrl_addr wrap: when the current ctrl_addr is *less than* the
+    # previous one, a new iteration has begun, so we clear 'first'.
+    # This allows multiple PHI_START/PHI_CONST operations on the same
+    # tile without the first one prematurely clearing the flag.
     @update_ff
     def br_start_once():
       if s.reset | s.clear:
         s.first <<= b1(1)
-      if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & s.reached_vector_factor:
-        s.first <<= b1(0)
+        s.prev_ctrl_addr <<= s.CtrlAddrType(0)
+      else:
+        s.prev_ctrl_addr <<= s.ctrl_addr_inport
+        if s.first & (s.ctrl_addr_inport < s.prev_ctrl_addr):
+          s.first <<= b1(0)
 
   def line_trace(s):
     opt_str = " #"
