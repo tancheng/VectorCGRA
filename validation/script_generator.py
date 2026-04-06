@@ -75,14 +75,16 @@ yaml_to_VectorCGRA_map = {
     "FMUL": OPT_FMUL,
     "FDIV": None, # ?
     "OR": OPT_OR,
+    "AND": OPT_AND,
     "NOT": OPT_NOT,
     "ICMP_EQ": OPT_EQ, # ?
     "ICMP_SGE": OPT_GTE,
+    "ICMP_SGT": OPT_GT,
     "FCMP": None, # ?
     "SEL": OPT_SEL,
     "CAST": None, # ?
     "SEXT": OPT_PAS, # no sext, just a fake one.
-    "ZEXT": None, # ?
+    "ZEXT": OPT_PAS, # zero extension treated as pass-through
     "SHL": OPT_LLS,
     "VFMUL": None, # ?
     "FADD_FADD": None, #?
@@ -114,6 +116,7 @@ yaml_to_VectorCGRA_map = {
 }
 
 yaml_to_VectorCGRA_map_const = {
+    "CONSTANT": OPT_CONST,
     "NE": OPT_NE_CONST,
     "ADD": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
@@ -122,8 +125,10 @@ yaml_to_VectorCGRA_map_const = {
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
+    "ICMP_SGT": OPT_GT_CONST,
 
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
+    "SHL": OPT_LLS_CONST,
 }
 
 
@@ -154,8 +159,13 @@ def _is_take_up_fu_operation(operation):
         if len(operation['src_operands']) != 1:
             raise ValueError("MOV operation must have exactly one source operand")
         elif _type(operation['src_operands'][0]) == 'PORT':
-            return False # By now, only Port -> Port and Port -> Reg are not take up fu operations 
+            return False # By now, only Port -> Port and Port -> Reg are not take up fu operations
         else:
+            # REG -> PORT only: can be handled by FU output crossbar routing
+            # without occupying the FU, so treat as not-take-up-fu.
+            dst_operands = operation.get('dst_operands', [])
+            if dst_operands and all(_type(d) == 'PORT' for d in dst_operands):
+                return False
             return True
     else:
         return True
@@ -281,10 +291,16 @@ class InstructionSignals:
 
             const_operands = []
 
-            for operation in self.operations: # for each operation in the instruction
-                
+            # Process non-take-up-fu operations first to reserve their
+            # TileInParams slots before take-up-fu port lane allocation.
+            ordered_operations = sorted(
+                self.operations,
+                key=lambda op: 0 if not _is_take_up_fu_operation(op) else 1)
+
+            for operation in ordered_operations: # for each operation in the instruction
+
                 print("\n Operation: ", operation)
-                
+
                 operation_opcode = operation['opcode']
                 try:
                     src_operands = operation['src_operands'].copy()
@@ -297,27 +313,47 @@ class InstructionSignals:
                     dst_operands = operation['dst_operands']
                 except Exception as e:
                     dst_operands = []
-                
+
                 # find all the const
                 for index, src_operand in enumerate(src_operands):
                     if _type(src_operand) == 'IMM':
                         const_operands.append(src_operand)
                         # delete it from the src_operands since it is implicit in vectorCGRA
                         del src_operands[index]
-                
-                # for not_take_up_fu_operation     
+
+                # for not_take_up_fu_operation
                 if not _is_take_up_fu_operation(operation):
-                    
+
                     if len(src_operands) != 1:
                         raise ValueError(f"Not take up fu operation {operation} must have exactly one source operand.")
-                    
+
                     src_operand = src_operands[0]
-                    
+
+                    # REG -> PORT: route via FU output crossbar (merge with
+                    # the take-up-fu operation's output routing).
+                    if _type(src_operand) == 'REG':
+                        for index, dst_operand in enumerate(dst_operands):
+                            if _type(dst_operand) == 'PORT':
+                                if dst_operand['operand'] == 'NORTH':
+                                    port_out_xbar_idx = 0
+                                elif dst_operand['operand'] == 'SOUTH':
+                                    port_out_xbar_idx = 1
+                                elif dst_operand['operand'] == 'WEST':
+                                    port_out_xbar_idx = 2
+                                elif dst_operand['operand'] == 'EAST':
+                                    port_out_xbar_idx = 3
+                                if self.FuOutParams[port_out_xbar_idx] != -1:
+                                    raise ValueError(f"Collision in writing to port {dst_operand} in FuOutParams (REG->PORT), when translate the operation {operation} to VectorCGRA")
+                                self.FuOutParams[port_out_xbar_idx] = 1
+                            else:
+                                raise ValueError(f"REG->non-PORT dst {dst_operand} classified as not take-up-fu, when translate the operation {operation} to VectorCGRA")
+                        continue
+
                     if _type(src_operand) != 'PORT':
                         raise ValueError(f"Source operand {src_operand} is not port and be classified not take up fu.")
-                    
+
                     src_direction_idx = direction_to_idx(src_operand['operand'])
-                    
+
                     for index, dst_operand in enumerate(dst_operands):
                         if _type(dst_operand) == 'REG':
                             cluster_no = _reg_cluster_no_of(dst_operand)
@@ -326,7 +362,7 @@ class InstructionSignals:
                             if self.TileInParams[cluster_no + 4 - 1] != -1 and self.TileInParams[cluster_no + 4 - 1] != src_direction_idx + 1:
                                 raise ValueError(f"Collision when reading from port in TileInParams, when translate the operation {operation} to VectorCGRA")
                             self.TileInParams[cluster_no + 4 - 1] = src_direction_idx + 1
-                            
+
                             if self.write_to_reg_idx[cluster_no - 1] != -1 and self.write_to_reg_idx[cluster_no - 1] != intra_index:
                                 raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
                             self.write_to_reg[cluster_no - 1] = FROM_PORT
@@ -391,7 +427,7 @@ class InstructionSignals:
                         # find an available lane
                         lane = -1
                         for i in range(4):
-                            if self.read_from_reg[i] == -1: # if not set the selection, then it could be available
+                            if self.read_from_reg[i] == -1 and self.TileInParams[i + 4] == -1: # if not set the selection, then it could be available
                                 lane = i
                                 break
                         if lane == -1:
