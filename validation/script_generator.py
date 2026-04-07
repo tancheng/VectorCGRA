@@ -46,6 +46,9 @@ import sys
 import os
 import yaml
 
+# Set to True for verbose debug output during packet generation
+VERBOSE_PKT_GEN = os.environ.get('VERBOSE_PKT_GEN', '0') == '1'
+
 # Add project root to path to allow imports from lib
 # Get the absolute path of this file
 _script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -132,8 +135,10 @@ yaml_to_VectorCGRA_map_const = {
     "AND": OPT_AND_CONST,
     "OR": OPT_OR_CONST,
     "CONSTANT": OPT_CONST,
-    
+    "SHL": OPT_LLS_CONST,
+
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
+    "STORE": OPT_STR_CONST,  # default; overridden for STORE with const data
 }
 
 
@@ -199,7 +204,7 @@ def _reg_cluster_intra_index_of(operand):
         raise ValueError("Operand is not a register")
 
 def print_instruction(instruction):
-    print(f"Instruction: {[operation['opcode'] for operation in instruction['operations']]}")
+    if VERBOSE_PKT_GEN: print(f"Instruction: {[operation['opcode'] for operation in instruction['operations']]}")
 
 FROM_NOWHERE = 0
 FROM_PORT = 1
@@ -268,12 +273,12 @@ class InstructionSignals:
             take_up_fu_operation_idx = _take_up_fu_operation_idx_of(self.operations)
             
             if take_up_fu_operation_idx == -1:
-                print("No take up fu operation found, just take the first.")
+                if VERBOSE_PKT_GEN: print("No take up fu operation found, just take the first.")
                 take_up_fu_operation_idx = 0
                 take_up_fu_operation = "NAH"
                 self.OpCode = OPT_NAH
             else:
-                print("Take_up_fu_operation: ", self.operations[take_up_fu_operation_idx])
+                if VERBOSE_PKT_GEN: print("Take_up_fu_operation: ", self.operations[take_up_fu_operation_idx])
                 take_up_fu_operation = self.operations[take_up_fu_operation_idx]
                 # only take up fu can be const
                 has_const = False
@@ -292,6 +297,17 @@ class InstructionSignals:
             
                 if has_const:
                     self.OpCode = yaml_to_VectorCGRA_map_const[self.operations[take_up_fu_operation_idx]['opcode']]
+                    # Special handling for STORE with const:
+                    # YAML STORE format is [data, addr]. After swap → [addr, data].
+                    # If the IMM is the DATA (position 0 in YAML), use OPT_STR_DATA_CONST.
+                    # If the IMM is the ADDR (position 1 in YAML), use OPT_STR_CONST.
+                    if take_up_fu_operation['opcode'] == 'STORE':
+                        if len(src_operands) >= 2 and _type(src_operands[0]) == 'IMM':
+                            # Data is const (position 0 in YAML → position 1 after swap)
+                            self.OpCode = OPT_STR_DATA_CONST
+                        else:
+                            # Address is const (position 1 in YAML → position 0 after swap)
+                            self.OpCode = OPT_STR_CONST
                     # Special handling for 3-operand GEP with const base (2D array access):
                     # If GEP has 3 src_operands and one is an IMM (const base),
                     # use OPT_GEP_2D_CONST instead of OPT_ADD_CONST.
@@ -316,7 +332,7 @@ class InstructionSignals:
                 if pass_num == 1 and not is_fu_op:
                     continue
                 
-                print("\n Operation: ", operation)
+                if VERBOSE_PKT_GEN: print("\n Operation: ", operation)
                 
                 operation_opcode = operation['opcode']
                 try:
@@ -439,7 +455,7 @@ class InstructionSignals:
                 
                 for index, src_operand in reordered_src_operands.items():
                     if _type(src_operand) == 'REG':
-                        print(f">>> index {index} is REG")
+                        if VERBOSE_PKT_GEN: print(f">>> index {index} is REG")
                         cluster_no = _reg_cluster_no_of(src_operand)
                         intra_index = _reg_cluster_intra_index_of(src_operand)
                         # Check if cluster_no is within valid range (1 to num_fu_inports)
@@ -482,7 +498,7 @@ class InstructionSignals:
                         if lane == -1:
                             raise ValueError(f"No available lane found when reading from port {src_operand} in TileInParams, when translate the operation {operation} to VectorCGRA")
                         else:
-                            print(f"Lane {lane} available for port source {src_operand}")
+                            if VERBOSE_PKT_GEN: print(f"Lane {lane} available for port source {src_operand}")
                         if self.TileInParams[lane + 4] != -1:
                             raise ValueError(f"Collision in reading from port in TileInParams, when translate the operation {operation} to VectorCGRA")
                         self.TileInParams[lane + 4] = port_in_xbar_idx
@@ -523,7 +539,7 @@ class InstructionSignals:
                             port_out_xbar_idx = 3
                         if self.FuOutParams[port_out_xbar_idx] != -1:
                             raise ValueError(f"Collision in writing to port {dst_operand} in FuOutParams, when translate the operation {operation} to VectorCGRA")
-                        print(f">>> FuOutParams[{port_out_xbar_idx}] = {index + 1}")
+                        if VERBOSE_PKT_GEN: print(f">>> FuOutParams[{port_out_xbar_idx}] = {index + 1}")
                         self.FuOutParams[port_out_xbar_idx] = 1 # we do not support multiple results 
                     else:
                         raise ValueError(f"Unsupported type of dst operand {dst_operand}, when translate the operation {operation} to VectorCGRA")
@@ -720,9 +736,10 @@ class TileSignals:
         has_addrs = []
         
         # build all the instruction signals and get all the const
-        for instruction in self.instructions:
-            print("================================================")
-            print("Instruction: ", instruction)
+        import sys
+        for instr_idx_dbg, instruction in enumerate(self.instructions):
+            # Suppress verbose per-instruction output for speed
+            pass
              # do necessary sanitization
             prologued_ports = self.sanitize(instruction)
             
@@ -791,6 +808,9 @@ class TileSignals:
             if const is not None:
                 consts.extend(const)
         
+        print(f"[Core {self.id_}] All {len(self.instructions)} instructions processed, building const signals...")
+        sys.stdout.flush()
+        
         # make the const signals
         for idx, const_operand in enumerate(consts):
             operand_str = const_operand['operand']
@@ -829,6 +849,9 @@ class TileSignals:
                                                    data = self.DataType(self.gep_stride, 1)))
                 all_signals.append(gep_stride_pkt)
 
+        print(f"[Core {self.id_}] Building pre-config and main packets...")
+        sys.stdout.flush()
+        
         # make the pre-configuration
         ii_pkt = self.IntraCgraPktType(0, self.id_, 
                                        payload = self.CgraPayloadType(self.CMD_CONFIG_COUNT_PER_ITER_,
@@ -888,6 +911,9 @@ class TileSignals:
         launch_pkt = self.IntraCgraPktType(0, self.id_, 
                                            payload = self.CgraPayloadType(self.CMD_LAUNCH_))
         all_signals.append(launch_pkt)
+        
+        print(f"[Core {self.id_}] makeTileSignals() DONE, {len(all_signals)} total signals")
+        sys.stdout.flush()
         
         return all_signals
 class ScriptFactory:
@@ -967,6 +993,10 @@ class ScriptFactory:
             instructions = entry['instructions']
             id_ = core['core_id']
             
+            import sys
+            print(f"\n>>> makeVectorCGRAPkts: Starting Core {id_} at ({x},{y}) with {len(instructions)} instructions")
+            sys.stdout.flush()
+            
             tile_signals = TileSignals(
                 CtrlType = self.CtrlType,
                 IntraCgraPktType = self.IntraCgraPktType,
@@ -997,7 +1027,11 @@ class ScriptFactory:
                 )
             tile_signals = tile_signals.makeTileSignals()
             pkts[(x, y)] = tile_signals
+            print(f">>> makeVectorCGRAPkts: Core {id_} DONE")
+            sys.stdout.flush()
             
+        print(">>> makeVectorCGRAPkts: ALL CORES DONE")
+        sys.stdout.flush()
         return pkts
     
 from validation.test.dummy import *

@@ -234,6 +234,29 @@ class MemUnitRTL(Component):
 
           s.recv_opt.rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
 
+        # STR_DATA_CONST indicates the store DATA is a const (addr from in[0]).
+        elif s.recv_opt.msg.operation == OPT_STR_DATA_CONST:
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
+          s.recv_const.rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
+          # Address comes from in[0], data comes from const queue.
+          s.to_mem_waddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
+          s.to_mem_waddr.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_const.msg.predicate
+          s.to_mem_wdata.msg @= s.recv_const.msg
+          s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                          s.recv_const.msg.predicate & \
+                                          s.reached_vector_factor
+          s.to_mem_wdata.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_const.msg.predicate
+
+          # `send_out` is meaningless for store operation.
+          s.send_out[0].val @= b1(0)
+
+          s.recv_opt.rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
+
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)

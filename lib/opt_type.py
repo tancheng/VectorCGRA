@@ -117,12 +117,14 @@ OPT_GT_CONST                     = OpCodeType( 92 )
 OPT_AND_CONST                    = OpCodeType( 93 )
 OPT_OR_CONST                     = OpCodeType( 94 )
 
+OPT_LLS_CONST                    = OpCodeType( 95 )
 OPT_REM_CONST                    = OpCodeType( 96 )
 
 OPT_GEP                          = OpCodeType( 97 )
 OPT_GEP_CONST                    = OpCodeType( 98 )
 OPT_GEP_2D                       = OpCodeType( 99 )
 OPT_GEP_2D_CONST                 = OpCodeType( 100 )
+OPT_STR_DATA_CONST               = OpCodeType( 101 )
 
 # Tuple of all operations that consume a const from the const queue.
 # Used to advance const queue rd_cur during prologue cycles.
@@ -152,9 +154,11 @@ OPT_USES_CONST_LIST = (
   OPT_GT_CONST,
   OPT_AND_CONST,
   OPT_OR_CONST,
+  OPT_LLS_CONST,
   OPT_REM_CONST,
   OPT_GEP_CONST,
   OPT_GEP_2D_CONST,
+  OPT_STR_DATA_CONST,
 )
 
 OPT_SYMBOL_DICT = {
@@ -167,6 +171,7 @@ OPT_SYMBOL_DICT = {
   OPT_INC                        : "(++)",
   OPT_SUB                        : "(-)",
   OPT_LLS                        : "(<<)",
+  OPT_LLS_CONST                  : "(<<')",
   OPT_LRS                        : "(>>)",
   OPT_MUL                        : "(*)",
   OPT_DIV                        : "(/)",
@@ -195,6 +200,7 @@ OPT_SYMBOL_DICT = {
   OPT_SEL                        : "(sel)",
   OPT_LD_CONST                   : "(ldcst)",
   OPT_STR_CONST                  : "(strcst)",
+  OPT_STR_DATA_CONST             : "(strdcst)",
   OPT_MUL_ADD                    : "(* +)",
   OPT_MUL_CONST                  : "(*')",
   OPT_MUL_CONST_ADD              : "(*' +)",
