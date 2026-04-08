@@ -97,7 +97,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["N"],
-                "const_val": 268435456,
+                "const_val": "0x8000_0000",
                 "pred_based_sel_in_to_out_route": "W",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"
@@ -520,7 +520,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["N"],
-                "const_val": 268435456,
+                "const_val": "0x8000_0100",
                 "pred_based_sel_in_to_out_route": "W",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"
@@ -819,7 +819,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["N"],
-                "const_val": 268435456,
+                "const_val": "0x8000_0200",
                 "pred_based_sel_in_to_out_route": "W",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"
@@ -960,7 +960,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["W", "N"],
-                "const_val": 268435456,
+                "const_val": "0x8000_0300",
                 "pred_based_sel_in_to_out_route": "W",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"
@@ -1341,7 +1341,7 @@
                     [0, 0, 0, 0, 0, 0, 0, 0]
                 ],
                 "tile_pred_route": ["S"],
-                "const_val": 268435456,
+                "const_val": "0x8000_8000",
                 "pred_based_sel_in_to_out_route": "S",
                 "pred_gen": 0,
                 "opt_type": "OPT_ADD_CONST"

@@ -284,8 +284,8 @@ class STEP_CgraRTL(Component):
 
             # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
             s.store_pred_wire[0] @= s.tile_fabric.send_south_pred_port[0]
-            s.store_data_wire[0] @= s.tile_fabric.send_south_data_port[1]
-            s.store_addr_wire[0] @= trunc( s.tile_fabric.send_south_data_port[0], LdStAddrType )
+            s.store_data_wire[0] @= s.tile_fabric.send_south_data_port[0]
+            s.store_addr_wire[0] @= trunc( s.tile_fabric.send_south_data_port[1], LdStAddrType )
 
             # NORTH Load ONLY - Addr at Even tile columns
             # widen narrow data flits into full AXI address width
@@ -294,8 +294,8 @@ class STEP_CgraRTL(Component):
 
             # SOUTH Store ONLY - Addr at Even tile columns, Data at Odd tile columns
             s.store_pred_wire[1] @= s.tile_fabric.send_south_pred_port[2]
-            s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[3]
-            s.store_addr_wire[1] @= trunc( s.tile_fabric.send_south_data_port[2], LdStAddrType )
+            s.store_data_wire[1] @= s.tile_fabric.send_south_data_port[2]
+            s.store_addr_wire[1] @= trunc( s.tile_fabric.send_south_data_port[3], LdStAddrType )
 
             # Sparse single-tile branch stores place a single value on the
             # leftmost south lane. When the remapped store port is active and

@@ -35,6 +35,9 @@ ucli.key
 *.swo
 *~
 
+# CV6
+cv6_integration/
+
 # Vivado
 vivado_project/
 vivado_vector_cgra/

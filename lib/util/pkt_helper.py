@@ -63,6 +63,21 @@ def _resolve_opt_type(opt_name):
     return globals()[resolved_name]
 
 
+def _coerce_numeric_literal(value):
+    if isinstance(value, str):
+        token = value.replace("_", "").strip()
+        if token.lower().startswith("0x"):
+            return int(token, 16)
+        if token.lower().startswith("0b"):
+            return int(token, 2)
+        if token.lower().startswith("0o"):
+            return int(token, 8)
+        return int(float(token))
+    if isinstance(value, float):
+        return int(value)
+    return int(value)
+
+
 def _is_terminal_cfg(metadata, bitstream):
     if not metadata.get('end_cfg', 0):
         return False
@@ -100,13 +115,10 @@ def _augment_tokenizer_routes(metadata, num_rd_ports, num_wr_ports, num_ld_ports
         if not write_enabled:
             continue
 
-        tokenizer_wr_idx = _mapped_wr_tokenizer_idx(wr_port_idx)
-        has_mapped_route = any(route[tokenizer_wr_idx] for route in route_lists)
         has_logical_route = any(route[wr_port_idx] for route in route_lists)
-        if has_mapped_route or has_logical_route:
+        if has_logical_route:
             continue
 
-        route_lists[trigger_input_idx][tokenizer_wr_idx] = 1
         route_lists[trigger_input_idx][wr_port_idx] = 1
 
     for ld_port_idx in range(num_ld_ports):
@@ -305,7 +317,7 @@ def generateCPUPktFromJSON(json_path):
             in_pred_en = [Bits1(bit) for bit in in_pred_en],
             in_pred_inv = [Bits1(bit) for bit in in_pred_inv],
             in_const_vals = [
-                ConstImmType(max(0, min(int(bit), (1 << ConstImmType.nbits) - 1)))
+                ConstImmType(max(0, min(_coerce_numeric_literal(bit), (1 << ConstImmType.nbits) - 1)))
                 for bit in in_const_vals
             ],
             in_pred_reset_const_en = [Bits1(bit) for bit in in_pred_reset_const_en],
@@ -404,7 +416,7 @@ def generateCPUPktFromJSON(json_path):
                     tile_out_shift_amounts = tile_out_shift_amounts,
                     tile_pred_route = int(tile_pred_route, 2),
                     tile_fwd_route = tile_fwd_route,
-                    const_val = tile.get('const_val', 0),
+                    const_val = _coerce_numeric_literal(tile.get('const_val', 0)),
                     pred_based_sel_in_to_out_route = pred_based_sel_in_to_out_route,
                     pred_gen = Bits1(tile.get('pred_gen', 0)),
                     opt_type = _resolve_opt_type(tile['opt_type'])

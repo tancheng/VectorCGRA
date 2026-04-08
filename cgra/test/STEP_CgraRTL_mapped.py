@@ -11,8 +11,7 @@ from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
 from pymtl3.stdlib.test_utils.test_helpers import finalize_verilator
 
 from ..STEP_CgraRTL import STEP_CgraRTL
-from ...lib.basic.AxiInterface import RecvAxiReadLoadAddrIfcRTL
-from ...lib.basic.AxiSourceRTL import AxiStSourceTriggeredRTL
+from ...lib.basic.AxiInterface import RecvAxiReadLoadAddrIfcRTL, RecvAxiReadStoreAddrIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
 from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
@@ -94,24 +93,20 @@ def _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def):
             _route_word_to_bits(row, num_returner_ports)
             for row in meta.tokenizer_cfg.token_route_sink_enable
         ]
-        routes = [list(bits) for bits in old_routes]
-        for wr_idx in range(num_wr_ports):
-            if not (int(meta.out_regs_val[wr_idx]) or int(meta.out_pred_regs_val[wr_idx])):
-                continue
-            mapped_idx = _mapped_wr_tokenizer_idx(wr_idx)
-            if mapped_idx == wr_idx:
-                continue
-
-            has_logical = any(row[wr_idx] for row in routes)
-            has_mapped = any(row[mapped_idx] for row in routes)
-            if has_mapped:
-                for row in routes:
-                    row[wr_idx] = 0
-            elif has_logical:
-                for row in routes:
-                    if row[wr_idx]:
-                        row[mapped_idx] = 1
-                    row[wr_idx] = 0
+        routes = []
+        for old_bits in old_routes:
+            new_bits = list(old_bits)
+            # Rebuild the write-sink region from logical port order into the
+            # physical tokenizer sink order used by the mapped harness.
+            for sink_idx in range(num_wr_ports):
+                new_bits[sink_idx] = 0
+            for wr_idx in range(num_wr_ports):
+                if not (int(meta.out_regs_val[wr_idx]) or int(meta.out_pred_regs_val[wr_idx])):
+                    continue
+                if old_bits[wr_idx]:
+                    mapped_idx = _mapped_wr_tokenizer_idx(wr_idx)
+                    new_bits[mapped_idx] = 1
+            routes.append(new_bits)
 
         new_route_words = [
             _bits_to_route_word(row, RouteType)
@@ -333,11 +328,97 @@ class PcIndexedBitstreamSourceRTL(Component):
         return (not s._active_valid) and (len(s._pending_triggers) == 0)
 
 
-class AxiLdSourceIndexedRTL(Component):
-    def construct(s, DataType, delay=1):
+class RudimentaryCacheMemory:
+    BASE_ADDR = 0x80000000
+    LIMIT_ADDR = 0x8000FFFF
+    LINE_BYTES = 16
+    WORD_BYTES = 4
+    WORDS_PER_LINE = LINE_BYTES // WORD_BYTES
+
+    def __init__(s, json_path):
+        s.json_path = os.path.abspath(json_path)
+        s.lines = {}
+        s.first_load_addr = None
+        s.first_store_addr = None
+        s._touched_lines = set()
+        s.touched_line_bases = []
+
+    def _fail_out_of_range(s, kind, port_idx, addr, cycle):
+        raise AssertionError(
+            f"{kind} AXI address out of supported range in mapped cache model: "
+            f"mapping={s.json_path} cycle={cycle} port={port_idx} "
+            f"addr=0x{addr:08x} supported=[0x{s.BASE_ADDR:08x}, 0x{s.LIMIT_ADDR:08x}]"
+        )
+
+    def _check_addr(s, kind, port_idx, addr, cycle):
+        if addr < s.BASE_ADDR or addr > s.LIMIT_ADDR:
+            s._fail_out_of_range(kind, port_idx, addr, cycle)
+
+    def _touch_line(s, line_base):
+        if line_base not in s._touched_lines:
+            s._touched_lines.add(line_base)
+            s.touched_line_bases.append(line_base)
+
+    def _seed_word(s, word_addr):
+        # Preserve the old standalone behavior for unseen words.
+        return (word_addr >> 2) & 0xFFFFFFFF
+
+    def _ensure_line(s, line_base):
+        if line_base not in s.lines:
+            s.lines[line_base] = [
+                s._seed_word(line_base + i * s.WORD_BYTES)
+                for i in range(s.WORDS_PER_LINE)
+            ]
+        return s.lines[line_base]
+
+    def read_word(s, addr, port_idx, cycle):
+        s._check_addr("load", port_idx, addr, cycle)
+        if s.first_load_addr is None:
+            s.first_load_addr = addr
+        line_base = addr & ~(s.LINE_BYTES - 1)
+        word_idx = (addr >> 2) & (s.WORDS_PER_LINE - 1)
+        line = s._ensure_line(line_base)
+        s._touch_line(line_base)
+        return line[word_idx]
+
+    def write_word(s, addr, data, strb_mask, port_idx, cycle):
+        s._check_addr("store", port_idx, addr, cycle)
+        if s.first_store_addr is None:
+            s.first_store_addr = addr
+        line_base = addr & ~(s.LINE_BYTES - 1)
+        word_idx = (addr >> 2) & (s.WORDS_PER_LINE - 1)
+        byte_offset = addr & (s.LINE_BYTES - 1)
+        lane_offset = byte_offset & (s.WORD_BYTES - 1)
+        line = s._ensure_line(line_base)
+        s._touch_line(line_base)
+
+        old_word = int(line[word_idx]) & 0xFFFFFFFF
+        new_word = old_word
+        word_strobes = (int(strb_mask) >> byte_offset) & 0xF
+        if word_strobes == 0:
+            word_strobes = (int(strb_mask) >> lane_offset) & 0xF
+        if word_strobes == 0:
+            word_strobes = 0xF
+
+        for byte_idx in range(s.WORD_BYTES):
+            if (word_strobes >> byte_idx) & 0x1:
+                byte_val = (int(data) >> (8 * byte_idx)) & 0xFF
+                new_word &= ~(0xFF << (8 * byte_idx))
+                new_word |= byte_val << (8 * byte_idx)
+
+        line[word_idx] = new_word & 0xFFFFFFFF
+
+    def unique_line_count(s):
+        return len(s._touched_lines)
+
+
+class AxiLdCacheSourceRTL(Component):
+    def construct(s, DataType, cache_model, port_idx, delay=1):
         assert delay >= 1
 
         s.send = RecvAxiReadLoadAddrIfcRTL(DataType)
+        s.cache_model = cache_model
+        s.port_idx = port_idx
 
         ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
         mask = (1 << DataType.nbits) - 1
@@ -346,6 +427,7 @@ class AxiLdSourceIndexedRTL(Component):
         s.data_pipe = [Wire(DataType) for _ in range(delay + 1)]
         s.id_pipe = [Wire(ThreadIdxType) for _ in range(delay + 1)]
         s.req_counter = Wire(DataType)
+        s.cycle_counter = Wire(mk_bits(32))
 
         @update
         def comb():
@@ -361,11 +443,13 @@ class AxiLdSourceIndexedRTL(Component):
         def seq():
             if s.reset:
                 s.req_counter <<= 0
+                s.cycle_counter <<= 0
                 for i in range(delay + 1):
                     s.valid_pipe[i] <<= 0
                     s.data_pipe[i] <<= 0
                     s.id_pipe[i] <<= 0
             else:
+                s.cycle_counter <<= s.cycle_counter + 1
                 for i in range(delay, 0, -1):
                     s.valid_pipe[i] <<= s.valid_pipe[i - 1]
                     s.data_pipe[i] <<= s.data_pipe[i - 1]
@@ -376,10 +460,86 @@ class AxiLdSourceIndexedRTL(Component):
                 s.id_pipe[0] <<= 0
 
                 if s.send.addr_val & s.send.addr_rdy:
+                    word = s.cache_model.read_word(
+                        int(s.send.addr),
+                        s.port_idx,
+                        int(s.cycle_counter),
+                    )
                     s.valid_pipe[0] <<= 1
-                    s.data_pipe[0] <<= DataType((int(s.send.addr) >> 2) & mask)
+                    s.data_pipe[0] <<= DataType(int(word) & mask)
                     s.id_pipe[0] <<= s.send.id
                     s.req_counter <<= s.req_counter + 1
+
+
+class AxiStCacheSourceRTL(Component):
+    def construct(s, DataType, num_total_stores, cache_model, port_idx, delay=1):
+        assert delay >= 1
+        s.num_total_stores = num_total_stores
+
+        s.send = RecvAxiReadStoreAddrIfcRTL(DataType)
+        s.complete = OutPort(Bits1)
+        s.cache_model = cache_model
+        s.port_idx = port_idx
+
+        ThreadIdxType = mk_bits(clog2(MAX_THREAD_COUNT))
+        CountType = mk_bits(max(1, clog2(num_total_stores + 1)))
+
+        s.idx = Wire(CountType)
+        s.cycle_counter = Wire(mk_bits(32))
+        s.valid_pipe = [Wire(Bits1) for _ in range(delay + 1)]
+        s.id_pipe = [Wire(ThreadIdxType) for _ in range(delay + 1)]
+
+        @update
+        def comb():
+            s.send.addr_rdy @= 1
+            s.send.resp_valid @= s.valid_pipe[delay]
+            s.send.resp @= 1 if s.valid_pipe[delay] else 0
+            s.send.resp_id @= s.id_pipe[delay]
+            s.send.resp_last @= 0
+            s.complete @= s.idx >= s.num_total_stores
+
+        s.fire = OutPort(Bits1)
+
+        @update
+        def comb_fire():
+            s.fire @= (
+                (s.idx < num_total_stores) &
+                s.send.addr_val &
+                s.send.data_valid
+            )
+
+        @update_ff
+        def up_src():
+            if s.reset:
+                s.idx <<= 0
+                s.cycle_counter <<= 0
+                for i in range(delay + 1):
+                    s.valid_pipe[i] <<= 0
+                    s.id_pipe[i] <<= 0
+            else:
+                s.cycle_counter <<= s.cycle_counter + 1
+                for i in range(delay, 0, -1):
+                    s.valid_pipe[i] <<= s.valid_pipe[i - 1]
+                    s.id_pipe[i] <<= s.id_pipe[i - 1]
+
+                s.valid_pipe[0] <<= 0
+
+                if s.fire:
+                    s.cache_model.write_word(
+                        int(s.send.addr),
+                        int(s.send.data),
+                        int(s.send.str_bytes),
+                        s.port_idx,
+                        int(s.cycle_counter),
+                    )
+                    s.valid_pipe[0] <<= 1
+                    s.id_pipe[0] <<= s.send.id
+
+                if s.valid_pipe[delay]:
+                    s.idx <<= s.idx + 1
+
+    def done(s):
+        return s.idx >= s.num_total_stores
 
 
 class TestHarness(Component):
@@ -395,6 +555,7 @@ class TestHarness(Component):
             _validate_normalized_tokenizer_routes(cpu_metadata_pkts, cgra_def)
         s.branch_expectations = _collect_branch_expectations(s.mapping_data)
         pc_nbits = max(1, clog2(MAX_BITSTREAM_COUNT))
+        s.cache_model = RudimentaryCacheMemory(json_path)
 
         # Configure Sources
         s.cpu_to_cgra_metadata_pkts = TestSrcRTL(cgra_def['CfgMetadataType'], cpu_metadata_pkts)
@@ -405,11 +566,11 @@ class TestHarness(Component):
             cgra_def['num_tiles'],
         )
         s.ld_axi_pkts = [
-            AxiLdSourceIndexedRTL(cgra_def['DataType'], delay=axi_delay)
+            AxiLdCacheSourceRTL(cgra_def['DataType'], s.cache_model, i, delay=axi_delay)
             for i in range(cgra_def['num_ld_ports'])
         ]
         s.st_axi_pkts = [
-            AxiStSourceTriggeredRTL(cgra_def['DataType'], st_pkts[i], delay=axi_delay)
+            AxiStCacheSourceRTL(cgra_def['DataType'], st_pkts[i], s.cache_model, i, delay=axi_delay)
             for i in range(cgra_def['num_st_ports'])
         ]
 
@@ -525,6 +686,10 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
         "pc_resolved_thread_counts": [],
         "wr_issue_counts": None,
         "wr_commit_counts": None,
+        "first_load_addr": None,
+        "first_store_addr": None,
+        "unique_cache_lines_touched": None,
+        "cache_line_bases_sample": [],
     }
     num_wr_ports = model.cgra_def["num_wr_ports"]
     expected_wr_tids = [deque() for _ in range(num_wr_ports)]
@@ -585,6 +750,11 @@ def _run_sim_with_metrics(model, cmdline_opts=None, print_line_trace=False, duts
         metrics["timed_out"] = model.sim_cycle_count() >= max_cycles
         metrics["wr_issue_counts"] = wr_issue_counts if have_rf_debug_metrics else None
         metrics["wr_commit_counts"] = wr_commit_counts if have_rf_debug_metrics else None
+        if hasattr(model, "cache_model"):
+            metrics["first_load_addr"] = model.cache_model.first_load_addr
+            metrics["first_store_addr"] = model.cache_model.first_store_addr
+            metrics["unique_cache_lines_touched"] = model.cache_model.unique_line_count()
+            metrics["cache_line_bases_sample"] = model.cache_model.touched_line_bases[:16]
         if metrics["timed_out"]:
             unique_pcs = sorted(set(metrics["pc_triggers"]))
             tail_pcs = metrics["pc_triggers"][-16:]
@@ -644,6 +814,11 @@ def _print_metrics(runtime_metrics):
         print(f"  wr_commit_counts: {runtime_metrics['wr_commit_counts']}")
     if runtime_metrics["pc_resolved_thread_counts"]:
         print(f"  pc_resolved_thread_counts: {runtime_metrics['pc_resolved_thread_counts']}")
+    if runtime_metrics["unique_cache_lines_touched"] is not None:
+        print(f"  first_load_addr: {runtime_metrics['first_load_addr']}")
+        print(f"  first_store_addr: {runtime_metrics['first_store_addr']}")
+        print(f"  unique_cache_lines_touched: {runtime_metrics['unique_cache_lines_touched']}")
+        print(f"  cache_line_bases_sample: {runtime_metrics['cache_line_bases_sample']}")
 
 
 def _metrics_summary(runtime_metrics, json_path):
@@ -674,6 +849,10 @@ def _metrics_summary(runtime_metrics, json_path):
         "pc_resolved_thread_counts": runtime_metrics["pc_resolved_thread_counts"],
         "wr_issue_counts": runtime_metrics["wr_issue_counts"],
         "wr_commit_counts": runtime_metrics["wr_commit_counts"],
+        "first_load_addr": runtime_metrics["first_load_addr"],
+        "first_store_addr": runtime_metrics["first_store_addr"],
+        "unique_cache_lines_touched": runtime_metrics["unique_cache_lines_touched"],
+        "cache_line_bases_sample": runtime_metrics["cache_line_bases_sample"],
     }
 
 
@@ -695,8 +874,23 @@ def _benchmark_json_paths():
     return paths
 
 
+def test_rudimentary_cache_memory_read_write():
+    cache = RudimentaryCacheMemory(f"{DFG_MAPPINGS_DIR}/dfg_mapping_bfs.json")
+
+    base_addr = 0x80000020
+    same_line_addr = base_addr + 4
+
+    assert cache.read_word(base_addr, port_idx=0, cycle=0) == (base_addr >> 2)
+    assert cache.read_word(same_line_addr, port_idx=0, cycle=1) == (same_line_addr >> 2)
+    assert cache.unique_line_count() == 1
+
+    cache.write_word(base_addr, 0xdeadbeef, 0xF, port_idx=1, cycle=2)
+    assert cache.read_word(base_addr, port_idx=0, cycle=3) == 0xdeadbeef
+    assert cache.read_word(same_line_addr, port_idx=0, cycle=4) == (same_line_addr >> 2)
+
+
 def test_simple(cmdline_opts):
-    th = init_param(json_path=DEFAULT_DFG_JSON, debug=False)
+    th = init_param(json_path=DEFAULT_DFG_JSON, debug=True)
 
     th.elaborate()
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -716,18 +910,64 @@ def test_normalize_tokenizer_wr_routes_default_mapping():
     )
 
     cfg0_before = next(meta for meta in cpu_metadata_pkts if int(meta.cfg_id) == 0 and int(meta.cmd) != CMD_LAUNCH)
-    row7_before = _route_word_to_bits(cfg0_before.tokenizer_cfg.token_route_sink_enable[7], num_returner_ports)
-    assert row7_before == [1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0]
+    row2_before = _route_word_to_bits(cfg0_before.tokenizer_cfg.token_route_sink_enable[2], num_returner_ports)
+    row4_before = _route_word_to_bits(cfg0_before.tokenizer_cfg.token_route_sink_enable[4], num_returner_ports)
+    assert row2_before == [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+    assert row4_before == [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0]
 
     _normalize_tokenizer_wr_routes(cpu_metadata_pkts, cgra_def)
     _prune_default_dead_tokenizer_sinks(cpu_metadata_pkts, cgra_def, DEFAULT_DFG_JSON)
     _validate_normalized_tokenizer_routes(cpu_metadata_pkts, cgra_def)
 
     cfg0_after = next(meta for meta in cpu_metadata_pkts if int(meta.cfg_id) == 0 and int(meta.cmd) != CMD_LAUNCH)
-    row7_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[7], num_returner_ports)
-    row12_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[12], num_returner_ports)
-    assert row7_after == row7_before
-    assert row12_after[1] == 0
+    cfg2_after = next(meta for meta in cpu_metadata_pkts if int(meta.cfg_id) == 2 and int(meta.cmd) != CMD_LAUNCH)
+    row2_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[2], num_returner_ports)
+    row4_after = _route_word_to_bits(cfg0_after.tokenizer_cfg.token_route_sink_enable[4], num_returner_ports)
+    row13_cfg2_after = _route_word_to_bits(cfg2_after.tokenizer_cfg.token_route_sink_enable[13], num_returner_ports)
+
+    assert row2_after == [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+    assert row4_after == [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+    assert row13_cfg2_after == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+
+
+def test_default_mapping_reg0_write_then_cfg2_read():
+    model = init_param(json_path=DEFAULT_DFG_JSON, debug=True)
+
+    model.elaborate()
+    model.apply(DefaultPassGroup(linetrace=False))
+    model.sim_reset()
+
+    saw_cfg0_reg0_commit = False
+    saw_cfg2_reg0_read = False
+
+    while model.sim_cycle_count() < 190 and not model.done():
+        pc = int(model.dut.pc_req)
+
+        if pc == 1 and int(model.dut.rf_wr_commit_valid[1]):
+            saw_cfg0_reg0_commit = True
+
+        if (
+            pc == 2
+            and int(model.dut.rf_issue_fire)
+            and int(model.dut.rf_rd_addr_valcfg_n[13])
+            and int(model.dut.rf_rd_addr_cfg_n[13]) == 0
+            and int(model.dut.rf_to_fabric_msg[13]) != 0
+        ):
+            saw_cfg2_reg0_read = True
+            break
+
+        try:
+            model.sim_tick()
+        except AssertionError as err:
+            # The current default mapping still drives an out-of-bounds store
+            # later in cfg_2; this regression test is only checking the reg0
+            # producer/consumer path before that point.
+            assert "store AXI address out of supported range" in str(err)
+            break
+
+    finalize_verilator(model)
+    assert saw_cfg0_reg0_commit
+    assert saw_cfg2_reg0_read
 
 
 @pytest.mark.parametrize("debug", [False, True], ids=lambda debug: f"debug_{str(debug).lower()}")
