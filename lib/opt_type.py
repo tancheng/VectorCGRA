@@ -120,6 +120,7 @@ OPT_GEP_2D_CONST                 = OpCodeType( 95 )
 
 OPT_LLS_CONST                    = OpCodeType( 96 )
 OPT_GT_CONST                     = OpCodeType( 97 )
+OPT_LT_CONST                     = OpCodeType( 98 )
 
 OPT_SYMBOL_DICT = {
   OPT_START                      : "(start)",
@@ -130,6 +131,7 @@ OPT_SYMBOL_DICT = {
   OPT_ADD_CONST                  : "(+')",
   OPT_INC                        : "(++)",
   OPT_SUB                        : "(-)",
+  OPT_SUB_CONST                  : "(-')",
   OPT_LLS                        : "(<<)",
   OPT_LRS                        : "(>>)",
   OPT_MUL                        : "(*)",
@@ -224,4 +226,5 @@ OPT_SYMBOL_DICT = {
 
   OPT_LLS_CONST                  : "(<<')",
   OPT_GT_CONST                   : "(?>')",
+  OPT_LT_CONST                   : "(?<')",
 }

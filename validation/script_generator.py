@@ -80,6 +80,7 @@ yaml_to_VectorCGRA_map = {
     "ICMP_EQ": OPT_EQ, # ?
     "ICMP_SGE": OPT_GTE,
     "ICMP_SGT": OPT_GT,
+    "ICMP_SLT": OPT_LT,
     "FCMP": None, # ?
     "SEL": OPT_SEL,
     "CAST": None, # ?
@@ -121,11 +122,13 @@ yaml_to_VectorCGRA_map_const = {
     "ADD": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
     "MUL": OPT_MUL_CONST,
+    "SUB": OPT_SUB_CONST,
     "DIV": OPT_DIV_CONST,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
     "ICMP_SGT": OPT_GT_CONST,
+    "ICMP_SLT": OPT_LT_CONST,
 
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
     "SHL": OPT_LLS_CONST,
@@ -663,9 +666,7 @@ class TileSignals:
             non_take_up_fu_prologue_cycle_max = 0
             
             for operation in instruction['operations']:
-                if operation['invalid_iterations'] > 1:
-                    raise ValueError("Invalid iterations > 1 is not supported")
-                elif operation['invalid_iterations'] == 1:
+                if operation['invalid_iterations'] >= 1:
                     prologue_fu = True     
             
             for operation in instruction['operations']:
