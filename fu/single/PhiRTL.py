@@ -2,9 +2,7 @@
 ==========================================================================
 PhiRTL.py
 ==========================================================================
-Functional unit Phi for CGRA tile. Note that only one phi_const or
-phi_start can be mapped onto the same tile, as we only have one 'first'
-bit to record whether it is the first execution.
+Functional unit Phi for CGRA tile. 
 
 Author : Cheng Tan
   Date : November 30, 2019
@@ -24,7 +22,8 @@ class PhiRTL(Fu):
     num_entries = 2
     FuInType = mk_bits(clog2(num_inports + 1))
     CountType = mk_bits(clog2(num_entries + 1))
-    s.first = Wire(b1)
+    # Supports multiple PHI_CONST and PHI_START mapped on the same tile.
+    s.first = [Wire(b1) for _ in range(2 ** s.CtrlAddrType.nbits)]
 
     s.in0 = Wire(FuInType)
     s.in1 = Wire(FuInType)
@@ -83,7 +82,7 @@ class PhiRTL(Fu):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         elif s.recv_opt.msg.operation == OPT_PHI_START:
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= s.reached_vector_factor
           elif s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
@@ -95,27 +94,27 @@ class PhiRTL(Fu):
           else: # No predecessor is active.
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= 0
-          s.recv_all_val @= ((s.first & s.recv_in[s.in0_idx].val) | \
-                             (~s.first & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
+          s.recv_all_val @= ((s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val) | \
+                             (~s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= ~s.first & s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= ~s.first[s.ctrl_addr_inport] & s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.payload @= s.recv_const.msg.payload
           else:
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
 
-          s.recv_all_val @= ((s.first & s.recv_const.val) | \
-                             (~s.first & s.recv_in[s.in0_idx].val))
+          s.recv_all_val @= ((s.first[s.ctrl_addr_inport] & s.recv_const.val) | \
+                             (~s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val))
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
                                            s.reached_vector_factor
           else:
@@ -129,14 +128,14 @@ class PhiRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= 0
           s.recv_in[s.in1_idx].rdy @= 0
 
-    # branch_start could be the entry of a function, which is executed by
-    # only once.
+    # PHI_CONST and PHI_START have different behavior when exeucting for the first time.
     @update_ff
-    def br_start_once():
+    def record_first_execution():
       if s.reset | s.clear:
-        s.first <<= b1(1)
+        for i in range (2 ** s.CtrlAddrType.nbits):
+          s.first[i] <<= b1(1)
       if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & s.reached_vector_factor:
-        s.first <<= b1(0)
+        s.first[s.ctrl_addr_inport] <<= b1(0)
 
   def line_trace(s):
     opt_str = " #"
@@ -144,5 +143,6 @@ class PhiRTL(Fu):
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}'
+    first_str = ",".join([str(x) for x in s.first])
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) (first: {first_str})] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}; ctrl_addr_inport: {s.ctrl_addr_inport}'
 
