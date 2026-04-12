@@ -92,6 +92,11 @@ class TestHarness(Component):
     CompleteCountType = mk_bits(clog2(complete_count_value + 1))
     s.complete_count = Wire(CompleteCountType)
 
+    # Extra cycles to wait after CMD_COMPLETE so all tiles finish.
+    s.kPostCompleteDrain = 30
+    DrainCountType = mk_bits(clog2(s.kPostCompleteDrain + 2))
+    s.post_complete_counter = Wire(DrainCountType)
+
     @update
     def conditional_issue_ctrl_or_query():
       s.dut.recv_from_cpu_pkt.val @= s.src_ctrl_pkt.send.val
@@ -114,6 +119,15 @@ class TestHarness(Component):
         if s.complete_signal_sink_out.recv.val & s.complete_signal_sink_out.recv.rdy & \
            (s.complete_count < complete_count_value):
           s.complete_count <<= s.complete_count + CompleteCountType(1)
+
+    @update_ff
+    def update_post_complete_counter():
+      if s.reset:
+        s.post_complete_counter <<= 0
+      else:
+        if (s.complete_count >= complete_count_value) & \
+           (s.post_complete_counter < s.kPostCompleteDrain):
+          s.post_complete_counter <<= s.post_complete_counter + DrainCountType(1)
 
     # Connects memory address upper and lower bound for each CGRA.
     s.dut.address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
@@ -139,7 +153,8 @@ class TestHarness(Component):
 
   def done(s):
     return (s.src_ctrl_pkt.done() and s.src_query_pkt.done()
-            and s.complete_signal_sink_out.done())
+            and s.complete_signal_sink_out.done()
+            and s.post_complete_counter == s.kPostCompleteDrain)
 
   def line_trace(s):
     return s.dut.line_trace()
@@ -331,6 +346,7 @@ def sim_axpy(cmdline_opts, mem_access_is_combinational):
   for x, y in src_opt_pkt0_:
     src_opt_pkt0.append(src_opt_pkt0_[(x, y)])
 
+  # After execution, read back data[0..15] to verify stores.
   src_query_pkt = \
       [
       ]
@@ -341,6 +357,7 @@ def sim_axpy(cmdline_opts, mem_access_is_combinational):
       [
           IntraCgraPktType(src = 9, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(1)
       ]
+  # data[k] = 4 * (10 + k) for k in [0, 16)
   expected_mem_sink_out_pkt = \
       [
       ]
