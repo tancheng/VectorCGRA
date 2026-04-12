@@ -259,17 +259,28 @@ fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 #     i += 1                    (ADD #1)
 #   RETURN_VOID                 (signals completion)
 #
-# With data[k] = 1 for k in [0, 20):
-#   bin = (1 * 5 - 5) / 18 = 0 for all k
-#   hist_addr = 20 + 0 = 20
-#   After execution, data_mem[20] = 20, all others unchanged.
+# bin = (val * 5 - 5) / 18  (integer division)
+#   val=1  -> bin=0 (addr 20)    val=5  -> bin=1 (addr 21)
+#   val=9  -> bin=2 (addr 22)    val=13 -> bin=3 (addr 23)
+#
+# Input: 5 x val=1, 5 x val=5, 5 x val=9, 5 x val=13
+# Expected: data_mem[20]=5, data_mem[21]=5, data_mem[22]=5, data_mem[23]=5
 #   RETURN_VOID sends CMD_COMPLETE with data = 0.
 
-# Preload 20 data values at addresses 0~19 with value 1.
+# Preload 20 data values at addresses 0~19, spread across 4 bins.
+preload_data_values = [1, 1, 1, 1, 1,
+                       5, 5, 5, 5, 5,
+                       9, 9, 9, 9, 9,
+                       13, 13, 13, 13, 13]
 preload_data = [
     [
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = i))
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(preload_data_values[i], 1), data_addr = i))
         for i in range(20)
+    ] + [
+        # Initialize histogram bins (addr 20~23) to 0 with predicate=1,
+        # so that the first LOAD in the read-modify-write sees valid data.
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0, 1), data_addr = i))
+        for i in range(20, 24)
     ]
 ]
 
