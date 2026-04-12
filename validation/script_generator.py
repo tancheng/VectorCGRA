@@ -446,15 +446,16 @@ class InstructionSignals:
                         # find an available lane
                         lane = -1
                         for i in range(4):
-                            if self.operand_from[i] == -1 and self.TileInParams[i + 4] == -1: # if not set the selection, then it could be available
+                            ok = self.operand_from[i] == -1 and self.TileInParams[i + 4] == -1 # The lane is completely empty
+                            ok = ok or (self.operand_from[i] == OPR_FROM_PORT and self.TileInParams[i + 4] == port_in_xbar_idx) # The lane is already used by the same port, can be reused
+                            ok = ok or (self.operand_from[i] == -1 and self.TileInParams[i + 4] == port_in_xbar_idx) # The lane is used by the same port to register 
+                            if ok:
                                 lane = i
                                 break
                         if lane == -1:
                             raise ValueError(f"No available lane found when reading from port {src_operand} in TileInParams, when translate the operation {operation} to VectorCGRA")
                         else:
                             print(f"Lane {lane} available for port source {src_operand}")
-                        if self.TileInParams[lane + 4] != -1:
-                            raise ValueError(f"Collision in reading from port in TileInParams, when translate the operation {operation} to VectorCGRA")
                         self.TileInParams[lane + 4] = port_in_xbar_idx
                         self.operand_from[lane] = OPR_FROM_PORT
                         # shuffle to the given fu input index
@@ -508,7 +509,7 @@ class InstructionSignals:
         # make fu_in_code
         for idx, fu_in_code in enumerate(self.shuffle_fu_operand_input_index):
             if fu_in_code == -1:
-                self.shuffle_fu_operand_input_index[idx] = idx + 1 # 0 or idle inport of ALU?
+                self.shuffle_fu_operand_input_index[idx] = 0
         fu_in_code_made = [self.FuInType(x) for x in self.shuffle_fu_operand_input_index] # is it correct?
         
         # make TileIn
@@ -960,7 +961,7 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/axpy.yaml",
+        path = "./validation/test/sad/sad.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
