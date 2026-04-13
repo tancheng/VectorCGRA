@@ -361,6 +361,26 @@ def sim_spmv_return(cmdline_opts, mem_access_is_combinational):
   cycles = th.sim_cycle_count()
   print("\n\n\ncycles: ", cycles)
 
+  # ---------------------------------------------------------------------------
+  # Post-simulation memory dump (informational only).
+  #
+  # NOTE: spmv.yaml compiles all arrays (val, col, row, feature, output) with
+  # GEP base=#0, so they all share the same address space starting at 0.
+  # This causes read/write aliasing during execution and makes it impossible
+  # to assert specific payload values here.  The test only verifies that the
+  # CGRA completes without deadlock (enforced by run_sim's max_cycles check
+  # and the CMD_COMPLETE sink above).
+  # ---------------------------------------------------------------------------
+  _log2_bank_size = 4
+  print("\n=== Final memory state (all cells) ===")
+  for i in range(per_cgra_data_size):
+    bank   = i >> _log2_bank_size
+    offset = i & ((1 << _log2_bank_size) - 1)
+    cell = th.dut.data_mem.memory_wrapper[bank].memory.regs[offset]
+    print(f"  mem[{i:2d}] (bank={bank}, off={offset}): "
+          f"payload={int(cell.payload):4d}  predicate={int(cell.predicate)}")
+  print("======================================\n")
+
 
 def test_homogeneous_4x4_spmv_combinational_mem_access_return(cmdline_opts):
   sim_spmv_return(cmdline_opts, mem_access_is_combinational = True)
