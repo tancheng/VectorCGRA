@@ -100,7 +100,9 @@ yaml_to_VectorCGRA_map = {
     "PHI_CONST": OPT_PHI_CONST, 
     "PHI_START": OPT_PHI_START,
     
-    "GEP": OPT_ADD, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
+    "GEP": OPT_ADD, # base + index; with base=#0 this reduces to index (no GepRTL in FuList)
+    
+    "ICMP_ULT": OPT_LT, # unsigned less-than: in0 < in1
     
     "RETURN": OPT_RET,
     "RETURN_VALUE": OPT_RET,
@@ -122,10 +124,13 @@ yaml_to_VectorCGRA_map_const = {
     "MUL_ADD": OPT_MUL_CONST_ADD,
     "MUL": OPT_MUL_CONST,
     "DIV": OPT_DIV_CONST,
-    "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
+    "GEP": OPT_ADD_CONST, # base(const=0) + index(in0); reduces to index
+    "AND": OPT_AND_CONST,
+    "OR": OPT_OR_CONST,
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
     "ICMP_SGT": OPT_GT_CONST,
+    "ICMP_ULT": OPT_LT_CONST, # unsigned less-than with const: in0 < const
 
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
     "SHL": OPT_LLS_CONST,
@@ -202,8 +207,13 @@ FROM_PORT = 1
 FROM_FU = 2
 FROM_CONSTANT_QUEUE = 3 # not used by now
 
-OPR_FROM_PORT = 0
-OPR_FROM_REGISTER = 1
+OPR_FROM_PORT = 0          # read_reg_towards = READ_TOWARDS_NOTHING (0)
+OPR_FROM_REGISTER = 1      # read_reg_towards = READ_TOWARDS_FU (1)
+OPR_FROM_REGISTER_TO_XBAR = 2  # read_reg_towards = READ_TOWARDS_ROUTING_XBAR (2)
+OPR_FROM_REGISTER_TO_BOTH = 3  # read_reg_towards = READ_TOWARDS_BOTH (3)
+
+# Number of tile input ports (N, S, W, E) — matches num_tile_inports in hardware
+_NUM_TILE_INPORTS = 4
 
 class InstructionSignals:
     # to make signal of single instruction
@@ -329,10 +339,22 @@ class InstructionSignals:
 
                     src_operand = src_operands[0]
 
-                    # REG -> PORT: route via FU output crossbar (merge with
-                    # the take-up-fu operation's output routing).
+                    # REG -> PORT: route via routing_crossbar.
+                    # The register cluster output is fed directly into the routing
+                    # crossbar as an additional input (input index = _NUM_TILE_INPORTS +
+                    # (cluster_no - 1)).  We configure the routing crossbar output for
+                    # the destination port to select that input, and set
+                    # read_reg_towards = READ_TOWARDS_ROUTING_XBAR (2) so the register
+                    # bank drives send_data_to_routing_crossbar.val = 1.
                     if _type(src_operand) == 'REG':
-                        for index, dst_operand in enumerate(dst_operands):
+                        cluster_no = _reg_cluster_no_of(src_operand)   # 1-indexed
+                        intra_index = _reg_cluster_intra_index_of(src_operand)
+                        # routing_crossbar input index (0-based) for this cluster:
+                        #   _NUM_TILE_INPORTS + (cluster_no - 1)
+                        # crossbar config value (1-indexed, 0 = no-connect):
+                        #   _NUM_TILE_INPORTS + cluster_no
+                        xbar_input_config = _NUM_TILE_INPORTS + cluster_no
+                        for dst_operand in dst_operands:
                             if _type(dst_operand) == 'PORT':
                                 if dst_operand['operand'] == 'NORTH':
                                     port_out_xbar_idx = 0
@@ -342,11 +364,25 @@ class InstructionSignals:
                                     port_out_xbar_idx = 2
                                 elif dst_operand['operand'] == 'EAST':
                                     port_out_xbar_idx = 3
-                                if self.FuOutParams[port_out_xbar_idx] != -1:
-                                    raise ValueError(f"Collision in writing to port {dst_operand} in FuOutParams (REG->PORT), when translate the operation {operation} to VectorCGRA")
-                                self.FuOutParams[port_out_xbar_idx] = 1
+                                else:
+                                    raise ValueError(f"Unknown PORT direction {dst_operand} in REG->PORT, operation {operation}")
+                                if self.TileInParams[port_out_xbar_idx] != -1 and \
+                                   self.TileInParams[port_out_xbar_idx] != xbar_input_config:
+                                    raise ValueError(f"Collision in routing_crossbar output {port_out_xbar_idx} (REG->PORT), operation {operation}")
+                                self.TileInParams[port_out_xbar_idx] = xbar_input_config
                             else:
                                 raise ValueError(f"REG->non-PORT dst {dst_operand} classified as not take-up-fu, when translate the operation {operation} to VectorCGRA")
+                        # Set read_reg_towards for this cluster so the register bank
+                        # drives send_data_to_routing_crossbar.
+                        cur = self.read_from_reg[cluster_no - 1]
+                        if cur == -1 or cur == OPR_FROM_PORT:
+                            self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER_TO_XBAR
+                        elif cur == OPR_FROM_REGISTER:
+                            # Also needed for FU: upgrade to BOTH
+                            self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER_TO_BOTH
+                        # else: already xbar (2) or both (3) — leave as-is
+                        if self.read_from_reg_idx[cluster_no - 1] == -1:
+                            self.read_from_reg_idx[cluster_no - 1] = intra_index
                         continue
 
                     if _type(src_operand) != 'PORT':
@@ -407,9 +443,14 @@ class InstructionSignals:
                             raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {src_operand['operand']} in operation {operation}")
                         if self.read_from_reg_idx[cluster_no - 1] != -1 and self.read_from_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when reading from register in read_from_reg_idx, when translate the operation {operation} to VectorCGRA")
-                        if self.read_from_reg[cluster_no - 1] != -1 and self.read_from_reg[cluster_no - 1] != OPR_FROM_REGISTER:
+                        cur = self.read_from_reg[cluster_no - 1]
+                        if cur == -1 or cur == OPR_FROM_PORT:
+                            self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER
+                        elif cur == OPR_FROM_REGISTER_TO_XBAR:
+                            # Also needed for FU: upgrade to BOTH
+                            self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER_TO_BOTH
+                        elif cur not in (OPR_FROM_REGISTER, OPR_FROM_REGISTER_TO_BOTH):
                             raise ValueError(f"Collision when reading from register in read_from_reg, when translate the operation {operation} to VectorCGRA")
-                        self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER
                         self.read_from_reg_idx[cluster_no - 1] = intra_index
                         if self.shuffle_fu_operand_input_index[index] != -1:
                             raise ValueError(f"Collision when reading from register in shuffle_fu_operand_input_index, when translate the operation {operation} to VectorCGRA")

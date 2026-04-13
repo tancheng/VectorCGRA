@@ -114,6 +114,19 @@ class CompRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
+        elif s.recv_opt.msg.operation == OPT_LT_CONST:
+          if s.recv_in[s.in0_idx].msg.payload < s.recv_const.msg.payload:
+            s.send_out[0].msg @= s.const_one
+          else:
+            s.send_out[0].msg @= s.const_zero
+          s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
         elif s.recv_opt.msg.operation == OPT_GTE_CONST:
           if s.recv_in[s.in0_idx].msg.payload >= s.recv_const.msg.payload:
             s.send_out[0].msg @= s.const_one
