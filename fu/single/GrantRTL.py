@@ -30,7 +30,11 @@ class GrantRTL(Fu):
     s.in0_idx = Wire(idx_nbits)
     s.in1_idx = Wire(idx_nbits)
     s.recv_all_val = Wire(1)
-    s.already_grt_once = Wire(1)
+    # Per-slot (per ctrl_addr) latch so that multiple GRANT_ONCE ops in the
+    # same tile do not share state.
+    num_slots = 1 << s.CtrlAddrType.nbits
+    s.already_grt_once = [Wire(1) for _ in range(num_slots)]
+    s.cur_already_grt_once = Wire(1)
 
     # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
@@ -55,6 +59,9 @@ class GrantRTL(Fu):
       s.send_to_ctrl_mem.val @= 0
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
+
+      # Select the per-slot "already granted" bit for the current ctrl_addr.
+      s.cur_already_grt_once @= s.already_grt_once[s.ctrl_addr_inport]
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != FuInType(0):
@@ -100,18 +107,20 @@ class GrantRTL(Fu):
           # GRANT_ONCE is used to apply `true` predicate onto a value only once. This
           # is usually used for the constant declared in the entry block of a function.
           s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
-          # Only updates predicate as true for the first time.
-          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.already_grt_once
+          # Only updates predicate as true for the first time at this ctrl_addr.
+          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.cur_already_grt_once
 
           s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
         elif s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST:
-          # GRANT_ONCE_CONST is used to apply `true` predicate onto a constant right
-          # from the constant queue only once.
+          # GRANT_ONCE_CONST: every non-prologue execution consumes one entry from
+          # the const queue, but predicate=1 is emitted only on the first such
+          # execution for this ctrl_addr; subsequent executions emit predicate=0.
+          # (Prologue cycles see OPT_NAH via FlexibleFuRTL and do not reach here.)
           s.send_out[0].msg @= s.recv_const.msg
-          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.already_grt_once
+          s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.cur_already_grt_once
 
           s.recv_all_val @= s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
@@ -127,10 +136,19 @@ class GrantRTL(Fu):
 
     @update_ff
     def record_grt_once():
-      if s.reset | s.clear:
-        s.already_grt_once <<= 0
-      else:
-        if ~s.already_grt_once & s.send_out[0].val & s.send_out[0].rdy & ((s.recv_opt.msg.operation == OPT_GRT_ONCE) | (s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST)):
-          s.already_grt_once <<= 1
+      for k in range(num_slots):
+        if s.reset | s.clear:
+          s.already_grt_once[k] <<= 0
         else:
-          s.already_grt_once <<= s.already_grt_once
+          # Latch only the slot that just fired a successful GRANT_ONCE /
+          # GRANT_ONCE_CONST; all other slots hold their state. This gives
+          # each ctrl_addr an independent "already granted" flag so multiple
+          # GRANT_ONCE ops in the same tile do not share state.
+          if (s.ctrl_addr_inport == s.CtrlAddrType(k)) & \
+             ~s.already_grt_once[k] & \
+             s.send_out[0].val & s.send_out[0].rdy & \
+             ((s.recv_opt.msg.operation == OPT_GRT_ONCE) | \
+              (s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST)):
+            s.already_grt_once[k] <<= 1
+          else:
+            s.already_grt_once[k] <<= s.already_grt_once[k]
