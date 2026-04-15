@@ -318,8 +318,8 @@ class TileRTL(Component):
 
     @update
     def notify_crossbars_compute_status():
-      s.routing_crossbar.compute_done @= s.element_done
-      s.fu_crossbar.compute_done @= s.element_done
+      s.routing_crossbar.compute_done @= s.element.recv_opt.rdy | s.element_done
+      s.fu_crossbar.compute_done @= s.element.recv_opt.rdy | s.element_done
 
   # Line trace
   def line_trace(s):

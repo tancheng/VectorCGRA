@@ -1,0 +1,30 @@
+// Integer BiCG kernel for simple codegen tests.
+// Keep the function name matching "kernel" so llvm-extract --rfunc=".*kernel.*" can find it.
+
+#define M 8
+#define N 8
+
+void kernel_bicg_int(const int *A, const int *p, const int *r, int *s, int *q) {
+  for (int j = 0; j < M; ++j) {
+    s[j] = 0;
+  }
+  for (int i = 0; i < N; ++i) {
+    q[i] = 0;
+    for (int j = 0; j < M; ++j) {
+      int a = A[i * M + j];
+      s[j] += r[i] * a;
+      q[i] += a * p[j];
+    }
+  }
+}
+
+// Provide a tiny main so clang emits a complete TU; tests extract only the kernel anyway.
+int main(void) {
+  static int A[N * M];
+  static int p[M];
+  static int r[N];
+  static int s[M];
+  static int q[N];
+  kernel_bicg_int(A, p, r, s, q);
+  return 0;
+}

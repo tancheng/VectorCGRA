@@ -134,6 +134,8 @@ yaml_to_VectorCGRA_map_const = {
 
     "GRANT_ONCE": OPT_GRT_ONCE_CONST,
     "SHL": OPT_LLS_CONST,
+    "STORE": OPT_STR_CONST,
+    "LOAD": OPT_LD_CONST,
 }
 
 
