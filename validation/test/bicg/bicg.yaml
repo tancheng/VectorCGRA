@@ -468,7 +468,8 @@ array_config:
                   time_step: 3
                   invalid_iterations: 0
                   src_operands:
-                    - operand: "#0"
+                    # r[] moved to bank 3 (base 384) to avoid bank conflict with A[] (bank 0/1) at same step.
+                    - operand: "#384"
                       color: "RED"
                     - operand: "$0"
                       color: "RED"
