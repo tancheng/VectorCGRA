@@ -35,6 +35,7 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
+from ...lib.util.common import *
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -47,7 +48,7 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
-                src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out):
+                src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out, num_ctrl, total_steps):
 
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -61,7 +62,7 @@ class TestHarness(Component):
                   for i in range(num_tile_outports)]
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(IntraCgraPktType, ctrl_mem_size, data_mem_size, 3, 2, # 2 opts
+    s.dut = DUT(IntraCgraPktType, ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,
@@ -212,7 +213,8 @@ def test_tile_alu(cmdline_opts):
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
+                   num_ctrl = 2, total_steps = 2)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
@@ -327,7 +329,8 @@ def test_tile_multicycle_exclusive(cmdline_opts):
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
+                   num_ctrl = 2, total_steps = 2)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
@@ -440,7 +443,8 @@ def test_tile_multicycle_inclusive(cmdline_opts):
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
+                   num_ctrl = 2, total_steps = 2)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
@@ -552,10 +556,180 @@ def test_readReg_routing_priority(cmdline_opts):
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out)
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
+                   num_ctrl = 2, total_steps = 2)
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+def test_prologue_nah(cmdline_opts):
+  num_tile_inports = 4
+  num_tile_outports = 4
+  num_fu_inports = 4
+  num_fu_outports = 2
+  num_routing_outports = num_fu_inports + num_tile_outports
+  ctrl_mem_size = 8
+  data_mem_size_global = 16
+  num_cgra_rows = 1
+  num_cgra_columns = 1
+  num_cgras = num_cgra_rows * num_cgra_columns
+  num_tiles = 4
+  num_commands = NUM_CMDS
+  num_ctrl_operations = NUM_OPTS
+  num_registers_per_reg_bank = 16
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  pick_register0 = [FuInType(0) for x in range(num_fu_inports)]
+  pick_register1 = [FuInType(1), FuInType(2), FuInType(3), FuInType(4)]
+  DUT = TileRTL
+  FunctionUnit = FlexibleFuRTL
+  # FuList = [AdderRTL, MulRTL, MemUnitRTL]
+  FuList = [GrantRTL]
+  # 64-bit to satisfy the default bitwidth of vector FUs.
+  data_nbits = 64
+  DataType = mk_data(data_nbits, 1)
+  PredicateType = mk_predicate(1, 1)
+  cgra_id_nbits = 1
+  addr_nbits = clog2(data_mem_size_global)
+  predicate_nbits = 1
+
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  DataAddrType = mk_bits(addr_nbits)
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  src_ctrl_pkt = [
+          # NAH without routing, done in 1 cycle.
+          IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                     ctrl = CtrlType(OPT_NAH, 
+                                                                     pick_register1,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+	      # NAH with routing, done in 1 cycle after PR#282.
+          IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                     ctrl = CtrlType(OPT_NAH, 
+                                                                     pick_register1,
+                                                                     [TileInType(PORT_NORTH), TileInType(0), TileInType(0), TileInType(0), 
+                                                                      TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+	      # Any operation, e.g., OPT_GRT_PRED, will be treated as NAH during prologue, done in 1 cycle after PR#282.
+          # Scenario 1: Both routing and operation has prologue, OPT_GRT_PRED takes inputs from routing crossbar and directly executes in current iteration.
+          IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                                                     ctrl = CtrlType(OPT_GRT_PRED, 
+                                                                     pick_register1,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0), 
+                                                                      TileInType(PORT_SOUTH), TileInType(PORT_WEST), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0), 
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+
+          # Prologue settings for Scenario 1.
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 2,
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 2,
+                                                     ctrl = CtrlType(routing_xbar_outport = [
+                                                        TileInType(PORT_SOUTH), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR, ctrl_addr = 2,
+                                                     ctrl = CtrlType(routing_xbar_outport = [
+                                                        TileInType(PORT_WEST), TileInType(0), TileInType(0), TileInType(0),
+                                                        TileInType(0), TileInType(0), TileInType(0), TileInType(0)]),
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 2,
+                                                     ctrl = CtrlType(fu_xbar_outport = [
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                                                     data = DataType(1, 1))),
+
+          # Scenario 2: Only operation has prologue, the input of OPT_GRT_PRED will be written to register cluster in current iteration,
+          # Grant read inputs from register cluster and executes in the next iteration.
+          IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                                                     ctrl = CtrlType(OPT_GRT_PRED,
+                                                                     pick_register1,
+                                                                     [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                      TileInType(PORT_SOUTH), TileInType(PORT_WEST), TileInType(0), TileInType(0)],
+                                                                     [FuOutType(0), FuOutType(1), FuOutType(0), FuOutType(0),
+                                                                      FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                     write_reg_from = [b2(1), b2(1), b2(0), b2(0)],
+                                                                     read_reg_towards = [b2(1), b2(1), b2(0), b2(0)]))),
+
+          # Prologue settings for Scenario 2.
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU, ctrl_addr = 3,
+                                                     data = DataType(1, 1))),
+          IntraCgraPktType(0, 0,
+                           payload = CgraPayloadType(CMD_CONFIG_PROLOGUE_FU_CROSSBAR, ctrl_addr = 3,
+                                                     ctrl = CtrlType(fu_xbar_outport = [
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                        FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
+                                                     data = DataType(1, 1))),
+          
+          # Launches the tile.
+          IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
+
+              # Input for NAH (ctrl_addr = 1) in the 1st iter,           input for NAH (ctrl_addr = 1) in the 2nd iter.
+  src_data = [[DataType(3, 1),                                           DataType(3, 1)],
+              # Input for OPT_GRT_PRED (ctrl_addr = 3) in the 1st iter,  input for OPT_GRT_PRED (ctrl_addr = 2) in the 2nd iter,  unused input for OPT_GRT_PRED (ctrl_addr = 3) in the 2nd iter.
+              [DataType(4, 1),                                           DataType(5, 1),                                          DataType(6, 1)],
+              [DataType(0, 1),                                           DataType(0, 1),                                          DataType(0, 1)],
+              []]
+
+  sink_out = [
+              # Output for NAH (ctrl_addr = 1) in the 1st iter,    output for NAH (ctrl_addr = 1) in the 2nd iter.
+              [DataType(3, 1),                                     DataType(3, 1)],
+              # OPT_GRT_PRED (ctrl_addr = 2) does not take any inputs in the 1st iter because of prologue for both routing and operation.
+              # OPT_GRT_PRED (ctrl_addr = 3) write inputs DataType(4, 1) and DataType(0, 1) into registers because of prologue for only operation.
+              # Output for OPT_GRT_PRED (ctrl_addr = 2) in the 2nd iter,  output for OPT_GRT_PRED (ctrl_addr = 3) in the 2nd iter.
+              [DataType(5, 0),                                            DataType(4, 0)],
+              [],
+              []]
+                                             # src  dst        src/dst cgra x/y
+  complete_signal_sink_out = [IntraCgraPktType(0,   num_tiles, 0, 0,   0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
+#          IntraCgraPktType(0,           0,   num_tiles, 0,   0,  ctrl_action = CMD_COMPLETE)]
+
+  th = TestHarness(DUT, FunctionUnit, FuList,
+                   IntraCgraPktType,
+                   ctrl_mem_size,
+                   data_mem_size_global, num_fu_inports, num_fu_outports,
+                   num_tile_inports, num_tile_outports,
+                   num_registers_per_reg_bank, src_data,
+                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
+                   num_ctrl = 4, total_steps = 8)
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+

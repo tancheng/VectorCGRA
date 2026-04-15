@@ -237,7 +237,8 @@ class CrossbarRTL(Component):
         # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
         # the rdy checking on the FU's inports (connecting from crossbar_outport) if
         # the compute is already completed.
-        if (s.in_dir[i] > 0) & \
+        # Those conditions are effective only after prologue.
+        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]) & \
            (~s.compute_done | (i < outport_towards_local_base_id)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
         else:
@@ -247,7 +248,7 @@ class CrossbarRTL(Component):
     def update_valid_vector():
       s.recv_valid_vector @= 0
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
           s.recv_valid_vector[i] @= s.recv_data_val[s.in_dir_local[i]]
         else:
           s.recv_valid_vector[i] @= 1
@@ -258,7 +259,7 @@ class CrossbarRTL(Component):
         s.recv_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
           s.recv_required_vector[s.in_dir_local[i]] @= 1
 
     @update
@@ -268,7 +269,7 @@ class CrossbarRTL(Component):
         s.send_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
           s.send_required_vector[i] @= 1
 
 

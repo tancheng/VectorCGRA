@@ -88,7 +88,6 @@ class CtrlMemDynamicRTL(Component):
         [[Wire(PrologueCountType) for _ in range(num_routing_xbar_inports)] for _ in range(ctrl_mem_size)]
 
     # Connections.
-    s.send_ctrl.msg //= s.reg_file.rdata[0]
     s.recv_pkt_from_controller //= s.recv_pkt_from_controller_queue.recv
     s.recv_from_element //= s.recv_from_element_queue.recv
 
@@ -206,6 +205,24 @@ class CtrlMemDynamicRTL(Component):
       if s.recv_pkt_from_controller_queue.send.val & \
           (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_TERMINATE):
         s.send_ctrl.val @= b1(0)
+      
+      for i in range(num_fu_inports):
+        s.send_ctrl.msg.fu_in[i]            @= s.reg_file.rdata[0].fu_in[i]
+        s.send_ctrl.msg.write_reg_from[i]   @= s.reg_file.rdata[0].write_reg_from[i]
+        s.send_ctrl.msg.write_reg_idx[i]    @= s.reg_file.rdata[0].write_reg_idx[i]
+        s.send_ctrl.msg.read_reg_towards[i] @= s.reg_file.rdata[0].read_reg_towards[i]
+        s.send_ctrl.msg.read_reg_idx[i]     @= s.reg_file.rdata[0].read_reg_idx[i]
+      for i in range(num_routing_outports):
+        s.send_ctrl.msg.routing_xbar_outport[i] @= s.reg_file.rdata[0].routing_xbar_outport[i]
+        s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
+      s.send_ctrl.msg.vector_factor_power @= s.reg_file.rdata[0].vector_factor_power
+      s.send_ctrl.msg.is_last_ctrl        @= s.reg_file.rdata[0].is_last_ctrl
+      # Sets each FU's op code as NAH when prologue execution is not completed.
+      # As they are supposed to do nothing during that prologue cycles.
+      if s.prologue_count_outport_fu != 0:
+        s.send_ctrl.msg.operation @= OPT_NAH
+      else:
+        s.send_ctrl.msg.operation @= s.reg_file.rdata[0].operation
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
