@@ -322,7 +322,8 @@ class InstructionSignals:
                 # find all the const
                 for index, src_operand in enumerate(src_operands):
                     if _type(src_operand) == 'IMM':
-                        const_operands.append(src_operand)
+                        # include the real timestep for future sorting
+                        const_operands.append((src_operand, operation["time_step"]))
                         # delete it from the src_operands since it is implicit in vectorCGRA
                         del src_operands[index]
 
@@ -787,10 +788,14 @@ class TileSignals:
                 consts.extend(const)
         
         # make the const signals
+        # sort the consts according to the usage order
+        consts.sort(key=lambda x: x[1])
+        #print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
+        #print(consts)
         for idx, const_operand in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
                                               payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(int(const_operand['operand'][1:] if const_operand['operand'].startswith('#') else const_operand['operand']), 1)))
+                                                                             data = self.DataType(int(const_operand[0]['operand'][1:] if const_operand[0]['operand'].startswith('#') else const_operand[0]['operand']), 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
@@ -961,7 +966,7 @@ if __name__ == "__main__":
     print("Test the Basic Functionality of the ScriptFactory")
 
     script_factory = ScriptFactory(
-        path = "./validation/test/sad/sad.yaml",
+        path = "./validation/test/gemm/gemm.yaml",
         CtrlType = CtrlTypeDummy,
         IntraCgraPktType = IntraCgraPktTypeDummy,
         CgraPayloadType = CgraPayloadTypeDummy,
@@ -969,7 +974,7 @@ if __name__ == "__main__":
         FuOutType = FuOutTypeDummy,
         CMD_CONFIG_input = CMD_CONFIG_Dummy(),
         FuInType = FuInTypeDummy,
-        ii = 5,
+        ii = 17,
         loop_times = 2,
         CMD_CONST_input = CMD_CONST_Dummy(),
         CMD_CONFIG_COUNT_PER_ITER_input = CMD_CONFIG_COUNT_PER_ITER_Dummy(),
