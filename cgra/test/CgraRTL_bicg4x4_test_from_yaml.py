@@ -284,7 +284,6 @@ BaseA = 0       # A[8x8] base in tile (0,2), stride 32  → bank 0 (rows 0-3, ad
 BaseP = 256     # p[8] base in tile (1,0)  → bank 2 (addr 256-263), GEP #256 in PE(0,0) step5
 BaseS = 264     # s[8] base in tile (1,0)  → bank 2 (addr 264-271), GEP #264 in PE(0,0) step6
 BaseR = 384     # r[8] base in tile (0,1)  → bank 3 (addr 384-391), GEP #384 in PE(1,1) step3
-BaseR = 0       # r base address in tile (0,1)
 BaseQ = 0       # q[8] base in tile (0,3) → bank 0 (addr 0-7); step 8 LOAD, no concurrent conflict with A/r/p
 
 # Input data (matching main.go formulas)
