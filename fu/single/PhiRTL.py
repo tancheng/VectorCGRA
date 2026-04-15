@@ -86,7 +86,7 @@ class PhiRTL(Fu):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         elif s.recv_opt.msg.operation == OPT_PHI_START:
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= s.reached_vector_factor
           elif s.recv_in[s.in0_idx].msg.predicate == Bits1(1):
@@ -98,27 +98,27 @@ class PhiRTL(Fu):
           else: # No predecessor is active.
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= 0
-          s.recv_all_val @= ((s.first & s.recv_in[s.in0_idx].val) | \
-                             (~s.first & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
+          s.recv_all_val @= ((s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val) | \
+                             (~s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= ~s.first & s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= ~s.first[s.ctrl_addr_inport] & s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.payload @= s.recv_const.msg.payload
           else:
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
 
-          s.recv_all_val @= ((s.first & s.recv_const.val) | \
-                             (~s.first & s.recv_in[s.in0_idx].val))
+          s.recv_all_val @= ((s.first[s.ctrl_addr_inport] & s.recv_const.val) | \
+                             (~s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val))
           s.send_out[0].val @= s.recv_all_val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
-          if s.first:
+          if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
                                            s.reached_vector_factor
           else:
@@ -148,7 +148,7 @@ class PhiRTL(Fu):
     # This allows multiple PHI_START/PHI_CONST operations on the same
     # tile without the first one prematurely clearing the flag.
     @update_ff
-    def br_start_once():
+    def record_first_execution():
       if s.reset | s.clear:
         s.first <<= b1(1)
         s.prev_ctrl_addr <<= s.CtrlAddrType(0)
@@ -163,5 +163,6 @@ class PhiRTL(Fu):
       opt_str = OPT_SYMBOL_DICT[s.recv_opt.msg.operation]
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
-    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}'
+    first_str = ",".join([str(x) for x in s.first])
+    return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) (first: {first_str})] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}; ctrl_addr_inport: {s.ctrl_addr_inport}'
 
