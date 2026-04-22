@@ -20,8 +20,8 @@ from ...lib.util.common import MAX_BITSTREAM_COUNT, MAX_THREAD_COUNT
 from ...lib.messages import *
 from ...lib.opt_type import *
 
-DFG_MAPPINGS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/dfg_mappings"
-BENCHMARKS_DIR = "/data/angl7/STEP_VectorCGRA/cgra/test/benchmarks"
+DFG_MAPPINGS_DIR = "./dfg_mappings"
+BENCHMARKS_DIR = "./benchmarks"
 DEFAULT_DFG_JSON = f"{DFG_MAPPINGS_DIR}/dfg_mapping_default.json"
 PASSING_DFG_JSONS = {
     f"{DFG_MAPPINGS_DIR}/dfg_mapping_bfs.json",
