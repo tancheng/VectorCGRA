@@ -637,8 +637,8 @@ def test_prologue_nah(cmdline_opts):
                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0), 
                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
 
-	      # Any operation, e.g., OPT_GRT_PRED, will be treated as NAH during prologue, done in 1 cycle after PR#282.
-          # Scenario 1: Both routing and operation has prologue, OPT_GRT_PRED takes inputs from routing crossbar and directly executes in current iteration.
+	      # Any operation, e.g., OPT_GRT_PRED, will be replaced with NAH during fu prologue, done in 1 cycle after PR#282.
+          # Scenario 1: Both routing and fu has prologue, OPT_GRT_PRED takes inputs from routing crossbar and directly executes in current iteration.
           IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
                                                      ctrl = CtrlType(OPT_GRT_PRED, 
@@ -671,8 +671,8 @@ def test_prologue_nah(cmdline_opts):
                                                         FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]),
                                                      data = DataType(1, 1))),
 
-          # Scenario 2: Only operation has prologue, the input of OPT_GRT_PRED will be written to register cluster in current iteration,
-          # Grant read inputs from register cluster and executes in the next iteration.
+          # Scenario 2: Only fu has prologue, the routing value must be written to register cluster in current iteration,
+          # so that OPT_GRT_PRED can read inputs from register cluster and executes correctly in its first iteration.
           IntraCgraPktType(0,  0,  0,          0,          0, 0, 0, 0,
                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
                                                      ctrl = CtrlType(OPT_GRT_PRED,
@@ -700,7 +700,7 @@ def test_prologue_nah(cmdline_opts):
 
               # Input for NAH (ctrl_addr = 1) in the 1st iter,           input for NAH (ctrl_addr = 1) in the 2nd iter.
   src_data = [[DataType(3, 1),                                           DataType(3, 1)],
-              # Input for OPT_GRT_PRED (ctrl_addr = 3) in the 1st iter,  input for OPT_GRT_PRED (ctrl_addr = 2) in the 2nd iter,  unused input for OPT_GRT_PRED (ctrl_addr = 3) in the 2nd iter.
+              # Input for OPT_GRT_PRED (ctrl_addr = 3) in the 1st iter,  input for OPT_GRT_PRED (ctrl_addr = 2) in the 2nd iter,  unused input for OPT_GRT_PRED (ctrl_addr = 3) in the 2nd iter (For CMD_COMPLETE).
               [DataType(4, 1),                                           DataType(5, 1),                                          DataType(6, 1)],
               [DataType(0, 1),                                           DataType(0, 1),                                          DataType(0, 1)],
               []]
@@ -708,8 +708,8 @@ def test_prologue_nah(cmdline_opts):
   sink_out = [
               # Output for NAH (ctrl_addr = 1) in the 1st iter,    output for NAH (ctrl_addr = 1) in the 2nd iter.
               [DataType(3, 1),                                     DataType(3, 1)],
-              # OPT_GRT_PRED (ctrl_addr = 2) does not take any inputs in the 1st iter because of prologue for both routing and operation.
-              # OPT_GRT_PRED (ctrl_addr = 3) write inputs DataType(4, 1) and DataType(0, 1) into registers because of prologue for only operation.
+              # OPT_GRT_PRED (ctrl_addr = 2) does not take any inputs in the 1st iter because of prologue for both routing and fu.
+              # OPT_GRT_PRED (ctrl_addr = 3) can write inputs DataType(4, 1) and DataType(0, 1) into registers because of prologue for only fu.
               # Output for OPT_GRT_PRED (ctrl_addr = 2) in the 2nd iter,  output for OPT_GRT_PRED (ctrl_addr = 3) in the 2nd iter.
               [DataType(5, 0),                                            DataType(4, 0)],
               [],

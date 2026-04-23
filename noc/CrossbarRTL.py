@@ -89,8 +89,8 @@ class CrossbarRTL(Component):
 
     # Prologue-related wires and registers, which are used to indicate
     # whether the prologue steps have already been satisfied.
-    s.prologue_allowing_vector = Wire(num_outports)
-    s.recv_valid_or_prologue_allowing_vector = Wire(num_outports)
+    s.during_prologue_allowing_vector = Wire(num_outports)
+    s.recv_valid_or_during_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_counter_next = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
     s.prologue_count_inport = [[InPort(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
@@ -144,7 +144,7 @@ class CrossbarRTL(Component):
             s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
         s.recv_opt.rdy @= s.all_send_accepted & \
-                          reduce_and(s.recv_valid_or_prologue_allowing_vector)
+                          reduce_and(s.recv_valid_or_during_prologue_allowing_vector)
 
     @update_ff
     def update_prologue_counter():
@@ -199,22 +199,22 @@ class CrossbarRTL(Component):
 
     @update
     def update_prologue_allowing_vector():
-      s.prologue_allowing_vector @= 0
+      s.during_prologue_allowing_vector @= 0
       for i in range(num_outports):
         if s.in_dir[i] > 0:
           # Records whether the prologue steps have already been satisfied.
-          s.prologue_allowing_vector[i] @= \
+          s.during_prologue_allowing_vector[i] @= \
             (s.prologue_counter[s.ctrl_addr_inport][s.in_dir_local[i]] < \
              s.prologue_count_wire[s.ctrl_addr_inport][s.in_dir_local[i]])
         else:
-          s.prologue_allowing_vector[i] @= 1
+          s.during_prologue_allowing_vector[i] @= 0
 
     @update
     def update_prologue_or_valid_vector():
-      s.recv_valid_or_prologue_allowing_vector @= 0
+      s.recv_valid_or_during_prologue_allowing_vector @= 0
       for i in range(num_outports):
-        s.recv_valid_or_prologue_allowing_vector[i] @= \
-            s.recv_valid_vector[i] | s.prologue_allowing_vector[i]
+        s.recv_valid_or_during_prologue_allowing_vector[i] @= \
+            s.recv_valid_vector[i] | s.during_prologue_allowing_vector[i]
 
     @update
     def update_in_dir_vector():
@@ -232,13 +232,12 @@ class CrossbarRTL(Component):
     def update_rdy_vector():
       s.send_rdy_vector @= 0
       for i in range(num_outports):
-        # The `num_inports` indicates the number of outports that go to other tiles.
+        # The `outport_towards_local_base_id` indicates the number of outports that go to other tiles.
         # Specifically, if the compute already done, we shouldn't care the ones
-        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
+        # (i.e., i >= outport_towards_local_base_id) go to the FU's inports. In other words, we skip
         # the rdy checking on the FU's inports (connecting from crossbar_outport) if
         # the compute is already completed.
-        # Those conditions are effective only after prologue.
-        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]) & \
+        if (s.in_dir[i] > 0) & \
            (~s.compute_done | (i < outport_towards_local_base_id)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
         else:
@@ -248,7 +247,7 @@ class CrossbarRTL(Component):
     def update_valid_vector():
       s.recv_valid_vector @= 0
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
+        if s.in_dir[i] > 0:
           s.recv_valid_vector[i] @= s.recv_data_val[s.in_dir_local[i]]
         else:
           s.recv_valid_vector[i] @= 1
@@ -259,8 +258,9 @@ class CrossbarRTL(Component):
         s.recv_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
-          s.recv_required_vector[s.in_dir_local[i]] @= 1
+        if s.in_dir[i] > 0:
+          # Avoids crossbar mistakenly consume data during prologue.
+          s.recv_required_vector[s.in_dir_local[i]] @= ~s.during_prologue_allowing_vector[i]
 
     @update
     def update_send_required_vector():
@@ -269,7 +269,7 @@ class CrossbarRTL(Component):
         s.send_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & (~s.prologue_allowing_vector[i]):
+        if s.in_dir[i] > 0:
           s.send_required_vector[i] @= 1
 
 
