@@ -1,0 +1,18 @@
+interface:
+  num_tile_inports: 8
+  num_tile_outports: 8
+  num_fu_inports: 4
+  num_fu_outports: 2
+  data_nbits: 32
+  predicate_nbits: 1
+
+memory:
+  data_mem_size_global: 128
+  data_mem_size_per_bank: 16
+  num_banks_per_cgra: 2
+  num_registers_per_reg_bank: 16
+  mem_access_is_combinational: false
+
+execution:
+  ctrl_count_per_iter: 3
+  total_ctrl_steps: 34

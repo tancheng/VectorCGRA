@@ -17,40 +17,37 @@ def get_links(tiles):
     per_cgra_col = len(tiles[0])
     links = []
 
-    # --- 1. Memory Connections (West Side) ---
-    # Creates bidirectional links between memory and each tile in the first column (col 0).
-    # The memPort index is assumed to match the row index.
-    for r in range(per_cgra_row):
+    # --- 1. Memory Connections ---
+    # Match CgraRTL's data memory port order: bottom row from west to east,
+    # then the remaining left-column tiles from south to north.
+    for c in range(per_cgra_col):
         # From memory to tile
-        link_from_mem = Link(None, tiles[r][0], r, PORT_INDEX_WEST)
+        link_from_mem = Link(None, tiles[0][c], c, PORT_INDEX_SOUTH)
         link_from_mem.fromMem = True
-        # The leftmost column of tiles connects to ports [0, per_cgra_row - 1] of dataSPM.
-        link_from_mem.memPort = r
+        link_from_mem.memPort = c
         link_from_mem.validatePorts()
         links.append(link_from_mem)
 
         # From tile to memory
-        link_to_mem = Link(tiles[r][0], None, PORT_INDEX_WEST, r)
+        link_to_mem = Link(tiles[0][c], None, PORT_INDEX_SOUTH, c)
         link_to_mem.toMem = True
-        link_to_mem.memPort = r
+        link_to_mem.memPort = c
         link_to_mem.validatePorts()
         links.append(link_to_mem)
 
-    # --- Memory Connections (South Side) ---
-    # Creates bidirectional links between memory and each tile in the bottom row.
-    for c in range(1, per_cgra_col):
+    for r in range(1, per_cgra_row):
+        mem_port = per_cgra_col + r - 1
         # From memory to tile.
-        link_from_mem = Link(None, tiles[0][c], per_cgra_row - 1 + c, PORT_INDEX_SOUTH)
+        link_from_mem = Link(None, tiles[r][0], mem_port, PORT_INDEX_WEST)
         link_from_mem.fromMem = True
-        # The bottom row of tiles connects to ports [per_cgra_row, per_cgra_row + per_cgra_col - 2]
-        link_from_mem.memPort = per_cgra_row - 1 + c
+        link_from_mem.memPort = mem_port
         link_from_mem.validatePorts()
         links.append(link_from_mem)
 
         # From tile to memory.
-        link_to_mem = Link(tiles[0][c], None, PORT_INDEX_SOUTH, per_cgra_row - 1 + c)
+        link_to_mem = Link(tiles[r][0], None, PORT_INDEX_WEST, mem_port)
         link_to_mem.toMem = True
-        link_to_mem.memPort = per_cgra_row - 1 + c
+        link_to_mem.memPort = mem_port
         link_to_mem.validatePorts()
         links.append(link_to_mem)
 

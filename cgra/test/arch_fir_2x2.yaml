@@ -1,0 +1,12 @@
+multi_cgra_defaults:
+  rows: 1
+  columns: 1
+
+cgra_defaults:
+  rows: 2
+  columns: 2
+  configMemSize: 6
+
+tile_defaults:
+  num_registers: 16
+  fu_types: ["add", "mul", "grant", "phi", "mem", "return", "four_inc_cmp_not_grant"]

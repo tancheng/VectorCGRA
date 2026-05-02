@@ -6,6 +6,8 @@ CgraTemplateRTL.py
 Author : Cheng Tan
   Date : Dec 30, 2024
 """
+from importlib import import_module
+
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
@@ -19,52 +21,48 @@ from ..tile.TileRTL import TileRTL
 from ..lib.util.data_struct_attr import *
 from ..lib.messages import *
 
-from ..fu.single.PhiRTL import PhiRTL
-from ..fu.single.AdderRTL import AdderRTL
-from ..fu.single.ShifterRTL import ShifterRTL
-from ..fu.single.MemUnitRTL import MemUnitRTL
-from ..fu.single.SelRTL import SelRTL
-from ..fu.single.CompRTL import CompRTL
-from ..fu.double.SeqMulAdderRTL import SeqMulAdderRTL
-from ..fu.single.RetRTL import RetRTL
-from ..fu.single.MulRTL import MulRTL
-from ..fu.single.ExclusiveDivRTL import ExclusiveDivRTL
-from ..fu.single.LogicRTL import LogicRTL
-from ..fu.single.GrantRTL import GrantRTL
-from ..fu.single.LoopControlRTL import LoopControlRTL
-from ..fu.single.ConstRTL import ConstRTL
-from ..fu.float.FpAddRTL import FpAddRTL
-from ..fu.float.FpMulRTL import FpMulRTL
-
 fu_map = {
-  "add": AdderRTL,
-  "mul": MulRTL,
-  "div": ExclusiveDivRTL,
-  "fadd": FpAddRTL,
-  "fmul": FpMulRTL,
+  "add": ("VectorCGRA.fu.single.AdderRTL", "AdderRTL"),
+  "mul": ("VectorCGRA.fu.single.MulRTL", "MulRTL"),
+  "div": ("VectorCGRA.fu.single.ExclusiveDivRTL", "ExclusiveDivRTL"),
+  "fadd": ("VectorCGRA.fu.float.FpAddRTL", "FpAddRTL"),
+  "fmul": ("VectorCGRA.fu.float.FpMulRTL", "FpMulRTL"),
   "fdiv": None,
-  "logic": LogicRTL,
-  "cmp": CompRTL,
-  "sel": SelRTL,
+  "logic": ("VectorCGRA.fu.single.LogicRTL", "LogicRTL"),
+  "cmp": ("VectorCGRA.fu.single.CompRTL", "CompRTL"),
+  "sel": ("VectorCGRA.fu.single.SelRTL", "SelRTL"),
   "type_conv": None,
   "vfmul": None,
   "fadd_fadd": None,
   "fmul_fadd": None,
-  "grant": GrantRTL,
-  "loop_control": LoopControlRTL,
-  "phi": PhiRTL,
-  "constant": ConstRTL,
-  "mem": MemUnitRTL,
-  "return": RetRTL,
-  "mem_indexed": MemUnitRTL,
+  "grant": ("VectorCGRA.fu.single.GrantRTL", "GrantRTL"),
+  "loop_control": ("VectorCGRA.fu.single.LoopControlRTL", "LoopControlRTL"),
+  "phi": ("VectorCGRA.fu.single.PhiRTL", "PhiRTL"),
+  "constant": ("VectorCGRA.fu.single.ConstRTL", "ConstRTL"),
+  "mem": ("VectorCGRA.fu.single.MemUnitRTL", "MemUnitRTL"),
+  "return": ("VectorCGRA.fu.single.RetRTL", "RetRTL"),
+  "mem_indexed": ("VectorCGRA.fu.single.MemUnitRTL", "MemUnitRTL"),
   "alloca": None,
-  "shift": ShifterRTL,
+  "shift": ("VectorCGRA.fu.single.ShifterRTL", "ShifterRTL"),
+  "seq_mul_adder": ("VectorCGRA.fu.double.SeqMulAdderRTL", "SeqMulAdderRTL"),
+  "four_inc_cmp_not_grant": ("VectorCGRA.fu.quadra.FourIncCmpNotGrantRTL", "FourIncCmpNotGrantRTL"),
 }
 
 def map_fu2rtl(fu_type: list[str]):
-  fuRTL = list({fu_map[fu] for fu in fu_type})
-  fuRTL_new = [fu for fu in fuRTL if fu is not None]
-  return fuRTL_new
+  fuRTL = []
+  seen = set()
+  for fu in fu_type:
+    if fu not in fu_map:
+      raise ValueError(f"Unknown FU type in architecture YAML: {fu}")
+    target = fu_map[fu]
+    if target is None:
+      continue
+    module_name, class_name = target
+    cls = getattr(import_module(module_name), class_name)
+    if cls not in seen:
+      fuRTL.append(cls)
+      seen.add(cls)
+  return fuRTL
 
 
 class CgraTemplateRTL(Component):
