@@ -27,22 +27,42 @@ class ArchParser:
     def parse_tiles(self):
         """
         Parse the tiles in one CGRA.
+        We should consider the case of heterogeneous CGRA.
         """
-        tiles = []
-        for r in range(self.per_cgra_rows):
-            tiles.append([])
-            for c in range(self.per_cgra_columns):
-                """
-                Mapping way of tiles in a single CGRA (Cartesian coordinate system):
-                  ^
-                  |   y (row) increases upward: 0 at the bottom, up to `per_cgra_rows-1` at the top
-                  |
-                  |   (row, col): (y, x)
-                  +------------------------>
-                  0                        x (column) increases to the right: 0 at the left, up to `per_cgra_columns-1` at the right
-                """
-                tiles[r].append(Tile(c, r, self.num_registers, self.fu_types))
-        return tiles
+
+        # cgra_id to tiles map.
+        id2tiles_map = {i: [] for i in range(self.cgra_rows * self.cgra_columns)}
+        # default tiles.
+        for i in range(self.cgra_rows * self.cgra_columns):
+            for r in range(self.per_cgra_rows):
+                id2tiles_map[i].append([])
+                for c in range(self.per_cgra_columns):
+                    id2tiles_map[i][r].append(
+                        Tile(c, r, self.num_registers, self.fu_types)
+                    )
+
+        if "cgra_overrides" in self.yaml_data:
+            for override in self.yaml_data["cgra_overrides"]:
+                cgra_id = override["cgra_x"] * self.cgra_columns + override["cgra_y"]
+                override_tiles = []
+                for r in range(override["rows"]):
+                    override_tiles.append([])
+                    for c in range(override["columns"]):
+                        """
+                        Mapping way of tiles in a single CGRA (Cartesian coordinate system):
+                        ^
+                        |   y (row) increases upward: 0 at the bottom, up to `override["rows"]-1` at the top
+                        |
+                        |   (row, col): (y, x)
+                        +------------------------>
+                        0                        x (column) increases to the right: 0 at the left, up to `override["columns"]-1` at the right
+                        """
+                        override_tiles[r].append(
+                            Tile(c, r, self.num_registers, self.fu_types)
+                        )
+                id2tiles_map[cgra_id] = override_tiles
+
+        return id2tiles_map
 
     def parse_cgras(self):
         # Restricted by ControllerRTL.
@@ -52,15 +72,15 @@ class ArchParser:
         num_cgras = self.cgra_rows * self.cgra_columns
         # Restricted by data_mem_size_global(the power of 2).
         assert (num_cgras & (num_cgras - 1)) == 0, "num_cgras must be the power of 2."
-        tiles = self.parse_tiles()
-
+        # cgra id to tiles map.
+        id2tiles_map = self.parse_tiles()
         # cgra id to valid links.
         id2validLinks = {}
         # cgra id to valid tiles.
         id2validTiles = {}
 
         for id in range(num_cgras):
-            tiles0 = copy.deepcopy(tiles)
+            tiles0 = copy.deepcopy(id2tiles_map[id])
             links0 = get_links(tiles0)
             tiles0_flat = [t for row in tiles0 for t in row]
 

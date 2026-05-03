@@ -252,7 +252,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
   '''
   Creates test performing load -> inc -> store on cgra 2. Specifically,
   cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
-  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
+  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile `per_cgra_columns`.
   cgra 2 tile `per_cgra_columns` waits for the data from tile 0, and performs stores (0xff) to memory address 3.
   Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
   therefore, all the memory addresses from cgra 2 are remote.
