@@ -9,19 +9,19 @@ import copy
 
 class ArchParser:
     def __init__(self, yaml_file: str):
-        with open(yaml_file, 'r') as f:
+        with open(yaml_file, "r") as f:
             self.yaml_data = yaml.safe_load(f)
 
-        self.cgra_rows = self.yaml_data['multi_cgra_defaults']['rows']
-        self.cgra_columns = self.yaml_data['multi_cgra_defaults']['columns']
-        self.per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
-        self.per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
-        self.num_registers = self.yaml_data['tile_defaults']['num_registers']
-        self.fu_types = self.yaml_data['tile_defaults']['fu_types']
+        self.cgra_rows = self.yaml_data["multi_cgra_defaults"]["rows"]
+        self.cgra_columns = self.yaml_data["multi_cgra_defaults"]["columns"]
+        self.per_cgra_rows = self.yaml_data["cgra_defaults"]["rows"]
+        self.per_cgra_columns = self.yaml_data["cgra_defaults"]["columns"]
+        self.num_registers = self.yaml_data["tile_defaults"]["num_registers"]
+        self.fu_types = self.yaml_data["tile_defaults"]["fu_types"]
 
     def parse_dataSPM(self):
-        data_mem_num_rd_tiles = self.per_cgra_rows + self.per_cgra_columns - 1 
-        data_mem_num_wr_tiles = self.per_cgra_rows + self.per_cgra_columns - 1 
+        data_mem_num_rd_tiles = self.per_cgra_rows + self.per_cgra_columns - 1
+        data_mem_num_wr_tiles = self.per_cgra_rows + self.per_cgra_columns - 1
         return DataSPM(data_mem_num_rd_tiles, data_mem_num_wr_tiles)
 
     def parse_tiles(self):
@@ -46,13 +46,13 @@ class ArchParser:
 
     def parse_cgras(self):
         # Restricted by ControllerRTL.
-        assert self.cgra_rows <= self.cgra_columns, "multi_cgra_rows must be less than or equal to multi_cgra_columns."
+        assert (
+            self.cgra_rows <= self.cgra_columns
+        ), "multi_cgra_rows must be less than or equal to multi_cgra_columns."
         num_cgras = self.cgra_rows * self.cgra_columns
         # Restricted by data_mem_size_global(the power of 2).
-        assert (num_cgras & (num_cgras - 1)
-                ) == 0, "num_cgras must be the power of 2."
+        assert (num_cgras & (num_cgras - 1)) == 0, "num_cgras must be the power of 2."
         tiles = self.parse_tiles()
-
 
         # cgra id to valid links.
         id2validLinks = {}
@@ -70,12 +70,18 @@ class ArchParser:
         # Iterates id2validTiles to enable boundary ports
         for cgra_id, tiles_flat in id2validTiles.items():
             configure_boundary_ports(
-                cgra_id, tiles_flat, self.cgra_rows, self.cgra_columns, self.per_cgra_rows, self.per_cgra_columns)
+                cgra_id,
+                tiles_flat,
+                self.cgra_rows,
+                self.cgra_columns,
+                self.per_cgra_rows,
+                self.per_cgra_columns,
+            )
 
         dataSPM = self.parse_dataSPM()
         id2dataSPM = {}
         id2ctrlMemSize_map = {}
-        ctrlMemSize = self.yaml_data['cgra_defaults']['configMemSize']
+        ctrlMemSize = self.yaml_data["cgra_defaults"]["configMemSize"]
 
         for id in range(num_cgras):
             id2dataSPM[id] = dataSPM
@@ -86,26 +92,44 @@ class ArchParser:
             cgras.append([])
             for cgra_col in range(self.cgra_columns):
                 id = cgra_row * self.cgra_columns + cgra_col
-                cgras[cgra_row].append(ParamCGRA(
-                    self.per_cgra_rows, self.per_cgra_columns, id2validTiles[id], id2validLinks[id], id2dataSPM[id], id2ctrlMemSize_map[id]))
+                cgras[cgra_row].append(
+                    ParamCGRA(
+                        self.per_cgra_rows,
+                        self.per_cgra_columns,
+                        id2validTiles[id],
+                        id2validLinks[id],
+                        id2dataSPM[id],
+                        id2ctrlMemSize_map[id],
+                    )
+                )
 
         # Overrides the tiles.
-        if 'tile_overrides' in self.yaml_data:
-            data = self.yaml_data['tile_overrides']
+        if "tile_overrides" in self.yaml_data:
+            data = self.yaml_data["tile_overrides"]
             for override in data:
-                fu_types = [] if not override['existence'] else override['fu_types']
-                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], fu_types, override['existence'])
+                fu_types = [] if not override["existence"] else override["fu_types"]
+                cgras[override["cgra_x"]][override["cgra_y"]].overrideTiles(
+                    override["tile_x"],
+                    override["tile_y"],
+                    fu_types,
+                    override["existence"],
+                )
 
         # Overrides the links.
-        if 'link_overrides' in self.yaml_data:
-            data = self.yaml_data['link_overrides']
+        if "link_overrides" in self.yaml_data:
+            data = self.yaml_data["link_overrides"]
             for override in data:
-                 if override['src_cgra_x'] == override['dst_cgra_x'] and override['src_cgra_y'] == override['dst_cgra_y']:
-                     cgras[override['src_cgra_x']][override['src_cgra_y']].overrideLinks(
-                         override['src_tile_x'], override['src_tile_y'],
-                         override['dst_tile_x'], override['dst_tile_y'],
-                         override['existence']
-                     )
+                if (
+                    override["src_cgra_x"] == override["dst_cgra_x"]
+                    and override["src_cgra_y"] == override["dst_cgra_y"]
+                ):
+                    cgras[override["src_cgra_x"]][override["src_cgra_y"]].overrideLinks(
+                        override["src_tile_x"],
+                        override["src_tile_y"],
+                        override["dst_tile_x"],
+                        override["dst_tile_y"],
+                        override["existence"],
+                    )
         return cgras
 
     def parse_multi_cgra_param(self):
@@ -117,7 +141,7 @@ class ArchParser:
         cgras = self.parse_cgras()
         # set of (cgra_id, cgra)
         cgras_item = (
-            ( i * self.cgra_columns + j , cgras[i][j] )
+            (i * self.cgra_columns + j, cgras[i][j])
             for i in range(self.cgra_rows)
             for j in range(self.cgra_columns)
         )
@@ -126,8 +150,21 @@ class ArchParser:
 
         tiles = simplest_cgra.tiles
         # Disables the boundary ports of a single cgra.
-        configure_boundary_ports(cgra_id, tiles, self.cgra_rows, self.cgra_columns,
-                                self.per_cgra_rows, self.per_cgra_columns, False)
+        configure_boundary_ports(
+            cgra_id,
+            tiles,
+            self.cgra_rows,
+            self.cgra_columns,
+            self.per_cgra_rows,
+            self.per_cgra_columns,
+            False,
+        )
 
-        return ParamCGRA(simplest_cgra.rows, simplest_cgra.columns, tiles, simplest_cgra.links, 
-                         simplest_cgra.dataSPM, simplest_cgra.configMemSize)
+        return ParamCGRA(
+            simplest_cgra.rows,
+            simplest_cgra.columns,
+            tiles,
+            simplest_cgra.links,
+            simplest_cgra.dataSPM,
+            simplest_cgra.configMemSize,
+        )
