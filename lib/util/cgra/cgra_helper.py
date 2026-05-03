@@ -131,8 +131,8 @@ def set_port_validity(tile, port, is_valid = True):
 
 
 def configure_boundary_ports(cgra_id, tiles_flat,
-                                num_cgra_rows, num_cgra_columns,
-                                per_cgra_rows, per_cgra_columns,
+                                num_cgra_rows, num_cgra_cols,
+                                id2shape_map,
                                 is_valid = True):
     """
     Enable boundary ports for tiles on adjacent CGRAs.
@@ -141,49 +141,69 @@ def configure_boundary_ports(cgra_id, tiles_flat,
     - cgra_id: ID of the current CGRA (0-indexed, bottom-left to top-right)
     - tiles_flat: Flat list of tiles for this CGRA (reshaped from 2D)
     - num_cgra_rows: Number of CGRA rows in the mesh
-    - num_cgra_columns: Number of CGRA columns in the mesh
-    - per_cgra_rows: Number of tile rows in each CGRA
-    - per_cgra_columns: Number of tile columns in each CGRA
+    - num_cgra_cols: Number of CGRA columns in the mesh
+    - id2shape_map: Map of each CGRA id to its shape: (num_tile_rows x num_tile_columns) tiles
     - is_valid: If true, enable ports, otherwise disable ports
-
-    CGRA ID mapping (example for 2x2):
-    CGRA 2: [row=0, col=0] CGRA 3: [row=0, col=1]  (top row, row=0)
-    CGRA 0: [row=1, col=0] CGRA 1: [row=1, col=1]  (bottom row, row=1)
     """
     # Converts CGRA ID to 2D coordinates
-    cgra_row = (num_cgra_rows - 1) - (cgra_id // num_cgra_columns)
-    cgra_col = cgra_id % num_cgra_columns
+    cgra_x = cgra_id % num_cgra_cols
+    cgra_y = cgra_id // num_cgra_cols
+    # The number of tile rows and columns in the current CGRA.
+    num_tile_rows, num_tile_cols = id2shape_map[cgra_id]
 
-    # Helper to get tile from flat list using row/col indices
-    def get_tile(row, col):
-        return tiles_flat[row * per_cgra_columns + col]
+    # Helper to get tile from flat list using x/y indices
+    def get_tile(x, y):
+        return tiles_flat[y * num_tile_cols + x]
 
     # Enables NORTH ports if there's a neighbor to the north
-    if cgra_row > 0:
+    if cgra_y < num_cgra_rows - 1:
         # This CGRA has a neighbor above
+        # Gets the tile shape of the neighbor CGRA.
+        neighbor_cgra_id = cgra_id + num_cgra_cols
+        num_neighbor_tile_rows, num_neighbor_tile_cols = id2shape_map[neighbor_cgra_id]
+
         # Top row of tiles in this CGRA should have NORTH ports enabled
-        top_row_idx = per_cgra_rows - 1
-        for tile_col in range(per_cgra_columns):
-            set_port_validity(get_tile(top_row_idx, tile_col), PORT_INDEX_NORTH, is_valid)
+        # y axis of the top row tiles of the current CGRA.
+        top_row_y = num_tile_rows - 1
+        valid_port_num = min(num_tile_cols, num_neighbor_tile_cols)
+        for tile_x in range(valid_port_num):
+            set_port_validity(get_tile(tile_x, top_row_y), PORT_INDEX_NORTH, is_valid)
 
     # Enables SOUTH ports if there's a neighbor to the south
-    if cgra_row < num_cgra_rows - 1:
+    if cgra_y > 0:
         # This CGRA has a neighbor below
+        # Gets the tile shape of the neighbor CGRA.
+        neighbor_cgra_id = cgra_id - num_cgra_cols
+        num_neighbor_tile_rows, num_neighbor_tile_cols = id2shape_map[neighbor_cgra_id]
+
         # Bottom row of tiles in this CGRA should have SOUTH ports enabled
-        bottom_row_idx = 0
-        for tile_col in range(per_cgra_columns):
-            set_port_validity(get_tile(bottom_row_idx, tile_col), PORT_INDEX_SOUTH, is_valid)
+        bottom_row_y = 0
+        valid_port_num = min(num_tile_cols, num_neighbor_tile_cols)
+        for tile_x in range(valid_port_num):
+            set_port_validity(get_tile(tile_x, bottom_row_y), PORT_INDEX_SOUTH, is_valid)
 
     # Enables EAST ports if there's a neighbor to the east
-    if cgra_col < num_cgra_columns - 1:
+    if cgra_x < num_cgra_cols - 1:
+        # This CGRA has a neighbor to the right.
+        # Gets the tile shape of the neighbor CGRA.
+        neighbor_cgra_id = cgra_id + 1
+        num_neighbor_tile_rows, num_neighbor_tile_cols = id2shape_map[neighbor_cgra_id]
+
         # Rightmost column of tiles in this CGRA should have EAST ports enabled
-        east_col_idx = per_cgra_columns - 1
-        for tile_row in range(per_cgra_rows):
-            set_port_validity(get_tile(tile_row, east_col_idx), PORT_INDEX_EAST, is_valid)
+        east_col_x = num_cgra_cols - 1
+        valid_port_num = min(num_tile_rows, num_neighbor_tile_rows)
+        for tile_y in range(valid_port_num):
+            set_port_validity(get_tile(east_col_x, tile_y), PORT_INDEX_EAST, is_valid)
 
     # Enables WEST ports if there's a neighbor to the west
-    if cgra_col > 0:
+    if cgra_x > 0:
+        # This CGRA has a neighbor to the left.
+        # Gets the tile shape of the neighbor CGRA.
+        neighbor_cgra_id = cgra_id - 1
+        num_neighbor_tile_rows, num_neighbor_tile_cols = id2shape_map[neighbor_cgra_id]
+
         # Leftmost column of tiles in this CGRA should have WEST ports enabled
-        west_col_idx = 0
-        for tile_row in range(per_cgra_rows):
-            set_port_validity(get_tile(tile_row, west_col_idx), PORT_INDEX_WEST, is_valid)
+        west_col_x = 0
+        valid_port_num = min(num_tile_rows, num_neighbor_tile_rows)
+        for tile_y in range(valid_port_num):
+            set_port_validity(get_tile(west_col_x, tile_y), PORT_INDEX_WEST, is_valid)

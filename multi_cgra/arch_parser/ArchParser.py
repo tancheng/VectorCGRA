@@ -18,6 +18,7 @@ class ArchParser:
         self.per_cgra_columns = self.yaml_data["cgra_defaults"]["columns"]
         self.num_registers = self.yaml_data["tile_defaults"]["num_registers"]
         self.fu_types = self.yaml_data["tile_defaults"]["fu_types"]
+        self.num_cgras = self.cgra_rows * self.cgra_columns
 
     def parse_dataSPM(self):
         data_mem_num_rd_tiles = self.per_cgra_rows + self.per_cgra_columns - 1
@@ -29,36 +30,54 @@ class ArchParser:
         Parse the tiles in one CGRA.
         We should consider the case of heterogeneous CGRA.
         """
-
-        # cgra_id to tiles map.
-        id2tiles_map = {i: [] for i in range(self.cgra_rows * self.cgra_columns)}
+        # map of cgra_id to tiles.
+        id2tiles_map = {i: [] for i in range(self.num_cgras)}
         # default tiles.
-        for i in range(self.cgra_rows * self.cgra_columns):
-            for r in range(self.per_cgra_rows):
+        for i in range(self.num_cgras):
+            """
+            Mapping way of tiles in a single CGRA (Cartesian coordinate system):
+            ^
+            |   y increases upward: 0 at the bottom, up to `tile_row_num-1` at the top
+            |
+            |   (x,y)
+            +------------------------>
+            0                        x increases to the right: 0 at the left, up to `tile_column_num-1` at the right
+
+            CGRA i
+            ^
+            |   tile6    tile7    tile8
+            |   tile3    tile4    tile5
+            |   tile0    tile1    tile2
+            +------------------------>
+            id2tiles_map[i] = [[tile0, tile1, tile2], [tile3, tile4, tile5], [tile6, tile7, tile8]]
+            """
+            for y in range(self.per_cgra_rows):
                 id2tiles_map[i].append([])
-                for c in range(self.per_cgra_columns):
-                    id2tiles_map[i][r].append(
-                        Tile(c, r, self.num_registers, self.fu_types)
+                for x in range(self.per_cgra_columns):
+                    id2tiles_map[i][y].append(
+                        Tile(x, y, self.num_registers, self.fu_types)
                     )
 
         if "cgra_overrides" in self.yaml_data:
             for override in self.yaml_data["cgra_overrides"]:
-                cgra_id = override["cgra_x"] * self.cgra_columns + override["cgra_y"]
+                cgra_id = (
+                    override["cgra_y"] * self.cgra_columns + override["cgra_x"]
+                )
                 override_tiles = []
-                for r in range(override["rows"]):
+                for y in range(override["rows"]):
                     override_tiles.append([])
-                    for c in range(override["columns"]):
+                    for x in range(override["columns"]):
                         """
                         Mapping way of tiles in a single CGRA (Cartesian coordinate system):
                         ^
-                        |   y (row) increases upward: 0 at the bottom, up to `override["rows"]-1` at the top
+                        |   y increases upward: 0 at the bottom, up to `override["rows"]-1` at the top
                         |
-                        |   (row, col): (y, x)
+                        |   (x,y)
                         +------------------------>
-                        0                        x (column) increases to the right: 0 at the left, up to `override["columns"]-1` at the right
+                        0                        x increases to the right: 0 at the left, up to `override["columns"]-1` at the right
                         """
-                        override_tiles[r].append(
-                            Tile(c, r, self.num_registers, self.fu_types)
+                        override_tiles[y].append(
+                            Tile(x, y, self.num_registers, self.fu_types)
                         )
                 id2tiles_map[cgra_id] = override_tiles
 
@@ -68,20 +87,28 @@ class ArchParser:
         # Restricted by ControllerRTL.
         assert (
             self.cgra_rows <= self.cgra_columns
-        ), "multi_cgra_rows must be less than or equal to multi_cgra_columns."
-        num_cgras = self.cgra_rows * self.cgra_columns
+        ), "cgra_rows must be less than or equal to cgra_columns."
         # Restricted by data_mem_size_global(the power of 2).
-        assert (num_cgras & (num_cgras - 1)) == 0, "num_cgras must be the power of 2."
+        assert (self.num_cgras & (self.num_cgras - 1)) == 0, "num_cgras must be the power of 2."
         # cgra id to tiles map.
         id2tiles_map = self.parse_tiles()
+        # Map of each CGRA id to its shape: (num_cgra_rows, num_cgra_columns)
+        id2shape_map = {
+            cgra_id: (len(id2tiles_map[cgra_id]), len(id2tiles_map[cgra_id][0]))
+            for cgra_id in range(self.num_cgras)
+        }
+        self.id2shape_map = id2shape_map
+
         # cgra id to valid links.
         id2validLinks = {}
         # cgra id to valid tiles.
         id2validTiles = {}
 
-        for id in range(num_cgras):
+        for id in range(self.num_cgras):
             tiles0 = copy.deepcopy(id2tiles_map[id])
             links0 = get_links(tiles0)
+            # Flattens the tiles to a 1D list from left to right.
+            # e.g., [[tile0, tile1], [tile2, tile3]] -> [tile0, tile1, tile2, tile3]
             tiles0_flat = [t for row in tiles0 for t in row]
 
             id2validLinks[id] = links0
@@ -94,8 +121,7 @@ class ArchParser:
                 tiles_flat,
                 self.cgra_rows,
                 self.cgra_columns,
-                self.per_cgra_rows,
-                self.per_cgra_columns,
+                id2shape_map,
             )
 
         dataSPM = self.parse_dataSPM()
@@ -103,19 +129,19 @@ class ArchParser:
         id2ctrlMemSize_map = {}
         ctrlMemSize = self.yaml_data["cgra_defaults"]["configMemSize"]
 
-        for id in range(num_cgras):
+        for id in range(self.num_cgras):
             id2dataSPM[id] = dataSPM
             id2ctrlMemSize_map[id] = ctrlMemSize
 
         cgras = []
-        for cgra_row in range(self.cgra_rows):
+        for y in range(self.cgra_rows):
             cgras.append([])
-            for cgra_col in range(self.cgra_columns):
-                id = cgra_row * self.cgra_columns + cgra_col
-                cgras[cgra_row].append(
+            for x in range(self.cgra_columns):
+                id = y * self.cgra_columns + x
+                cgras[y].append(
                     ParamCGRA(
-                        self.per_cgra_rows,
-                        self.per_cgra_columns,
+                        id2shape_map[id][0],
+                        id2shape_map[id][1],
                         id2validTiles[id],
                         id2validLinks[id],
                         id2dataSPM[id],
@@ -128,7 +154,7 @@ class ArchParser:
             data = self.yaml_data["tile_overrides"]
             for override in data:
                 fu_types = [] if not override["existence"] else override["fu_types"]
-                cgras[override["cgra_x"]][override["cgra_y"]].overrideTiles(
+                cgras[override["cgra_y"]][override["cgra_x"]].overrideTiles(
                     override["tile_x"],
                     override["tile_y"],
                     fu_types,
@@ -143,7 +169,7 @@ class ArchParser:
                     override["src_cgra_x"] == override["dst_cgra_x"]
                     and override["src_cgra_y"] == override["dst_cgra_y"]
                 ):
-                    cgras[override["src_cgra_x"]][override["src_cgra_y"]].overrideLinks(
+                    cgras[override["src_cgra_y"]][override["src_cgra_x"]].overrideLinks(
                         override["src_tile_x"],
                         override["src_tile_y"],
                         override["dst_tile_x"],
@@ -157,16 +183,18 @@ class ArchParser:
         return MultiCgraParam(self.cgra_rows, self.cgra_columns, cgras)
 
     def get_simplest_cgra_param(self) -> ParamCGRA:
-        """Returns the simplest(has the least number of functional units) CGRA parameter."""
+        """
+        Returns the simplest(has the least number of tiles) CGRA parameter.
+        """
         cgras = self.parse_cgras()
         # set of (cgra_id, cgra)
         cgras_item = (
-            (i * self.cgra_columns + j, cgras[i][j])
-            for i in range(self.cgra_rows)
-            for j in range(self.cgra_columns)
+            (y * self.cgra_columns + x, cgras[y][x])
+            for y in range(self.cgra_rows)
+            for x in range(self.cgra_columns)
         )
-        # Finds the cgra which has the least number of FUs.
-        cgra_id, simplest_cgra = min(cgras_item, key=lambda item: item[1].getFuNum())
+        # Finds the cgra which has the least number of tiles.
+        cgra_id, simplest_cgra = min(cgras_item, key=lambda item: item[1].getTileNum())
 
         tiles = simplest_cgra.tiles
         # Disables the boundary ports of a single cgra.
@@ -175,8 +203,7 @@ class ArchParser:
             tiles,
             self.cgra_rows,
             self.cgra_columns,
-            self.per_cgra_rows,
-            self.per_cgra_columns,
+            self.id2shape_map,
             False,
         )
 
