@@ -190,7 +190,7 @@ def configure_boundary_ports(cgra_id, tiles_flat,
         num_neighbor_tile_rows, num_neighbor_tile_cols = id2shape_map[neighbor_cgra_id]
 
         # Rightmost column of tiles in this CGRA should have EAST ports enabled
-        east_col_x = num_cgra_cols - 1
+        east_col_x = num_tile_cols - 1
         valid_port_num = min(num_tile_rows, num_neighbor_tile_rows)
         for tile_y in range(valid_port_num):
             set_port_validity(get_tile(east_col_x, tile_y), PORT_INDEX_EAST, is_valid)
