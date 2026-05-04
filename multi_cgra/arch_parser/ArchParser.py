@@ -19,11 +19,19 @@ class ArchParser:
         self.num_registers = self.yaml_data["tile_defaults"]["num_registers"]
         self.fu_types = self.yaml_data["tile_defaults"]["fu_types"]
         self.num_cgras = self.cgra_rows * self.cgra_columns
+        # map of cgra_id to its shape: (per_cgra_rows, per_cgra_columns)
+        self.id2shape_map = None
 
-    def parse_dataSPM(self):
-        data_mem_num_rd_tiles = self.per_cgra_rows + self.per_cgra_columns - 1
-        data_mem_num_wr_tiles = self.per_cgra_rows + self.per_cgra_columns - 1
-        return DataSPM(data_mem_num_rd_tiles, data_mem_num_wr_tiles)
+    def parse_dataSPM(self) -> dict[int, DataSPM]:
+        if self.id2shape_map is None:
+            raise ValueError("id2shape_map is not parsed yet.")
+        id2dataSPM = {}
+        for id in range(self.num_cgras):
+            per_cgra_rows, per_cgra_columns = self.id2shape_map[id]
+            data_mem_num_rd_tiles = per_cgra_rows + per_cgra_columns - 1
+            data_mem_num_wr_tiles = per_cgra_rows + per_cgra_columns - 1
+            id2dataSPM[id] = DataSPM(data_mem_num_rd_tiles, data_mem_num_wr_tiles)
+        return id2dataSPM
 
     def parse_tiles(self):
         """
@@ -92,7 +100,7 @@ class ArchParser:
         assert (self.num_cgras & (self.num_cgras - 1)) == 0, "num_cgras must be the power of 2."
         # cgra id to tiles map.
         id2tiles_map = self.parse_tiles()
-        # Map of each CGRA id to its shape: (num_cgra_rows, num_cgra_columns)
+        # Map of each CGRA id to its shape: (per_cgra_rows, per_cgra_columns)
         id2shape_map = {
             cgra_id: (len(id2tiles_map[cgra_id]), len(id2tiles_map[cgra_id][0]))
             for cgra_id in range(self.num_cgras)
@@ -124,14 +132,9 @@ class ArchParser:
                 id2shape_map,
             )
 
-        dataSPM = self.parse_dataSPM()
-        id2dataSPM = {}
-        id2ctrlMemSize_map = {}
+        id2dataSPM = self.parse_dataSPM()
         ctrlMemSize = self.yaml_data["cgra_defaults"]["configMemSize"]
-
-        for id in range(self.num_cgras):
-            id2dataSPM[id] = dataSPM
-            id2ctrlMemSize_map[id] = ctrlMemSize
+        id2ctrlMemSize_map = {id: ctrlMemSize for id in range(self.num_cgras)}
 
         cgras = []
         for y in range(self.cgra_rows):
