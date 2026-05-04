@@ -58,6 +58,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from lib.opt_type import *
+from lib.util.common import *
 
 # Global configuration for register cluster size (number of registers per cluster).
 # This can be overridden by ScriptFactory initialization.
@@ -155,6 +156,28 @@ FROM_CONSTANT_QUEUE = 3 # not used by now
 OPR_FROM_PORT = 0
 OPR_FROM_REGISTER = 1
 
+PORT_CODE = {
+    "NORTH": PORT_NORTH,
+    "SOUTH": PORT_SOUTH,
+    "WEST": PORT_WEST,
+    "EAST": PORT_EAST,
+    "NORTHWEST": PORT_NORTHWEST,
+    "NORTHEAST": PORT_NORTHEAST,
+    "SOUTHEAST": PORT_SOUTHEAST,
+    "SOUTHWEST": PORT_SOUTHWEST,
+}
+
+PORT_OUT_INDEX = {
+    "NORTH": PORT_INDEX_NORTH,
+    "SOUTH": PORT_INDEX_SOUTH,
+    "WEST": PORT_INDEX_WEST,
+    "EAST": PORT_INDEX_EAST,
+    "NORTHWEST": PORT_INDEX_NORTHWEST,
+    "NORTHEAST": PORT_INDEX_NORTHEAST,
+    "SOUTHEAST": PORT_INDEX_SOUTHEAST,
+    "SOUTHWEST": PORT_INDEX_SOUTHWEST,
+}
+
 class InstructionSignals:
     # to make signal of single instruction
     def __init__(self, 
@@ -174,7 +197,10 @@ class InstructionSignals:
                  B1Type,
                  B2Type,
                  RegIdxType,
-                 CtrlAddrType):
+                 CtrlAddrType,
+                 num_tile_inports=4,
+                 num_tile_outports=4,
+                 num_fu_inports=4):
         # types
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
@@ -187,6 +213,10 @@ class InstructionSignals:
         self.B2Type = B2Type
         self.RegIdxType = RegIdxType
         self.CtrlAddrType = CtrlAddrType
+        self.num_tile_inports = num_tile_inports
+        self.num_tile_outports = num_tile_outports
+        self.num_fu_inports = num_fu_inports
+        self.num_routing_outports = num_tile_outports + num_fu_inports
         
         # inputs
         self.id_ = id_
@@ -195,13 +225,13 @@ class InstructionSignals:
         self.ctrl_addr = ctrl_addr
         
         # States
-        self.TileInParams = [-1, -1, -1, -1, -1, -1, -1, -1]
-        self.FuOutParams = [-1, -1, -1, -1, -1, -1, -1, -1]
-        self.read_from_reg = [-1, -1, -1, -1]
-        self.read_from_reg_idx = [-1, -1, -1, -1]
-        self.write_to_reg = [-1, -1, -1, -1]
-        self.write_to_reg_idx = [-1, -1, -1, -1]
-        self.shuffle_fu_operand_input_index = [-1, -1, -1, -1]
+        self.TileInParams = [-1 for _ in range(self.num_routing_outports)]
+        self.FuOutParams = [-1 for _ in range(self.num_routing_outports)]
+        self.read_from_reg = [-1 for _ in range(self.num_fu_inports)]
+        self.read_from_reg_idx = [-1 for _ in range(self.num_fu_inports)]
+        self.write_to_reg = [-1 for _ in range(self.num_fu_inports)]
+        self.write_to_reg_idx = [-1 for _ in range(self.num_fu_inports)]
+        self.shuffle_fu_operand_input_index = [-1 for _ in range(self.num_fu_inports)]
 
         
     def buildCtrlPkt(self) -> list: # return the const needed to put into the const queue
@@ -278,26 +308,19 @@ class InstructionSignals:
                             raise ValueError(f"Collision when reading from register in shuffle_fu_operand_input_index, when translate the operation {operation} to VectorCGRA")
                         self.shuffle_fu_operand_input_index[index] = cluster_no # shuffle the data to the correct inport of the FU from the register
                     if _type(src_operand) == 'PORT':
-                        if src_operand['operand'] == 'NORTH':
-                            port_in_xbar_idx = 1
-                        elif src_operand['operand'] == 'SOUTH':
-                            port_in_xbar_idx = 2
-                        elif src_operand['operand'] == 'WEST':
-                            port_in_xbar_idx = 3
-                        elif src_operand['operand'] == 'EAST':
-                            port_in_xbar_idx = 4
+                        port_in_xbar_idx = PORT_CODE[src_operand['operand']]
                             
                         # find an available lane
                         lane = -1
-                        for i in range(4):
+                        for i in range(self.num_fu_inports):
                             if self.read_from_reg[i] == -1: # if not set the selection, then it could be available
                                 lane = i
                                 break
                         if lane == -1:
                             raise ValueError(f"No available lane found when reading from port {src_operand} in TileInParams, when translate the operation {operation} to VectorCGRA")
-                        if self.TileInParams[lane + 4] != -1:
+                        if self.TileInParams[lane + self.num_tile_outports] != -1:
                             raise ValueError(f"Collision in reading from port in TileInParams, when translate the operation {operation} to VectorCGRA")
-                        self.TileInParams[lane + 4] = port_in_xbar_idx
+                        self.TileInParams[lane + self.num_tile_outports] = port_in_xbar_idx
                         self.read_from_reg[lane] = OPR_FROM_PORT
                         # shuffle to the given fu input index
                         if self.shuffle_fu_operand_input_index[index] != -1:
@@ -321,18 +344,12 @@ class InstructionSignals:
                             raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
                         self.write_to_reg[cluster_no - 1] = FROM_FU
                         self.write_to_reg_idx[cluster_no - 1] = intra_index
-                        if self.FuOutParams[cluster_no + 3] != -1:
+                        fu_out_idx = self.num_tile_outports + cluster_no - 1
+                        if self.FuOutParams[fu_out_idx] != -1:
                             raise ValueError(f"Collision in writing result to register, when translate the operation {operation} to VectorCGRA")
-                        self.FuOutParams[cluster_no + 3] = 1
+                        self.FuOutParams[fu_out_idx] = 1
                     elif _type(dst_operand) == 'PORT':
-                        if dst_operand['operand'] == 'NORTH':
-                            port_out_xbar_idx = 0
-                        elif dst_operand['operand'] == 'SOUTH':
-                            port_out_xbar_idx = 1
-                        elif dst_operand['operand'] == 'WEST':
-                            port_out_xbar_idx = 2
-                        elif dst_operand['operand'] == 'EAST':
-                            port_out_xbar_idx = 3
+                        port_out_xbar_idx = PORT_OUT_INDEX[dst_operand['operand']]
                         if self.FuOutParams[port_out_xbar_idx] != -1:
                             raise ValueError(f"Collision in writing to port {dst_operand} in FuOutParams, when translate the operation {operation} to VectorCGRA")
                         print(f">>> FuOutParams[{port_out_xbar_idx}] = {index + 1}")
@@ -430,7 +447,10 @@ class TileSignals:
                 B2Type,
                 RegIdxType,
                 CtrlAddrType,
-                DataAddrType):
+                DataAddrType,
+                num_tile_inports=4,
+                num_tile_outports=4,
+                num_fu_inports=4):
         self.CtrlType = CtrlType
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
@@ -448,6 +468,10 @@ class TileSignals:
         self.DataType = DataType
         self.CtrlAddrType = CtrlAddrType
         self.DataAddrType = DataAddrType
+        self.num_tile_inports = num_tile_inports
+        self.num_tile_outports = num_tile_outports
+        self.num_fu_inports = num_fu_inports
+        self.num_routing_outports = num_tile_outports + num_fu_inports
         # constants
         self.CMD_CONST_ = CMD_CONST_input
         self.CMD_CONFIG_COUNT_PER_ITER_ = CMD_CONFIG_COUNT_PER_ITER_input
@@ -483,14 +507,7 @@ class TileSignals:
         for src_operand in src_operands:
             if _type(src_operand) == 'PORT':
                 print(f"src_operand is PORT, add Prologue. {src_operand}")
-                if src_operand['operand'] == 'NORTH':
-                    routing_xbar_idx = 0 # here is from 0, strange.
-                elif src_operand['operand'] == 'SOUTH':
-                    routing_xbar_idx = 1
-                elif src_operand['operand'] == 'WEST':
-                    routing_xbar_idx = 2
-                elif src_operand['operand'] == 'EAST':
-                    routing_xbar_idx = 3
+                routing_xbar_idx = PORT_CODE[src_operand['operand']]
                 pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
         
         try:
@@ -520,14 +537,7 @@ class TileSignals:
         
         for src_operand in src_operands:
             if _type(src_operand) == 'PORT':
-                if src_operand['operand'] == 'NORTH':
-                    routing_xbar_idx = 0
-                elif src_operand['operand'] == 'SOUTH':
-                    routing_xbar_idx = 1
-                elif src_operand['operand'] == 'WEST':
-                    routing_xbar_idx = 2
-                elif src_operand['operand'] == 'EAST':
-                    routing_xbar_idx = 3
+                routing_xbar_idx = PORT_CODE[src_operand['operand']]
                 pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
                 
         print(f"Phi const prologue packets: {pkts}")
@@ -541,12 +551,12 @@ class TileSignals:
     def makePrologueRoutingCrossbarPackets(self, instruction, routing_xbar_idx):
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
-                                                                     ctrl = self.CtrlType(routing_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * 7),
+                                                                     ctrl = self.CtrlType(routing_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * (self.num_routing_outports - 1)),
                                                                      data = self.DataType(1, 1)))
     def makePrologueFUCrossbarPackets(self, instruction):
         return self.IntraCgraPktType(0, self.id_, 
                                      payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
-                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
+                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * self.num_routing_outports),
                                                                      data = self.DataType(1, 1)))
     def makeTileSignals(self):
         consts = []
@@ -585,7 +595,10 @@ class TileSignals:
                 B1Type = self.B1Type,
                 B2Type = self.B2Type,
                 RegIdxType = self.RegIdxType,
-                CtrlAddrType = self.CtrlAddrType)
+                CtrlAddrType = self.CtrlAddrType,
+                num_tile_inports = self.num_tile_inports,
+                num_tile_outports = self.num_tile_outports,
+                num_fu_inports = self.num_fu_inports)
             all_instruction_signals.append(instruction_signals)
             
             const = instruction_signals.buildCtrlPkt()
@@ -626,9 +639,9 @@ class TileSignals:
                 NAH_SIGNAL = self.IntraCgraPktType(0, self.id_,
                             payload = self.CgraPayloadType(self.CMD_CONFIG_, ctrl_addr = self.CtrlAddrType(timestep),
                                                       ctrl = self.CtrlType(OPT_NAH,
-                                                                      [self.FuInType(i) for i in range(1, 5)],
-                                                                      [self.TileInType(0)] * 8,
-                                                                      [self.FuOutType(0)] * 8)))  
+                                                                      [self.FuInType(i) for i in range(1, self.num_fu_inports + 1)],
+                                                                      [self.TileInType(0)] * self.num_routing_outports,
+                                                                      [self.FuOutType(0)] * self.num_routing_outports)))  
                 filled_main_signals.append(NAH_SIGNAL)
             else:
                 filled_main_signals.append(main_signals[idx]) # WARN: generated signals must be in order
@@ -656,7 +669,9 @@ class TileSignals:
         all_signals.extend(prologue_signals)
         # make the launch packet
         launch_pkt = self.IntraCgraPktType(0, self.id_, 
-                                           payload = self.CgraPayloadType(self.CMD_LAUNCH_))
+                                           payload = self.CgraPayloadType(
+                                               self.CMD_LAUNCH_,
+                                               ctrl = self.CtrlType(OPT_NAH)))
         all_signals.append(launch_pkt)
         
         return all_signals
@@ -688,7 +703,10 @@ class ScriptFactory:
                  RegIdxType,
                  CtrlAddrType,
                  DataAddrType,
-                 num_registers_per_reg_bank=None):
+                 num_registers_per_reg_bank=None,
+                 num_tile_inports=4,
+                 num_tile_outports=4,
+                 num_fu_inports=4):
         # Allow overriding the default register cluster size.
         global REG_CLUSTER_SIZE
         if num_registers_per_reg_bank is not None:
@@ -717,6 +735,9 @@ class ScriptFactory:
         self.RegIdxType = RegIdxType
         self.CtrlAddrType = CtrlAddrType
         self.DataAddrType = DataAddrType
+        self.num_tile_inports = num_tile_inports
+        self.num_tile_outports = num_tile_outports
+        self.num_fu_inports = num_fu_inports
     
     def makeVectorCGRAPkts(self):
         
@@ -755,6 +776,9 @@ class ScriptFactory:
                 RegIdxType = self.RegIdxType,
                 CtrlAddrType = self.CtrlAddrType,
                 DataAddrType = self.DataAddrType,
+                num_tile_inports = self.num_tile_inports,
+                num_tile_outports = self.num_tile_outports,
+                num_fu_inports = self.num_fu_inports,
                 )
             tile_signals = tile_signals.makeTileSignals()
             pkts[(x, y)] = tile_signals
