@@ -30,6 +30,7 @@ class CtrlMemDynamicRTL(Component):
 
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     CtrlType = CgraPayloadType.get_field_type(kAttrCtrl)
+    IntraPktTileIdType = IntraCgraPktType.get_field_type(kAttrSrc)
     # The total_ctrl_steps indicates the number of steps the ctrl
     # signals should proceed. For example, if the number of ctrl
     # signals is 4 and they need to repeat 5 times, then the total
@@ -179,7 +180,7 @@ class CtrlMemDynamicRTL(Component):
       if s.start_iterate_ctrl == b1(1):
         if s.recv_from_element_queue.send.val & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
-              IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+              IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
                                s.recv_from_element_queue.send.msg)
           s.send_pkt_to_controller.val @= 1
           s.recv_from_element_queue.send.rdy @= s.send_pkt_to_controller.rdy
@@ -188,7 +189,7 @@ class CtrlMemDynamicRTL(Component):
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
 
     @update
