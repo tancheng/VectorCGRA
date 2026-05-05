@@ -7,12 +7,12 @@ from ..lib.opt_type import *
 from ..lib.util.data_struct_attr import *
 from ..noc.PyOCN.pymtl3_net.meshnet.MeshNetworkRTL import MeshNetworkRTL
 from ..noc.PyOCN.pymtl3_net.ocnlib.ifcs.positions import mk_mesh_pos
+from typing import List
 
 class MeshMultiCgraTemplateRTL(Component):
 
     def construct(s, CgraPayloadType,
                 cgra_rows, cgra_columns, 
-                # per_cgra_rows, per_cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -26,13 +26,20 @@ class MeshMultiCgraTemplateRTL(Component):
         CgraDataType = CgraPayloadType.get_field_type(kAttrData)
         
         # Reconstructs packet types.
-        num_tiles = id2cgraSize_map[0][0] * id2cgraSize_map[0][1]
-        num_rd_tiles = id2cgraSize_map[0][0] + id2cgraSize_map[0][1] - 1
+        # In heterogeneous multi-CGRA architectures, CtrlPktType and NocPktType
+        # must accommodate the largest CGRA shape to ensure uniform packet width
+        # and correct inter-CGRA communication.
+        cgra_size:List[List[int, int]] = [id2cgraSize_map[id] for id in range(cgra_rows * cgra_columns)]
+        max_rows, max_cols = max(cgra_size, key=lambda x: x[0] * x[1])
+        # The tile number of the largest cgra.
+        max_num_tiles = max_rows * max_cols
+        max_num_rd_tiles = max(id2dataSPM[id].getNumOfValidReadPorts() for id in range(cgra_rows * cgra_columns))
+        max_num_wr_tiles = max(id2dataSPM[id].getNumOfValidWritePorts() for id in range(cgra_rows * cgra_columns))
         
         CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
-                                        num_tiles, CgraPayloadType)
+                                        max_num_tiles, CgraPayloadType)
         NocPktType = mk_inter_cgra_pkt(cgra_columns, cgra_rows,
-                                       num_tiles, num_rd_tiles,
+                                       max_num_tiles, max_num_rd_tiles,
                                        CgraPayloadType)
 
         # Constant
@@ -71,7 +78,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  is_multi_cgra, cgra_id)
+                                  is_multi_cgra, cgra_id, max_num_tiles, max_num_rd_tiles, max_num_wr_tiles)
                   for cgra_id in range(s.num_cgras)]
         # Latency is 1.
         s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
@@ -90,6 +97,7 @@ class MeshMultiCgraTemplateRTL(Component):
           s.cgra[cgra_id].address_lower //= DataAddrType(controller2addr_map[cgra_id][0])
           s.cgra[cgra_id].address_upper //= DataAddrType(controller2addr_map[cgra_id][1])
 
+        # Only the CGRA0 connects to the CPU.
         s.recv_from_cpu_pkt //= s.cgra[0].recv_from_cpu_pkt
         s.send_to_cpu_pkt //= s.cgra[0].send_to_cpu_pkt
 
@@ -106,17 +114,51 @@ class MeshMultiCgraTemplateRTL(Component):
         for cgra_row in range(cgra_rows):
           for cgra_col in range(cgra_columns):
             idx = cgra_row * cgra_columns + cgra_col
+            # The number of tile rows and columns of the current CGRA.
             per_cgra_rows = id2cgraSize_map[idx][0]
             per_cgra_columns = id2cgraSize_map[idx][1]
             
             # Connects North-South boundaries
             if cgra_row > 0:
-              neighbor_idx = (cgra_row - 1) * cgra_columns + cgra_col
-              for tile_col in range(per_cgra_columns):
-                s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
-                    s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
-                s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
-                    s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
+              # The south neighbor CGRA.
+              neighbor_idx = idx - cgra_columns
+              # The number of columns of the south neighbor CGRA.
+              per_neighbor_cgra_columns = id2cgraSize_map[neighbor_idx][1]
+              
+              # In heterogeneous multi-cgra, if the current CGRA has the same columns with the south neighbor CGRA,
+              if per_cgra_columns == per_neighbor_cgra_columns:
+              # Connects the south boundary of the current CGRA to the north boundary of the south neighbor CGRA.
+                for tile_col in range(per_cgra_columns):
+                  s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
+                  s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
+              # In heterogeneous multi-cgra, if the current CGRA has more columns than the south neighbor CGRA,
+              elif per_cgra_columns > per_neighbor_cgra_columns:
+                # Connects the south boundary of the current CGRA to the north boundary of the south neighbor CGRA with the same number of columns.
+                for tile_col in range(per_neighbor_cgra_columns):
+                  s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
+                  s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]              
+                # Grounds the remaining south boundary of the current CGRA.
+                for tile_col in range(per_neighbor_cgra_columns, per_cgra_columns):
+                  s.cgra[idx].send_data_on_boundary_south[tile_col].rdy //= 0
+                  s.cgra[idx].recv_data_on_boundary_south[tile_col].val //= 0
+                  s.cgra[idx].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
+              # In heterogeneous multi-cgra, if the current CGRA has fewer columns than the south neighbor CGRA,
+              else:
+                # Connects the south boundary of the current CGRA to the north boundary of the south neighbor CGRA with the same number of columns.
+                for tile_col in range(per_cgra_columns):
+                  s.cgra[idx].send_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col]
+                  s.cgra[idx].recv_data_on_boundary_south[tile_col] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col]
+                # Grounds the remaining north boundary of the south neighbor CGRA.
+                for tile_col in range(per_cgra_columns, per_neighbor_cgra_columns):
+                  s.cgra[neighbor_idx].send_data_on_boundary_north[tile_col].rdy //= 0
+                  s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col].val //= 0
+                  s.cgra[neighbor_idx].recv_data_on_boundary_north[tile_col].msg //= CgraDataType()
             else:
               # Bottom edge: connects south boundary to 0
               for tile_col in range(per_cgra_columns):
@@ -133,12 +175,45 @@ class MeshMultiCgraTemplateRTL(Component):
 
             # Connect East-West boundaries
             if cgra_col > 0:
-              neighbor_idx = cgra_row * cgra_columns + cgra_col - 1
-              for tile_row in range(per_cgra_rows):
-                s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
-                    s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
-                s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
-                    s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
+              # The west neighbor CGRA.
+              neighbor_idx = idx - 1
+              # The number of rows of the west neighbor CGRA.
+              per_neighbor_cgra_rows = id2cgraSize_map[neighbor_idx][0]
+              
+              # In heterogeneous multi-cgra, if the current CGRA has the same rows with the west neighbor CGRA,
+              if per_cgra_rows == per_neighbor_cgra_rows:
+                # Connects the west boundary of the current CGRA to the east boundary of the west neighbor CGRA.
+                for tile_row in range(per_cgra_rows):
+                  s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
+                  s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
+              # In heterogeneous multi-cgra, if the current CGRA has more rows than the west neighbor CGRA,
+              elif per_cgra_rows > per_neighbor_cgra_rows:
+                # Connects the west boundary of the current CGRA to the east boundary of the west neighbor CGRA with the same number of rows.
+                for tile_row in range(per_neighbor_cgra_rows):
+                  s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
+                  s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
+                # Grounds the remaining west boundary of the current CGRA.
+                for tile_row in range(per_neighbor_cgra_rows, per_cgra_rows):
+                  s.cgra[idx].send_data_on_boundary_west[tile_row].rdy //= 0
+                  s.cgra[idx].recv_data_on_boundary_west[tile_row].val //= 0
+                  s.cgra[idx].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
+              # In heterogeneous multi-cgra, if the current CGRA has fewer rows than the west neighbor CGRA,
+              else:
+                # Connects the west boundary of the current CGRA to the east boundary of the west neighbor CGRA with the same number of rows.
+                for tile_row in range(per_cgra_rows):
+                  s.cgra[idx].send_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row]
+                  s.cgra[idx].recv_data_on_boundary_west[tile_row] //= \
+                      s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row]
+                # Grounds the remaining east boundary of the west neighbor CGRA.
+                for tile_row in range(per_cgra_rows, per_neighbor_cgra_rows):
+                  s.cgra[neighbor_idx].send_data_on_boundary_east[tile_row].rdy //= 0
+                  s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row].val //= 0
+                  s.cgra[neighbor_idx].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
             else:
               # Left edge: connects west boundary to 0
               for tile_row in range(per_cgra_rows):

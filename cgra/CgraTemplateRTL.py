@@ -79,7 +79,12 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True, cgra_id = 0):
+                is_multi_cgra = True, cgra_id = 0, max_num_tiles_ = None, max_num_rd_tiles_ = None, max_num_wr_tiles_ = None):
+    """
+    max_num_tiles_: the tile number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    max_num_rd_tiles_: the number of read ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    max_num_wr_tiles_: the number of write ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    """
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -89,22 +94,29 @@ class CgraTemplateRTL(Component):
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
 
     # Reconstructs packet types.
-    num_tiles = len(TileList)
-    # Calculates num_rd_tiles from TileList (number of tiles with read ports).
-    num_rd_tiles = dataSPM.getNumOfValidReadPorts()
+    # In the case of heterogeneous multi-cgra, `max_num_tiles` means the tile number of the largest cgra.
+    # In the case of single cgra, it is the tile number of the current cgra.
+    max_num_tiles = max_num_tiles_ if max_num_tiles_ is not None else len(TileList)
+    # In the case of heterogeneous multi-cgra, `max_num_rd_tiles` means the number of read ports of the largest cgra.
+    # In the case of single cgra, it is the number of read ports of the current cgra.
+    max_num_rd_tiles = max_num_rd_tiles_ if max_num_rd_tiles_ is not None else dataSPM.getNumOfValidReadPorts()
+    max_num_wr_tiles = max_num_wr_tiles_ if max_num_wr_tiles_ is not None else dataSPM.getNumOfValidWritePorts()
+    
 
+    # Use largest CGRA shape(max_num_tiles) to set CtrlPktType/NocPktType for compatibility.
     CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
-                                    num_tiles, CgraPayloadType)
+                                    max_num_tiles, CgraPayloadType)
 
     NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
-                                   num_tiles, num_rd_tiles,
+                                   max_num_tiles, max_num_rd_tiles,
                                    CgraPayloadType)
 
     s.num_mesh_ports = 8
+    # tile number of the current cgra.
     s.num_tiles = len(TileList)
     num_cgras = multi_cgra_rows * multi_cgra_columns
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
+    CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
@@ -140,22 +152,22 @@ class CgraTemplateRTL(Component):
                                       data_mem_size_global,
                                       data_mem_size_per_bank,
                                       num_banks_per_cgra,
-                                      dataSPM.getNumOfValidReadPorts(),
-                                      dataSPM.getNumOfValidWritePorts(),
+                                      max_num_rd_tiles,
+                                      max_num_wr_tiles,
                                       multi_cgra_rows,
                                       multi_cgra_columns,
-                                      s.num_tiles,
+                                      max_num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map)
     s.cgra_id = InPort(CgraIdType)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
-                                  s.num_tiles, controller2addr_map, idTo2d_map)
+                                  max_num_tiles, controller2addr_map, idTo2d_map)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, max_num_tiles + 1, 1)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -196,10 +208,16 @@ class CgraTemplateRTL(Component):
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-    for i in range(s.num_tiles):
       s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+
     s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
     s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
+
+    # Grounds the remaining ports of the ring.
+    for i in range(s.num_tiles + 1, max_num_tiles + 1):
+      s.ctrl_ring.send[i].rdy //= 0
+      s.ctrl_ring.recv[i].val //= 0
+      s.ctrl_ring.recv[i].msg //= CtrlPktType()
 
     for link in LinkList:
 
@@ -233,8 +251,16 @@ class CgraTemplateRTL(Component):
           s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
 
     # (cgra_idx_x, cgra_idx_y) is the coordinate of the current cgra in multi-cgra(Cartesian coordinate system).
+    """
+    ^ y
+    |
+    |  cgra2   cgra3
+    |  cgra0   cgra1
+    +---------------> x
+
+    """
     cgra_idx_x = cgra_id % multi_cgra_columns
-    cgra_idx_y = cgra_id // multi_cgra_rows
+    cgra_idx_y = cgra_id // multi_cgra_columns
 
     """
     row ^
