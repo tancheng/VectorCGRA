@@ -92,6 +92,11 @@ class ArchParser:
         return id2tiles_map
 
     def parse_cgras(self):
+        """
+        Parse the CGRAs in the architecture file.
+        Returns a list of ParamCGRA objects.
+        Return list: e.g., 3x3 multi-cgra, cgras = [[cgra0, cgra1, cgra2], [cgra3, cgra4, cgra5], [cgra6, cgra7, cgra8]]
+        """
         # Restricted by ControllerRTL.
         assert (
             self.cgra_rows <= self.cgra_columns
