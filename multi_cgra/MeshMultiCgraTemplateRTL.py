@@ -33,7 +33,8 @@ class MeshMultiCgraTemplateRTL(Component):
         max_rows, max_cols = max(cgra_size, key=lambda x: x[0] * x[1])
         # The tile number of the largest cgra.
         max_num_tiles = max_rows * max_cols
-        max_num_rd_tiles = max_rows + max_cols - 1
+        max_num_rd_tiles = max(id2dataSPM[id].getNumOfValidReadPorts() for id in range(cgra_rows * cgra_columns))
+        max_num_wr_tiles = max(id2dataSPM[id].getNumOfValidWritePorts() for id in range(cgra_rows * cgra_columns))
         
         CtrlPktType = mk_intra_cgra_pkt(cgra_columns, cgra_rows,
                                         max_num_tiles, CgraPayloadType)
@@ -77,7 +78,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  is_multi_cgra, cgra_id, max_num_tiles, max_num_rd_tiles)
+                                  is_multi_cgra, cgra_id, max_num_tiles, max_num_rd_tiles, max_num_wr_tiles)
                   for cgra_id in range(s.num_cgras)]
         # Latency is 1.
         s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
