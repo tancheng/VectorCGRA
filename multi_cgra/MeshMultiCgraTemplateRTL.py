@@ -30,9 +30,9 @@ class MeshMultiCgraTemplateRTL(Component):
         # must accommodate the largest CGRA shape to ensure uniform packet width
         # and correct inter-CGRA communication.
         cgra_size:List[List[int, int]] = [id2cgraSize_map[id] for id in range(cgra_rows * cgra_columns)]
-        max_rows, max_cols = max(cgra_size, key=lambda x: x[0] * x[1])
+        max_per_cgra_rows, max_per_cgra_cols = max(cgra_size, key=lambda x: x[0] * x[1])
         # The tile number of the largest cgra.
-        max_num_tiles = max_rows * max_cols
+        max_num_tiles = max_per_cgra_rows * max_per_cgra_cols
         max_num_rd_tiles = max(id2dataSPM[id].getNumOfValidReadPorts() for id in range(cgra_rows * cgra_columns))
         max_num_wr_tiles = max(id2dataSPM[id].getNumOfValidWritePorts() for id in range(cgra_rows * cgra_columns))
         
@@ -78,7 +78,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   FunctionUnit, FuList,
                                   id2validTiles[cgra_id], id2validLinks[cgra_id], id2dataSPM[cgra_id],
                                   controller2addr_map, idTo2d_map,
-                                  is_multi_cgra, cgra_id, max_num_tiles, max_num_rd_tiles, max_num_wr_tiles)
+                                  is_multi_cgra, cgra_id, max_per_cgra_rows, max_per_cgra_cols, max_num_rd_tiles, max_num_wr_tiles)
                   for cgra_id in range(s.num_cgras)]
         # Latency is 1.
         s.mesh = MeshNetworkRTL(NocPktType, MeshPos, cgra_columns, cgra_rows, 1)
@@ -227,6 +227,18 @@ class MeshMultiCgraTemplateRTL(Component):
                 s.cgra[idx].recv_data_on_boundary_east[tile_row].val //= 0
                 s.cgra[idx].recv_data_on_boundary_east[tile_row].msg //= CgraDataType()
                 s.cgra[idx].send_data_on_boundary_east[tile_row].rdy //= 0
+
+            # Grounds the remaining boundary ports of the current CGRA.
+            if per_cgra_rows < max_per_cgra_rows:
+              for tile_row in range(per_cgra_rows, max_per_cgra_rows):
+                s.cgra[idx].send_data_on_boundary_west[tile_row].rdy //= 0
+                s.cgra[idx].recv_data_on_boundary_west[tile_row].val //= 0
+                s.cgra[idx].recv_data_on_boundary_west[tile_row].msg //= CgraDataType()
+            if per_cgra_columns < max_per_cgra_cols:
+              for tile_col in range(per_cgra_columns, max_per_cgra_cols):
+                s.cgra[idx].send_data_on_boundary_south[tile_col].rdy //= 0
+                s.cgra[idx].recv_data_on_boundary_south[tile_col].val //= 0
+                s.cgra[idx].recv_data_on_boundary_south[tile_col].msg //= CgraDataType()
 
     def line_trace(s):
       res = "||\n".join([(("\n\n[cgra_"+str(i)+": ") + x.line_trace())

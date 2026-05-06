@@ -5,11 +5,6 @@ multi_cgra_defaults:
   columns: 2
 
 cgra_defaults:
-  rows: 4
-  columns: 4
-  configMemSize: 16
-
-cgra_defaults:
   rows: 2
   columns: 2
   configMemSize: 16

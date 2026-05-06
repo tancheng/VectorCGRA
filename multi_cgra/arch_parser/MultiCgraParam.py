@@ -90,5 +90,5 @@ class MultiCgraParam:
         cgra_size_str = ""
         for y in range(self.rows):
             for x in range(self.cols):
-                cgra_size_str += f"CGRA {y * self.cols + x}: {self.cgras[x][y].rows}x{self.cgras[x][y].columns}\n"
+                cgra_size_str += f"CGRA {y * self.cols + x}: {self.cgras[y][x].rows}x{self.cgras[y][x].columns}\n"
         return f"\nSize of MultiCGRAs: {self.rows}x{self.cols}\n" + cgra_size_str

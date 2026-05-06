@@ -79,7 +79,7 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True, cgra_id = 0, max_num_tiles_ = None, max_num_rd_tiles_ = None, max_num_wr_tiles_ = None):
+                is_multi_cgra = True, cgra_id = 0, max_per_cgra_rows_ = None, max_per_cgra_cols_ = None, max_num_rd_tiles_ = None, max_num_wr_tiles_ = None):
     """
     max_num_tiles_: the tile number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
     max_num_rd_tiles_: the number of read ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
@@ -96,7 +96,9 @@ class CgraTemplateRTL(Component):
     # Reconstructs packet types.
     # In the case of heterogeneous multi-cgra, `max_num_tiles` means the tile number of the largest cgra.
     # In the case of single cgra, it is the tile number of the current cgra.
-    max_num_tiles = max_num_tiles_ if max_num_tiles_ is not None else len(TileList)
+    max_per_cgra_rows = max_per_cgra_rows_ if max_per_cgra_rows_ is not None else per_cgra_rows
+    max_per_cgra_cols = max_per_cgra_cols_ if max_per_cgra_cols_ is not None else per_cgra_columns
+    max_num_tiles = max_per_cgra_rows * max_per_cgra_cols
     # In the case of heterogeneous multi-cgra, `max_num_rd_tiles` means the number of read ports of the largest cgra.
     # In the case of single cgra, it is the number of read ports of the current cgra.
     max_num_rd_tiles = max_num_rd_tiles_ if max_num_rd_tiles_ is not None else dataSPM.getNumOfValidReadPorts()
@@ -129,14 +131,17 @@ class CgraTemplateRTL(Component):
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
     if is_multi_cgra:
-      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
+      # Remember to ground the remaining boundary ports of the current CGRA when the current CGRA has fewer rows or columns than the largest CGRA.
+      # See also: 
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
 
     # Components
     s.tile = [TileRTL(CtrlPktType,
