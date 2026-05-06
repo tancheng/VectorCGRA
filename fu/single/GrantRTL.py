@@ -30,6 +30,7 @@ class GrantRTL(Fu):
     s.in0_idx = Wire(idx_nbits)
     s.in1_idx = Wire(idx_nbits)
     s.recv_all_val = Wire(1)
+    s.use_const = Wire(1)
     s.already_grt_once = Wire(1)
 
     # Connections.
@@ -61,6 +62,7 @@ class GrantRTL(Fu):
           s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
         if s.recv_opt.msg.fu_in[1] != FuInType(0):
           s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
+      s.use_const @= s.recv_opt.val & (s.recv_opt.msg.fu_in[0] == FuInType(0))
 
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_GRT_PRED:
@@ -99,13 +101,20 @@ class GrantRTL(Fu):
         elif s.recv_opt.msg.operation == OPT_GRT_ONCE:
           # GRANT_ONCE is used to apply `true` predicate onto a value only once. This
           # is usually used for the constant declared in the entry block of a function.
-          s.send_out[0].msg @= s.recv_in[s.in0_idx].msg
+          if s.use_const:
+            s.send_out[0].msg.payload @= s.recv_const.msg.payload
+          else:
+            s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
           # Only updates predicate as true for the first time.
           s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.already_grt_once
 
-          s.recv_all_val @= s.recv_in[s.in0_idx].val
+          if s.use_const:
+            s.recv_all_val @= s.recv_const.val
+          else:
+            s.recv_all_val @= s.recv_in[s.in0_idx].val
           s.send_out[0].val @= s.recv_all_val
-          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_const.rdy @= s.use_const & s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in0_idx].rdy @= ~s.use_const & s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         else:

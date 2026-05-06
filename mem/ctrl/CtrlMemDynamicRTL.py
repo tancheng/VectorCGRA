@@ -61,6 +61,7 @@ class CtrlMemDynamicRTL(Component):
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.ctrl_addr_outport = OutPort(CtrlAddrType)
+    s.global_launch_go = InPort(b1)
 
     # Components.
     s.reg_file = RegisterFile(CtrlType, ctrl_mem_size, 1, 1)
@@ -68,6 +69,7 @@ class CtrlMemDynamicRTL(Component):
     s.recv_from_element_queue = NormalQueueRTL(CgraPayloadType)
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
+    s.launch_pending = Wire(b1)
     s.sent_complete = Wire(b1)
     s.ctrl_count_per_iter_val = Wire(PCType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
@@ -210,15 +212,26 @@ class CtrlMemDynamicRTL(Component):
     def update_whether_we_can_iterate_ctrl():
       if s.reset:
         s.start_iterate_ctrl <<= 0
+        s.launch_pending <<= 0
       else:
         if s.recv_pkt_from_controller_queue.send.val:
-          if (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
-                  (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESUME):
+          if (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_LAUNCH):
+            if s.global_launch_go:
+              s.start_iterate_ctrl <<= 1
+              s.launch_pending <<= 0
+            else:
+              s.launch_pending <<= 1
+          elif s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESUME:
             s.start_iterate_ctrl <<= 1
-    # TODO: issue #191, stop iterate ctrl after 10 cycels during pausing status, 
-    # so as to clear channels safely.
+            s.launch_pending <<= 0
           elif s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_TERMINATE:
             s.start_iterate_ctrl <<= 0
+            s.launch_pending <<= 0
+        elif s.global_launch_go & s.launch_pending:
+          s.start_iterate_ctrl <<= 1
+          s.launch_pending <<= 0
+    # TODO: issue #191, stop iterate ctrl after 10 cycels during pausing status,
+    # so as to clear channels safely.
 
     @update_ff
     def issue_complete():
@@ -294,7 +307,8 @@ class CtrlMemDynamicRTL(Component):
         elif s.recv_pkt_from_controller_queue.send.val & \
            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR):
           temp_fu_crossbar_in = s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[0]
-          s.prologue_count_reg_fu_crossbar[s.recv_pkt_from_controller_queue.send.msg.payload.ctrl_addr][trunc(temp_fu_crossbar_in, FuOutPortType)] <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PrologueCountType)
+          if temp_fu_crossbar_in > 0:
+            s.prologue_count_reg_fu_crossbar[s.recv_pkt_from_controller_queue.send.msg.payload.ctrl_addr][trunc(temp_fu_crossbar_in - 1, FuOutPortType)] <<= trunc(s.recv_pkt_from_controller_queue.send.msg.payload.data.payload, PrologueCountType)
 
     @update_ff
     def update_ctrl_count_per_iter():
@@ -324,4 +338,3 @@ class CtrlMemDynamicRTL(Component):
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
     return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
-

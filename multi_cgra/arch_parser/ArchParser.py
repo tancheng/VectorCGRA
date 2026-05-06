@@ -14,8 +14,13 @@ class ArchParser:
 
         self.cgra_rows = self.yaml_data['multi_cgra_defaults']['rows']
         self.cgra_columns = self.yaml_data['multi_cgra_defaults']['columns']
-        self.per_cgra_rows = self.yaml_data['cgra_defaults']['rows']
-        self.per_cgra_columns = self.yaml_data['cgra_defaults']['columns']
+        per_cgra_defaults = self.yaml_data.get('per_cgra_defaults',
+                                               self.yaml_data.get('cgra_defaults'))
+        if per_cgra_defaults is None:
+            raise ValueError("architecture yaml must define cgra_defaults or per_cgra_defaults")
+        self.per_cgra_defaults = per_cgra_defaults
+        self.per_cgra_rows = per_cgra_defaults['rows']
+        self.per_cgra_columns = per_cgra_defaults['columns']
         self.num_registers = self.yaml_data['tile_defaults']['num_registers']
         self.fu_types = self.yaml_data['tile_defaults']['fu_types']
 
@@ -75,7 +80,14 @@ class ArchParser:
         dataSPM = self.parse_dataSPM()
         id2dataSPM = {}
         id2ctrlMemSize_map = {}
-        ctrlMemSize = self.yaml_data['cgra_defaults']['configMemSize']
+        ctrlMemSize = self.per_cgra_defaults.get(
+            'configMemSize',
+            self.per_cgra_defaults.get('ctrl_mem_items'),
+        )
+        if ctrlMemSize is None:
+            raise ValueError(
+                "architecture yaml per-CGRA defaults must define configMemSize or ctrl_mem_items"
+            )
 
         for id in range(num_cgras):
             id2dataSPM[id] = dataSPM
@@ -90,18 +102,25 @@ class ArchParser:
                     self.per_cgra_rows, self.per_cgra_columns, id2validTiles[id], id2validLinks[id], id2dataSPM[id], id2ctrlMemSize_map[id]))
 
         # Overrides the tiles.
-        if 'tile_overrides' in self.yaml_data:
+        if self.yaml_data.get('tile_overrides'):
             data = self.yaml_data['tile_overrides']
             for override in data:
                 fu_types = [] if not override['existence'] else override['fu_types']
-                cgras[override['cgra_x']][override['cgra_y']].overrideTiles(override['tile_x'], override['tile_y'], fu_types, override['existence'])
+                cgra = cgras[override['cgra_y']][override['cgra_x']]
+                cgra.overrideTiles(
+                    override['tile_x'],
+                    override['tile_y'],
+                    fu_types,
+                    override['existence'],
+                    override.get('num_registers'),
+                )
 
         # Overrides the links.
-        if 'link_overrides' in self.yaml_data:
+        if self.yaml_data.get('link_overrides'):
             data = self.yaml_data['link_overrides']
             for override in data:
                  if override['src_cgra_x'] == override['dst_cgra_x'] and override['src_cgra_y'] == override['dst_cgra_y']:
-                     cgras[override['src_cgra_x']][override['src_cgra_y']].overrideLinks(
+                     cgras[override['src_cgra_y']][override['src_cgra_x']].overrideLinks(
                          override['src_tile_x'], override['src_tile_y'],
                          override['dst_tile_x'], override['dst_tile_y'],
                          override['existence']

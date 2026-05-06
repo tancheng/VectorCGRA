@@ -76,29 +76,40 @@ yaml_to_VectorCGRA_map = {
     "FMUL": OPT_FMUL,
     "FDIV": None, # ?
     "OR": OPT_OR,
+    "AND": OPT_AND,
+    "XOR": OPT_XOR,
     "NOT": OPT_NOT,
     "ICMP": None, # ?
+    "EQ": OPT_EQ,
+    "LT": OPT_LT,
+    "GT": OPT_GT,
+    "LTE": OPT_LTE,
+    "GTE": OPT_GTE,
     "FCMP": None, # ?
     "SEL": OPT_SEL,
     "CAST": None, # ?
     "SEXT": OPT_PAS, # no sext, just a fake one.
-    "ZEXT": None, # ?
+    "ZEXT": OPT_PAS, # no zext, just a fake one.
     "SHL": OPT_LLS,
     "VFMUL": None, # ?
     "FADD_FADD": None, #?
     "FMUL_FADD": None, #?
     "DATA_MOV": None, #?
-    "CTRL_MOV": None, #?
+    "CTRL_MOV": OPT_PAS,
     "RESERVE": None, #?
     "GRANT_PREDICATE": OPT_GRT_PRED,
     "GRANT_ALWAYS": None, #?
     "GRANT_ONCE": OPT_GRT_ONCE, #?
     "PHI": OPT_PHI,
+    "PHI_START": OPT_PHI_START,
     "LOOP_CONTROL": None, #?
     "PHI_CONST": OPT_PHI_CONST, 
     
     "RETURN": OPT_RET,
+    "RETURN_VOID": OPT_RET_VOID,
     "LDD": OPT_LD,
+    "LOAD": OPT_LD,
+    "STORE": OPT_STR,
     
     "NE": OPT_NE,
     "MUL_ADD": OPT_MUL_ADD,
@@ -107,9 +118,12 @@ yaml_to_VectorCGRA_map = {
 }
 
 yaml_to_VectorCGRA_map_const = {
+    "EQ": OPT_EQ_CONST,
     "NE": OPT_NE_CONST,
     "ADD": OPT_ADD_CONST,
+    "GEP": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
+    "MUL": OPT_MUL_CONST,
 }
 
 
@@ -124,7 +138,7 @@ def _type(Operand):
         return 'IMM'
 
 def _is_take_up_fu_operation(operation):
-    if operation['opcode'] == 'MOV' or operation['opcode'] == 'DATA_MOV':
+    if operation['opcode'] == 'MOV' or operation['opcode'] == 'DATA_MOV' or operation['opcode'] == 'CTRL_MOV':
         if len(operation['src_operands']) != 1:
             raise ValueError("MOV operation must have exactly one source operand")
         elif _type(operation['src_operands'][0]) == 'REG':
@@ -133,6 +147,15 @@ def _is_take_up_fu_operation(operation):
             return False
     else:
         return True
+
+def _prologue_count_of(operation, default=1):
+    count = operation.get('invalid_iterations', default)
+    if count is None:
+        count = default
+    count = int(count)
+    if count < 0:
+        raise ValueError(f"invalid_iterations must be non-negative, got {count} in operation {operation}")
+    return count
     
 def _reg_cluster_no_of(operand): # start from 1
     impl = operand['operand']
@@ -246,25 +269,24 @@ class InstructionSignals:
             
             # TODO: fix logic here
                   
-            take_up_fu_operation = self.operations[take_up_fu_operation_idx]
+            take_up_fu_operation = self.operations[take_up_fu_operation_idx] if take_up_fu_operation_idx != -1 else None
             has_const = False
             # if has src_operands, check if has const
-            try:
-                src_operands = take_up_fu_operation['src_operands']
-            except Exception as e:
-                src_operands = []
+            src_operands = take_up_fu_operation.get('src_operands', []) if take_up_fu_operation is not None else []
             for src_operand in src_operands:
                 if _type(src_operand) == 'IMM':
                     has_const = True
                     break 
                 
-            if take_up_fu_operation['opcode'] == 'PHI_CONST' or take_up_fu_operation['opcode'] == 'CONSTANT' or take_up_fu_operation['opcode'] == 'GRANT_ONCE':
+            if take_up_fu_operation is not None and (take_up_fu_operation['opcode'] == 'PHI_CONST' or take_up_fu_operation['opcode'] == 'CONSTANT' or take_up_fu_operation['opcode'] == 'GRANT_ONCE'):
                 has_const = False # PHI_CONST and CONSTANT are special.
             
-            if has_const:
-                self.opCode = yaml_to_VectorCGRA_map_const[self.operations[take_up_fu_operation_idx]['opcode']]
+            if take_up_fu_operation is None:
+                self.opCode = OPT_NAH
+            elif has_const:
+                self.opCode = yaml_to_VectorCGRA_map_const[take_up_fu_operation['opcode']]
             else:
-                self.opCode = yaml_to_VectorCGRA_map[self.operations[take_up_fu_operation_idx]['opcode']]
+                self.opCode = yaml_to_VectorCGRA_map[take_up_fu_operation['opcode']]
 
             const_operands = []
 
@@ -281,13 +303,62 @@ class InstructionSignals:
                     dst_operands = operation['dst_operands']
                 except Exception as e:
                     dst_operands = []
+                grant_once_const_source = (
+                    operation_opcode == 'GRANT_ONCE' and
+                    len(src_operands) == 1 and
+                    _type(src_operands[0]) == 'IMM'
+                )
+
+                if not _is_take_up_fu_operation(operation):
+                    if len(src_operands) != 1 or _type(src_operands[0]) != 'PORT':
+                        raise ValueError(f"Non-FU DATA_MOV only supports one PORT source, got {operation}")
+                    port_in_xbar_idx = PORT_CODE[src_operands[0]['operand']]
+                    for dst_operand in dst_operands:
+                        if _type(dst_operand) == 'REG':
+                            cluster_no = _reg_cluster_no_of(dst_operand)
+                            intra_index = _reg_cluster_intra_index_of(dst_operand)
+                            if cluster_no < 1 or cluster_no > len(self.write_to_reg_idx):
+                                raise ValueError(f"Register cluster number {cluster_no} is out of range. Valid range is 1 to {len(self.write_to_reg_idx)} for register {dst_operand['operand']} in operation {operation}")
+                            if intra_index < 0 or intra_index >= REG_CLUSTER_SIZE:
+                                raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {dst_operand['operand']} in operation {operation}")
+                            if self.write_to_reg_idx[cluster_no - 1] != -1 and self.write_to_reg_idx[cluster_no - 1] != intra_index:
+                                raise ValueError(f"Collision when writing to register in write_to_reg_idx, when translate the operation {operation} to VectorCGRA")
+                            self.write_to_reg[cluster_no - 1] = FROM_PORT
+                            self.write_to_reg_idx[cluster_no - 1] = intra_index
+                            routing_out_idx = self.num_tile_outports + cluster_no - 1
+                            if self.TileInParams[routing_out_idx] != -1 and self.TileInParams[routing_out_idx] != port_in_xbar_idx:
+                                raise ValueError(f"Collision in routing DATA_MOV to register, when translate the operation {operation} to VectorCGRA")
+                            self.TileInParams[routing_out_idx] = port_in_xbar_idx
+                        elif _type(dst_operand) == 'PORT':
+                            port_out_xbar_idx = PORT_OUT_INDEX[dst_operand['operand']]
+                            if self.TileInParams[port_out_xbar_idx] != -1 and self.TileInParams[port_out_xbar_idx] != port_in_xbar_idx:
+                                raise ValueError(f"Collision in routing DATA_MOV to port, when translate the operation {operation} to VectorCGRA")
+                            self.TileInParams[port_out_xbar_idx] = port_in_xbar_idx
+                        else:
+                            raise ValueError(f"Unsupported type of DATA_MOV dst operand {dst_operand}, when translate the operation {operation} to VectorCGRA")
+                    continue
                 
                 # find all the const
-                for index, src_operand in enumerate(src_operands):
+                normalized_src_operands = []
+                for src_operand in src_operands:
                     if _type(src_operand) == 'IMM':
                         const_operands.append(src_operand)
                         # delete it from the src_operands since it is implicit in vectorCGRA
-                        del src_operands[index]
+                    else:
+                        normalized_src_operands.append(src_operand)
+                src_operands = normalized_src_operands
+                if grant_once_const_source:
+                    if self.shuffle_fu_operand_input_index[0] != -1:
+                        raise ValueError(f"Collision when assigning GRANT_ONCE const source, when translate the operation {operation} to VectorCGRA")
+                    self.shuffle_fu_operand_input_index[0] = 0
+
+                reserved_reg_lanes = set()
+                for src_operand in src_operands:
+                    if _type(src_operand) == 'REG':
+                        cluster_no = _reg_cluster_no_of(src_operand)
+                        if cluster_no < 1 or cluster_no > len(self.read_from_reg_idx):
+                            raise ValueError(f"Register cluster number {cluster_no} is out of range. Valid range is 1 to {len(self.read_from_reg_idx)} for register {src_operand['operand']} in operation {operation}")
+                        reserved_reg_lanes.add(cluster_no - 1)
                 
                 for index, src_operand in enumerate(src_operands):
                     if _type(src_operand) == 'REG':
@@ -302,6 +373,8 @@ class InstructionSignals:
                             raise ValueError(f"Register intra index {intra_index} is out of range. Valid range is 0 to {REG_CLUSTER_SIZE-1} for register {src_operand['operand']} in operation {operation}")
                         if self.read_from_reg_idx[cluster_no - 1] != -1 and self.read_from_reg_idx[cluster_no - 1] != intra_index:
                             raise ValueError(f"Collision when reading from register in read_from_reg_idx, when translate the operation {operation} to VectorCGRA")
+                        if self.read_from_reg[cluster_no - 1] != -1 and self.read_from_reg[cluster_no - 1] != OPR_FROM_REGISTER:
+                            raise ValueError(f"Collision between register and port source lanes, when translate the operation {operation} to VectorCGRA")
                         self.read_from_reg[cluster_no - 1] = OPR_FROM_REGISTER
                         self.read_from_reg_idx[cluster_no - 1] = intra_index
                         if self.shuffle_fu_operand_input_index[index] != -1:
@@ -313,7 +386,7 @@ class InstructionSignals:
                         # find an available lane
                         lane = -1
                         for i in range(self.num_fu_inports):
-                            if self.read_from_reg[i] == -1: # if not set the selection, then it could be available
+                            if self.read_from_reg[i] == -1 and i not in reserved_reg_lanes: # if not set the selection, then it could be available
                                 lane = i
                                 break
                         if lane == -1:
@@ -487,7 +560,10 @@ class TileSignals:
     def makeProloguePackets(self, instruction):
         print(f"Making prologue packets for instruction {instruction}")
         pkts = []
-        pkts.append(self.makePrologueFUPackets(instruction)) # always prologue FU
+        fu_prologue_count = 0
+        routing_prologue_counts = {}
+        fu_crossbar_prologue_counts = {}
+        default_prologue_count = 1 if instruction['timestep'] >= self.ii else 0
         take_up_fu_operation_idx = -1
         for idx, operation in enumerate(instruction['operations']):
             if _is_take_up_fu_operation(operation):
@@ -498,26 +574,60 @@ class TileSignals:
         if take_up_fu_operation_idx != -1:
             take_up_fu_operation = instruction['operations'][take_up_fu_operation_idx]
             # TODO: fix the logic for only having non-take up fu operation
-        else:
-            raise ValueError("No take up fu operation found")
-        try:
-            src_operands = take_up_fu_operation['src_operands']
-        except Exception as e:
-            src_operands = []
-        for src_operand in src_operands:
-            if _type(src_operand) == 'PORT':
-                print(f"src_operand is PORT, add Prologue. {src_operand}")
-                routing_xbar_idx = PORT_CODE[src_operand['operand']]
-                pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
-        
-        try:
-            dst_operands = take_up_fu_operation['dst_operands']
-        except Exception as e:
-            dst_operands = []
 
-        for dst_operand in dst_operands:
-            if _type(dst_operand) == 'REG':
-                pkts.append(self.makePrologueFUCrossbarPackets(instruction))
+        for operation in instruction['operations']:
+            prologue_count = _prologue_count_of(operation, default_prologue_count)
+            try:
+                src_operands = operation['src_operands']
+            except Exception as e:
+                src_operands = []
+            try:
+                dst_operands = operation['dst_operands']
+            except Exception as e:
+                dst_operands = []
+
+            if operation['opcode'] == 'PHI_START':
+                for src_operand in src_operands[1:]:
+                    if _type(src_operand) == 'PORT':
+                        routing_xbar_idx = PORT_CODE[src_operand['operand']]
+                        routing_prologue_counts[routing_xbar_idx] = max(
+                            routing_prologue_counts.get(routing_xbar_idx, 0),
+                            prologue_count + 1,
+                        )
+            if prologue_count == 0:
+                continue
+
+            if _is_take_up_fu_operation(operation):
+                fu_prologue_count = max(fu_prologue_count, prologue_count)
+                for src_operand in src_operands:
+                    if _type(src_operand) == 'PORT':
+                        print(f"src_operand is PORT, add Prologue. {src_operand}")
+                        routing_xbar_idx = PORT_CODE[src_operand['operand']]
+                        routing_prologue_counts[routing_xbar_idx] = max(
+                            routing_prologue_counts.get(routing_xbar_idx, 0),
+                            prologue_count,
+                        )
+                for dst_operand in dst_operands:
+                    if _type(dst_operand) == 'REG' or _type(dst_operand) == 'PORT':
+                        fu_crossbar_prologue_counts[1] = max(
+                            fu_crossbar_prologue_counts.get(1, 0),
+                            prologue_count,
+                        )
+            else:
+                for src_operand in src_operands:
+                    if _type(src_operand) == 'PORT':
+                        routing_xbar_idx = PORT_CODE[src_operand['operand']]
+                        routing_prologue_counts[routing_xbar_idx] = max(
+                            routing_prologue_counts.get(routing_xbar_idx, 0),
+                            prologue_count,
+                        )
+
+        if fu_prologue_count > 0:
+            pkts.append(self.makePrologueFUPackets(instruction, fu_prologue_count))
+        for routing_xbar_idx, prologue_count in routing_prologue_counts.items():
+            pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx, prologue_count))
+        for fu_xbar_idx, prologue_count in fu_crossbar_prologue_counts.items():
+            pkts.append(self.makePrologueFUCrossbarPackets(instruction, fu_xbar_idx, prologue_count))
         return pkts
     
     def makePhiConstProloguePackets(self, instruction):
@@ -534,30 +644,33 @@ class TileSignals:
             src_operands = []
             
         pkts = []
+        prologue_count = _prologue_count_of(phi_const_operation, 1)
+        if prologue_count == 0:
+            return pkts
         
         for src_operand in src_operands:
             if _type(src_operand) == 'PORT':
                 routing_xbar_idx = PORT_CODE[src_operand['operand']]
-                pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx))
+                pkts.append(self.makePrologueRoutingCrossbarPackets(instruction, routing_xbar_idx, prologue_count))
                 
         print(f"Phi const prologue packets: {pkts}")
         return pkts
     
     
-    def makePrologueFUPackets(self, instruction):
+    def makePrologueFUPackets(self, instruction, prologue_count=1):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
-                                                                     data = self.DataType(1, 1)))
-    def makePrologueRoutingCrossbarPackets(self, instruction, routing_xbar_idx):
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_, ctrl_addr = self.CtrlAddrType(instruction.get('ctrl_addr', instruction['timestep'] % self.ii)),
+                                                                     data = self.DataType(prologue_count, 1)))
+    def makePrologueRoutingCrossbarPackets(self, instruction, routing_xbar_idx, prologue_count=1):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction.get('ctrl_addr', instruction['timestep'] % self.ii)),
                                                                      ctrl = self.CtrlType(routing_xbar_outport = [self.TileInType(routing_xbar_idx)] + [self.TileInType(0)] * (self.num_routing_outports - 1)),
-                                                                     data = self.DataType(1, 1)))
-    def makePrologueFUCrossbarPackets(self, instruction):
+                                                                     data = self.DataType(prologue_count, 1)))
+    def makePrologueFUCrossbarPackets(self, instruction, fu_xbar_idx=1, prologue_count=1):
         return self.IntraCgraPktType(0, self.id_, 
-                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction['timestep'] % self.ii),
-                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * self.num_routing_outports),
-                                                                     data = self.DataType(1, 1)))
+                                     payload = self.CgraPayloadType(self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_, ctrl_addr = self.CtrlAddrType(instruction.get('ctrl_addr', instruction['timestep'] % self.ii)),
+                                                                     ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(fu_xbar_idx)] + [self.FuOutType(0)] * (self.num_routing_outports - 1)),
+                                                                     data = self.DataType(prologue_count, 1)))
     def makeTileSignals(self):
         consts = []
         all_signals = []
@@ -567,8 +680,7 @@ class TileSignals:
         
         # build all the instruction signals and get all the const
         for instruction in self.instructions:
-            if instruction['timestep'] >= self.ii:
-                prologue_signals.extend(self.makeProloguePackets(instruction))
+            prologue_signals.extend(self.makeProloguePackets(instruction))
             
             has_phi_const = False # cope with special PHI_CONST operation
             for operation in instruction['operations']:
@@ -578,13 +690,13 @@ class TileSignals:
             if has_phi_const:
                 prologue_signals.extend(self.makePhiConstProloguePackets(instruction))
                 
-            has_addrs.append(instruction['timestep'] % self.ii)
+            has_addrs.append(instruction.get('ctrl_addr', instruction['timestep'] % self.ii))
             
             instruction_signals = InstructionSignals(
                 id_ = self.id_,
                 operations = instruction['operations'],
                 opcode_in_EIR = instruction['operations'][0]['opcode'], # transient TODO: make it general
-                ctrl_addr = instruction['timestep'] % self.ii,
+                ctrl_addr = instruction.get('ctrl_addr', instruction['timestep'] % self.ii),
                 IntraCgraPktType = self.IntraCgraPktType,
                 CgraPayloadType = self.CgraPayloadType,
                 TileInType = self.TileInType,
@@ -623,17 +735,19 @@ class TileSignals:
         all_signals.append(loop_times_pkt)
         
         
-        main_signals = []
+        main_signals_by_addr = {}
         # make the main packets
         for instruction_signals in all_instruction_signals:
             pkt = instruction_signals.makeCtrlPkt()
-            main_signals.append(pkt)
+            addr = int(pkt.payload.ctrl_addr)
+            if addr in main_signals_by_addr:
+                raise ValueError(f"Duplicate control packet for ctrl_addr {addr} in tile {self.id_}")
+            main_signals_by_addr[addr] = pkt
         
           
         # fill the non-existent timesteps with NAH packets
 
         filled_main_signals = []
-        idx = 0
         for timestep in range(self.ii):
             if timestep not in has_addrs:
                 NAH_SIGNAL = self.IntraCgraPktType(0, self.id_,
@@ -644,8 +758,7 @@ class TileSignals:
                                                                       [self.FuOutType(0)] * self.num_routing_outports)))  
                 filled_main_signals.append(NAH_SIGNAL)
             else:
-                filled_main_signals.append(main_signals[idx]) # WARN: generated signals must be in order
-                idx += 1
+                filled_main_signals.append(main_signals_by_addr[timestep])
         
         
         all_signals.extend(filled_main_signals)

@@ -82,6 +82,9 @@ class CrossbarRTL(Component):
     # violation), because send_accepted is a registered (flopped) value.
     s.send_accepted = Wire(num_outports)
     s.send_accepted_next = Wire(num_outports)
+    s.hold_valid = Wire(num_outports)
+    s.hold_valid_next = Wire(num_outports)
+    s.hold_msg = [Wire(DataType) for _ in range(num_outports)]
     # Whether all required multicast outputs have been committed (either
     # accepted in a previous cycle via send_accepted, or being accepted
     # in the current cycle via send_rdy_vector).
@@ -140,8 +143,12 @@ class CrossbarRTL(Component):
           if reduce_and(s.recv_valid_vector) & \
              s.send_required_vector[i] & \
              ~s.send_accepted[i]:
-            s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
-            s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
+            if s.hold_valid[i]:
+              s.send_data[i].msg.payload @= s.hold_msg[i].payload
+              s.send_data[i].msg.predicate @= s.hold_msg[i].predicate
+            else:
+              s.send_data[i].msg.payload @= s.recv_data_msg[s.in_dir_local[i]].payload
+              s.send_data[i].msg.predicate @= s.recv_data_msg[s.in_dir_local[i]].predicate
 
         s.recv_opt.rdy @= s.all_send_accepted & \
                           reduce_and(s.recv_valid_or_prologue_allowing_vector)
@@ -153,11 +160,23 @@ class CrossbarRTL(Component):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= 0
         s.send_accepted <<= 0
+        s.hold_valid <<= 0
+        for i in range(num_outports):
+          s.hold_msg[i] <<= DataType()
       else:
         for addr in range(ctrl_mem_size):
           for i in range(num_inports):
             s.prologue_counter[addr][i] <<= s.prologue_counter_next[addr][i]
         s.send_accepted <<= s.send_accepted_next
+        s.hold_valid <<= s.hold_valid_next
+        if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START) & \
+           reduce_and(s.recv_valid_vector) & ~s.recv_opt.rdy:
+          for i in range(num_outports):
+            if s.send_required_vector[i] & ~s.hold_valid[i]:
+              s.hold_msg[i] <<= s.recv_data_msg[s.in_dir_local[i]]
+        elif ~(s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START)):
+          for i in range(num_outports):
+            s.hold_msg[i] <<= DataType()
 
     @update
     def update_prologue_counter_next():
@@ -196,6 +215,23 @@ class CrossbarRTL(Component):
       else:
         # Not active (OPT_START or opt not valid) -- clear.
         s.send_accepted_next @= 0
+
+    @update
+    def update_hold_valid_next():
+      # Hold the message for a partially completed multicast. A destination
+      # can accept before the source transaction is fully dequeued; in that
+      # window feedback writes may change the combinational FU output.
+      s.hold_valid_next @= s.hold_valid
+
+      if s.recv_opt.val & (s.recv_opt.msg.operation != OPT_START):
+        if s.recv_opt.rdy:
+          s.hold_valid_next @= 0
+        elif reduce_and(s.recv_valid_vector):
+          for i in range(num_outports):
+            if s.send_required_vector[i]:
+              s.hold_valid_next[i] @= 1
+      else:
+        s.hold_valid_next @= 0
 
     @update
     def update_prologue_allowing_vector():
@@ -277,4 +313,3 @@ class CrossbarRTL(Component):
     recv_str = "|".join([str(x.msg) for x in s.recv_data])
     out_str  = "|".join([str(x.msg) for x in s.send_data])
     return f"{recv_str} [{s.recv_opt.msg}] {out_str}"
-

@@ -13,10 +13,10 @@ class ParamCGRA:
     def getValidLinks(self):
         return self.links
 
-    def overrideTiles(self, tile_x, tile_y, operations, existence):
+    def overrideTiles(self, tile_x, tile_y, operations, existence, num_registers=None):
         row = tile_y
         col = tile_x
-        self.tiles[row * self.columns + col].override(operations, existence)
+        self.tiles[row * self.columns + col].override(operations, existence, num_registers)
 
     def overrideLinks(self, src_tile_x, src_tile_y, dst_tile_x, dst_tile_y, existence):
         # Finds the link and sets the disabled status.

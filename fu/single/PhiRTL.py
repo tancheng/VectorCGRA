@@ -135,7 +135,8 @@ class PhiRTL(Fu):
     def br_start_once():
       if s.reset | s.clear:
         s.first <<= b1(1)
-      if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & s.reached_vector_factor:
+      if ((s.recv_opt.msg.operation == OPT_PHI_CONST) | (s.recv_opt.msg.operation == OPT_PHI_START)) & \
+         s.recv_opt.val & s.recv_opt.rdy & s.reached_vector_factor:
         s.first <<= b1(0)
 
   def line_trace(s):
@@ -145,4 +146,3 @@ class PhiRTL(Fu):
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
     return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}'
-

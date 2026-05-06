@@ -91,7 +91,7 @@ class Tile:
         """Returns the number of valid functional units on this tile."""
         return len(self.fu_types)
 
-    def override(self, fu_types, existence):
+    def override(self, fu_types, existence, num_registers=None):
         """
         Overrides the default configuration for this tile.
 
@@ -100,5 +100,7 @@ class Tile:
             existence: Boolean, if False, marks the tile as disabled (not physically present/active).
         """
         self.fu_types = fu_types
+        if num_registers is not None:
+            self.num_registers = num_registers
         self.disabled = not existence
         self.isDefaultFus_ = False

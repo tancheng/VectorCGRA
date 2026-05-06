@@ -73,6 +73,7 @@ class TileRTL(Component):
     s.recv_from_controller_pkt = RecvIfcRTL(CtrlPktType)
     # Sends the ctrl packets to ctrl ring.
     s.send_to_controller_pkt = SendIfcRTL(CtrlPktType)
+    s.global_launch_go = InPort(b1)
 
     # Data.
     s.to_mem_raddr = SendIfcRTL(DataAddrType)
@@ -113,6 +114,7 @@ class TileRTL(Component):
                                    num_tiles,
                                    num_ctrl,
                                    total_steps)
+    s.ctrl_mem.global_launch_go //= s.global_launch_go
 
     # The `tile_in_channel` indicates the outport channels that are
     # connected to the next tiles.
@@ -247,9 +249,11 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_RESUME) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):

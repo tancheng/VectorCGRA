@@ -105,6 +105,9 @@ class CgraTemplateRTL(Component):
     CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
+    launch_release_delay = (s.num_tiles + 1) * 8
+    LaunchReleaseDelayType = mk_bits(clog2(launch_release_delay + 1))
+    launch_release_opaque = 0xff
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -149,6 +152,10 @@ class CgraTemplateRTL(Component):
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
                                   s.num_tiles, controller2addr_map, idTo2d_map)
+    s.global_launch_go = Wire(b1)
+    s.global_launch_released = Wire(b1)
+    s.launch_release_countdown = Wire(LaunchReleaseDelayType)
+    s.is_launch_release_pkt = Wire(b1)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
@@ -182,14 +189,54 @@ class CgraTemplateRTL(Component):
       s.bypass_queue.send //= s.controller.recv_from_inter_cgra_noc
       s.bypass_queue.recv //= s.controller.send_to_inter_cgra_noc
 
-    # Connects the ctrl interface between CPU and controller.
-    s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
+    # Connects the ctrl interface between CPU and controller. A special
+    # CMD_RESUME packet is consumed here as a launch barrier release so all
+    # launched tiles start together after previous launch packets drain.
     s.send_to_cpu_pkt //= s.controller.send_to_cpu_pkt
+
+    @update
+    def route_cpu_pkt():
+      s.is_launch_release_pkt @= s.recv_from_cpu_pkt.val & \
+                                (s.recv_from_cpu_pkt.msg.payload.cmd == CMD_RESUME) & \
+                                (s.recv_from_cpu_pkt.msg.opaque == launch_release_opaque)
+      s.controller.recv_from_cpu_pkt.msg @= s.recv_from_cpu_pkt.msg
+      s.controller.recv_from_cpu_pkt.val @= s.recv_from_cpu_pkt.val & \
+                                            ~s.is_launch_release_pkt
+      if s.is_launch_release_pkt:
+        s.recv_from_cpu_pkt.rdy @= 1
+      else:
+        s.recv_from_cpu_pkt.rdy @= s.controller.recv_from_cpu_pkt.rdy
 
     # Assigns tile id.
     for i in range(s.num_tiles):
       s.tile[i].cgra_id //= s.cgra_id
       s.tile[i].tile_id //= i
+      s.tile[i].global_launch_go //= s.global_launch_go
+
+    @update
+    def update_global_launch_go():
+      s.global_launch_go @= s.global_launch_released
+
+    @update_ff
+    def update_global_launch_released():
+      if s.reset:
+        s.global_launch_released <<= 0
+        s.launch_release_countdown <<= 0
+      elif s.recv_from_cpu_pkt.val & s.recv_from_cpu_pkt.rdy:
+        if s.is_launch_release_pkt:
+          s.global_launch_released <<= 0
+          s.launch_release_countdown <<= launch_release_delay
+        elif s.recv_from_cpu_pkt.msg.payload.cmd == CMD_LAUNCH:
+          s.global_launch_released <<= 0
+          s.launch_release_countdown <<= 0
+        elif s.launch_release_countdown > 0:
+          s.launch_release_countdown <<= s.launch_release_countdown - 1
+          if s.launch_release_countdown == 1:
+            s.global_launch_released <<= 1
+      elif s.launch_release_countdown > 0:
+        s.launch_release_countdown <<= s.launch_release_countdown - 1
+        if s.launch_release_countdown == 1:
+          s.global_launch_released <<= 1
 
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
