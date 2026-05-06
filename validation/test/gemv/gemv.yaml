@@ -96,7 +96,7 @@ array_config:
                   time_step: 9
                   invalid_iterations: 0
                   src_operands:
-                    - operand: "#4"
+                    - operand: "#20"
                       color: "RED"
                     - operand: "$0"
                       color: "RED"
@@ -635,7 +635,7 @@ array_config:
                   time_step: 5
                   invalid_iterations: 0
                   src_operands:
-                    - operand: "#0"
+                    - operand: "#16"
                       color: "RED"
                     - operand: "$0"
                       color: "RED"

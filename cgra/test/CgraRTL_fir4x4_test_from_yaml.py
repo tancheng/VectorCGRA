@@ -396,7 +396,7 @@ def sim_fir4x4_return(cmdline_opts, mem_access_is_combinational):
   trace_file = os.path.join(trace_dir, 'trace_fir4x4_4x4_Mesh.jsonl')
   init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
 
-  run_sim(th)
+  run_sim(th, print_line_trace = True)
 
   close_trace_logger()
 

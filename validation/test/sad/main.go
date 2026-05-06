@@ -12,23 +12,29 @@ import (
 	"github.com/sarchlab/zeonica/runtimecfg"
 )
 
-// Gemv runs the GEMV (y = A*x) testbench on the configured runtime.
+// SAD runs the SAD (Sum of Absolute Differences) testbench.
 //
-// Kernel: y[i] = sum_j(A[i][j] * x[j]) for i,j in [0,4).
+// Kernel:
+//
+//	sum = 0
+//	for i in [0, SAD_N):
+//	    d = A[i] - B[i]
+//	    sum += d < 0 ? -d : d
+//	return sum
 //
 // Memory layout (from compiled YAML):
-//   - Tile (1,0): matrix A with row stride 16 (SHL #4).
-//     A[i][j] at address arg0 + i*16 + j.
-//   - Tile (2,0): vector x at arg1+j, output y at arg2+i.
+//   - Tile (2,0): array A at base 0. A[i] at address 0 + i.
+//   - Tile (3,0): array B at base 0. B[i] at address 0 + i.
 //
-// Arg bindings (set in YAML as immediates):
+// Return value read from tile (1,1) via GetRetVal().
 //
-//	arg0 = #0  (A base in tile (1,0))
-//	arg1 = #0  (x base in tile (2,0))
-//	arg2 = #4  (y base in tile (2,0), after x)
+// Arg bindings:
+//
+//	arg0 = #0  (A base in tile (2,0))
+//	arg1 = #0  (B base in tile (3,0))
 //
 //nolint:gocyclo,funlen
-func Gemv(rt *runtimecfg.Runtime) int {
+func SAD(rt *runtimecfg.Runtime) int {
 	width := rt.Config.Columns
 	height := rt.Config.Rows
 	driver := rt.Driver
@@ -37,7 +43,7 @@ func Gemv(rt *runtimecfg.Runtime) int {
 
 	programPath := os.Getenv("ZEONICA_PROGRAM_YAML")
 	if programPath == "" {
-		programPath = "test/testbench/gemv/gemv-v4.yaml"
+		programPath = "test/testbench/sad/sad.yaml"
 	}
 	program := core.LoadProgramFileFromYAML(programPath)
 	fmt.Println("program:", program)
@@ -56,37 +62,23 @@ func Gemv(rt *runtimecfg.Runtime) int {
 	}
 
 	const (
-		N        = 4 // matrix/vector dimension
-		RowShift = 2 // SHL amount in YAML
-		BaseA    = 0 // arg0: A base in tile (1,0)
-		BaseX    = 0 // arg1: x base in tile (2,0)
-		BaseY    = 4 // arg2: y base in tile (2,0)
+		N     = 8 // SAD_N
+		BaseA = 0 // arg0: A base in tile (2,0)
+		BaseB = 0 // arg1: B base in tile (3,0)
 	)
 
-	rowStride := 1 << RowShift // 16
+	// Initialize input data.
+	dataA := []int32{3, -7, 12, 0, 5, -1, 8, -4}
+	dataB := []int32{1, 2, -3, 4, -5, 6, 7, 8}
 
-	// A is a 4x4 matrix.
-	dataA := []int32{
-		1, 2, 3, 4,
-		5, 6, 7, 8,
-		9, 10, 11, 12,
-		13, 14, 15, 16,
-	}
-
-	// x is a 4-element vector.
-	dataX := []int32{10, 20, 30, 40}
-
-	// Preload A into tile (1,0) with row stride 16.
+	// Preload A into tile (2,0).
 	for i := 0; i < N; i++ {
-		for j := 0; j < N; j++ {
-			addr := BaseA + i*rowStride + j
-			driver.PreloadMemory(1, 0, uint32(dataA[i*N+j]), uint32(addr))
-		}
+		driver.PreloadMemory(2, 0, uint32(dataA[i]), uint32(BaseA+i))
 	}
 
-	// Preload x into tile (2,0) at addresses BaseX..BaseX+3.
-	for j := 0; j < N; j++ {
-		driver.PreloadMemory(2, 0, uint32(dataX[j]), uint32(BaseX+j))
+	// Preload B into tile (3,0).
+	for i := 0; i < N; i++ {
+		driver.PreloadMemory(3, 0, uint32(dataB[i]), uint32(BaseB+i))
 	}
 
 	// Fire all cores.
@@ -102,35 +94,28 @@ func Gemv(rt *runtimecfg.Runtime) int {
 
 	fmt.Println("========================")
 
-	// Read output y from tile (2,0) at addresses BaseY..BaseY+3.
-	outputY := make([]int32, N)
-	for i := 0; i < N; i++ {
-		val := driver.ReadMemory(2, 0, uint32(BaseY+i))
-		outputY[i] = int32(val)
-		fmt.Printf("  y[%d] = %d\n", i, outputY[i])
-	}
+	// Read return value from tile (1,1).
+	retBits := device.GetTile(1, 1).GetRetVal()
+	retVal := int32(retBits)
+	fmt.Printf("retVal(bits=0x%08x) -> %d\n", retBits, retVal)
 
-	// Compute expected: y[i] = sum_j(A[i][j] * x[j]).
-	expectedY := make([]int32, N)
+	// Compute expected SAD.
+	var expected int32
 	for i := 0; i < N; i++ {
-		for j := 0; j < N; j++ {
-			expectedY[i] += dataA[i*N+j] * dataX[j]
+		d := dataA[i] - dataB[i]
+		if d < 0 {
+			d = -d
 		}
+		expected += d
 	}
+	fmt.Printf("expected -> %d\n", expected)
 
-	fmt.Println("expected:")
 	mismatch := 0
-	for i := 0; i < N; i++ {
-		fmt.Printf("  y[%d] = %d\n", i, expectedY[i])
-		if outputY[i] != expectedY[i] {
-			mismatch++
-		}
-	}
-
-	if mismatch == 0 {
-		fmt.Println("✅ GEMV output matches expected")
+	if retVal == expected {
+		fmt.Println("SAD output matches expected")
 	} else {
-		fmt.Printf("❌ GEMV output mismatches: %d\n", mismatch)
+		fmt.Printf("SAD output mismatch: got %d, expected %d\n", retVal, expected)
+		mismatch = 1
 	}
 	return mismatch
 }
@@ -173,7 +158,7 @@ func resolveArchSpecPath() (string, error) {
 }
 
 func main() {
-	const testName = "gemv"
+	const testName = "sad"
 
 	archSpecPath, err := resolveArchSpecPath()
 	if err != nil {
@@ -190,7 +175,7 @@ func main() {
 		panic(err)
 	}
 
-	mismatch := Gemv(rt)
+	mismatch := SAD(rt)
 
 	if err := runtimecfg.CloseTraceLog(traceLog); err != nil {
 		panic(err)

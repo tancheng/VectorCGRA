@@ -248,33 +248,40 @@ fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 # Kernel semantics (4x4 matrix-vector multiply y = A * x):
 #   Outer loop: i = 0..3     (GRANT_ONCE #0, ICMP_EQ #4, ADD #1)
 #     Inner loop: j = 0..3   (GRANT_ONCE #0, ICMP_EQ #4, ADD #1)
-#       A_addr = i << 2 + j  (SHL #2, GEP)        -- stride-4 row layout
-#       x_addr = j            (GEP #0)
+#       A_addr = i << 2 + j   (SHL #2, GEP)        -- stride-4 row layout
+#       x_addr = 16 + j       (GEP #16)
 #       acc += A[A_addr] * x[x_addr]  (LOAD, LOAD, MUL, ADD)
-#     y_addr = 4 + i          (GEP #4)
+#     y_addr = 20 + i         (GEP #20)
 #     y[y_addr] = acc          (STORE)
 #   RETURN_VOID               (signals completion)
 #
-# Memory layout (word-addressed, shared memory):
-#   A[0][0..3] / x[0..3]  at addresses  0..3   (overlap: A row 0 == x)
-#   A[1][0..3] / y[0..3]  at addresses  4..7   (overlap: A row 1 == y)
-#   A[2][0..3]             at addresses  8..11
-#   A[3][0..3]             at addresses 12..15
-#
-# Note: In the original Zeonica per-tile-memory model, A and x/y live
-#       in different tile memories.  In VectorCGRA's shared memory the
-#       addresses collide.  We preload all 16 words (A rows 0-3) and
-#       accept that stores to y[i] (addr 4+i) overwrite A[1].
+# Memory layout (word-addressed, shared memory; disjoint regions):
+#   A[0][0..3]  at addresses  0..3
+#   A[1][0..3]  at addresses  4..7
+#   A[2][0..3]  at addresses  8..11
+#   A[3][0..3]  at addresses 12..15
+#   x[0..3]     at addresses 16..19
+#   y[0..3]     at addresses 20..23
 #
 #   RETURN_VOID sends CMD_COMPLETE with data = 0.
 
-# Preload matrix A (stride 4) and vector x with value 1.
-# A is row-major at addresses 0..15 with stride 4.
-# x overlaps A[0] at addresses 0..3.
+# Preload matrix A (row-major, stride 4) and vector x with non-trivial values.
+#   A[i][j] = i * 4 + j + 1       -> values 1..16 at addresses 0..15
+#   x[j]    = j + 1               -> values 1, 2, 3, 4 at addresses 16..19
+# Expected results (written by kernel into y at 20..23):
+#   y[0] = 1*1 + 2*2 + 3*3 + 4*4    =  30
+#   y[1] = 5*1 + 6*2 + 7*3 + 8*4    =  70
+#   y[2] = 9*1 + 10*2 + 11*3 + 12*4 = 110
+#   y[3] = 13*1 + 14*2 + 15*3 + 16*4 = 150
+A_values = [i * 4 + j + 1 for i in range(4) for j in range(4)]
+x_values = [j + 1 for j in range(4)]
 preload_data = [
     [
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1, 1), data_addr = i))
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(A_values[i], 1), data_addr = i))
         for i in range(16)
+    ] + [
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(x_values[j], 1), data_addr = 16 + j))
+        for j in range(4)
     ]
 ]
 

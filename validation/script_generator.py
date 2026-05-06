@@ -102,6 +102,7 @@ yaml_to_VectorCGRA_map = {
     "PHI_START": OPT_PHI_START,
     
     "GEP": OPT_ADD, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
+    "GEP_2D": OPT_GEP_2D, # special GEP for 2D array access, with 3 operands (base, idx1, idx2) and idx1/idx2 are multiplied with different stride.
     
     "RETURN": OPT_RET,
     "RETURN_VALUE": OPT_RET,
@@ -125,6 +126,7 @@ yaml_to_VectorCGRA_map_const = {
     "SUB": OPT_SUB_CONST,
     "DIV": OPT_DIV_CONST,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
+    "GEP_2D": OPT_GEP_2D_CONST,
     "ICMP_EQ": OPT_EQ_CONST,
     "ICMP_SGE": OPT_GTE_CONST,
     "ICMP_SGT": OPT_GT_CONST,

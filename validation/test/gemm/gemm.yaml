@@ -629,7 +629,7 @@ array_config:
                       color: "RED"
             - index_per_ii: 15
               operations:
-                - opcode: "GEP"
+                - opcode: "GEP_2D"
                   id: 120
                   time_step: 15
                   invalid_iterations: 0
@@ -1069,7 +1069,7 @@ array_config:
           instructions:
             - index_per_ii: 0
               operations:
-                - opcode: "GEP"
+                - opcode: "GEP_2D"
                   id: 119
                   time_step: 17
                   invalid_iterations: 1
@@ -1407,7 +1407,7 @@ array_config:
                       color: "RED"
             - index_per_ii: 14
               operations:
-                - opcode: "GEP"
+                - opcode: "GEP_2D"
                   id: 96
                   time_step: 14
                   invalid_iterations: 0

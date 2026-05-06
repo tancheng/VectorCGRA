@@ -382,7 +382,7 @@ def sim_relu_return(cmdline_opts, mem_access_is_combinational):
   init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
 
   cmdline_opts['max_cycles'] = 500
-  run_sim(th)
+  run_sim(th, print_line_trace = True)
 
   close_trace_logger()
 

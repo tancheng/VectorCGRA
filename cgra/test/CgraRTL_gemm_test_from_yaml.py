@@ -23,6 +23,7 @@ from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.DivRTL import DivRTL
+from ...fu.single.GepRTL import GepRTL
 from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
@@ -157,6 +158,7 @@ FuList = [AdderRTL,
           MemUnitRTL,
           SelRTL,
           RetRTL,
+          GepRTL,
           ]
 x_tiles = 4
 y_tiles = 4
@@ -366,6 +368,17 @@ def sim_gemm(cmdline_opts, mem_access_is_combinational):
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
+
+  # # Pre-configure the GEP_2D stride register for each tile that issues a
+  # # GEP_2D op in gemm.yaml. All three 2D GEPs walk a 4x4 matrix, so stride = N.
+  # #   tile 4 (col=0, row=1): GEP_2D id=120 at index_per_ii=15 (B base #16)
+  # #   tile 6 (col=2, row=1): GEP_2D id=119 at index_per_ii=0  (C base #32)
+  # #                          GEP_2D id=96  at index_per_ii=14 (A base #0)
+  # gep_stride_cfg = [
+  #     IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_GEP_STRIDE, data = DataType(N, 1))),
+  #     IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_CONFIG_GEP_STRIDE, data = DataType(N, 1))),
+  # ]
+  # src_ctrl_pkt.extend(gep_stride_cfg)
 
   for tile_pkts in src_opt_pkt0:
       src_ctrl_pkt.extend(tile_pkts)
