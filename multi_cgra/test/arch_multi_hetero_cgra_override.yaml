@@ -5,11 +5,6 @@ multi_cgra_defaults:
   columns: 2
 
 cgra_defaults:
-  rows: 4
-  columns: 4
-  configMemSize: 16
-
-cgra_defaults:
   rows: 2
   columns: 2
   configMemSize: 16
@@ -19,11 +14,6 @@ tile_defaults:
   fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
 
 cgra_overrides:
-- cgra_x: 0
-  cgra_y: 0
-  rows: 2
-  columns: 2
-
 - cgra_x: 1
   cgra_y: 0
   rows: 3
