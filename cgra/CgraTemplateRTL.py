@@ -79,11 +79,16 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True, cgra_id = 0, max_per_cgra_rows_ = None, max_per_cgra_cols_ = None, max_num_rd_tiles_ = None, max_num_wr_tiles_ = None):
+                is_multi_cgra = True, cgra_id = 0,
+                provided_max_per_cgra_rows = None,
+                provided_max_per_cgra_cols = None,
+                provided_max_num_rd_tiles = None,
+                provided_max_num_wr_tiles = None):
     """
-    max_num_tiles_: the tile number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
-    max_num_rd_tiles_: the number of read ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
-    max_num_wr_tiles_: the number of write ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_per_cgra_rows: the row number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_per_cgra_cols: the column number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_num_rd_tiles: the number of read ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_num_wr_tiles: the number of write ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
     """
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -96,13 +101,13 @@ class CgraTemplateRTL(Component):
     # Reconstructs packet types.
     # In the case of heterogeneous multi-cgra, `max_num_tiles` means the tile number of the largest cgra.
     # In the case of single cgra, it is the tile number of the current cgra.
-    max_per_cgra_rows = max_per_cgra_rows_ if max_per_cgra_rows_ is not None else per_cgra_rows
-    max_per_cgra_cols = max_per_cgra_cols_ if max_per_cgra_cols_ is not None else per_cgra_columns
+    max_per_cgra_rows = provided_max_per_cgra_rows if provided_max_per_cgra_rows is not None else per_cgra_rows
+    max_per_cgra_cols = provided_max_per_cgra_cols if provided_max_per_cgra_cols is not None else per_cgra_columns
     max_num_tiles = max_per_cgra_rows * max_per_cgra_cols
     # In the case of heterogeneous multi-cgra, `max_num_rd_tiles` means the number of read ports of the largest cgra.
     # In the case of single cgra, it is the number of read ports of the current cgra.
-    max_num_rd_tiles = max_num_rd_tiles_ if max_num_rd_tiles_ is not None else dataSPM.getNumOfValidReadPorts()
-    max_num_wr_tiles = max_num_wr_tiles_ if max_num_wr_tiles_ is not None else dataSPM.getNumOfValidWritePorts()
+    max_num_rd_tiles = provided_max_num_rd_tiles if provided_max_num_rd_tiles is not None else dataSPM.getNumOfValidReadPorts()
+    max_num_wr_tiles = provided_max_num_wr_tiles if provided_max_num_wr_tiles is not None else dataSPM.getNumOfValidWritePorts()
     
 
     # Use largest CGRA shape(max_num_tiles) to set CtrlPktType/NocPktType for compatibility.
