@@ -144,6 +144,7 @@ def configure_boundary_ports(cgra_id, tiles_flat,
     - num_cgra_cols: Number of CGRA columns in the mesh
     - id2shape_map: Map of each CGRA id to its shape: (num_tile_rows x num_tile_columns) tiles
     - is_valid: If true, enable ports, otherwise disable ports
+    See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png
     """
     # Converts CGRA ID to 2D coordinates
     cgra_x = cgra_id % num_cgra_cols

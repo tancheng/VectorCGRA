@@ -111,6 +111,7 @@ class MeshMultiCgraTemplateRTL(Component):
         #              (cgra_col=0)   -- (cgra_col=1)
         # (cgra_row=1) CGRA 2 [idx=2] -- CGRA 3 [idx=3]
         # (cgra_row=0) CGRA 0 [idx=0] -- CGRA 1 [idx=1]
+        # See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png
         for cgra_row in range(cgra_rows):
           for cgra_col in range(cgra_columns):
             idx = cgra_row * cgra_columns + cgra_col
