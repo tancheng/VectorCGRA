@@ -267,63 +267,66 @@ class CgraTemplateRTL(Component):
     |  cgra2   cgra3
     |  cgra0   cgra1
     +---------------> x
+    See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png
 
     """
     cgra_idx_x = cgra_id % multi_cgra_columns
     cgra_idx_y = cgra_id // multi_cgra_columns
 
     """
-    row ^
+    y   ^
         | tile12  tile13 tile14   tile15
         | tile8   tile9  tile10   tile11
         | tile4   tile5  tile6    tile7
         | tile0   tile1  tile2    tile3
-        |--------------------------> column
+        |--------------------------> x
+    
+    See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png  
     """
     if is_multi_cgra:
-      for row in range(per_cgra_rows):
-        for col in range(per_cgra_columns):
-          tile_id = row * per_cgra_columns + col
+      for tile_idx_y in range(per_cgra_rows):
+        for tile_idx_x in range(per_cgra_columns):
+          tile_id = tile_idx_y * per_cgra_columns + tile_idx_x
           # Only connects if the port is valid
-          if row == per_cgra_rows - 1:
+          if tile_idx_y == per_cgra_rows - 1:
             if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[col]
+              s.tile[tile_id].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[tile_idx_x]
             if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[col]
+              s.tile[tile_id].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[tile_idx_x]
 
-          if row == 0:
+          if tile_idx_y == 0:
             # Corner case: In multi-cgra, for each row of CGRAs except the bottom row,
             # the south port of the bottom row tiles must be connected to the adjacent/south cgra.
             if cgra_idx_y > 0:
-              s.tile[tile_id].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[col]
-              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[col]
+              s.tile[tile_id].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[tile_idx_x]
+              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[tile_idx_x]
             else: #cgra_idx_y == 0
               # In multi-cgra, for the bottom row CGRAs, the south ports of the bottom row tiles should be grounded.
               s.tile[tile_id].send_data[PORT_INDEX_SOUTH].rdy //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].val //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].msg //= DataType(0, 0)
 
-          if col == 0:
+          if tile_idx_x == 0:
             # Corner case: In multi-cgra, for each column of CGRAs except the first column,
             # the west port of the first column tiles must be connected to the adjacent/west cgra.
             if cgra_idx_x > 0:
-              s.tile[tile_id].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[row]
-              s.tile[tile_id].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[row]
+              s.tile[tile_id].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[tile_idx_y]
+              s.tile[tile_id].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[tile_idx_y]
             else: #cgra_idx_x == 0
               # In multi-cgra, for the first column CGRAs, the west ports of the first column tiles should be grounded.
               s.tile[tile_id].send_data[PORT_INDEX_WEST].rdy //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_WEST].val //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_WEST].msg //= DataType(0, 0)
 
-          if col == per_cgra_columns - 1:
+          if tile_idx_x == per_cgra_columns - 1:
             if PORT_INDEX_EAST not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[row]
+              s.tile[tile_id].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[tile_idx_y]
             if PORT_INDEX_EAST not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[row]
+              s.tile[tile_id].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[tile_idx_y]
 
-    for row in range(per_cgra_rows):
-      for col in range(per_cgra_columns):
-        i = row * per_cgra_columns + col
+    for tile_idx_y in range(per_cgra_rows):
+      for tile_idx_x in range(per_cgra_columns):
+        i = tile_idx_y * per_cgra_columns + tile_idx_x
 
         for invalidInPort in TileList[i].getInvalidInPorts():
           """
@@ -335,12 +338,12 @@ class CgraTemplateRTL(Component):
               When the links between the dataSPM and the bottom tiles are disabled, the PORT_INDEX_SOUTH status becomes invalid.
               In this case, if the current CGRA needs to connect to the CGRA below it, then the recv_data/send_data signals must not be tied to ground.
           """
-          if not ((is_multi_cgra and col == 0 and invalidInPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidInPort == PORT_INDEX_SOUTH)):
+          if not ((is_multi_cgra and tile_idx_x == 0 and invalidInPort == PORT_INDEX_WEST) or (is_multi_cgra and tile_idx_y == 0 and invalidInPort == PORT_INDEX_SOUTH)):
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
         for invalidOutPort in TileList[i].getInvalidOutPorts():
-          if not ((is_multi_cgra and col == 0 and invalidOutPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidOutPort == PORT_INDEX_SOUTH)):
+          if not ((is_multi_cgra and tile_idx_x == 0 and invalidOutPort == PORT_INDEX_WEST) or (is_multi_cgra and tile_idx_y == 0 and invalidOutPort == PORT_INDEX_SOUTH)):
             s.tile[i].send_data[invalidOutPort].rdy //= 0
 
         if not TileList[i].hasFromMem():
