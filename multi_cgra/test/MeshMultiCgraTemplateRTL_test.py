@@ -50,7 +50,7 @@ import os
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList,
                 IntraCgraPktType,
-                cgra_rows, cgra_columns, per_cgra_rows, per_cgra_columns, ctrl_mem_size,
+                cgra_rows, cgra_columns, ctrl_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt,
@@ -63,8 +63,6 @@ class TestHarness(Component):
                 cmp_func):
 
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
-    s.num_terminals = cgra_rows * cgra_columns
-    s.num_tiles = per_cgra_columns * per_cgra_rows
 
     s.src_ctrl_pkt = TestSrcRTL(IntraCgraPktType, src_ctrl_pkt)
     s.src_query_pkt = TestSrcRTL(IntraCgraPktType, src_query_pkt)
@@ -72,8 +70,7 @@ class TestHarness(Component):
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_func)
 
     s.dut = DUT(CgraPayloadType,
-                cgra_rows, cgra_columns, 
-                # per_cgra_rows, per_cgra_columns, 
+                cgra_rows, cgra_columns,
                 ctrl_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
@@ -151,6 +148,10 @@ def run_sim(test_harness, max_cycles = 200):
 
 
 def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
+  """
+  Test the multi-CGRA CGRA configurations.
+  NOTE This test only considers CGRAs with the same shape, meaning all CGRAs have the same number of tile rows and columns.
+  """
   arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
   print(f"Use the architecture file: {arch_file}")
   arch_parser = ArchParser(arch_file)
@@ -252,7 +253,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
   '''
   Creates test performing load -> inc -> store on cgra 2. Specifically,
   cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
-  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile 2.
+  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile `per_cgra_columns`.
   cgra 2 tile `per_cgra_columns` waits for the data from tile 0, and performs stores (0xff) to memory address 3.
   Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
   therefore, all the memory addresses from cgra 2 are remote.
@@ -359,7 +360,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
 
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
-                   per_cgra_rows, per_cgra_columns, ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps_per_iter, ctrl_steps_total, 
@@ -381,3 +382,213 @@ def test_simplified_multi_cgra(cmdline_opts, arch_yaml_path = "arch_override.yam
   arch_parser = ArchParser(arch_file)
   cgra_param = arch_parser.get_simplest_cgra_param()
   CgraTemplateRTL_test.test_cgra_universal(cmdline_opts, arch_file, cgra_param)
+
+def test_mesh_multi_hetero_cgra(cmdline_opts, arch_yaml_path = "arch_multi_hetero_cgra_override.yaml"):
+  """
+  Test the multi-CGRA with heterogeneous(different tile rows and columns) CGRA configurations.
+  """
+  arch_file = os.path.join(os.path.dirname(__file__), arch_yaml_path)
+  print(f"Use the architecture file: {arch_file}")
+  arch_parser = ArchParser(arch_file)
+  multiCgraParam = arch_parser.parse_multi_cgra_param()
+  
+  print(f"multiCgraParam: {multiCgraParam}")
+  # singleCgraParam = multiCgraParam.cgras[0][0]
+  num_cgra_rows = multiCgraParam.rows
+  num_cgra_columns = multiCgraParam.cols
+  # per_cgra_rows = singleCgraParam.rows
+  # per_cgra_columns = singleCgraParam.columns
+  num_banks_per_cgra = 2
+  data_mem_size_per_bank = 32
+  mem_access_is_combinational = True
+
+  num_tile_inports = 8
+  num_tile_outports = 8
+  num_fu_inports = 4
+  num_fu_outports = 2
+  ctrl_mem_size = 16
+  num_cgras = num_cgra_rows * num_cgra_columns
+  data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
+
+  cgras = multiCgraParam.cgras
+  cgras_flat = [cgra for row in cgras for cgra in row] # [cgra0, cgra1, cgra2.....]
+  # Finds the largest cgra.
+  largest_cgra = max(cgras_flat, key=lambda _cgra: _cgra.rows * _cgra.columns)
+  # Uses the largest cgra's shape to determine the bitwidth of IntraCgraPktType.
+  max_cgra_rows = largest_cgra.rows
+  max_cgra_columns = largest_cgra.columns
+  num_tiles = max_cgra_columns * max_cgra_rows
+
+  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
+  FuInType = mk_bits(clog2(num_fu_inports + 1))
+  FuOutType = mk_bits(clog2(num_fu_outports + 1))
+  data_nbits = 32
+  DataType = mk_data(data_nbits, 1)
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
+  DUT = MeshMultiCgraTemplateRTL
+  
+  FunctionUnit = FlexibleFuRTL
+  FuList = [AdderRTL,
+            MulRTL,
+            LogicRTL,
+            ShifterRTL,
+            PhiRTL,
+            CompRTL,
+            GrantRTL,
+            MemUnitRTL,
+            SelRTL,
+            RetRTL,
+            SeqMulAdderRTL,
+            VectorMulComboRTL,
+            VectorAdderComboRTL]
+  num_registers_per_reg_bank = 16
+  per_cgra_data_size = int(data_mem_size_global / num_cgras)
+  controller2addr_map = {}
+  for i in range(num_cgras):
+    controller2addr_map[i] = [i * per_cgra_data_size,
+                              (i + 1) * per_cgra_data_size - 1]
+  print("[LOG] controller2addr_map: ", controller2addr_map)
+
+  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
+
+  CtrlType = mk_ctrl(num_fu_inports,
+                     num_fu_outports,
+                     num_tile_inports,
+                     num_tile_outports,
+                     num_registers_per_reg_bank)
+
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+
+  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                       num_cgra_rows,
+                                       num_tiles,
+                                       CgraPayloadType)
+
+  src_ctrl_pkt = []
+  expected_sink_out_pkt = []
+  src_query_pkt = []
+  ctrl_steps_per_iter = 0
+
+  cmp_func = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
+
+  '''
+  Creates test performing load -> inc -> store on cgra 2. Assume that the size of cgra2 is `cgra2_rows x cgra2_columns`.
+  Specifically,
+  cgra 2 tile 0 performs `load` on memory address 34, and stores the result (0xfe) in register 7.
+  cgra 2 tile 0 read data from register 7 and performs `inc` (0xfe -> 0xff), and sends result to tile `cgra2_columns`.
+  cgra 2 tile `cgra2_columns` waits for the data from tile 0, and performs stores (0xff) to memory address 3.
+  Note that address 34 is in cgra 1's sram bank 0, while address 3 is in cgra 0's sram bank 0,
+  therefore, all the memory addresses from cgra 2 are remote.
+  '''
+  # tile `cgra2_columns` can access the memory, as it is on the first column.
+  # Get the column number of cgra2.
+  cgra2_column = cgras_flat[2].columns
+  target_tile = cgra2_column
+  src_ctrl_pkt = \
+          [
+           # Preloads data.                                            address 34 belongs to cgra 1 (not cgra 0)
+           IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(254, 1), data_addr = 34)),
+           # Tile 0.
+           # Indicates the load address of 2.    dst_cgra_y
+           IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(34, 1))),
+                          # src dst src_cgra dst_cgra
+           IntraCgraPktType(0,  0,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                      ctrl = CtrlType(OPT_LD_CONST,
+                                                                      [FuInType(0), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       # Note that we still need to set FU xbar.
+                                                                       FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                      # 2 indicates the FU xbar port (instead of const queue or routing xbar port).
+                                                                      write_reg_from = [b2(2), b2(0), b2(0), b2(0)],
+                                                                      write_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
+           IntraCgraPktType(0,  0,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                                                      ctrl = CtrlType(OPT_INC,
+                                                                      [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)],
+                                                                      read_reg_towards = [b2(1), b2(0), b2(0), b2(0)],
+                                                                      read_reg_idx = [RegIdxType(7), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
+
+           # Tile `target_tile`. Note that tile 0 and tile `target_tile` can access the memory, as they are on
+           # the first column.
+           # Indicates the store address of 3.
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONST, data = DataType(3, 1))),
+                          # src dst src_cgra dst_cgra
+           IntraCgraPktType(0,  target_tile,  0,       2,       0, 0, 0, 1,
+                            payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                                                      ctrl = CtrlType(OPT_STR_CONST,
+                                                                      [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
+                                                                      [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(0), TileInType(0), TileInType(0), TileInType(0),
+                                                                       TileInType(2), TileInType(0), TileInType(0), TileInType(0)],
+                                                                      [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0),
+                                                                       FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(0)]))),
+           # Pre-configure per-tile total config count.
+           # Only execute one operation (i.e., store) is enough for this tile.
+           # If this is set more than 1, no `COMPLETE` signal would be set back
+           # to CPU/test_harness.
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(1))),
+
+           # For launching the two tiles.
+           IntraCgraPktType(0, 0, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
+           IntraCgraPktType(0, target_tile, 0, 2, 0, 0, 0, 1, payload = CgraPayloadType(CMD_LAUNCH)),
+          ]
+
+  src_query_pkt = \
+          [
+           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 3)),
+           IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 34)),
+          ]
+
+  expected_sink_out_pkt = \
+          [
+                          # src  dst        src/dst cgra x/y
+           IntraCgraPktType(0,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+           IntraCgraPktType(target_tile,   num_tiles, 2, 0, 0, 1, 0, 0, payload = CgraPayloadType(CMD_COMPLETE)),
+                                                                                                                         # Expected updated value.
+           IntraCgraPktType(0,   num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xff, 1), data_addr = 3)),
+           IntraCgraPktType(0,   num_tiles, 1, 0, 1, 0, 0, 0, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(0xfe, 1), data_addr = 34)),
+          ]
+
+  ctrl_steps_per_iter = 2
+  ctrl_steps_total = 2
+
+  id2validTiles = {id: cgra.getValidTiles() for id, cgra in enumerate(cgras_flat)}
+  id2validLinks = {id: cgra.getValidLinks() for id, cgra in enumerate(cgras_flat)}
+  id2dataSPM = {id: cgra.dataSPM for id, cgra in enumerate(cgras_flat)}
+  id2ctrlMemSize_map = {id: cgra.configMemSize for id, cgra in enumerate(cgras_flat)}
+  id2cgraSize_map = {id: [cgra.rows, cgra.columns] for id, cgra in enumerate(cgras_flat)}
+
+  th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
+                   num_cgra_rows, num_cgra_columns,
+                   ctrl_mem_size, data_mem_size_global,
+                   data_mem_size_per_bank, num_banks_per_cgra,
+                   num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
+                   ctrl_steps_per_iter, ctrl_steps_total, 
+                   id2ctrlMemSize_map, id2cgraSize_map, 
+                   id2validTiles, id2validLinks, id2dataSPM,
+                   mem_access_is_combinational,
+                   controller2addr_map, expected_sink_out_pkt, cmp_func)
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
