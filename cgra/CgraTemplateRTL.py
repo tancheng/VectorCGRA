@@ -229,6 +229,11 @@ class CgraTemplateRTL(Component):
       s.ctrl_ring.recv[i].val //= 0
       s.ctrl_ring.recv[i].msg //= CtrlPktType()
 
+    # Records the tile indices and ports that have been grounded for from_mem and to_mem,
+    # to avoid PyMTL3 MultiWriterError.
+    recv_data_grounded_for_from_mem = set()
+    send_data_rdy_grounded_for_to_mem = set()
+
     for link in LinkList:
 
       if link.isFromMem():
@@ -239,9 +244,12 @@ class CgraTemplateRTL(Component):
           s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
         # Grounds the generic routing port since it is unused for memory links when in single-CGRA mode.
+        # NOTE `recv_data` is used to receive data between multiple CGRAs.
         if not link.disabled and not is_multi_cgra:
             s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
             s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+            # Records the tile indices and ports that have been grounded.
+            recv_data_grounded_for_from_mem.add((dstTileIndex, link.dstPort))
 
       elif link.isToMem():
         memPort = link.getMemWritePort()
@@ -251,8 +259,11 @@ class CgraTemplateRTL(Component):
           s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
 
         # Grounds the generic routing port ready signal when in single-CGRA mode.
+        # NOTE `send_data` is used to send data between multiple CGRAs.
         if not link.disabled and not is_multi_cgra:
             s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
+            # Records the tile indices and ports that have been grounded.
+            send_data_rdy_grounded_for_to_mem.add((srcTileIndex, link.srcPort))
 
       else:
         srcTileIndex = link.srcTile.getIndex(TileList)
@@ -338,12 +349,18 @@ class CgraTemplateRTL(Component):
               When the links between the dataSPM and the bottom tiles are disabled, the PORT_INDEX_SOUTH status becomes invalid.
               In this case, if the current CGRA needs to connect to the CGRA below it, then the recv_data/send_data signals must not be tied to ground.
           """
-          if not ((is_multi_cgra and tile_idx_x == 0 and invalidInPort == PORT_INDEX_WEST) or (is_multi_cgra and tile_idx_y == 0 and invalidInPort == PORT_INDEX_SOUTH)):
+          skip_multi = (is_multi_cgra and tile_idx_x == 0 and invalidInPort == PORT_INDEX_WEST) or \
+              (is_multi_cgra and tile_idx_y == 0 and invalidInPort == PORT_INDEX_SOUTH)
+          skip_from_mem_dup = (not is_multi_cgra) and ((i, invalidInPort) in recv_data_grounded_for_from_mem)
+          if not skip_multi and not skip_from_mem_dup:
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
         for invalidOutPort in TileList[i].getInvalidOutPorts():
-          if not ((is_multi_cgra and tile_idx_x == 0 and invalidOutPort == PORT_INDEX_WEST) or (is_multi_cgra and tile_idx_y == 0 and invalidOutPort == PORT_INDEX_SOUTH)):
+          skip_multi = (is_multi_cgra and tile_idx_x == 0 and invalidOutPort == PORT_INDEX_WEST) or \
+              (is_multi_cgra and tile_idx_y == 0 and invalidOutPort == PORT_INDEX_SOUTH)
+          skip_to_mem_dup = (not is_multi_cgra) and ((i, invalidOutPort) in send_data_rdy_grounded_for_to_mem)
+          if not skip_multi and not skip_to_mem_dup:
             s.tile[i].send_data[invalidOutPort].rdy //= 0
 
         if not TileList[i].hasFromMem():
