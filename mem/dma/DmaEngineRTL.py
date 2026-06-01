@@ -27,6 +27,8 @@ class DmaEngineRTL( Component ):
 
   Architectural Design:
   - 1 word = 4 bytes = 32 bits in this system.
+  - DRAM is byte-addressed which means each unique address points to a byte(8 bits).
+  - SPM is word-addressed which means each unique address points to a word(32 bits).
   - The engine uses a 128-bit interface to external memory (4 words per beat)
     and a 32-bit interface to the dataSPM (1 word per cycle).
   - A finite state machine (FSM) manages the command execution flow, including
@@ -296,7 +298,7 @@ class DmaEngineRTL( Component ):
 
         elif s.state == STATE_MVOUT_WAIT:
           if s.mem_wr_resp_val & s.mem_wr_resp_rdy:
-            # DRAM byte-addresses and transfer 128-bit per beat.
+            # Turn to the +16 address after writing 16 bytes data.
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // 8 )
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
