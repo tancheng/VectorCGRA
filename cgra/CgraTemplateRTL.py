@@ -83,7 +83,8 @@ class CgraTemplateRTL(Component):
                 provided_max_per_cgra_rows = None,
                 provided_max_per_cgra_cols = None,
                 provided_max_num_rd_tiles = None,
-                provided_max_num_wr_tiles = None):
+                provided_max_num_wr_tiles = None,
+                has_dma_ports = False):
     """
     provided_max_per_cgra_rows: the row number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
     provided_max_per_cgra_cols: the column number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
@@ -126,6 +127,8 @@ class CgraTemplateRTL(Component):
     CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
+    DmaDataType = DataType.get_field_type(kAttrPayload)
+    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // 8))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -134,6 +137,23 @@ class CgraTemplateRTL(Component):
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
+
+    # Optional DMA interface ports. These are exposed at the template level
+    # to allow a top-level wrapper (like CgraDmaRTL) to connect a DMA engine
+    # directly to the internal DataMemController.
+    if has_dma_ports:
+      s.spm_dma_wval  = InPort()
+      s.spm_dma_wrdy  = OutPort()
+      s.spm_dma_waddr = InPort(DataAddrType)
+      s.spm_dma_wdata = InPort(DmaDataType)
+      s.spm_dma_wmask = InPort(DmaMaskType)
+
+      s.spm_dma_rval       = InPort()
+      s.spm_dma_rrdy       = OutPort()
+      s.spm_dma_raddr      = InPort(DataAddrType)
+      s.spm_dma_rresp_val  = OutPort()
+      s.spm_dma_rresp_rdy  = InPort()
+      s.spm_dma_rresp_data = OutPort(DmaDataType)
 
     if is_multi_cgra:
       # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
@@ -168,7 +188,8 @@ class CgraTemplateRTL(Component):
                                       multi_cgra_columns,
                                       max_num_tiles,
                                       mem_access_is_combinational,
-                                      idTo2d_map)
+                                      idTo2d_map,
+                                      has_dma_ports)
     s.cgra_id = InPort(CgraIdType)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
@@ -189,6 +210,22 @@ class CgraTemplateRTL(Component):
     # Connects the address lower and upper bound.
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
+
+    if has_dma_ports:
+      # DMA_MVIN: dram -> dma -> spm
+      s.data_mem.spm_dma_wval  //= s.spm_dma_wval
+      s.data_mem.spm_dma_wrdy  //= s.spm_dma_wrdy
+      s.data_mem.spm_dma_waddr //= s.spm_dma_waddr
+      s.data_mem.spm_dma_wdata //= s.spm_dma_wdata
+      s.data_mem.spm_dma_wmask //= s.spm_dma_wmask
+
+      # DMA_MVOUT: spm -> dma -> dram
+      s.data_mem.spm_dma_rval       //= s.spm_dma_rval
+      s.data_mem.spm_dma_rrdy       //= s.spm_dma_rrdy
+      s.data_mem.spm_dma_raddr      //= s.spm_dma_raddr
+      s.data_mem.spm_dma_rresp_val  //= s.spm_dma_rresp_val
+      s.data_mem.spm_dma_rresp_rdy  //= s.spm_dma_rresp_rdy
+      s.data_mem.spm_dma_rresp_data //= s.spm_dma_rresp_data
 
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
