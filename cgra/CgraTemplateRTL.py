@@ -142,12 +142,14 @@ class CgraTemplateRTL(Component):
     # to allow a top-level wrapper (like CgraDmaRTL) to connect a DMA engine
     # directly to the internal DataMemController.
     if has_dma_ports:
-      s.spm_dma_wval  = InPort()
+      # DMA write request interface.
+      s.spm_dma_wval  = InPort() # dma write request valid(write data into SPM)
       s.spm_dma_wrdy  = OutPort()
       s.spm_dma_waddr = InPort(DataAddrType)
       s.spm_dma_wdata = InPort(DmaDataType)
       s.spm_dma_wmask = InPort(DmaMaskType)
 
+      # DMA read response interface.
       s.spm_dma_rval       = InPort()
       s.spm_dma_rrdy       = OutPort()
       s.spm_dma_raddr      = InPort(DataAddrType)

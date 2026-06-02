@@ -101,6 +101,7 @@ def test_cgra_dma_mvin_to_local_spm():
     dut.mem_rd_resp_val @= 0
     if pending_resp:
       dut.mem_rd_resp_val @= 1
+      # Simulate the read response from DRAM.
       dut.mem_rd_resp_data @= beat
 
     dut.sim_eval_combinational()
@@ -115,6 +116,7 @@ def test_cgra_dma_mvin_to_local_spm():
     dut.sim_tick()
 
   assert dut.dma_done_val
+  # Check the data in the dataSPM.
   assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[0] == DataType(0x11111111, 1, 0, 0)
   assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[1] == DataType(0x22222222, 1, 0, 0)
   assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[2] == DataType(0x33333333, 1, 0, 0)
@@ -142,7 +144,6 @@ def test_cgra_dma_mvout_from_local_spm():
   CtrlType = mk_ctrl(4, 2, 8, 8, num_registers_per_reg_bank)
   CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
   CtrlPktType = mk_intra_cgra_pkt(1, 1, 4, CgraPayloadType)
-  NocPktType = mk_inter_cgra_pkt(1, 1, 4, 3, CgraPayloadType)
 
   tiles_2d = [[Tile(x, y, num_registers_per_reg_bank, ["add", "mem", "return"])
                for x in range(2)] for y in range(2)]

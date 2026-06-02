@@ -68,15 +68,15 @@ class CgraDmaRTL( Component ):
 
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    DmaOpcodeType = mk_bits(3)
+    DmaOpcodeType = mk_bits(3) #DMA_MVIN: 0, DMA_MVOUT: 1
     DmaDramAddrType = mk_bits(64)
     DmaBytesType = mk_bits(32)
     DmaTagType = mk_bits(8)
-    DmaMemDataType = mk_bits(128)
+    DmaMemDataType = mk_bits(128) # Write/Read 128 bits data per beat from/to DRAM
     DmaMemMaskType = mk_bits(16)
 
     # Existing CGRA-facing interfaces.
-
+    # CGRA <-> CPU
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
 
@@ -94,36 +94,38 @@ class CgraDmaRTL( Component ):
       s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
 
     s.cgra_id = InPort(CgraIdType)
+    # The local address range of current CGRA.
+    # Any address out of this range will be assumed as remote address.
     s.address_lower = InPort(DataAddrType)
     s.address_upper = InPort(DataAddrType)
 
     # DMA command/done and abstract external memory interfaces.
 
-    s.dma_cmd_val       = InPort()
-    s.dma_cmd_rdy       = OutPort()
+    s.dma_cmd_val       = InPort() # dma_command_valid
+    s.dma_cmd_rdy       = OutPort() # dma_command_ready
     s.dma_cmd_opcode    = InPort(DmaOpcodeType)
     s.dma_cmd_dram_addr = InPort(DmaDramAddrType)
     s.dma_cmd_spm_addr  = InPort(DataAddrType)
-    s.dma_cmd_bytes     = InPort(DmaBytesType)
-    s.dma_cmd_tag       = InPort(DmaTagType)
+    s.dma_cmd_bytes     = InPort(DmaBytesType) # The number of bytes to transfer.
+    s.dma_cmd_tag       = InPort(DmaTagType) # Doesn't use it now, but keep it for future use(e.g., distinguish different DMA commands).
 
     s.dma_done_val      = OutPort()
     s.dma_done_rdy      = InPort()
-    s.dma_done_tag      = OutPort(DmaTagType)
+    s.dma_done_tag      = OutPort(DmaTagType) # Must be same as the input `dma_cmd_tag`
 
-    s.mem_rd_req_val    = OutPort()
-    s.mem_rd_req_rdy    = InPort()
+    s.mem_rd_req_val    = OutPort() # dma_read_request_valid
+    s.mem_rd_req_rdy    = InPort() # dma_read_request_ready
     s.mem_rd_req_addr   = OutPort(DmaDramAddrType)
 
-    s.mem_rd_resp_val   = InPort()
-    s.mem_rd_resp_rdy   = OutPort()
-    s.mem_rd_resp_data  = InPort(DmaMemDataType)
+    s.mem_rd_resp_val   = InPort() # dma_read_response_valid
+    s.mem_rd_resp_rdy   = OutPort() # dma_read_response_ready
+    s.mem_rd_resp_data  = InPort(DmaMemDataType) # dma_read_response_data
 
     s.mem_wr_req_val    = OutPort()
     s.mem_wr_req_rdy    = InPort()
     s.mem_wr_req_addr   = OutPort(DmaDramAddrType)
     s.mem_wr_req_data   = OutPort(DmaMemDataType)
-    s.mem_wr_req_mask   = OutPort(DmaMemMaskType)
+    s.mem_wr_req_mask   = OutPort(DmaMemMaskType) # Masks for wrting DRAM
 
     s.mem_wr_resp_val   = InPort()
     s.mem_wr_resp_rdy   = OutPort()
