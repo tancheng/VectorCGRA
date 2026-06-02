@@ -287,8 +287,13 @@ class DataMemControllerRTL(Component):
                                                 num_wr_tiles)               # remote_src_port
 
       if has_dma_ports:
-        dma_rd_idx = num_rd_tiles + 1
-        dma_wr_idx = num_wr_tiles + 1
+
+        # When `has_dma_ports` is True, num_xbar_in_wr_ports = num_wr_tiles + 1 + 1(dma_port_offset).
+        # Use dma_wr_idx = num_wr_tiles + 1 = num_xbar_in_wr_ports - 1
+        # NOTE Don't use `dma_wr_idx = num_wr_tiles + 1` here since it will cause the bit mismatch error 
+        # between `dma_wr_idx` and `num_xbar_in_wr_ports`.
+        dma_rd_idx = num_xbar_in_rd_ports - 1
+        dma_wr_idx = num_xbar_in_wr_ports - 1
 
         recv_raddr_from_dma = s.spm_dma_raddr
         if (recv_raddr_from_dma >= s.address_lower) & (recv_raddr_from_dma <= s.address_upper):
@@ -411,7 +416,11 @@ class DataMemControllerRTL(Component):
       s.recv_from_noc_load_request.rdy @= s.read_crossbar.recv[num_rd_tiles].rdy
 
       if has_dma_ports:
-        dma_rd_idx = num_rd_tiles + 1
+        # When `has_dma_ports` is True, num_xbar_in_rd_ports = num_rd_tiles + 1 + 1(dma_port_offset).
+        # Use dma_rd_idx = num_rd_tiles + 1 = num_xbar_in_rd_ports - 1
+        # NOTE Don't use `dma_rd_idx = num_rd_tiles + 1` here since it will cause the bit mismatch error 
+        # between `dma_rd_idx` and `num_xbar_in_rd_ports`.
+        dma_rd_idx = num_xbar_in_rd_ports - 1
         s.read_crossbar.recv[dma_rd_idx].val @= s.spm_dma_rval
         s.read_crossbar.recv[dma_rd_idx].msg @= s.rd_pkt[dma_rd_idx]
         s.spm_dma_rrdy @= s.read_crossbar.recv[dma_rd_idx].rdy
@@ -427,7 +436,11 @@ class DataMemControllerRTL(Component):
       s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[num_wr_tiles].rdy
 
       if has_dma_ports:
-        dma_wr_idx = num_wr_tiles + 1
+        # When `has_dma_ports` is True, num_xbar_in_wr_ports = num_wr_tiles + 1 + 1(dma_port_offset).
+        # Use dma_wr_idx = num_wr_tiles + 1 = num_xbar_in_wr_ports - 1
+        # NOTE Don't use `dma_wr_idx = num_wr_tiles + 1` here since it will cause the bit mismatch error 
+        # between `dma_wr_idx` and `num_xbar_in_wr_ports`.
+        dma_wr_idx = num_xbar_in_wr_ports - 1
         s.write_crossbar.recv[dma_wr_idx].val @= s.spm_dma_wval
         s.write_crossbar.recv[dma_wr_idx].msg @= s.wr_pkt[dma_wr_idx]
         s.spm_dma_wrdy @= s.write_crossbar.recv[dma_wr_idx].rdy
