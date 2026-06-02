@@ -34,6 +34,21 @@ from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.util.data_struct_attr import *
 
 class DataMemControllerRTL(Component):
+  """
+  DataMemControllerRTL manages access to the multi-banked data SPM.
+  It arbitrates between multiple request sources:
+  1. Local tiles (via `recv_raddr`, `recv_waddr`, `recv_wdata`)
+  2. Inter-CGRA NoC (via `recv_from_noc_load_request`, etc.)
+  3. Optional DMA engine (via `spm_dma_wval`, `spm_dma_rval`, etc.)
+
+  Architectural Design:
+  - Uses crossbars to route requests to the correct memory bank based on the
+    address.
+  - Supports an optional DMA interface. When `has_dma_ports` is True, extra
+    ports are added to the read and write crossbars.
+  - DMA requests are treated as another master on the memory bus, competing
+    with tiles and NoC traffic.
+  """
   def construct(s,
                 NocPktType,
                 data_mem_size_global,
@@ -45,7 +60,8 @@ class DataMemControllerRTL(Component):
                 multi_cgra_columns = 2,
                 num_tiles = 16,
                 mem_access_is_combinational = True,
-                idTo2d_map = {0: [0, 0]}):
+                idTo2d_map = {0: [0, 0]},
+                has_dma_ports = False):
 
     CgraPayloadType = NocPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -58,19 +74,26 @@ class DataMemControllerRTL(Component):
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
     AddrType = mk_bits(global_addr_nbits)
     PerBankAddrType = mk_bits(per_bank_addr_nbits)
+    DmaDataType = DataType.get_field_type(kAttrPayload)
+    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // 8))
+    NocRemoteSrcPortType = NocPktType.get_field_type(kAttrRemoteSrcPort)
     s.num_banks_per_cgra = num_banks_per_cgra
-    LocalBankIndexType = mk_bits(clog2(num_banks_per_cgra))
+    s.has_dma_ports = has_dma_ports
+    LocalBankIndexType = mk_bits(max(1, clog2(num_banks_per_cgra)))
     s.num_rd_tiles = num_rd_tiles
     s.num_wr_tiles = num_wr_tiles
-    RdTileIdType = mk_bits(clog2(num_rd_tiles))
+    RdTileIdType = mk_bits(max(1, clog2(num_rd_tiles)))
     # The additional port is for the request from inter-cgra NoC via controller.
-    num_xbar_in_rd_ports = num_rd_tiles + 1
-    num_xbar_in_wr_ports = num_wr_tiles + 1
+    # If DMA is enabled, we add one more port for the DMA engine.
+    dma_port_offset = 1 if has_dma_ports else 0
+    num_xbar_in_rd_ports = num_rd_tiles + 1 + dma_port_offset
+    num_xbar_in_wr_ports = num_wr_tiles + 1 + dma_port_offset
     num_xbar_out_rd_ports = num_banks_per_cgra + 1
     num_xbar_out_wr_ports = num_banks_per_cgra + 1
     num_cgras = multi_cgra_rows * multi_cgra_columns
     XbarOutRdType = mk_bits(clog2(num_xbar_out_rd_ports))
     XbarOutWrType = mk_bits(clog2(num_xbar_out_wr_ports))
+    XbarInRdType = mk_bits(clog2(num_xbar_in_rd_ports))
     MemReadPktType = \
         mk_mem_access_pkt(DataType,
                           num_xbar_in_rd_ports,
@@ -120,7 +143,47 @@ class DataMemControllerRTL(Component):
     s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
     s.send_to_noc_store_pkt = SendIfcRTL(NocPktType)
 
+    if has_dma_ports:
+      # DMA writes SPM: used by DMA_MVIN.
+      s.spm_dma_wval  = InPort()
+      s.spm_dma_wrdy  = OutPort()
+      s.spm_dma_waddr = InPort(AddrType)
+      s.spm_dma_wdata = InPort(DmaDataType)
+      s.spm_dma_wmask = InPort(DmaMaskType)
+
+      # DMA reads SPM: used by DMA_MVOUT.
+      s.spm_dma_rval       = InPort()
+      s.spm_dma_rrdy       = OutPort()
+      s.spm_dma_raddr      = InPort(AddrType)
+      s.spm_dma_rresp_val  = OutPort()
+      s.spm_dma_rresp_rdy  = InPort()
+      s.spm_dma_rresp_data = OutPort(DmaDataType)
+    else:
+      # Keep these as internal wires so PyMTL's static update-block analysis
+      # can see declared objects even when the optional DMA interface is off.
+      s.spm_dma_wval  = Wire()
+      s.spm_dma_wrdy  = Wire()
+      s.spm_dma_waddr = Wire(AddrType)
+      s.spm_dma_wdata = Wire(DmaDataType)
+      s.spm_dma_wmask = Wire(DmaMaskType)
+
+      s.spm_dma_rval       = Wire()
+      s.spm_dma_rrdy       = Wire()
+      s.spm_dma_raddr      = Wire(AddrType)
+      s.spm_dma_rresp_val  = Wire()
+      s.spm_dma_rresp_rdy  = Wire()
+      s.spm_dma_rresp_data = Wire(DmaDataType)
+
+      s.spm_dma_wval      //= 0
+      s.spm_dma_waddr     //= AddrType(0)
+      s.spm_dma_wdata     //= DmaDataType(0)
+      s.spm_dma_wmask     //= DmaMaskType(0)
+      s.spm_dma_rval      //= 0
+      s.spm_dma_raddr     //= AddrType(0)
+      s.spm_dma_rresp_rdy //= 0
+
     # Components.
+    # A list of DataMemWrapperRTL instances. Each one is a single memory bank.
     s.memory_wrapper = [DataMemWrapperRTL(DataType, MemReadPktType, MemWritePktType, MemResponsePktType,
                                           data_mem_size_global, data_mem_size_per_bank, mem_access_is_combinational)
                   for _ in range(num_banks_per_cgra)]
@@ -159,10 +222,10 @@ class DataMemControllerRTL(Component):
     @update
     def assemble_xbar_pkt():
       for i in range(num_xbar_in_rd_ports):
-        s.rd_pkt[i] @= MemReadPktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i)
+        s.rd_pkt[i] @= MemReadPktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
       for i in range(num_xbar_in_wr_ports):
-        s.wr_pkt[i] @= MemWritePktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, i)
+        s.wr_pkt[i] @= MemWritePktType(i, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
       for i in range(num_rd_tiles):
         recv_raddr = s.recv_raddr[i].msg
@@ -222,6 +285,36 @@ class DataMemControllerRTL(Component):
                                                 0,                          # src_cgra
                                                 0,                          # src_tile
                                                 num_wr_tiles)               # remote_src_port
+
+      if has_dma_ports:
+        dma_rd_idx = num_rd_tiles + 1
+        dma_wr_idx = num_wr_tiles + 1
+
+        recv_raddr_from_dma = s.spm_dma_raddr
+        if (recv_raddr_from_dma >= s.address_lower) & (recv_raddr_from_dma <= s.address_upper):
+          bank_index_load_from_dma = trunc((recv_raddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
+        else:
+          bank_index_load_from_dma = XbarOutRdType(num_banks_per_cgra)
+        s.rd_pkt[dma_rd_idx] @= MemReadPktType(dma_rd_idx,                  # src
+                                               bank_index_load_from_dma,    # dst
+                                               recv_raddr_from_dma,         # addr
+                                               DataType(0, 0, 0, 0),        # data
+                                               s.cgra_id,                   # src_cgra
+                                               0,                           # src_tile
+                                               0)                           # remote_src_port
+
+        recv_waddr_from_dma = s.spm_dma_waddr
+        if (recv_waddr_from_dma >= s.address_lower) & (recv_waddr_from_dma <= s.address_upper):
+          bank_index_store_from_dma = trunc((recv_waddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
+        else:
+          bank_index_store_from_dma = XbarOutWrType(num_banks_per_cgra)
+        s.wr_pkt[dma_wr_idx] @= MemWritePktType(dma_wr_idx,                 # src
+                                                bank_index_store_from_dma,  # dst
+                                                recv_waddr_from_dma,        # addr
+                                                DataType(s.spm_dma_wdata, 1, 0, 0),
+                                                0,                          # src_cgra
+                                                0,                          # src_tile
+                                                0)                          # remote_src_port
 
     # Connects xbar with the memory wrapper.
     @update
@@ -286,6 +379,12 @@ class DataMemControllerRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
+      if has_dma_ports:
+        s.spm_dma_wrdy       @= 0
+        s.spm_dma_rrdy       @= 0
+        s.spm_dma_rresp_val  @= 0
+        s.spm_dma_rresp_data @= DmaDataType(0)
+
       s.send_to_noc_load_request_pkt.msg @= \
           NocPktType(0, # src
                      0, # dst
@@ -310,6 +409,12 @@ class DataMemControllerRTL(Component):
       s.read_crossbar.recv[num_rd_tiles].val @= s.recv_from_noc_load_request.val
       s.read_crossbar.recv[num_rd_tiles].msg @= s.rd_pkt[num_rd_tiles]
       s.recv_from_noc_load_request.rdy @= s.read_crossbar.recv[num_rd_tiles].rdy
+
+      if has_dma_ports:
+        dma_rd_idx = num_rd_tiles + 1
+        s.read_crossbar.recv[dma_rd_idx].val @= s.spm_dma_rval
+        s.read_crossbar.recv[dma_rd_idx].msg @= s.rd_pkt[dma_rd_idx]
+        s.spm_dma_rrdy @= s.read_crossbar.recv[dma_rd_idx].rdy
       
       # Connects the store request ports (from tiles and NoC) to the xbar targetting memory and NoC.
       for i in range(num_wr_tiles):
@@ -321,6 +426,12 @@ class DataMemControllerRTL(Component):
       s.write_crossbar.recv[num_wr_tiles].msg @= s.wr_pkt[num_wr_tiles]
       s.recv_from_noc_store_request.rdy @= s.write_crossbar.recv[num_wr_tiles].rdy
 
+      if has_dma_ports:
+        dma_wr_idx = num_wr_tiles + 1
+        s.write_crossbar.recv[dma_wr_idx].val @= s.spm_dma_wval
+        s.write_crossbar.recv[dma_wr_idx].msg @= s.wr_pkt[dma_wr_idx]
+        s.spm_dma_wrdy @= s.write_crossbar.recv[dma_wr_idx].rdy
+
       # Connects the response ports to tiles and NoC from the xbar.
       # Number of load responses is expected to be the same as the number of load requests.
       for i in range(num_xbar_in_rd_ports):
@@ -328,7 +439,7 @@ class DataMemControllerRTL(Component):
           s.send_rdata[RdTileIdType(i)].msg @= s.response_crossbar.send[i].msg.data
           s.send_rdata[RdTileIdType(i)].val @= s.response_crossbar.send[i].val
           s.response_crossbar.send[i].rdy @= s.send_rdata[RdTileIdType(i)].rdy
-        else:
+        elif i == num_rd_tiles:
           from_cgra_id = s.response_crossbar.send[i].msg.src_cgra
           from_tile_id = s.response_crossbar.send[i].msg.src_tile
           s.send_to_noc_load_response_pkt.msg @= \
@@ -351,6 +462,10 @@ class DataMemControllerRTL(Component):
 
           s.send_to_noc_load_response_pkt.val @= s.response_crossbar.send[i].val
           s.response_crossbar.send[i].rdy @= s.send_to_noc_load_response_pkt.rdy
+        elif has_dma_ports:
+          s.spm_dma_rresp_data @= s.response_crossbar.send[i].msg.data.payload
+          s.spm_dma_rresp_val  @= s.response_crossbar.send[i].val
+          s.response_crossbar.send[i].rdy @= s.spm_dma_rresp_rdy
 
       # Handles the request (not response) towards the others via the NoC. The dst would be
       # updated in the controller.
@@ -363,7 +478,7 @@ class DataMemControllerRTL(Component):
                       0, # dst_y
                       0, # src_tile_id
                       0, # dst_tile_id
-                      s.read_crossbar.send[num_banks_per_cgra].msg.src, # remote_src_port
+                      trunc(s.read_crossbar.send[num_banks_per_cgra].msg.src, NocRemoteSrcPortType), # remote_src_port
                       0, # opaque
                       0, # vc_id
                       CgraPayloadType(
@@ -378,7 +493,7 @@ class DataMemControllerRTL(Component):
       s.response_crossbar.recv[num_banks_per_cgra].val @= s.recv_from_noc_load_response_pkt.val
       s.response_crossbar.recv[num_banks_per_cgra].msg @= \
           MemResponsePktType(num_banks_per_cgra,
-                             s.recv_from_noc_load_response_pkt.msg.remote_src_port,
+                             zext(s.recv_from_noc_load_response_pkt.msg.remote_src_port, XbarInRdType),
                              s.recv_from_noc_load_response_pkt.msg.payload.data_addr,
                              s.recv_from_noc_load_response_pkt.msg.payload.data,
                              s.recv_from_noc_load_response_pkt.msg.src,
@@ -399,7 +514,7 @@ class DataMemControllerRTL(Component):
                       0, # dst_y
                       0, # src_tile_id
                       0, # dst_tile_id
-                      s.write_crossbar.send[num_banks_per_cgra].msg.src, # remote_src_port
+                      trunc(s.write_crossbar.send[num_banks_per_cgra].msg.src, NocRemoteSrcPortType), # remote_src_port
                       0, # opaque
                       0, # vc_id
                       CgraPayloadType(
