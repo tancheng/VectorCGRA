@@ -32,6 +32,7 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.messages import *
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.util.data_struct_attr import *
+from ...lib.util.common import CHAR_BIT
 
 class DataMemControllerRTL(Component):
   """
@@ -75,7 +76,7 @@ class DataMemControllerRTL(Component):
     AddrType = mk_bits(global_addr_nbits)
     PerBankAddrType = mk_bits(per_bank_addr_nbits)
     DmaDataType = DataType.get_field_type(kAttrPayload)
-    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // 8))
+    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // CHAR_BIT))
     NocRemoteSrcPortType = NocPktType.get_field_type(kAttrRemoteSrcPort)
     s.num_banks_per_cgra = num_banks_per_cgra
     s.has_dma_ports = has_dma_ports
@@ -94,6 +95,7 @@ class DataMemControllerRTL(Component):
     XbarOutRdType = mk_bits(clog2(num_xbar_out_rd_ports))
     XbarOutWrType = mk_bits(clog2(num_xbar_out_wr_ports))
     XbarInRdType = mk_bits(clog2(num_xbar_in_rd_ports))
+    XbarInWrType = mk_bits(clog2(num_xbar_in_wr_ports))
     MemReadPktType = \
         mk_mem_access_pkt(DataType,
                           num_xbar_in_rd_ports,
@@ -292,8 +294,8 @@ class DataMemControllerRTL(Component):
         # Use dma_wr_idx = num_wr_tiles + 1 = num_xbar_in_wr_ports - 1
         # NOTE Don't use `dma_wr_idx = num_wr_tiles + 1` here since it will cause the bit mismatch error 
         # between `dma_wr_idx` and `num_xbar_in_wr_ports`.
-        dma_rd_idx = num_xbar_in_rd_ports - 1
-        dma_wr_idx = num_xbar_in_wr_ports - 1
+        dma_rd_idx = XbarInRdType(num_xbar_in_rd_ports - 1)
+        dma_wr_idx = XbarInWrType(num_xbar_in_wr_ports - 1)
 
         recv_raddr_from_dma = s.spm_dma_raddr
         if (recv_raddr_from_dma >= s.address_lower) & (recv_raddr_from_dma <= s.address_upper):
@@ -420,7 +422,7 @@ class DataMemControllerRTL(Component):
         # Use dma_rd_idx = num_rd_tiles + 1 = num_xbar_in_rd_ports - 1
         # NOTE Don't use `dma_rd_idx = num_rd_tiles + 1` here since it will cause the bit mismatch error 
         # between `dma_rd_idx` and `num_xbar_in_rd_ports`.
-        dma_rd_idx = num_xbar_in_rd_ports - 1
+        dma_rd_idx = XbarInRdType(num_xbar_in_rd_ports - 1)
         s.read_crossbar.recv[dma_rd_idx].val @= s.spm_dma_rval
         s.read_crossbar.recv[dma_rd_idx].msg @= s.rd_pkt[dma_rd_idx]
         s.spm_dma_rrdy @= s.read_crossbar.recv[dma_rd_idx].rdy
@@ -440,7 +442,7 @@ class DataMemControllerRTL(Component):
         # Use dma_wr_idx = num_wr_tiles + 1 = num_xbar_in_wr_ports - 1
         # NOTE Don't use `dma_wr_idx = num_wr_tiles + 1` here since it will cause the bit mismatch error 
         # between `dma_wr_idx` and `num_xbar_in_wr_ports`.
-        dma_wr_idx = num_xbar_in_wr_ports - 1
+        dma_wr_idx = XbarInWrType(num_xbar_in_wr_ports - 1)
         s.write_crossbar.recv[dma_wr_idx].val @= s.spm_dma_wval
         s.write_crossbar.recv[dma_wr_idx].msg @= s.wr_pkt[dma_wr_idx]
         s.spm_dma_wrdy @= s.write_crossbar.recv[dma_wr_idx].rdy
