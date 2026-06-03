@@ -73,11 +73,11 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.recv_from_cpu_pkt.val @= 0
   dut.recv_from_cpu_pkt.msg @= CtrlPktType()
   dut.send_to_cpu_pkt.rdy @= 1
-  dut.mem_rd_req_rdy @= 1
-  dut.mem_rd_resp_val @= 0
-  dut.mem_rd_resp_data @= 0
-  dut.mem_wr_req_rdy @= 1
-  dut.mem_wr_resp_val @= 0
+  dut.dram_rd_req.rdy @= 1
+  dut.dram_rd_resp.val @= 0
+  dut.dram_rd_resp.msg @= 0
+  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_resp_val @= 0
   dut.dma_done_rdy @= 1
 
   dut.dma_cmd_val @= 1
@@ -98,15 +98,15 @@ def test_cgra_dma_mvin_to_local_spm():
   pending_resp = False
 
   for _ in range(40):
-    dut.mem_rd_resp_val @= 0
+    dut.dram_rd_resp.val @= 0
     if pending_resp:
-      dut.mem_rd_resp_val @= 1
+      dut.dram_rd_resp.val @= 1
       # Simulate the read response from DRAM.
-      dut.mem_rd_resp_data @= beat
+      dut.dram_rd_resp.msg @= beat
 
     dut.sim_eval_combinational()
 
-    pending_resp = bool(dut.mem_rd_req_val & dut.mem_rd_req_rdy)
+    pending_resp = bool(dut.dram_rd_req.val & dut.dram_rd_req.rdy)
 
     if dut.dma_done_val:
       # Transfer finished, check the tag.
@@ -182,11 +182,11 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.recv_from_cpu_pkt.val @= 0
   dut.recv_from_cpu_pkt.msg @= CtrlPktType()
   dut.send_to_cpu_pkt.rdy @= 1
-  dut.mem_rd_req_rdy @= 1
-  dut.mem_rd_resp_val @= 0
-  dut.mem_rd_resp_data @= 0
-  dut.mem_wr_req_rdy @= 1
-  dut.mem_wr_resp_val @= 0
+  dut.dram_rd_req.rdy @= 1
+  dut.dram_rd_resp.val @= 0
+  dut.dram_rd_resp.msg @= 0
+  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_resp_val @= 0
   dut.dma_done_rdy @= 1
 
   # Issue DMA MVOUT command
@@ -210,14 +210,14 @@ def test_cgra_dma_mvout_from_local_spm():
   done = False
   pending_wr_resp = False
   for _ in range(40):
-    dut.mem_wr_resp_val @= 0
+    dut.dram_wr_resp_val @= 0
     if pending_wr_resp:
-      dut.mem_wr_resp_val @= 1
+      dut.dram_wr_resp_val @= 1
       pending_wr_resp = False
 
-    if dut.mem_wr_req_val:
-      assert dut.mem_wr_req_addr == 0x2000
-      assert dut.mem_wr_req_data == expected_beat
+    if dut.dram_wr_req_val:
+      assert dut.dram_wr_req_addr == 0x2000
+      assert dut.dram_wr_req_data == expected_beat
       pending_wr_resp = True
 
     dut.sim_eval_combinational()

@@ -22,11 +22,11 @@ def make_dut():
   dut.dma_cmd_tag @= 0
   dut.dma_done_rdy @= 1
 
-  dut.mem_rd_req_rdy @= 1
-  dut.mem_rd_resp_val @= 0
-  dut.mem_rd_resp_data @= 0
-  dut.mem_wr_req_rdy @= 1
-  dut.mem_wr_resp_val @= 1
+  dut.dram_rd_req.rdy @= 1
+  dut.dram_rd_resp.val @= 0
+  dut.dram_rd_resp.msg @= 0
+  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_resp_val @= 1
 
   dut.spm_dma_wrdy @= 1
   dut.spm_dma_rrdy @= 1
@@ -84,15 +84,15 @@ def test_dma_mvin_one_beat():
   spm_writes = []
 
   for _ in range(20):
-    dut.mem_rd_resp_val @= 0
+    dut.dram_rd_resp.val @= 0
     if pending_resp is not None:
-      dut.mem_rd_resp_val @= 1
-      dut.mem_rd_resp_data @= pending_resp
+      dut.dram_rd_resp.val @= 1
+      dut.dram_rd_resp.msg @= pending_resp
 
     dut.sim_eval_combinational()
 
-    if dut.mem_rd_req_val & dut.mem_rd_req_rdy:
-      pending_resp = dram[int(dut.mem_rd_req_addr)]
+    if dut.dram_rd_req.val & dut.dram_rd_req.rdy:
+      pending_resp = dram[int(dut.dram_rd_req.msg)]
     else:
       pending_resp = None
 
@@ -155,10 +155,10 @@ def test_dma_mvout_partial_beat():
     else:
       pending_rresp = None
 
-    if dut.mem_wr_req_val & dut.mem_wr_req_rdy:
-      mem_writes.append((int(dut.mem_wr_req_addr),
-                         int(dut.mem_wr_req_data),
-                         int(dut.mem_wr_req_mask)))
+    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
+      mem_writes.append((int(dut.dram_wr_req_addr),
+                         int(dut.dram_wr_req_data),
+                         int(dut.dram_wr_req_mask)))
 
     if dut.dma_done_val:
       assert int(dut.dma_done_tag) == 0xa5
@@ -212,10 +212,10 @@ def test_dma_mvout_full_beat():
     else:
       pending_rresp = None
 
-    if dut.mem_wr_req_val & dut.mem_wr_req_rdy:
-      mem_writes.append((int(dut.mem_wr_req_addr),
-                         int(dut.mem_wr_req_data),
-                         int(dut.mem_wr_req_mask)))
+    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
+      mem_writes.append((int(dut.dram_wr_req_addr),
+                         int(dut.dram_wr_req_data),
+                         int(dut.dram_wr_req_mask)))
 
     if dut.dma_done_val:
       assert int(dut.dma_done_tag) == 0xa5

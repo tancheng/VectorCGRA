@@ -79,6 +79,7 @@ DMA_MVOUT = 1
 CHAR_BIT = 8
 
 # State machine definitions of DMA engine.
+from pymtl3 import mk_bits
 StateType = mk_bits( 4 )
 STATE_IDLE          = StateType( 0 ) # Waiting for a new DMA command
 STATE_MVIN_REQ      = StateType( 1 ) # MVIN: Issuing DRAM read request

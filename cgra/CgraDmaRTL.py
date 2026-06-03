@@ -113,22 +113,17 @@ class CgraDmaRTL( Component ):
     s.dma_done_rdy      = InPort()
     s.dma_done_tag      = OutPort(DmaTagType) # Must be same as the input `dma_cmd_tag`
 
-    s.mem_rd_req_val    = OutPort() # dma_read_request_valid
-    s.mem_rd_req_rdy    = InPort() # dma_read_request_ready
-    s.mem_rd_req_addr   = OutPort(DmaDramAddrType)
+    s.dram_rd_req = SendIfcRTL(DmaDramAddrType)
+    s.dram_rd_resp = RecvIfcRTL(DmaMemDataType)
 
-    s.mem_rd_resp_val   = InPort() # dma_read_response_valid
-    s.mem_rd_resp_rdy   = OutPort() # dma_read_response_ready
-    s.mem_rd_resp_data  = InPort(DmaMemDataType) # dma_read_response_data
+    s.dram_wr_req_val    = OutPort()
+    s.dram_wr_req_rdy    = InPort()
+    s.dram_wr_req_addr   = OutPort(DmaDramAddrType)
+    s.dram_wr_req_data   = OutPort(DmaMemDataType)
+    s.dram_wr_req_mask   = OutPort(DmaMemMaskType) # Masks for wrting DRAM
 
-    s.mem_wr_req_val    = OutPort()
-    s.mem_wr_req_rdy    = InPort()
-    s.mem_wr_req_addr   = OutPort(DmaDramAddrType)
-    s.mem_wr_req_data   = OutPort(DmaMemDataType)
-    s.mem_wr_req_mask   = OutPort(DmaMemMaskType) # Masks for wrting DRAM
-
-    s.mem_wr_resp_val   = InPort()
-    s.mem_wr_resp_rdy   = OutPort()
+    s.dram_wr_resp_val   = InPort()
+    s.dram_wr_resp_rdy   = OutPort()
 
     # Components.
 
@@ -191,22 +186,17 @@ class CgraDmaRTL( Component ):
     s.dma_done_rdy      //= s.dma.dma_done_rdy
     s.dma_done_tag      //= s.dma.dma_done_tag
 
-    s.mem_rd_req_val    //= s.dma.mem_rd_req_val
-    s.mem_rd_req_rdy    //= s.dma.mem_rd_req_rdy
-    s.mem_rd_req_addr   //= s.dma.mem_rd_req_addr
+    s.dram_rd_req       //= s.dma.dram_rd_req
+    s.dram_rd_resp      //= s.dma.dram_rd_resp
 
-    s.mem_rd_resp_val   //= s.dma.mem_rd_resp_val
-    s.mem_rd_resp_rdy   //= s.dma.mem_rd_resp_rdy
-    s.mem_rd_resp_data  //= s.dma.mem_rd_resp_data
+    s.dram_wr_req_val    //= s.dma.dram_wr_req_val
+    s.dram_wr_req_rdy    //= s.dma.dram_wr_req_rdy
+    s.dram_wr_req_addr   //= s.dma.dram_wr_req_addr
+    s.dram_wr_req_data   //= s.dma.dram_wr_req_data
+    s.dram_wr_req_mask   //= s.dma.dram_wr_req_mask
 
-    s.mem_wr_req_val    //= s.dma.mem_wr_req_val
-    s.mem_wr_req_rdy    //= s.dma.mem_wr_req_rdy
-    s.mem_wr_req_addr   //= s.dma.mem_wr_req_addr
-    s.mem_wr_req_data   //= s.dma.mem_wr_req_data
-    s.mem_wr_req_mask   //= s.dma.mem_wr_req_mask
-
-    s.mem_wr_resp_val   //= s.dma.mem_wr_resp_val
-    s.mem_wr_resp_rdy   //= s.dma.mem_wr_resp_rdy
+    s.dram_wr_resp_val   //= s.dma.dram_wr_resp_val
+    s.dram_wr_resp_rdy   //= s.dma.dram_wr_resp_rdy
 
     # DMA to SPM connections.
 

@@ -8,8 +8,9 @@ memory interface and the CGRA dataSPM.
 """
 
 from pymtl3 import *
-
-from lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_IDLE, STATE_MVIN_REQ, STATE_MVIN_RESP, STATE_MVIN_WRITE, STATE_MVOUT_READ, STATE_MVOUT_RESP, STATE_MVOUT_WRITE, STATE_MVOUT_WAIT, STATE_DONE
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
+from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ...lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_IDLE, STATE_MVIN_REQ, STATE_MVIN_RESP, STATE_MVIN_WRITE, STATE_MVOUT_READ, STATE_MVOUT_RESP, STATE_MVOUT_WRITE, STATE_MVOUT_WAIT, STATE_DONE
 
 
 class DmaEngineRTL( Component ):
@@ -72,22 +73,18 @@ class DmaEngineRTL( Component ):
 
     # Abstract external memory interface
     # Request to read from DRAM
-    s.mem_rd_req_val    = OutPort()
-    s.mem_rd_req_rdy    = InPort()
-    s.mem_rd_req_addr   = OutPort( DramAddrType )
+    s.dram_rd_req = SendIfcRTL( DramAddrType )
     # Response from DRAM
-    s.mem_rd_resp_val   = InPort()
-    s.mem_rd_resp_rdy   = OutPort()
-    s.mem_rd_resp_data  = InPort( MemDataType )
+    s.dram_rd_resp = RecvIfcRTL( MemDataType )
 
     # Request to write to DRAM
-    s.mem_wr_req_val    = OutPort()
-    s.mem_wr_req_rdy    = InPort()
-    s.mem_wr_req_addr   = OutPort( DramAddrType )
-    s.mem_wr_req_data   = OutPort( MemDataType )
-    s.mem_wr_req_mask   = OutPort( MemMaskType )
-    s.mem_wr_resp_val   = InPort()
-    s.mem_wr_resp_rdy   = OutPort()
+    s.dram_wr_req_val    = OutPort()
+    s.dram_wr_req_rdy    = InPort()
+    s.dram_wr_req_addr   = OutPort( DramAddrType )
+    s.dram_wr_req_data   = OutPort( MemDataType )
+    s.dram_wr_req_mask   = OutPort( MemMaskType )
+    s.dram_wr_resp_val   = InPort()
+    s.dram_wr_resp_rdy   = OutPort()
 
     # SPM interface
     # Request to write to SPM
@@ -150,15 +147,15 @@ class DmaEngineRTL( Component ):
       s.dma_done_val       @= s.state == STATE_DONE
       s.dma_done_tag       @= s.tag_reg
 
-      s.mem_rd_req_val     @= s.state == STATE_MVIN_REQ
-      s.mem_rd_req_addr    @= s.dram_addr_reg
-      s.mem_rd_resp_rdy    @= s.state == STATE_MVIN_RESP
+      s.dram_rd_req.val    @= s.state == STATE_MVIN_REQ
+      s.dram_rd_req.msg    @= s.dram_addr_reg
+      s.dram_rd_resp.rdy   @= s.state == STATE_MVIN_RESP
 
-      s.mem_wr_req_val     @= s.state == STATE_MVOUT_WRITE
-      s.mem_wr_req_addr    @= s.dram_addr_reg
-      s.mem_wr_req_data    @= s.beat_reg
-      s.mem_wr_req_mask    @= s.wr_mask_reg
-      s.mem_wr_resp_rdy    @= s.state == STATE_MVOUT_WAIT
+      s.dram_wr_req_val    @= s.state == STATE_MVOUT_WRITE
+      s.dram_wr_req_addr   @= s.dram_addr_reg
+      s.dram_wr_req_data   @= s.beat_reg
+      s.dram_wr_req_mask   @= s.wr_mask_reg
+      s.dram_wr_resp_rdy   @= s.state == STATE_MVOUT_WAIT
 
       s.spm_dma_wval       @= s.state == STATE_MVIN_WRITE
       s.spm_dma_waddr      @= s.spm_addr_reg
@@ -210,13 +207,13 @@ class DmaEngineRTL( Component ):
               s.state_ff    <<= STATE_MVOUT_READ # Move to the next state: to issue a read request to SPM.
 
         elif s.state == STATE_MVIN_REQ: # Issues a read request to DRAM.
-          if s.mem_rd_req_val & s.mem_rd_req_rdy:
+          if s.dram_rd_req.val & s.dram_rd_req.rdy:
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // CHAR_BIT )
             s.state_ff      <<= STATE_MVIN_RESP
 
         elif s.state == STATE_MVIN_RESP: # Receives a response from DRAM.
-          if s.mem_rd_resp_val & s.mem_rd_resp_rdy:
-            s.beat_ff       <<= s.mem_rd_resp_data
+          if s.dram_rd_resp.val & s.dram_rd_resp.rdy:
+            s.beat_ff       <<= s.dram_rd_resp.msg
             s.word_idx_ff   <<= b2( 0 )
             s.state_ff      <<= STATE_MVIN_WRITE # Move to the next state: to write to SPM.
 
@@ -278,11 +275,11 @@ class DmaEngineRTL( Component ):
               s.state_ff    <<= STATE_MVOUT_READ
 
         elif s.state == STATE_MVOUT_WRITE:
-          if s.mem_wr_req_val & s.mem_wr_req_rdy:
+          if s.dram_wr_req_val & s.dram_wr_req_rdy:
             s.state_ff    <<= STATE_MVOUT_WAIT
 
         elif s.state == STATE_MVOUT_WAIT:
-          if s.mem_wr_resp_val & s.mem_wr_resp_rdy:
+          if s.dram_wr_resp_val & s.dram_wr_resp_rdy:
             # Turn to the +16 address after writing 16 bytes data.
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // CHAR_BIT )
             s.beat_ff       <<= MemDataType( 0 )
