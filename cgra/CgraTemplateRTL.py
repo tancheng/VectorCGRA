@@ -128,7 +128,7 @@ class CgraTemplateRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
     DmaDataType = DataType.get_field_type(kAttrPayload)
-    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // 8))
+    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // CHAR_BIT))
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 

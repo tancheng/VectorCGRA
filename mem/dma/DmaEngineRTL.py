@@ -9,11 +9,7 @@ memory interface and the CGRA dataSPM.
 
 from pymtl3 import *
 
-# DMA Move In and Out
-# DMA_MVIN  : DRAM -> DMA Engine -> SPM
-# DMA_MVOUT : SPM -> DMA Engine -> DRAM
-DMA_MVIN  = 0
-DMA_MVOUT = 1
+from lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_IDLE, STATE_MVIN_REQ, STATE_MVIN_RESP, STATE_MVIN_WRITE, STATE_MVOUT_READ, STATE_MVOUT_RESP, STATE_MVOUT_WRITE, STATE_MVOUT_WAIT, STATE_DONE
 
 
 class DmaEngineRTL( Component ):
@@ -56,9 +52,9 @@ class DmaEngineRTL( Component ):
     TagType      = mk_bits( tag_nbits )
     SpmDataType  = mk_bits( spm_data_nbits )
     MemDataType  = mk_bits( mem_data_nbits )
-    # Byte mask for SPM write; 1 byte = 8 bits
-    SpmMaskType  = mk_bits( spm_data_nbits // 8 )
-    MemMaskType  = mk_bits( mem_data_nbits // 8 )
+    # Byte mask for SPM write
+    SpmMaskType  = mk_bits( spm_data_nbits // CHAR_BIT )
+    MemMaskType  = mk_bits( mem_data_nbits // CHAR_BIT )
 
     # Command interface
     s.dma_cmd_val       = InPort()
@@ -112,17 +108,6 @@ class DmaEngineRTL( Component ):
     s.spm_dma_rresp_data = InPort( SpmDataType )
 
     # State machine definitions
-    StateType = mk_bits( 4 )
-
-    STATE_IDLE          = StateType( 0 ) # Waiting for a new DMA command
-    STATE_MVIN_REQ      = StateType( 1 ) # MVIN: Issuing DRAM read request
-    STATE_MVIN_RESP     = StateType( 2 ) # MVIN: Waiting for DRAM read response
-    STATE_MVIN_WRITE    = StateType( 3 ) # MVIN: Writing unpacked words to SPM
-    STATE_MVOUT_READ    = StateType( 4 ) # MVOUT: Issuing SPM read request
-    STATE_MVOUT_RESP    = StateType( 5 ) # MVOUT: Receiving SPM read response and packing
-    STATE_MVOUT_WRITE   = StateType( 6 ) # MVOUT: Issuing DRAM write request
-    STATE_MVOUT_WAIT    = StateType( 7 ) # MVOUT: Waiting for DRAM write response
-    STATE_DONE          = StateType( 8 ) # Signaling command completion
 
     s.state             = Wire( StateType )
     s.state_next        = Wire( StateType )
@@ -177,7 +162,7 @@ class DmaEngineRTL( Component ):
 
       s.spm_dma_wval       @= s.state == STATE_MVIN_WRITE
       s.spm_dma_waddr      @= s.spm_addr_reg
-      s.spm_dma_wmask      @= SpmMaskType( (1 << (spm_data_nbits // 8)) - 1 ) # Write mask for SPM write; always be 0b1111
+      s.spm_dma_wmask      @= SpmMaskType( (1 << (spm_data_nbits // CHAR_BIT)) - 1 ) # Write mask for SPM write; always be 0b1111
 
       if s.word_idx_reg == b2( 0 ): # Writes the first word of the beat to SPM
         s.spm_dma_wdata    @= s.beat_reg[0:spm_data_nbits]
@@ -226,7 +211,7 @@ class DmaEngineRTL( Component ):
 
         elif s.state == STATE_MVIN_REQ: # Issues a read request to DRAM.
           if s.mem_rd_req_val & s.mem_rd_req_rdy:
-            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // 8 )
+            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // CHAR_BIT )
             s.state_ff      <<= STATE_MVIN_RESP
 
         elif s.state == STATE_MVIN_RESP: # Receives a response from DRAM.
@@ -299,7 +284,7 @@ class DmaEngineRTL( Component ):
         elif s.state == STATE_MVOUT_WAIT:
           if s.mem_wr_resp_val & s.mem_wr_resp_rdy:
             # Turn to the +16 address after writing 16 bytes data.
-            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // 8 )
+            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( mem_data_nbits // CHAR_BIT )
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
             s.wr_mask_ff    <<= MemMaskType( 0 )
