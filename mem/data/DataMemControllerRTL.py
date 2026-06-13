@@ -40,15 +40,18 @@ class DataMemControllerRTL(Component):
   It arbitrates between multiple request sources:
   1. Local tiles (via `recv_raddr`, `recv_waddr`, `recv_wdata`)
   2. Inter-CGRA NoC (via `recv_from_noc_load_request`, etc.)
-  3. Optional DMA engine (via `spm_dma_wval`, `spm_dma_rval`, etc.)
+  3. Optional controller-forwarded DMA access
+     (via `spm_dma_wval`, `spm_dma_rval`, etc.)
 
   Architectural Design:
   - Uses crossbars to route requests to the correct memory bank based on the
     address.
-  - Supports an optional DMA interface. When `has_dma_ports` is True, extra
-    ports are added to the read and write crossbars.
-  - DMA requests are treated as another master on the memory bus, competing
-    with tiles and NoC traffic.
+  - Supports an optional controller-forwarded DMA SPM interface. When
+    `has_dma_ports` is True, extra ports are added to the read and write
+    crossbars.
+  - DMA-originated requests are treated as another master on the memory bus,
+    competing with tiles and NoC traffic after they pass through the
+    controller.
   """
   def construct(s,
                 NocPktType,

@@ -10,12 +10,91 @@ from ..CgraDmaRTL import CgraDmaRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.RetRTL import RetRTL
+from ...lib.cmd_type import *
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.cgra.DataSPM import DataSPM
 from ...lib.util.cgra.Tile import Tile
 from ...lib.util.cgra.cgra_helper import get_links
-from ...mem.dma.DmaEngineRTL import DMA_MVIN, DMA_MVOUT
+
+
+def issue_cpu_pkt(dut, pkt, max_cycles = 20):
+  """
+     CPU issues a packet to the CGRA.
+  """
+  dut.recv_from_cpu_pkt.val @= 1
+  dut.recv_from_cpu_pkt.msg @= pkt
+
+  for _ in range(max_cycles):
+    dut.sim_eval_combinational()
+    if dut.recv_from_cpu_pkt.rdy:
+      dut.sim_tick()
+      dut.recv_from_cpu_pkt.val @= 0
+      dut.sim_eval_combinational()
+      return
+    dut.sim_tick()
+
+  assert False, "CPU packet was not accepted by the CGRA"
+
+
+def issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
+                  dma_cmd, dram_addr, spm_addr, nbytes, tag):
+
+  """
+  Issues a DMA command to the CGRA.
+  Args:
+    dut: The CGRA instance.
+    CtrlPktType: The type of the control packet.
+    CgraPayloadType: The type of the CGRA payload.
+    DataType: The type of the data.
+    DataAddrType: The type of the data address.
+
+    dma_cmd: The DMA command to issue.(CMD_DMA_MVIN or CMD_DMA_MVOUT)
+    dram_addr: The DRAM address to transfer data from or to.(64 bits)
+    spm_addr: The SPM address to transfer data from or to.(32 bits)
+    nbytes: The number of bytes to transfer.
+    tag: The tag of the DMA command.
+  """
+  config_pkts = [
+    # The bindwidth of dram address is 64 bits, so we need to split it into two 32 bits parts.
+    # Lower 32 bits are sent first.
+    CtrlPktType(0, 0, payload = CgraPayloadType(
+      CMD_DMA_CONFIG_DRAM_ADDR_LO,
+      data = DataType(dram_addr & 0xffffffff, 1))),
+    
+    # Higher 32 bits are sent second.
+    CtrlPktType(0, 0, payload = CgraPayloadType(
+      CMD_DMA_CONFIG_DRAM_ADDR_HI,
+      data = DataType((dram_addr >> 32) & 0xffffffff, 1))),
+    
+    # The SPM address to read from or write to.
+    CtrlPktType(0, 0, payload = CgraPayloadType(
+      CMD_DMA_CONFIG_SPM_ADDR,
+      data_addr = DataAddrType(spm_addr))),
+
+    # The number of bytes to transfer.
+    CtrlPktType(0, 0, payload = CgraPayloadType(
+      CMD_DMA_CONFIG_BYTES,
+      data = DataType(nbytes, 1))),
+    
+    # The tag of the DMA command.
+    CtrlPktType(0, 0, payload = CgraPayloadType(
+      CMD_DMA_CONFIG_TAG,
+      data = DataType(tag, 1))),
+    CtrlPktType(0, 0, payload = CgraPayloadType(dma_cmd)),
+  ]
+
+  for pkt in config_pkts:
+    issue_cpu_pkt(dut, pkt)
+
+
+def observed_dma_done(dut, expected_tag):
+  dut.sim_eval_combinational()
+  if dut.send_to_cpu_pkt.val and dut.send_to_cpu_pkt.msg.payload.cmd == CMD_DMA_DONE:
+    assert int(dut.send_to_cpu_pkt.msg.opaque) == expected_tag
+    assert int(dut.send_to_cpu_pkt.msg.payload.data.payload) == expected_tag
+    return True
+  return False
 
 
 def test_cgra_dma_mvin_to_local_spm():
@@ -78,20 +157,10 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.dram_rd_resp.msg @= 0
   dut.dram_wr_req_rdy @= 1
   dut.dram_wr_resp_val @= 0
-  dut.dma_done_rdy @= 1
 
-  dut.dma_cmd_val @= 1
-  dut.dma_cmd_opcode @= DMA_MVIN
-  # Read the data of DRAM from address 0x1000(16 bytes in total),
-  # then write the data to SPM from address 0x0 to 0x3.
-  dut.dma_cmd_dram_addr @= 0x1000
-  dut.dma_cmd_spm_addr @= DataAddrType(0)
-  dut.dma_cmd_bytes @= 16
-  dut.dma_cmd_tag @= 0x33
-  dut.sim_eval_combinational()
-  assert dut.dma_cmd_rdy
-  dut.sim_tick()
-  dut.dma_cmd_val @= 0
+  # Read 16 bytes from DRAM address 0x1000 and write them to SPM words 0..3.
+  issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
+                CMD_DMA_MVIN, 0x1000, 0, 16, 0x33)
 
   beat = concat(WordType(0x44444444), WordType(0x33333333),
                 WordType(0x22222222), WordType(0x11111111))
@@ -108,14 +177,12 @@ def test_cgra_dma_mvin_to_local_spm():
 
     pending_resp = bool(dut.dram_rd_req.val & dut.dram_rd_req.rdy)
 
-    if dut.dma_done_val:
-      # Transfer finished, check the tag.
-      assert int(dut.dma_done_tag) == 0x33
+    if observed_dma_done(dut, 0x33):
       break
 
     dut.sim_tick()
 
-  assert dut.dma_done_val
+  assert observed_dma_done(dut, 0x33)
   # Check the data in the dataSPM.
   assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[0] == DataType(0x11111111, 1, 0, 0)
   assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[1] == DataType(0x22222222, 1, 0, 0)
@@ -187,21 +254,10 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.dram_rd_resp.msg @= 0
   dut.dram_wr_req_rdy @= 1
   dut.dram_wr_resp_val @= 0
-  dut.dma_done_rdy @= 1
 
-  # Issue DMA MVOUT command
-  dut.dma_cmd_val @= 1
-  dut.dma_cmd_opcode @= DMA_MVOUT
-  # Read the data of SPM from address 0x0 to 0x3(16 bytes in total),
-  # then write the data to DRAM address 0x2000.
-  dut.dma_cmd_dram_addr @= 0x2000
-  dut.dma_cmd_spm_addr @= DataAddrType(0)
-  dut.dma_cmd_bytes @= 16
-  dut.dma_cmd_tag @= 0x44
-  dut.sim_eval_combinational()
-  assert dut.dma_cmd_rdy
-  dut.sim_tick()
-  dut.dma_cmd_val @= 0
+  # Read SPM words 0..3 and write 16 bytes to DRAM address 0x2000.
+  issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
+                CMD_DMA_MVOUT, 0x2000, 0, 16, 0x44)
 
   # Expected 128-bit beat
   expected_beat = concat(WordType(0x44444444), WordType(0x33333333),
@@ -215,15 +271,14 @@ def test_cgra_dma_mvout_from_local_spm():
       dut.dram_wr_resp_val @= 1
       pending_wr_resp = False
 
-    if dut.dram_wr_req_val:
+    dut.sim_eval_combinational()
+
+    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
       assert dut.dram_wr_req_addr == 0x2000
       assert dut.dram_wr_req_data == expected_beat
       pending_wr_resp = True
 
-    dut.sim_eval_combinational()
-
-    if dut.dma_done_val:
-      assert int(dut.dma_done_tag) == 0x44
+    if observed_dma_done(dut, 0x44):
       done = True
       break
 

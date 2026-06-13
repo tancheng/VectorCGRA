@@ -25,9 +25,10 @@ class CgraDmaRTL( Component ):
   Architectural Design:
   - It instantiates a standard CGRA template (`CgraTemplateRTL`) and a
     DMA engine (`DmaEngineRTL`).
-  - The DMA engine is connected to the CGRA's internal data SPM through a
-    dedicated master port on the `DataMemControllerRTL`.
   - CPU control packets are passed through to the CGRA's controller.
+    DMA commands are decoded there.
+  - The DMA engine accesses the CGRA's internal data SPM through controller-
+    forwarded ports; it is not connected directly to `DataMemControllerRTL`.
   - External memory requests from the DMA engine are exposed at the top level
     to be connected to a DRAM model or an AXI adapter.
   - Boundary data ports for multi-CGRA configurations are also passed through
@@ -68,10 +69,7 @@ class CgraDmaRTL( Component ):
 
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    DmaOpcodeType = mk_bits(3) #DMA_MVIN: 0, DMA_MVOUT: 1
     DmaDramAddrType = mk_bits(64)
-    DmaBytesType = mk_bits(32)
-    DmaTagType = mk_bits(8)
     DmaMemDataType = mk_bits(128) # Write/Read 128 bits data per beat from/to DRAM
     DmaMemMaskType = mk_bits(16)
 
@@ -99,19 +97,7 @@ class CgraDmaRTL( Component ):
     s.address_lower = InPort(DataAddrType)
     s.address_upper = InPort(DataAddrType)
 
-    # DMA command/done and abstract external memory interfaces.
-
-    s.dma_cmd_val       = InPort() # dma_command_valid
-    s.dma_cmd_rdy       = OutPort() # dma_command_ready
-    s.dma_cmd_opcode    = InPort(DmaOpcodeType)
-    s.dma_cmd_dram_addr = InPort(DmaDramAddrType)
-    s.dma_cmd_spm_addr  = InPort(DataAddrType)
-    s.dma_cmd_bytes     = InPort(DmaBytesType) # The number of bytes to transfer.
-    s.dma_cmd_tag       = InPort(DmaTagType) # Doesn't use it now, but keep it for future use(e.g., distinguish different DMA commands).
-
-    s.dma_done_val      = OutPort()
-    s.dma_done_rdy      = InPort()
-    s.dma_done_tag      = OutPort(DmaTagType) # Must be same as the input `dma_cmd_tag`
+    # Abstract external dram memory interfaces for the internal DMA engine.
 
     s.dram_rd_req = SendIfcRTL(DmaDramAddrType)
     s.dram_rd_resp = RecvIfcRTL(DmaMemDataType)
@@ -172,19 +158,19 @@ class CgraDmaRTL( Component ):
     s.address_lower //= s.cgra.address_lower
     s.address_upper //= s.cgra.address_upper
 
-    # DMA top-level connections.
+    # Controller-decoded DMA command/done connections.
 
-    s.dma_cmd_val       //= s.dma.dma_cmd_val
-    s.dma_cmd_rdy       //= s.dma.dma_cmd_rdy
-    s.dma_cmd_opcode    //= s.dma.dma_cmd_opcode
-    s.dma_cmd_dram_addr //= s.dma.dma_cmd_dram_addr
-    s.dma_cmd_spm_addr  //= s.dma.dma_cmd_spm_addr
-    s.dma_cmd_bytes     //= s.dma.dma_cmd_bytes
-    s.dma_cmd_tag       //= s.dma.dma_cmd_tag
+    s.cgra.dma_cmd_val       //= s.dma.dma_cmd_val
+    s.cgra.dma_cmd_rdy       //= s.dma.dma_cmd_rdy
+    s.cgra.dma_cmd_opcode    //= s.dma.dma_cmd_opcode
+    s.cgra.dma_cmd_dram_addr //= s.dma.dma_cmd_dram_addr
+    s.cgra.dma_cmd_spm_addr  //= s.dma.dma_cmd_spm_addr
+    s.cgra.dma_cmd_bytes     //= s.dma.dma_cmd_bytes
+    s.cgra.dma_cmd_tag       //= s.dma.dma_cmd_tag
 
-    s.dma_done_val      //= s.dma.dma_done_val
-    s.dma_done_rdy      //= s.dma.dma_done_rdy
-    s.dma_done_tag      //= s.dma.dma_done_tag
+    s.dma.dma_done_val       //= s.cgra.dma_done_val
+    s.dma.dma_done_rdy       //= s.cgra.dma_done_rdy
+    s.dma.dma_done_tag       //= s.cgra.dma_done_tag
 
     s.dram_rd_req       //= s.dma.dram_rd_req
     s.dram_rd_resp      //= s.dma.dram_rd_resp
@@ -198,7 +184,7 @@ class CgraDmaRTL( Component ):
     s.dram_wr_resp_val   //= s.dma.dram_wr_resp_val
     s.dram_wr_resp_rdy   //= s.dma.dram_wr_resp_rdy
 
-    # DMA to SPM connections.
+    # DMA to controller-forwarded SPM connections.
 
     s.dma.spm_dma_wval       //= s.cgra.spm_dma_wval
     s.dma.spm_dma_wrdy       //= s.cgra.spm_dma_wrdy
