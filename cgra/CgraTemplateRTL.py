@@ -9,6 +9,7 @@ Author : Cheng Tan
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ..lib.basic.val_rdy.ifcs import DmaSpmMinionIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
@@ -133,6 +134,15 @@ class CgraTemplateRTL(Component):
     DmaDramAddrType = mk_bits(64)
     DmaBytesType = mk_bits(32)
     DmaTagType = mk_bits(8)
+    DmaCmdType = mk_dma_cmd(DmaDramAddrType.nbits,
+                            DataAddrType.nbits,
+                            DmaBytesType.nbits,
+                            DmaTagType.nbits)
+    DmaDoneType = mk_dma_done(DmaTagType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DataAddrType.nbits,
+                                              DmaDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DataAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaDataType.nbits)
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -145,32 +155,38 @@ class CgraTemplateRTL(Component):
     # Optional DMA engine-facing ports. The controller owns command decode and
     # forwards DMA SPM access to the data memory.
     if has_dma_ports:
-      s.dma_cmd_val       = OutPort()
-      s.dma_cmd_rdy       = InPort()
-      s.dma_cmd_opcode    = OutPort(DmaOpcodeType)
-      s.dma_cmd_dram_addr = OutPort(DmaDramAddrType)
-      s.dma_cmd_spm_addr  = OutPort(DataAddrType)
-      s.dma_cmd_bytes     = OutPort(DmaBytesType)
-      s.dma_cmd_tag       = OutPort(DmaTagType)
+      s.dma_cmd = SendIfcRTL(DmaCmdType)
+      s.dma_cmd_val       = s.dma_cmd.val
+      s.dma_cmd_rdy       = s.dma_cmd.rdy
+      s.dma_cmd_opcode    = s.dma_cmd.msg.opcode
+      s.dma_cmd_dram_addr = s.dma_cmd.msg.dram_addr
+      s.dma_cmd_spm_addr  = s.dma_cmd.msg.spm_addr
+      s.dma_cmd_bytes     = s.dma_cmd.msg.nbytes
+      s.dma_cmd_tag       = s.dma_cmd.msg.tag
 
-      s.dma_done_val      = InPort()
-      s.dma_done_rdy      = OutPort()
-      s.dma_done_tag      = InPort(DmaTagType)
+      s.dma_done = RecvIfcRTL(DmaDoneType)
+      s.dma_done_val      = s.dma_done.val
+      s.dma_done_rdy      = s.dma_done.rdy
+      s.dma_done_tag      = s.dma_done.msg.tag
+
+      s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
+                                     DmaSpmReadReqType,
+                                     DmaSpmReadRespType)
 
       # DMA write request interface.
-      s.spm_dma_wval  = InPort() # dma write request valid(write data into SPM)
-      s.spm_dma_wrdy  = OutPort()
-      s.spm_dma_waddr = InPort(DataAddrType)
-      s.spm_dma_wdata = InPort(DmaDataType)
-      s.spm_dma_wmask = InPort(DmaMaskType)
+      s.spm_dma_wval  = s.dma_spm.write.val # dma write request valid(write data into SPM)
+      s.spm_dma_wrdy  = s.dma_spm.write.rdy
+      s.spm_dma_waddr = s.dma_spm.write.msg.addr
+      s.spm_dma_wdata = s.dma_spm.write.msg.data
+      s.spm_dma_wmask = s.dma_spm.write.msg.mask
 
       # DMA read response interface.
-      s.spm_dma_rval       = InPort()
-      s.spm_dma_rrdy       = OutPort()
-      s.spm_dma_raddr      = InPort(DataAddrType)
-      s.spm_dma_rresp_val  = OutPort()
-      s.spm_dma_rresp_rdy  = InPort()
-      s.spm_dma_rresp_data = OutPort(DmaDataType)
+      s.spm_dma_rval       = s.dma_spm.read.val
+      s.spm_dma_rrdy       = s.dma_spm.read.rdy
+      s.spm_dma_raddr      = s.dma_spm.read.msg.addr
+      s.spm_dma_rresp_val  = s.dma_spm.read_resp.val
+      s.spm_dma_rresp_rdy  = s.dma_spm.read_resp.rdy
+      s.spm_dma_rresp_data = s.dma_spm.read_resp.msg.data
 
     if is_multi_cgra:
       # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
@@ -231,45 +247,14 @@ class CgraTemplateRTL(Component):
 
     if has_dma_ports:
       # CPU packets are decoded by the controller before becoming DMA commands.
-      s.dma_cmd_val       //= s.controller.dma_cmd_val
-      s.dma_cmd_rdy       //= s.controller.dma_cmd_rdy
-      s.dma_cmd_opcode    //= s.controller.dma_cmd_opcode
-      s.dma_cmd_dram_addr //= s.controller.dma_cmd_dram_addr
-      s.dma_cmd_spm_addr  //= s.controller.dma_cmd_spm_addr
-      s.dma_cmd_bytes     //= s.controller.dma_cmd_bytes
-      s.dma_cmd_tag       //= s.controller.dma_cmd_tag
-
-      s.dma_done_val      //= s.controller.dma_done_val
-      s.dma_done_rdy      //= s.controller.dma_done_rdy
-      s.dma_done_tag      //= s.controller.dma_done_tag
+      s.dma_cmd  //= s.controller.dma_cmd
+      s.dma_done //= s.controller.dma_done
 
       # DMA engine <-> controller side of the SPM path.
-      s.spm_dma_wval  //= s.controller.spm_dma_wval
-      s.spm_dma_wrdy  //= s.controller.spm_dma_wrdy
-      s.spm_dma_waddr //= s.controller.spm_dma_waddr
-      s.spm_dma_wdata //= s.controller.spm_dma_wdata
-      s.spm_dma_wmask //= s.controller.spm_dma_wmask
-
-      s.spm_dma_rval       //= s.controller.spm_dma_rval
-      s.spm_dma_rrdy       //= s.controller.spm_dma_rrdy
-      s.spm_dma_raddr      //= s.controller.spm_dma_raddr
-      s.spm_dma_rresp_val  //= s.controller.spm_dma_rresp_val
-      s.spm_dma_rresp_rdy  //= s.controller.spm_dma_rresp_rdy
-      s.spm_dma_rresp_data //= s.controller.spm_dma_rresp_data
+      s.dma_spm //= s.controller.dma_spm_from_dma
 
       # Controller <-> data memory side of the SPM path.
-      s.controller.send_to_mem_dma_wval   //= s.data_mem.spm_dma_wval
-      s.controller.recv_from_mem_dma_wrdy //= s.data_mem.spm_dma_wrdy
-      s.controller.send_to_mem_dma_waddr  //= s.data_mem.spm_dma_waddr
-      s.controller.send_to_mem_dma_wdata  //= s.data_mem.spm_dma_wdata
-      s.controller.send_to_mem_dma_wmask  //= s.data_mem.spm_dma_wmask
-
-      s.controller.send_to_mem_dma_rval        //= s.data_mem.spm_dma_rval
-      s.controller.recv_from_mem_dma_rrdy      //= s.data_mem.spm_dma_rrdy
-      s.controller.send_to_mem_dma_raddr       //= s.data_mem.spm_dma_raddr
-      s.controller.recv_from_mem_dma_rresp_val //= s.data_mem.spm_dma_rresp_val
-      s.controller.send_to_mem_dma_rresp_rdy   //= s.data_mem.spm_dma_rresp_rdy
-      s.controller.recv_from_mem_dma_rresp_data //= s.data_mem.spm_dma_rresp_data
+      s.controller.dma_spm_to_mem //= s.data_mem.dma_spm
 
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request

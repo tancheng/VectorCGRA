@@ -14,13 +14,13 @@ def make_dut():
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
 
-  dut.dma_cmd_val @= 0
-  dut.dma_cmd_opcode @= 0
-  dut.dma_cmd_dram_addr @= 0
-  dut.dma_cmd_spm_addr @= 0
-  dut.dma_cmd_bytes @= 0
-  dut.dma_cmd_tag @= 0
-  dut.dma_done_rdy @= 1
+  dut.dma_cmd.val @= 0
+  dut.dma_cmd.msg.opcode @= 0
+  dut.dma_cmd.msg.dram_addr @= 0
+  dut.dma_cmd.msg.spm_addr @= 0
+  dut.dma_cmd.msg.nbytes @= 0
+  dut.dma_cmd.msg.tag @= 0
+  dut.dma_done.rdy @= 1
 
   dut.dram_rd_req.rdy @= 1
   dut.dram_rd_resp.val @= 0
@@ -28,10 +28,10 @@ def make_dut():
   dut.dram_wr_req_rdy @= 1
   dut.dram_wr_resp_val @= 1
 
-  dut.spm_dma_wrdy @= 1
-  dut.spm_dma_rrdy @= 1
-  dut.spm_dma_rresp_val @= 0
-  dut.spm_dma_rresp_data @= 0
+  dut.spm.write.rdy @= 1
+  dut.spm.read.rdy @= 1
+  dut.spm.read_resp.val @= 0
+  dut.spm.read_resp.msg.data @= 0
   dut.sim_eval_combinational()
   return dut
 
@@ -47,16 +47,16 @@ def issue_cmd(dut, opcode, dram_addr, spm_addr, nbytes, tag):
     nbytes: The number of bytes to transfer.
     tag: The tag of the DMA command.
   """
-  dut.dma_cmd_val @= 1
-  dut.dma_cmd_opcode @= opcode
-  dut.dma_cmd_dram_addr @= dram_addr
-  dut.dma_cmd_spm_addr @= spm_addr
-  dut.dma_cmd_bytes @= nbytes
-  dut.dma_cmd_tag @= tag
+  dut.dma_cmd.val @= 1
+  dut.dma_cmd.msg.opcode @= opcode
+  dut.dma_cmd.msg.dram_addr @= dram_addr
+  dut.dma_cmd.msg.spm_addr @= spm_addr
+  dut.dma_cmd.msg.nbytes @= nbytes
+  dut.dma_cmd.msg.tag @= tag
   dut.sim_eval_combinational()
-  assert dut.dma_cmd_rdy
+  assert dut.dma_cmd.rdy
   dut.sim_tick()
-  dut.dma_cmd_val @= 0
+  dut.dma_cmd.val @= 0
 
 
 def test_dma_mvin_one_beat():
@@ -96,11 +96,11 @@ def test_dma_mvin_one_beat():
     else:
       pending_resp = None
 
-    if dut.spm_dma_wval & dut.spm_dma_wrdy:
-      spm_writes.append((int(dut.spm_dma_waddr), int(dut.spm_dma_wdata)))
+    if dut.spm.write.val & dut.spm.write.rdy:
+      spm_writes.append((int(dut.spm.write.msg.addr), int(dut.spm.write.msg.data)))
 
-    if dut.dma_done_val:
-      assert int(dut.dma_done_tag) == 0x5a
+    if dut.dma_done.val:
+      assert int(dut.dma_done.msg.tag) == 0x5a
       break
 
     dut.sim_tick()
@@ -143,15 +143,15 @@ def test_dma_mvout_partial_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.spm_dma_rresp_val @= 0
+    dut.spm.read_resp.val @= 0
     if pending_rresp is not None:
-      dut.spm_dma_rresp_val @= 1
-      dut.spm_dma_rresp_data @= pending_rresp
+      dut.spm.read_resp.val @= 1
+      dut.spm.read_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.spm_dma_rval & dut.spm_dma_rrdy:
-      pending_rresp = spm[int(dut.spm_dma_raddr)]
+    if dut.spm.read.val & dut.spm.read.rdy:
+      pending_rresp = spm[int(dut.spm.read.msg.addr)]
     else:
       pending_rresp = None
 
@@ -160,8 +160,8 @@ def test_dma_mvout_partial_beat():
                          int(dut.dram_wr_req_data),
                          int(dut.dram_wr_req_mask)))
 
-    if dut.dma_done_val:
-      assert int(dut.dma_done_tag) == 0xa5
+    if dut.dma_done.val:
+      assert int(dut.dma_done.msg.tag) == 0xa5
       break
 
     dut.sim_tick()
@@ -200,15 +200,15 @@ def test_dma_mvout_full_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.spm_dma_rresp_val @= 0
+    dut.spm.read_resp.val @= 0
     if pending_rresp is not None:
-      dut.spm_dma_rresp_val @= 1
-      dut.spm_dma_rresp_data @= pending_rresp
+      dut.spm.read_resp.val @= 1
+      dut.spm.read_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.spm_dma_rval & dut.spm_dma_rrdy:
-      pending_rresp = spm[int(dut.spm_dma_raddr)]
+    if dut.spm.read.val & dut.spm.read.rdy:
+      pending_rresp = spm[int(dut.spm.read.msg.addr)]
     else:
       pending_rresp = None
 
@@ -217,8 +217,8 @@ def test_dma_mvout_full_beat():
                          int(dut.dram_wr_req_data),
                          int(dut.dram_wr_req_mask)))
 
-    if dut.dma_done_val:
-      assert int(dut.dma_done_tag) == 0xa5
+    if dut.dma_done.val:
+      assert int(dut.dma_done.msg.tag) == 0xa5
       break
 
     dut.sim_tick()

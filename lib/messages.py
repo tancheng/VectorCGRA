@@ -160,7 +160,7 @@ def mk_ctrl(num_fu_inports = 4,
 
   field_dict[kAttrVectorFactorPower] = VectorFactorPowerType
 
-  field_dict[kAttrIsLastCtrl] = b1
+  field_dict[kAttrIsLastCtrl] = mk_bits(1)
 
   # Register file related signals.
   # Indicates whether to write data into the register bank, and the
@@ -195,6 +195,106 @@ def mk_cmd(num_commands = 12,
 
   return mk_bitstruct(new_name, {
       'cmd': CmdType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+#=========================================================================
+# DMA messages
+#=========================================================================
+
+def mk_dma_cmd(dram_addr_nbits = 64,
+               spm_addr_nbits = 32,
+               bytes_nbits = 32,
+               tag_nbits = 8,
+               prefix = "DmaCmd"):
+
+  OpcodeType   = mk_bits(3)
+  DramAddrType = mk_bits(dram_addr_nbits)
+  SpmAddrType  = mk_bits(spm_addr_nbits)
+  BytesType    = mk_bits(bytes_nbits)
+  TagType      = mk_bits(tag_nbits)
+
+  new_name = f"{prefix}_{dram_addr_nbits}_{spm_addr_nbits}_{bytes_nbits}_{tag_nbits}"
+
+  def str_func(s):
+    return f"dma_cmd(op={s.opcode},dram={s.dram_addr},spm={s.spm_addr},bytes={s.nbytes},tag={s.tag})"
+
+  return mk_bitstruct(new_name, {
+      'opcode'   : OpcodeType,
+      'dram_addr': DramAddrType,
+      'spm_addr' : SpmAddrType,
+      'nbytes'   : BytesType,
+      'tag'      : TagType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+def mk_dma_done(tag_nbits = 8,
+                prefix = "DmaDone"):
+
+  TagType = mk_bits(tag_nbits)
+
+  new_name = f"{prefix}_{tag_nbits}"
+
+  def str_func(s):
+    return f"dma_done(tag={s.tag})"
+
+  return mk_bitstruct(new_name, {
+      'tag': TagType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+def mk_dma_spm_write_req(addr_nbits = 32,
+                         data_nbits = 32,
+                         prefix = "DmaSpmWriteReq"):
+
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  MaskType = mk_bits(max(1, data_nbits // 8))
+
+  new_name = f"{prefix}_{addr_nbits}_{data_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_wr(addr={s.addr},data={s.data},mask={s.mask})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+      'data': DataType,
+      'mask': MaskType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+def mk_dma_spm_read_req(addr_nbits = 32,
+                        prefix = "DmaSpmReadReq"):
+
+  AddrType = mk_bits(addr_nbits)
+
+  new_name = f"{prefix}_{addr_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_rd(addr={s.addr})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+def mk_dma_spm_read_resp(data_nbits = 32,
+                         prefix = "DmaSpmReadResp"):
+
+  DataType = mk_bits(data_nbits)
+
+  new_name = f"{prefix}_{data_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_rd_resp(data={s.data})"
+
+  return mk_bitstruct(new_name, {
+      'data': DataType,
     },
     namespace = {'__str__': str_func}
   )

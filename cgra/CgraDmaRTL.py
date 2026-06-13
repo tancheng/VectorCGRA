@@ -158,19 +158,11 @@ class CgraDmaRTL( Component ):
     s.address_lower //= s.cgra.address_lower
     s.address_upper //= s.cgra.address_upper
 
-    # Controller-decoded DMA command/done connections.
 
-    s.cgra.dma_cmd_val       //= s.dma.dma_cmd_val
-    s.cgra.dma_cmd_rdy       //= s.dma.dma_cmd_rdy
-    s.cgra.dma_cmd_opcode    //= s.dma.dma_cmd_opcode
-    s.cgra.dma_cmd_dram_addr //= s.dma.dma_cmd_dram_addr
-    s.cgra.dma_cmd_spm_addr  //= s.dma.dma_cmd_spm_addr
-    s.cgra.dma_cmd_bytes     //= s.dma.dma_cmd_bytes
-    s.cgra.dma_cmd_tag       //= s.dma.dma_cmd_tag
-
-    s.dma.dma_done_val       //= s.cgra.dma_done_val
-    s.dma.dma_done_rdy       //= s.cgra.dma_done_rdy
-    s.dma.dma_done_tag       //= s.cgra.dma_done_tag
+    # Connections between CGRA and DMA engine.
+    # CGRA communicates with DMA engine through the controller.
+    s.cgra.dma_cmd  //= s.dma.dma_cmd
+    s.dma.dma_done  //= s.cgra.dma_done
 
     s.dram_rd_req       //= s.dma.dram_rd_req
     s.dram_rd_resp      //= s.dma.dram_rd_resp
@@ -186,18 +178,7 @@ class CgraDmaRTL( Component ):
 
     # DMA to controller-forwarded SPM connections.
 
-    s.dma.spm_dma_wval       //= s.cgra.spm_dma_wval
-    s.dma.spm_dma_wrdy       //= s.cgra.spm_dma_wrdy
-    s.dma.spm_dma_waddr      //= s.cgra.spm_dma_waddr
-    s.dma.spm_dma_wdata      //= s.cgra.spm_dma_wdata
-    s.dma.spm_dma_wmask      //= s.cgra.spm_dma_wmask
-
-    s.dma.spm_dma_rval       //= s.cgra.spm_dma_rval
-    s.dma.spm_dma_rrdy       //= s.cgra.spm_dma_rrdy
-    s.dma.spm_dma_raddr      //= s.cgra.spm_dma_raddr
-    s.dma.spm_dma_rresp_val  //= s.cgra.spm_dma_rresp_val
-    s.dma.spm_dma_rresp_rdy  //= s.cgra.spm_dma_rresp_rdy
-    s.dma.spm_dma_rresp_data //= s.cgra.spm_dma_rresp_data
+    s.dma.spm //= s.cgra.dma_spm
 
   def line_trace(s):
     return f"{s.dma.line_trace()} || {s.cgra.line_trace()}"
