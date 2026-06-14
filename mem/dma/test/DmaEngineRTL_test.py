@@ -25,7 +25,7 @@ def make_dut():
   dut.dram_rd_req.rdy @= 1
   dut.dram_rd_resp.val @= 0
   dut.dram_rd_resp.msg @= 0
-  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_req.rdy @= 1
   dut.dram_wr_resp_val @= 1
 
   dut.spm.write.rdy @= 1
@@ -155,10 +155,10 @@ def test_dma_mvout_partial_beat():
     else:
       pending_rresp = None
 
-    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
-      mem_writes.append((int(dut.dram_wr_req_addr),
-                         int(dut.dram_wr_req_data),
-                         int(dut.dram_wr_req_mask)))
+    if dut.dram_wr_req.val & dut.dram_wr_req.rdy:
+      mem_writes.append((int(dut.dram_wr_req.addr),
+                         int(dut.dram_wr_req.data),
+                         int(dut.dram_wr_req.mask)))
 
     if dut.dma_done.val:
       assert int(dut.dma_done.msg.tag) == 0xa5
@@ -212,10 +212,10 @@ def test_dma_mvout_full_beat():
     else:
       pending_rresp = None
 
-    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
-      mem_writes.append((int(dut.dram_wr_req_addr),
-                         int(dut.dram_wr_req_data),
-                         int(dut.dram_wr_req_mask)))
+    if dut.dram_wr_req.val & dut.dram_wr_req.rdy:
+      mem_writes.append((int(dut.dram_wr_req.addr),
+                         int(dut.dram_wr_req.data),
+                         int(dut.dram_wr_req.mask)))
 
     if dut.dma_done.val:
       assert int(dut.dma_done.msg.tag) == 0xa5
