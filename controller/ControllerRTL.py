@@ -100,52 +100,18 @@ class ControllerRTL(Component):
     if has_dma_ports:
       # Controller-owned command path from CPU packets to the DMA engine.
       s.dma_cmd = SendIfcRTL(DmaCmdType)
-      s.dma_cmd_val       = s.dma_cmd.val
-      s.dma_cmd_rdy       = s.dma_cmd.rdy
-      s.dma_cmd_opcode    = s.dma_cmd.msg.opcode
-      s.dma_cmd_dram_addr = s.dma_cmd.msg.dram_addr
-      s.dma_cmd_spm_addr  = s.dma_cmd.msg.spm_addr
-      s.dma_cmd_bytes     = s.dma_cmd.msg.nbytes
-      s.dma_cmd_tag       = s.dma_cmd.msg.tag
 
       s.dma_done = RecvIfcRTL(DmaDoneType)
-      s.dma_done_val      = s.dma_done.val
-      s.dma_done_rdy      = s.dma_done.rdy
-      s.dma_done_tag      = s.dma_done.msg.tag
 
       # DMA engine side of the controller-forwarded SPM access path.
       s.dma_spm_from_dma = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
                                               DmaSpmReadReqType,
                                               DmaSpmReadRespType)
-      s.spm_dma_wval  = s.dma_spm_from_dma.write.val
-      s.spm_dma_wrdy  = s.dma_spm_from_dma.write.rdy
-      s.spm_dma_waddr = s.dma_spm_from_dma.write.msg.addr
-      s.spm_dma_wdata = s.dma_spm_from_dma.write.msg.data
-      s.spm_dma_wmask = s.dma_spm_from_dma.write.msg.mask
-
-      s.spm_dma_rval       = s.dma_spm_from_dma.read.val
-      s.spm_dma_rrdy       = s.dma_spm_from_dma.read.rdy
-      s.spm_dma_raddr      = s.dma_spm_from_dma.read.msg.addr
-      s.spm_dma_rresp_val  = s.dma_spm_from_dma.read_resp.val
-      s.spm_dma_rresp_rdy  = s.dma_spm_from_dma.read_resp.rdy
-      s.spm_dma_rresp_data = s.dma_spm_from_dma.read_resp.msg.data
 
       # Data memory side of the same SPM access path.
       s.dma_spm_to_mem = DmaSpmMasterIfcRTL(DmaSpmWriteReqType,
                                             DmaSpmReadReqType,
                                             DmaSpmReadRespType)
-      s.send_to_mem_dma_wval  = s.dma_spm_to_mem.write.val
-      s.recv_from_mem_dma_wrdy = s.dma_spm_to_mem.write.rdy
-      s.send_to_mem_dma_waddr = s.dma_spm_to_mem.write.msg.addr
-      s.send_to_mem_dma_wdata = s.dma_spm_to_mem.write.msg.data
-      s.send_to_mem_dma_wmask = s.dma_spm_to_mem.write.msg.mask
-
-      s.send_to_mem_dma_rval       = s.dma_spm_to_mem.read.val
-      s.recv_from_mem_dma_rrdy     = s.dma_spm_to_mem.read.rdy
-      s.send_to_mem_dma_raddr      = s.dma_spm_to_mem.read.msg.addr
-      s.recv_from_mem_dma_rresp_val  = s.dma_spm_to_mem.read_resp.val
-      s.send_to_mem_dma_rresp_rdy    = s.dma_spm_to_mem.read_resp.rdy
-      s.recv_from_mem_dma_rresp_data = s.dma_spm_to_mem.read_resp.msg.data
     else:
       s.dma_cmd = DmaWireIfcRTL(DmaCmdType)
       s.dma_cmd.rdy //= 0
@@ -171,43 +137,6 @@ class ControllerRTL(Component):
       s.dma_spm_to_mem.read_resp.val //= 0
       s.dma_spm_to_mem.read_resp.msg //= DmaSpmReadRespType()
 
-      s.dma_cmd_val       = Wire()
-      s.dma_cmd_rdy       = Wire()
-      s.dma_cmd_opcode    = Wire(DmaOpcodeType)
-      s.dma_cmd_dram_addr = Wire(DmaDramAddrType)
-      s.dma_cmd_spm_addr  = Wire(DataAddrType)
-      s.dma_cmd_bytes     = Wire(DmaBytesType)
-      s.dma_cmd_tag       = Wire(DmaTagType)
-
-      s.dma_done_val      = Wire()
-      s.dma_done_rdy      = Wire()
-      s.dma_done_tag      = Wire(DmaTagType)
-
-      s.spm_dma_wval  = Wire()
-      s.spm_dma_wrdy  = Wire()
-      s.spm_dma_waddr = Wire(DataAddrType)
-      s.spm_dma_wdata = Wire(DataPayloadType)
-      s.spm_dma_wmask = Wire(DmaMaskType)
-
-      s.spm_dma_rval       = Wire()
-      s.spm_dma_rrdy       = Wire()
-      s.spm_dma_raddr      = Wire(DataAddrType)
-      s.spm_dma_rresp_val  = Wire()
-      s.spm_dma_rresp_rdy  = Wire()
-      s.spm_dma_rresp_data = Wire(DataPayloadType)
-
-      s.send_to_mem_dma_wval    = Wire()
-      s.recv_from_mem_dma_wrdy  = Wire()
-      s.send_to_mem_dma_waddr   = Wire(DataAddrType)
-      s.send_to_mem_dma_wdata   = Wire(DataPayloadType)
-      s.send_to_mem_dma_wmask   = Wire(DmaMaskType)
-
-      s.send_to_mem_dma_rval           = Wire()
-      s.recv_from_mem_dma_rrdy         = Wire()
-      s.send_to_mem_dma_raddr          = Wire(DataAddrType)
-      s.recv_from_mem_dma_rresp_val    = Wire()
-      s.send_to_mem_dma_rresp_rdy      = Wire()
-      s.recv_from_mem_dma_rresp_data   = Wire(DataPayloadType)
 
     # Component
     s.recv_from_tile_load_request_pkt_queue = ChannelRTL(InterCgraPktType, latency = 1)

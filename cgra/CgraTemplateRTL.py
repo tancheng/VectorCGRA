@@ -156,37 +156,13 @@ class CgraTemplateRTL(Component):
     # forwards DMA SPM access to the data memory.
     if has_dma_ports:
       s.dma_cmd = SendIfcRTL(DmaCmdType)
-      s.dma_cmd_val       = s.dma_cmd.val
-      s.dma_cmd_rdy       = s.dma_cmd.rdy
-      s.dma_cmd_opcode    = s.dma_cmd.msg.opcode
-      s.dma_cmd_dram_addr = s.dma_cmd.msg.dram_addr
-      s.dma_cmd_spm_addr  = s.dma_cmd.msg.spm_addr
-      s.dma_cmd_bytes     = s.dma_cmd.msg.nbytes
-      s.dma_cmd_tag       = s.dma_cmd.msg.tag
 
       s.dma_done = RecvIfcRTL(DmaDoneType)
-      s.dma_done_val      = s.dma_done.val
-      s.dma_done_rdy      = s.dma_done.rdy
-      s.dma_done_tag      = s.dma_done.msg.tag
 
       s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
                                      DmaSpmReadReqType,
                                      DmaSpmReadRespType)
 
-      # DMA write request interface.
-      s.spm_dma_wval  = s.dma_spm.write.val # dma write request valid(write data into SPM)
-      s.spm_dma_wrdy  = s.dma_spm.write.rdy
-      s.spm_dma_waddr = s.dma_spm.write.msg.addr
-      s.spm_dma_wdata = s.dma_spm.write.msg.data
-      s.spm_dma_wmask = s.dma_spm.write.msg.mask
-
-      # DMA read response interface.
-      s.spm_dma_rval       = s.dma_spm.read.val
-      s.spm_dma_rrdy       = s.dma_spm.read.rdy
-      s.spm_dma_raddr      = s.dma_spm.read.msg.addr
-      s.spm_dma_rresp_val  = s.dma_spm.read_resp.val
-      s.spm_dma_rresp_rdy  = s.dma_spm.read_resp.rdy
-      s.spm_dma_rresp_data = s.dma_spm.read_resp.msg.data
 
     if is_multi_cgra:
       # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
