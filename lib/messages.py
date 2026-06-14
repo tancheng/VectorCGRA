@@ -230,6 +230,30 @@ def mk_dma_cmd(dram_addr_nbits = 64,
     namespace = {'__str__': str_func}
   )
 
+# A data structure to represent the data to be transferred by DMA.
+def mk_dma_data(dram_data_nbits = 128,
+                dram_mask_nbits = 16,
+                spm_data_nbits = 32,
+                spm_mask_nbits = 4,
+                prefix = "DmaData"):
+  DramDataType = mk_bits(dram_data_nbits)
+  DramMaskType = mk_bits(dram_mask_nbits)
+  SpmDataType = mk_bits(spm_data_nbits)
+  SpmMaskType = mk_bits(spm_mask_nbits)
+  new_name = f"{prefix}_{dram_data_nbits}_{dram_mask_nbits}_{spm_data_nbits}"
+
+  def str_func(s):
+    return f"dma_data(dram_data={s.dram_data},dram_mask={s.dram_mask},spm_data={s.spm_data})"
+  
+  return mk_bitstruct(new_name, {
+    'dram_data': DramDataType,
+    'dram_mask': DramMaskType,
+    'spm_data': SpmDataType,
+    'spm_mask': SpmMaskType,
+  },
+  namespace = {'__str__': str_func}
+  )
+
 def mk_dma_done(tag_nbits = 8,
                 prefix = "DmaDone"):
 
