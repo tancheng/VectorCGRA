@@ -12,6 +12,7 @@ from pymtl3 import *
 from .CgraTemplateRTL import CgraTemplateRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
+from ..lib.basic.val_rdy.ifcs import DmaDramWrReqIfcRTL
 from ..lib.messages import *
 from ..lib.util.data_struct_attr import *
 from ..mem.dma.DmaEngineRTL import DmaEngineRTL
@@ -69,9 +70,18 @@ class CgraDmaRTL( Component ):
 
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    DmaDramAddrType = mk_bits(64)
-    DmaMemDataType = mk_bits(128) # Write/Read 128 bits data per beat from/to DRAM
-    DmaMemMaskType = mk_bits(16)
+    DmaCmdType = mk_dma_cmd(dram_addr_nbits = 64,
+                            spm_addr_nbits = 32,
+                            bytes_nbits = 32,
+                            tag_nbits = 8)
+
+    DmaDataType = mk_dma_data(dram_data_nbits = 128,
+                              dram_mask_nbits = 16,
+                              spm_data_nbits = 32)
+
+    DmaDramAddrType = DmaCmdType.get_field_type('dram_addr')
+    DmaMemDataType  = DmaDataType.get_field_type('dram_data')
+    DmaMemMaskType  = DmaDataType.get_field_type('dram_mask')
 
     # Existing CGRA-facing interfaces.
     # CGRA <-> CPU
@@ -102,11 +112,7 @@ class CgraDmaRTL( Component ):
     s.dram_rd_req = SendIfcRTL(DmaDramAddrType)
     s.dram_rd_resp = RecvIfcRTL(DmaMemDataType)
 
-    s.dram_wr_req_val    = OutPort()
-    s.dram_wr_req_rdy    = InPort()
-    s.dram_wr_req_addr   = OutPort(DmaDramAddrType)
-    s.dram_wr_req_data   = OutPort(DmaMemDataType)
-    s.dram_wr_req_mask   = OutPort(DmaMemMaskType) # Masks for wrting DRAM
+    s.dram_wr_req = DmaDramWrReqIfcRTL(DmaDramAddrType, DmaMemDataType, DmaMemMaskType)
 
     s.dram_wr_resp_val   = InPort()
     s.dram_wr_resp_rdy   = OutPort()
@@ -128,10 +134,20 @@ class CgraDmaRTL( Component ):
                              provided_max_per_cgra_cols,
                              provided_max_num_rd_tiles,
                              provided_max_num_wr_tiles,
-                             has_dma_ports = True)
+                             has_dma_ports = True,
+                             DmaDataType = DmaDataType,
+                             DmaCmdType = DmaCmdType)
 
-    s.dma = DmaEngineRTL(spm_data_nbits = data_bitwidth,
-                         spm_addr_nbits = clog2(data_mem_size_global))
+    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
+    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
+    DmaBytesType = DmaCmdType.get_field_type('nbytes')
+    DmaTagType = DmaCmdType.get_field_type('tag')
+    s.dma = DmaEngineRTL(spm_data_nbits = DmaSpmDataType.nbits,
+                         dram_data_nbits = DmaMemDataType.nbits,
+                         dram_addr_nbits = DmaDramAddrType.nbits,
+                         spm_addr_nbits = DmaSpmAddrType.nbits,
+                         bytes_nbits = DmaBytesType.nbits,
+                         tag_nbits = DmaTagType.nbits)
 
     # CGRA passthrough connections.
 
@@ -167,11 +183,7 @@ class CgraDmaRTL( Component ):
     s.dram_rd_req       //= s.dma.dram_rd_req
     s.dram_rd_resp      //= s.dma.dram_rd_resp
 
-    s.dram_wr_req_val    //= s.dma.dram_wr_req_val
-    s.dram_wr_req_rdy    //= s.dma.dram_wr_req_rdy
-    s.dram_wr_req_addr   //= s.dma.dram_wr_req_addr
-    s.dram_wr_req_data   //= s.dma.dram_wr_req_data
-    s.dram_wr_req_mask   //= s.dma.dram_wr_req_mask
+    s.dram_wr_req       //= s.dma.dram_wr_req
 
     s.dram_wr_resp_val   //= s.dma.dram_wr_resp_val
     s.dram_wr_resp_rdy   //= s.dma.dram_wr_resp_rdy

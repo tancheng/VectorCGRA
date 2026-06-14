@@ -155,7 +155,7 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.dram_rd_req.rdy @= 1
   dut.dram_rd_resp.val @= 0
   dut.dram_rd_resp.msg @= 0
-  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_req.rdy @= 1
   dut.dram_wr_resp_val @= 0
 
   # Read 16 bytes from DRAM address 0x1000 and write them to SPM words 0..3.
@@ -252,7 +252,7 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.dram_rd_req.rdy @= 1
   dut.dram_rd_resp.val @= 0
   dut.dram_rd_resp.msg @= 0
-  dut.dram_wr_req_rdy @= 1
+  dut.dram_wr_req.rdy @= 1
   dut.dram_wr_resp_val @= 0
 
   # Read SPM words 0..3 and write 16 bytes to DRAM address 0x2000.
@@ -273,9 +273,9 @@ def test_cgra_dma_mvout_from_local_spm():
 
     dut.sim_eval_combinational()
 
-    if dut.dram_wr_req_val & dut.dram_wr_req_rdy:
-      assert dut.dram_wr_req_addr == 0x2000
-      assert dut.dram_wr_req_data == expected_beat
+    if dut.dram_wr_req.val & dut.dram_wr_req.rdy:
+      assert dut.dram_wr_req.addr == 0x2000
+      assert dut.dram_wr_req.data == expected_beat
       pending_wr_resp = True
 
     if observed_dma_done(dut, 0x44):
