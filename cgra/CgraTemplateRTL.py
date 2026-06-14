@@ -85,7 +85,9 @@ class CgraTemplateRTL(Component):
                 provided_max_per_cgra_cols = None,
                 provided_max_num_rd_tiles = None,
                 provided_max_num_wr_tiles = None,
-                has_dma_ports = False):
+                has_dma_ports = False,
+                DmaDataType = mk_dma_data(),
+                DmaCmdType = mk_dma_cmd()):
     """
     provided_max_per_cgra_rows: the row number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
     provided_max_per_cgra_cols: the column number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
@@ -128,21 +130,14 @@ class CgraTemplateRTL(Component):
     CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    DmaDataType = DataType.get_field_type(kAttrPayload)
-    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // CHAR_BIT))
-    DmaOpcodeType = mk_bits(3)
-    DmaDramAddrType = mk_bits(64)
-    DmaBytesType = mk_bits(32)
-    DmaTagType = mk_bits(8)
-    DmaCmdType = mk_dma_cmd(DmaDramAddrType.nbits,
-                            DataAddrType.nbits,
-                            DmaBytesType.nbits,
-                            DmaTagType.nbits)
+    DmaTagType = DmaCmdType.get_field_type('tag')
+    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
+    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
     DmaDoneType = mk_dma_done(DmaTagType.nbits)
-    DmaSpmWriteReqType = mk_dma_spm_write_req(DataAddrType.nbits,
-                                              DmaDataType.nbits)
-    DmaSpmReadReqType = mk_dma_spm_read_req(DataAddrType.nbits)
-    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaDataType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
+                                              DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -198,12 +193,16 @@ class CgraTemplateRTL(Component):
                                       max_num_tiles,
                                       mem_access_is_combinational,
                                       idTo2d_map,
-                                      has_dma_ports)
+                                      has_dma_ports,
+                                      DmaCmdType,
+                                      DmaDataType)
     s.cgra_id = InPort(CgraIdType)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
                                   max_num_tiles, controller2addr_map, idTo2d_map,
-                                  has_dma_ports)
+                                  has_dma_ports,
+                                  DmaDataType,
+                                  DmaCmdType)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.

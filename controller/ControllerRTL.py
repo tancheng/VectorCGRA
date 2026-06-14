@@ -32,7 +32,9 @@ class ControllerRTL(Component):
                 num_tiles,
                 controller2addr_map,
                 idTo2d_map,
-                has_dma_ports = False):
+                has_dma_ports = False,
+                DmaDataType = mk_dma_data(),
+                DmaCmdType = mk_dma_cmd()):
 
     # Derives types from InterCgraPktType.
     CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
@@ -56,24 +58,22 @@ class ControllerRTL(Component):
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
     TileIdType = mk_bits(clog2(num_tiles + 1))
     ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
-    DmaOpcodeType = mk_bits(3)
-    DmaDramAddrType = mk_bits(64)
-    DmaBytesType = mk_bits(32)
-    DmaTagType = mk_bits(8)
-    DmaDramAddrPartType = mk_bits(32)
-    DmaMaskType = mk_bits(max(1, DataPayloadType.nbits // CHAR_BIT))
-    DmaCmdType = mk_dma_cmd(DmaDramAddrType.nbits,
-                            DataAddrType.nbits,
-                            DmaBytesType.nbits,
-                            DmaTagType.nbits)
+    DmaOpcodeType = DmaCmdType.get_field_type('opcode')
+    DmaDramAddrType = DmaCmdType.get_field_type('dram_addr')
+    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
+    DmaBytesType = DmaCmdType.get_field_type('nbytes')
+    DmaTagType = DmaCmdType.get_field_type('tag')
+    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
+    # Lower and higher 32 bits of the DRAM address.
+    DmaDramAddrPartType = mk_bits(DmaDramAddrType.nbits // 2)
     DmaDoneType = mk_dma_done(DmaTagType.nbits)
-    DmaSpmWriteReqType = mk_dma_spm_write_req(DataAddrType.nbits,
-                                              DataPayloadType.nbits)
-    DmaSpmReadReqType = mk_dma_spm_read_req(DataAddrType.nbits)
-    DmaSpmReadRespType = mk_dma_spm_read_resp(DataPayloadType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
+                                              DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
 
     if has_dma_ports:
-      assert DataPayloadType.nbits == 32
+      assert DmaSpmDataType.nbits == 32
 
     # Interface
     s.cgra_id = InPort(CgraIdType)
@@ -188,7 +188,7 @@ class ControllerRTL(Component):
 
     s.dma_dram_addr_lo = Wire(DmaDramAddrPartType)
     s.dma_dram_addr_hi = Wire(DmaDramAddrPartType)
-    s.dma_spm_addr     = Wire(DataAddrType)
+    s.dma_spm_addr     = Wire(DmaSpmAddrType)
     s.dma_bytes        = Wire(DmaBytesType)
     s.dma_tag          = Wire(DmaTagType)
 
@@ -212,7 +212,7 @@ class ControllerRTL(Component):
       if s.reset:
         s.dma_dram_addr_lo <<= DmaDramAddrPartType(0)
         s.dma_dram_addr_hi <<= DmaDramAddrPartType(0)
-        s.dma_spm_addr     <<= DataAddrType(0)
+        s.dma_spm_addr     <<= DmaSpmAddrType(0)
         s.dma_bytes        <<= DmaBytesType(0)
         s.dma_tag          <<= DmaTagType(0)
       elif has_dma_ports:
@@ -225,7 +225,7 @@ class ControllerRTL(Component):
           elif cpu_cmd == CMD_DMA_CONFIG_DRAM_ADDR_HI:
             s.dma_dram_addr_hi <<= DmaDramAddrPartType(cpu_data)
           elif cpu_cmd == CMD_DMA_CONFIG_SPM_ADDR:
-            s.dma_spm_addr <<= cpu_payload.data_addr
+            s.dma_spm_addr <<= zext(cpu_payload.data_addr, DmaSpmAddrType)
           elif cpu_cmd == CMD_DMA_CONFIG_BYTES:
             s.dma_bytes <<= DmaBytesType(cpu_data)
           elif cpu_cmd == CMD_DMA_CONFIG_TAG:
