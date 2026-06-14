@@ -87,10 +87,15 @@ class MinionIfcRTL( Interface ):
     return f"{s.req}|{s.resp}"
 
 class DmaWireIfcRTL( Interface ):
+  """Undirected val/rdy stub interface for disabled DMA paths.
+
+  Uses OutPort for all signals so parent components can tie off unused
+  DMA stubs with structural connections during Verilog translation.
+  """
   def construct( s, Type ):
-    s.msg = Wire( Type )
-    s.val = Wire()
-    s.rdy = Wire()
+    s.msg = OutPort( Type )
+    s.val = OutPort()
+    s.rdy = OutPort()
     s.trace_len = len(str(Type()))
   def __str__( s ):
     return valrdy_to_str( s.msg, s.val, s.rdy, s.trace_len )
