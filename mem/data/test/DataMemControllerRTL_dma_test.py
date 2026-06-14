@@ -43,12 +43,13 @@ def drive_defaults(dut, DataAddrType, DataType, NocPktType, num_rd_tiles, num_wr
   dut.send_to_noc_load_response_pkt.rdy @= 1
   dut.send_to_noc_store_pkt.rdy @= 1
 
+  DmaSpmAddrType = mk_dma_cmd().get_field_type('spm_addr')
   dut.dma_spm.write.val @= 0
-  dut.dma_spm.write.msg.addr @= DataAddrType(0)
+  dut.dma_spm.write.msg.addr @= DmaSpmAddrType(0)
   dut.dma_spm.write.msg.data @= 0
   dut.dma_spm.write.msg.mask @= 0
   dut.dma_spm.read.val @= 0
-  dut.dma_spm.read.msg.addr @= DataAddrType(0)
+  dut.dma_spm.read.msg.addr @= DmaSpmAddrType(0)
   dut.dma_spm.read_resp.rdy @= 1
 
   dut.cgra_id @= 0
@@ -89,8 +90,9 @@ def test_dma_ports_write_then_read():
   dut.sim_reset()
   drive_defaults(dut, DataAddrType, DataType, NocPktType, num_rd_tiles, num_wr_tiles)
 
+  DmaSpmAddrType = mk_dma_cmd().get_field_type('spm_addr')
   dut.dma_spm.write.val @= 1
-  dut.dma_spm.write.msg.addr @= DataAddrType(3)
+  dut.dma_spm.write.msg.addr @= DmaSpmAddrType(3)
   dut.dma_spm.write.msg.data @= 0xaaaabbbb
   dut.dma_spm.write.msg.mask @= 0xf
   dut.sim_eval_combinational()
@@ -99,7 +101,7 @@ def test_dma_ports_write_then_read():
   dut.dma_spm.write.val @= 0
 
   dut.dma_spm.read.val @= 1
-  dut.dma_spm.read.msg.addr @= DataAddrType(3)
+  dut.dma_spm.read.msg.addr @= DmaSpmAddrType(3)
 
   seen_response = False
   for _ in range(10):

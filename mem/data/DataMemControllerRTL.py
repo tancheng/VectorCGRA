@@ -66,7 +66,9 @@ class DataMemControllerRTL(Component):
                 num_tiles = 16,
                 mem_access_is_combinational = True,
                 idTo2d_map = {0: [0, 0]},
-                has_dma_ports = False):
+                has_dma_ports = False,
+                DmaCmdType = mk_dma_cmd(),
+                DmaDataType = mk_dma_data()):
 
     CgraPayloadType = NocPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -79,11 +81,13 @@ class DataMemControllerRTL(Component):
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
     AddrType = mk_bits(global_addr_nbits)
     PerBankAddrType = mk_bits(per_bank_addr_nbits)
-    DmaDataType = DataType.get_field_type(kAttrPayload)
-    DmaMaskType = mk_bits(max(1, DmaDataType.nbits // CHAR_BIT))
-    DmaSpmWriteReqType = mk_dma_spm_write_req(AddrType.nbits, DmaDataType.nbits)
-    DmaSpmReadReqType = mk_dma_spm_read_req(AddrType.nbits)
-    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaDataType.nbits)
+
+    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
+    DmaMaskType = DmaDataType.get_field_type('spm_mask')
+    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits, DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
     NocRemoteSrcPortType = NocPktType.get_field_type(kAttrRemoteSrcPort)
     s.num_banks_per_cgra = num_banks_per_cgra
     s.has_dma_ports = has_dma_ports
@@ -302,7 +306,7 @@ class DataMemControllerRTL(Component):
         dma_rd_idx = XbarInRdType(num_xbar_in_rd_ports - 1)
         dma_wr_idx = XbarInWrType(num_xbar_in_wr_ports - 1)
 
-        recv_raddr_from_dma = s.dma_spm.read.msg.addr
+        recv_raddr_from_dma = trunc(s.dma_spm.read.msg.addr, AddrType)
         if (recv_raddr_from_dma >= s.address_lower) & (recv_raddr_from_dma <= s.address_upper):
           bank_index_load_from_dma = trunc((recv_raddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
         else:
@@ -315,7 +319,7 @@ class DataMemControllerRTL(Component):
                                                0,                           # src_tile
                                                0)                           # remote_src_port
 
-        recv_waddr_from_dma = s.dma_spm.write.msg.addr
+        recv_waddr_from_dma = trunc(s.dma_spm.write.msg.addr, AddrType)
         if (recv_waddr_from_dma >= s.address_lower) & (recv_waddr_from_dma <= s.address_upper):
           bank_index_store_from_dma = trunc((recv_waddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
         else:
@@ -395,7 +399,7 @@ class DataMemControllerRTL(Component):
         s.dma_spm.write.rdy          @= 0
         s.dma_spm.read.rdy           @= 0
         s.dma_spm.read_resp.val      @= 0
-        s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(DmaDataType(0))
+        s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(DmaSpmDataType(0))
 
       s.send_to_noc_load_request_pkt.msg @= \
           NocPktType(0, # src
