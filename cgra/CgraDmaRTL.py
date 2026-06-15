@@ -79,9 +79,9 @@ class CgraDmaRTL( Component ):
                               dram_mask_nbits = 16,
                               spm_data_nbits = 32)
 
-    DmaDramAddrType = DmaCmdType.get_field_type('dram_addr')
-    DmaMemDataType  = DmaDataType.get_field_type('dram_data')
-    DmaMemMaskType  = DmaDataType.get_field_type('dram_mask')
+    DmaDramAddrType = DmaCmdType.get_field_type(kAttrDramAddr)
+    DmaMemDataType  = DmaDataType.get_field_type(kAttrDramData)
+    DmaMemMaskType  = DmaDataType.get_field_type(kAttrDramMask)
 
     # Existing CGRA-facing interfaces.
     # CGRA <-> CPU
@@ -138,10 +138,10 @@ class CgraDmaRTL( Component ):
                              DmaDataType = DmaDataType,
                              DmaCmdType = DmaCmdType)
 
-    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
-    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
-    DmaBytesType = DmaCmdType.get_field_type('nbytes')
-    DmaTagType = DmaCmdType.get_field_type('tag')
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
+    DmaBytesType = DmaCmdType.get_field_type(kAttrNBytes)
+    DmaTagType = DmaCmdType.get_field_type(kAttrTag)
     s.dma = DmaEngineRTL(spm_data_nbits = DmaSpmDataType.nbits,
                          dram_data_nbits = DmaMemDataType.nbits,
                          dram_addr_nbits = DmaDramAddrType.nbits,

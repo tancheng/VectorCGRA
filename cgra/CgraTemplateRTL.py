@@ -130,9 +130,9 @@ class CgraTemplateRTL(Component):
     CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
-    DmaTagType = DmaCmdType.get_field_type('tag')
-    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
-    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
+    DmaTagType = DmaCmdType.get_field_type(kAttrTag)
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
     DmaDoneType = mk_dma_done(DmaTagType.nbits)
     DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
                                               DmaSpmDataType.nbits)
