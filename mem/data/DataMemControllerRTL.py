@@ -72,6 +72,7 @@ class DataMemControllerRTL(Component):
 
     CgraPayloadType = NocPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
+    PayloadType = DataType.get_field_type(kAttrPayload)
     # Constants.
     global_addr_nbits = clog2(data_mem_size_global)
     per_bank_addr_nbits = clog2(data_mem_size_per_bank)
@@ -82,9 +83,9 @@ class DataMemControllerRTL(Component):
     AddrType = mk_bits(global_addr_nbits)
     PerBankAddrType = mk_bits(per_bank_addr_nbits)
 
-    DmaSpmAddrType = DmaCmdType.get_field_type('spm_addr')
-    DmaMaskType = DmaDataType.get_field_type('spm_mask')
-    DmaSpmDataType = DmaDataType.get_field_type('spm_data')
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
+    DmaMaskType = DmaDataType.get_field_type(kAttrSpmMask)
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
     DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits, DmaSpmDataType.nbits)
     DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
     DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
@@ -327,7 +328,7 @@ class DataMemControllerRTL(Component):
         s.wr_pkt[dma_wr_idx] @= MemWritePktType(dma_wr_idx,                 # src
                                                 bank_index_store_from_dma,  # dst
                                                 recv_waddr_from_dma,        # addr
-                                                DataType(s.dma_spm.write.msg.data, 1, 0, 0),
+                                                DataType(zext(s.dma_spm.write.msg.data, PayloadType), 1, 0, 0),
                                                 0,                          # src_cgra
                                                 0,                          # src_tile
                                                 0)                          # remote_src_port
@@ -488,7 +489,7 @@ class DataMemControllerRTL(Component):
           s.response_crossbar.send[i].rdy @= s.send_to_noc_load_response_pkt.rdy
         elif has_dma_ports:
           s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(
-            s.response_crossbar.send[i].msg.data.payload)
+            trunc(s.response_crossbar.send[i].msg.data.payload, DmaSpmDataType))
           s.dma_spm.read_resp.val      @= s.response_crossbar.send[i].val
           s.response_crossbar.send[i].rdy @= s.dma_spm.read_resp.rdy
 
