@@ -81,12 +81,12 @@ CHAR_BIT = 8
 # State machine definitions of DMA engine.
 from pymtl3 import mk_bits
 StateType = mk_bits( 4 )
-STATE_IDLE          = StateType( 0 ) # Waiting for a new DMA command
-STATE_MVIN_REQ      = StateType( 1 ) # MVIN: Issuing DRAM read request
-STATE_MVIN_RESP     = StateType( 2 ) # MVIN: Waiting for DRAM read response
-STATE_MVIN_WRITE    = StateType( 3 ) # MVIN: Writing unpacked words to SPM
-STATE_MVOUT_READ    = StateType( 4 ) # MVOUT: Issuing SPM read request
-STATE_MVOUT_RESP    = StateType( 5 ) # MVOUT: Receiving SPM read response and packing
-STATE_MVOUT_WRITE   = StateType( 6 ) # MVOUT: Issuing DRAM write request
-STATE_MVOUT_WAIT    = StateType( 7 ) # MVOUT: Waiting for DRAM write response
-STATE_DONE          = StateType( 8 ) # Signaling command completion
+STATE_DMA_IDLE          = StateType( 0 ) # Waiting for a new DMA command
+STATE_DMA_MVIN_REQ      = StateType( 1 ) # MVIN: Issuing DRAM read request
+STATE_DMA_MVIN_RESP     = StateType( 2 ) # MVIN: Waiting for DRAM read response
+STATE_DMA_MVIN_WRITE    = StateType( 3 ) # MVIN: Writing unpacked words to SPM
+STATE_DMA_MVOUT_READ    = StateType( 4 ) # MVOUT: Issuing SPM read request
+STATE_DMA_MVOUT_RESP    = StateType( 5 ) # MVOUT: Receiving SPM read response and packing
+STATE_DMA_MVOUT_WRITE   = StateType( 6 ) # MVOUT: Issuing DRAM write request
+STATE_DMA_MVOUT_WAIT    = StateType( 7 ) # MVOUT: Waiting for DRAM write response
+STATE_DMA_DONE          = StateType( 8 ) # Signaling command completion

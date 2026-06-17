@@ -22,9 +22,9 @@ def make_dut():
   dut.dma_cmd.msg.tag @= 0
   dut.dma_done.rdy @= 1
 
-  dut.dram_rd_req.rdy @= 1
-  dut.dram_rd_resp.val @= 0
-  dut.dram_rd_resp.msg @= 0
+  dut.send_dram_rd_req.rdy @= 1
+  dut.recv_dram_rd_resp.val @= 0
+  dut.recv_dram_rd_resp.msg @= 0
   dut.dram_wr_req.rdy @= 1
   dut.dram_wr_resp_val @= 1
 
@@ -84,15 +84,15 @@ def test_dma_mvin_one_beat():
   spm_writes = []
 
   for _ in range(20):
-    dut.dram_rd_resp.val @= 0
+    dut.recv_dram_rd_resp.val @= 0
     if pending_resp is not None:
-      dut.dram_rd_resp.val @= 1
-      dut.dram_rd_resp.msg @= pending_resp
+      dut.recv_dram_rd_resp.val @= 1
+      dut.recv_dram_rd_resp.msg @= pending_resp
 
     dut.sim_eval_combinational()
 
-    if dut.dram_rd_req.val & dut.dram_rd_req.rdy:
-      pending_resp = dram[int(dut.dram_rd_req.msg)]
+    if dut.send_dram_rd_req.val & dut.send_dram_rd_req.rdy:
+      pending_resp = dram[int(dut.send_dram_rd_req.msg)]
     else:
       pending_resp = None
 
@@ -222,6 +222,10 @@ def test_dma_mvout_full_beat():
       break
 
     dut.sim_tick()
+
+  for elem in mem_writes:
+    print(f'{elem[0]}: 0x{elem[1]:08x}')
+    print(f'mask: 0x{elem[2]:08x}')
 
   assert mem_writes == [
     (0x2000,

@@ -109,8 +109,8 @@ class CgraDmaRTL( Component ):
 
     # Abstract external dram memory interfaces for the internal DMA engine.
 
-    s.dram_rd_req = SendIfcRTL(DmaDramAddrType)
-    s.dram_rd_resp = RecvIfcRTL(DmaMemDataType)
+    s.send_dram_rd_req = SendIfcRTL(DmaDramAddrType)
+    s.recv_dram_rd_resp = RecvIfcRTL(DmaMemDataType)
 
     s.dram_wr_req = DmaDramWrReqIfcRTL(DmaDramAddrType, DmaMemDataType, DmaMemMaskType)
 
@@ -180,8 +180,8 @@ class CgraDmaRTL( Component ):
     s.cgra.dma_cmd  //= s.dma.dma_cmd
     s.dma.dma_done  //= s.cgra.dma_done
 
-    s.dram_rd_req       //= s.dma.dram_rd_req
-    s.dram_rd_resp      //= s.dma.dram_rd_resp
+    s.send_dram_rd_req  //= s.dma.send_dram_rd_req
+    s.recv_dram_rd_resp //= s.dma.recv_dram_rd_resp
 
     s.dram_wr_req       //= s.dma.dram_wr_req
 

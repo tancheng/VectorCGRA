@@ -13,7 +13,7 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.basic.val_rdy.ifcs import DmaSpmMasterIfcRTL
 from ...lib.basic.val_rdy.ifcs import DmaDramWrReqIfcRTL
 from ...lib.messages import *
-from ...lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_IDLE, STATE_MVIN_REQ, STATE_MVIN_RESP, STATE_MVIN_WRITE, STATE_MVOUT_READ, STATE_MVOUT_RESP, STATE_MVOUT_WRITE, STATE_MVOUT_WAIT, STATE_DONE
+from ...lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_DMA_IDLE, STATE_DMA_MVIN_REQ, STATE_DMA_MVIN_RESP, STATE_DMA_MVIN_WRITE, STATE_DMA_MVOUT_READ, STATE_DMA_MVOUT_RESP, STATE_DMA_MVOUT_WRITE, STATE_DMA_MVOUT_WAIT, STATE_DMA_DONE
 
 
 class DmaEngineRTL( Component ):
@@ -74,9 +74,9 @@ class DmaEngineRTL( Component ):
 
     # Abstract external memory interface
     # Request to read from DRAM
-    s.dram_rd_req = SendIfcRTL( DramAddrType )
+    s.send_dram_rd_req = SendIfcRTL( DramAddrType )
     # Response from DRAM
-    s.dram_rd_resp = RecvIfcRTL( MemDataType )
+    s.recv_dram_rd_resp = RecvIfcRTL( MemDataType )
 
     # Request to write to DRAM
     s.dram_wr_req = DmaDramWrReqIfcRTL(DramAddrType, MemDataType, MemMaskType)
@@ -127,24 +127,24 @@ class DmaEngineRTL( Component ):
 
     @update
     def comb_outputs():
-      s.dma_cmd.rdy        @= s.state == STATE_IDLE
-      s.dma_done.val       @= s.state == STATE_DONE
+      s.dma_cmd.rdy        @= s.state == STATE_DMA_IDLE
+      s.dma_done.val       @= s.state == STATE_DMA_DONE
       s.dma_done.msg       @= DmaDoneType(s.tag_reg)
 
-      s.dram_rd_req.val    @= s.state == STATE_MVIN_REQ
-      s.dram_rd_req.msg    @= s.dram_addr_reg
-      s.dram_rd_resp.rdy   @= s.state == STATE_MVIN_RESP
+      s.send_dram_rd_req.val    @= s.state == STATE_DMA_MVIN_REQ
+      s.send_dram_rd_req.msg    @= s.dram_addr_reg
+      s.recv_dram_rd_resp.rdy   @= s.state == STATE_DMA_MVIN_RESP
 
-      # s.dram_wr_req_val    @= s.state == STATE_MVOUT_WRITE
+      # s.dram_wr_req_val    @= s.state == STATE_DMA_MVOUT_WRITE
       # s.dram_wr_req_addr   @= s.dram_addr_reg
       # s.dram_wr_req_data   @= s.beat_reg
       # s.dram_wr_req_mask   @= s.wr_mask_reg
-      s.dram_wr_req.val    @= s.state == STATE_MVOUT_WRITE
+      s.dram_wr_req.val    @= s.state == STATE_DMA_MVOUT_WRITE
       s.dram_wr_req.addr   @= s.dram_addr_reg
       s.dram_wr_req.data   @= s.beat_reg
       s.dram_wr_req.mask   @= s.wr_mask_reg
 
-      s.dram_wr_resp_rdy   @= s.state == STATE_MVOUT_WAIT
+      s.dram_wr_resp_rdy   @= s.state == STATE_DMA_MVOUT_WAIT
 
       spm_wdata = SpmDataType(0)
 
@@ -157,20 +157,20 @@ class DmaEngineRTL( Component ):
       else: # 4th word
         spm_wdata = s.beat_reg[spm_data_nbits*3:spm_data_nbits*4]
 
-      s.spm.write.val @= s.state == STATE_MVIN_WRITE
+      s.spm.write.val @= s.state == STATE_DMA_MVIN_WRITE
       s.spm.write.msg @= DmaSpmWriteReqType(
         s.spm_addr_reg,
         spm_wdata,
         SpmMaskType( (1 << (spm_data_nbits // CHAR_BIT)) - 1 ) )
 
-      s.spm.read.val       @= s.state == STATE_MVOUT_READ
+      s.spm.read.val       @= s.state == STATE_DMA_MVOUT_READ
       s.spm.read.msg       @= DmaSpmReadReqType(s.spm_addr_reg)
-      s.spm.read_resp.rdy  @= s.state == STATE_MVOUT_RESP
+      s.spm.read_resp.rdy  @= s.state == STATE_DMA_MVOUT_RESP
 
     @update_ff
     def seq_state():
       if s.reset:
-        s.state_ff      <<= STATE_IDLE
+        s.state_ff      <<= STATE_DMA_IDLE
         s.opcode_ff     <<= OpcodeType( 0 )
         s.dram_addr_ff  <<= DramAddrType( 0 )
         s.spm_addr_ff   <<= SpmAddrType( 0 )
@@ -180,7 +180,7 @@ class DmaEngineRTL( Component ):
         s.word_idx_ff   <<= b2( 0 )
         s.wr_mask_ff    <<= MemMaskType( 0 )
       else:
-        if s.state == STATE_IDLE:
+        if s.state == STATE_DMA_IDLE:
           if s.dma_cmd.val & s.dma_cmd.rdy: # Receives a new DMA command.
             s.opcode_ff     <<= s.dma_cmd.msg.opcode
             s.dram_addr_ff  <<= s.dma_cmd.msg.dram_addr
@@ -192,25 +192,25 @@ class DmaEngineRTL( Component ):
             s.wr_mask_ff    <<= MemMaskType( 0 )
 
             if s.dma_cmd.msg.nbytes == BytesType( 0 ): # No more bytes to transfer.
-              s.state_ff    <<= STATE_DONE
+              s.state_ff    <<= STATE_DMA_DONE
             # Still has bytes to transfer.
             elif s.dma_cmd.msg.opcode == OpcodeType( DMA_MVIN ):
-              s.state_ff    <<= STATE_MVIN_REQ # Move to the next state: to issue a read request to DRAM.
+              s.state_ff    <<= STATE_DMA_MVIN_REQ # Move to the next state: to issue a read request to DRAM.
             else: # DMA_MVOUT
-              s.state_ff    <<= STATE_MVOUT_READ # Move to the next state: to issue a read request to SPM.
+              s.state_ff    <<= STATE_DMA_MVOUT_READ # Move to the next state: to issue a read request to SPM.
 
-        elif s.state == STATE_MVIN_REQ: # Issues a read request to DRAM.
-          if s.dram_rd_req.val & s.dram_rd_req.rdy:
+        elif s.state == STATE_DMA_MVIN_REQ: # Issues a read request to DRAM.
+          if s.send_dram_rd_req.val & s.send_dram_rd_req.rdy:
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_data_nbits // CHAR_BIT )
-            s.state_ff      <<= STATE_MVIN_RESP
+            s.state_ff      <<= STATE_DMA_MVIN_RESP
 
-        elif s.state == STATE_MVIN_RESP: # Receives a response from DRAM.
-          if s.dram_rd_resp.val & s.dram_rd_resp.rdy:
-            s.beat_ff       <<= s.dram_rd_resp.msg
+        elif s.state == STATE_DMA_MVIN_RESP: # Receives a response from DRAM.
+          if s.recv_dram_rd_resp.val & s.recv_dram_rd_resp.rdy:
+            s.beat_ff       <<= s.recv_dram_rd_resp.msg
             s.word_idx_ff   <<= b2( 0 )
-            s.state_ff      <<= STATE_MVIN_WRITE # Move to the next state: to write to SPM.
+            s.state_ff      <<= STATE_DMA_MVIN_WRITE # Move to the next state: to write to SPM.
 
-        elif s.state == STATE_MVIN_WRITE: # Writes to SPM.
+        elif s.state == STATE_DMA_MVIN_WRITE: # Writes to SPM.
           if s.spm.write.val & s.spm.write.rdy:
             # Update the SPM address where write next cycle(+1)
             s.spm_addr_ff   <<= s.spm_addr_reg + SpmAddrType( 1 )
@@ -218,18 +218,18 @@ class DmaEngineRTL( Component ):
             s.words_left_ff <<= s.words_left_reg - BytesType( 1 )
 
             if s.words_left_reg == BytesType( 1 ):
-              s.state_ff    <<= STATE_DONE
+              s.state_ff    <<= STATE_DMA_DONE
             elif s.word_idx_reg == b2( 3 ):
               s.word_idx_ff <<= b2( 0 )
-              s.state_ff    <<= STATE_MVIN_REQ
+              s.state_ff    <<= STATE_DMA_MVIN_REQ
             else:
               s.word_idx_ff <<= s.word_idx_reg + b2( 1 )
 
-        elif s.state == STATE_MVOUT_READ:
+        elif s.state == STATE_DMA_MVOUT_READ:
           if s.spm.read.val & s.spm.read.rdy:
-            s.state_ff      <<= STATE_MVOUT_RESP # Move to the next state: to receive a response from SPM.
+            s.state_ff      <<= STATE_DMA_MVOUT_RESP # Move to the next state: to receive a response from SPM.
 
-        elif s.state == STATE_MVOUT_RESP:
+        elif s.state == STATE_DMA_MVOUT_RESP:
           if s.spm.read_resp.val & s.spm.read_resp.rdy:
             # Pack the response from SPM into a 128-bit beat by left-shifting.
             if s.word_idx_reg == b2( 0 ): # 1st word
@@ -259,19 +259,19 @@ class DmaEngineRTL( Component ):
                 s.wr_mask_ff <<= MemMaskType( 0x0fff )
               else:
                 s.wr_mask_ff <<= MemMaskType( 0xffff )
-              s.state_ff    <<= STATE_MVOUT_WRITE
+              s.state_ff    <<= STATE_DMA_MVOUT_WRITE
             elif s.word_idx_reg == b2( 3 ):
               s.wr_mask_ff  <<= MemMaskType( 0xffff )
-              s.state_ff    <<= STATE_MVOUT_WRITE
+              s.state_ff    <<= STATE_DMA_MVOUT_WRITE
             else:
               s.word_idx_ff <<= s.word_idx_reg + b2( 1 )
-              s.state_ff    <<= STATE_MVOUT_READ
+              s.state_ff    <<= STATE_DMA_MVOUT_READ
 
-        elif s.state == STATE_MVOUT_WRITE:
+        elif s.state == STATE_DMA_MVOUT_WRITE:
           if s.dram_wr_req.val & s.dram_wr_req.rdy:
-            s.state_ff    <<= STATE_MVOUT_WAIT
+            s.state_ff    <<= STATE_DMA_MVOUT_WAIT
 
-        elif s.state == STATE_MVOUT_WAIT:
+        elif s.state == STATE_DMA_MVOUT_WAIT:
           if s.dram_wr_resp_val & s.dram_wr_resp_rdy:
             # Turn to the +16 address after writing 16 bytes data.
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_data_nbits // CHAR_BIT )
@@ -280,13 +280,13 @@ class DmaEngineRTL( Component ):
             s.wr_mask_ff    <<= MemMaskType( 0 )
 
             if s.words_left_reg == BytesType( 0 ):
-              s.state_ff    <<= STATE_DONE
+              s.state_ff    <<= STATE_DMA_DONE
             else:
-              s.state_ff    <<= STATE_MVOUT_READ
+              s.state_ff    <<= STATE_DMA_MVOUT_READ
 
-        elif s.state == STATE_DONE:
+        elif s.state == STATE_DMA_DONE:
           if s.dma_done.val & s.dma_done.rdy:
-            s.state_ff      <<= STATE_IDLE
+            s.state_ff      <<= STATE_DMA_IDLE
 
   def line_trace( s ):
     return f"dma(state={int(s.state)},tag={int(s.tag_reg)},left={int(s.words_left_reg)})"
