@@ -332,9 +332,6 @@ class ControllerRTL(Component):
       elif has_dma_ports & (
           (cpu_cmd == CMD_DMA_MVIN) |
           (cpu_cmd == CMD_DMA_MVOUT)):
-        if s.recv_from_cpu_pkt_queue.send.val:
-          assert int(s.dma_bytes) % 4 == 0, \
-            f"DMA transfer size must be a multiple of 4 bytes, got {int(s.dma_bytes)}"
         s.dma_cmd.val @= s.recv_from_cpu_pkt_queue.send.val
         if cpu_cmd == CMD_DMA_MVIN:
           s.dma_cmd.msg @= DmaCmdType(

@@ -224,6 +224,8 @@ def mk_dma_cmd(dram_addr_nbits = 64,
       'opcode'   : OpcodeType,
       'dram_addr': DramAddrType,
       'spm_addr' : SpmAddrType,
+      # NOTE nbytes is the number of bytes to transfer.
+      # Currently, only nbytes that are multiples of 4 are supported.
       'nbytes'   : BytesType,
       'tag'      : TagType,
     },

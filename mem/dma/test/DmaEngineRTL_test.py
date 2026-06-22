@@ -47,6 +47,10 @@ def issue_cmd(dut, opcode, dram_addr, spm_addr, nbytes, tag):
     nbytes: The number of bytes to transfer.
     tag: The tag of the DMA command.
   """
+  # NOTE nbytes is the number of bytes to transfer.
+  # Currently, only nbytes that are multiples of 4 are supported.
+  assert nbytes % 4 == 0, \
+    f"DMA nbytes must be a multiple of 4, got {nbytes}"
   dut.dma_cmd.val @= 1
   dut.dma_cmd.msg.opcode @= opcode
   dut.dma_cmd.msg.dram_addr @= dram_addr

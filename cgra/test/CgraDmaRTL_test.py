@@ -55,6 +55,8 @@ def issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
     nbytes: The number of bytes to transfer.
     tag: The tag of the DMA command.
   """
+  # NOTE nbytes is the number of bytes to transfer.
+  # Currently, only nbytes that are multiples of 4 are supported.
   assert nbytes % 4 == 0, \
     f"DMA nbytes must be a multiple of 4, got {nbytes}"
   config_pkts = [
