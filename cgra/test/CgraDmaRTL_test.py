@@ -55,6 +55,8 @@ def issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
     nbytes: The number of bytes to transfer.
     tag: The tag of the DMA command.
   """
+  assert nbytes % 4 == 0, \
+    f"DMA nbytes must be a multiple of 4, got {nbytes}"
   config_pkts = [
     # The bindwidth of dram address is 64 bits, so we need to split it into two 32 bits parts.
     # Lower 32 bits are sent first.

@@ -182,10 +182,13 @@ class DmaEngineRTL( Component ):
       else:
         if s.state == STATE_DMA_IDLE:
           if s.dma_cmd.val & s.dma_cmd.rdy: # Receives a new DMA command.
+            assert int(s.dma_cmd.msg.nbytes) % 4 == 0, \
+              f"DMA nbytes must be a multiple of 4, got {int(s.dma_cmd.msg.nbytes)}"
             s.opcode_ff     <<= s.dma_cmd.msg.opcode
             s.dram_addr_ff  <<= s.dma_cmd.msg.dram_addr
             s.spm_addr_ff   <<= s.dma_cmd.msg.spm_addr
-            s.words_left_ff <<= s.dma_cmd.msg.nbytes >> 2 # Converts the transfer size from bytes to words.
+            # Converts the transfer size from bytes to words.
+            s.words_left_ff <<= (s.dma_cmd.msg.nbytes >> 2)
             s.tag_ff        <<= s.dma_cmd.msg.tag
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
