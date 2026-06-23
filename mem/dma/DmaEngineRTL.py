@@ -10,7 +10,6 @@ memory interface and the CGRA dataSPM.
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import DmaSpmMasterIfcRTL
 from ...lib.basic.val_rdy.ifcs import DmaDramWrReqIfcRTL
 from ...lib.messages import *
 from ...lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_DMA_IDLE, STATE_DMA_MVIN_REQ, STATE_DMA_MVIN_RESP, STATE_DMA_MVIN_WRITE, STATE_DMA_MVOUT_READ, STATE_DMA_MVOUT_RESP, STATE_DMA_MVOUT_WRITE, STATE_DMA_MVOUT_WAIT, STATE_DMA_DONE
@@ -83,10 +82,12 @@ class DmaEngineRTL( Component ):
     s.dram_wr_resp_val   = InPort()
     s.dram_wr_resp_rdy   = OutPort()
 
-    # SPM interface
-    s.spm = DmaSpmMasterIfcRTL(DmaSpmWriteReqType,
-                               DmaSpmReadReqType,
-                               DmaSpmReadRespType)
+    # Send write request to SPM.
+    s.send_spm_wr_req = SendIfcRTL(DmaSpmWriteReqType)
+    # Send read request to SPM.
+    s.send_spm_rd_req = SendIfcRTL(DmaSpmReadReqType)
+    # Receive read response from SPM.
+    s.recv_spm_rd_resp = RecvIfcRTL(DmaSpmReadRespType)
 
     # State machine definitions
 
@@ -135,10 +136,6 @@ class DmaEngineRTL( Component ):
       s.send_dram_rd_req.msg    @= s.dram_addr_reg
       s.recv_dram_rd_resp.rdy   @= s.state == STATE_DMA_MVIN_RESP
 
-      # s.dram_wr_req_val    @= s.state == STATE_DMA_MVOUT_WRITE
-      # s.dram_wr_req_addr   @= s.dram_addr_reg
-      # s.dram_wr_req_data   @= s.beat_reg
-      # s.dram_wr_req_mask   @= s.wr_mask_reg
       s.dram_wr_req.val    @= s.state == STATE_DMA_MVOUT_WRITE
       s.dram_wr_req.addr   @= s.dram_addr_reg
       s.dram_wr_req.data   @= s.beat_reg
@@ -157,15 +154,15 @@ class DmaEngineRTL( Component ):
       else: # 4th word
         spm_wdata = s.beat_reg[spm_data_nbits*3:spm_data_nbits*4]
 
-      s.spm.write.val @= s.state == STATE_DMA_MVIN_WRITE
-      s.spm.write.msg @= DmaSpmWriteReqType(
+      s.send_spm_wr_req.val @= s.state == STATE_DMA_MVIN_WRITE
+      s.send_spm_wr_req.msg @= DmaSpmWriteReqType(
         s.spm_addr_reg,
         spm_wdata,
         SpmMaskType( (1 << (spm_data_nbits // CHAR_BIT)) - 1 ) )
 
-      s.spm.read.val       @= s.state == STATE_DMA_MVOUT_READ
-      s.spm.read.msg       @= DmaSpmReadReqType(s.spm_addr_reg)
-      s.spm.read_resp.rdy  @= s.state == STATE_DMA_MVOUT_RESP
+      s.send_spm_rd_req.val       @= s.state == STATE_DMA_MVOUT_READ
+      s.send_spm_rd_req.msg       @= DmaSpmReadReqType(s.spm_addr_reg)
+      s.recv_spm_rd_resp.rdy  @= s.state == STATE_DMA_MVOUT_RESP
 
     @update_ff
     def seq_state():
@@ -216,7 +213,7 @@ class DmaEngineRTL( Component ):
             s.state_ff      <<= STATE_DMA_MVIN_WRITE # Move to the next state: to write to SPM.
 
         elif s.state == STATE_DMA_MVIN_WRITE: # Writes to SPM.
-          if s.spm.write.val & s.spm.write.rdy:
+          if s.send_spm_wr_req.val & s.send_spm_wr_req.rdy:
             # Update the SPM address where write next cycle(+1)
             s.spm_addr_ff   <<= s.spm_addr_reg + SpmAddrType( 1 )
             # Update the number of words remaining to write to SPM.
@@ -231,25 +228,25 @@ class DmaEngineRTL( Component ):
               s.word_idx_ff <<= s.word_idx_reg + b2( 1 )
 
         elif s.state == STATE_DMA_MVOUT_READ:
-          if s.spm.read.val & s.spm.read.rdy:
+          if s.send_spm_rd_req.val & s.send_spm_rd_req.rdy:
             s.state_ff      <<= STATE_DMA_MVOUT_RESP # Move to the next state: to receive a response from SPM.
 
         elif s.state == STATE_DMA_MVOUT_RESP:
-          if s.spm.read_resp.val & s.spm.read_resp.rdy:
+          if s.recv_spm_rd_resp.val & s.recv_spm_rd_resp.rdy:
             # Pack the response from SPM into a 128-bit beat by left-shifting.
             if s.word_idx_reg == b2( 0 ): # 1st word
               s.beat_ff <<= concat( s.beat_reg[spm_data_nbits:spm_data_nbits*4],
-                                    s.spm.read_resp.msg.data )
+                                    s.recv_spm_rd_resp.msg.data )
             elif s.word_idx_reg == b2( 1 ):
               s.beat_ff <<= concat( s.beat_reg[spm_data_nbits*2:spm_data_nbits*4],
-                                    s.spm.read_resp.msg.data,
+                                    s.recv_spm_rd_resp.msg.data,
                                     s.beat_reg[0:spm_data_nbits] )
             elif s.word_idx_reg == b2( 2 ):
               s.beat_ff <<= concat( s.beat_reg[spm_data_nbits*3:spm_data_nbits*4],
-                                    s.spm.read_resp.msg.data,
+                                    s.recv_spm_rd_resp.msg.data,
                                     s.beat_reg[0:spm_data_nbits*2] )
             else:
-              s.beat_ff <<= concat( s.spm.read_resp.msg.data,
+              s.beat_ff <<= concat( s.recv_spm_rd_resp.msg.data,
                                     s.beat_reg[0:spm_data_nbits*3] )
 
             s.spm_addr_ff   <<= s.spm_addr_reg + SpmAddrType( 1 )

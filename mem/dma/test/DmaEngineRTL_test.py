@@ -28,10 +28,10 @@ def make_dut():
   dut.dram_wr_req.rdy @= 1
   dut.dram_wr_resp_val @= 1
 
-  dut.spm.write.rdy @= 1
-  dut.spm.read.rdy @= 1
-  dut.spm.read_resp.val @= 0
-  dut.spm.read_resp.msg.data @= 0
+  dut.send_spm_wr_req.rdy @= 1
+  dut.send_spm_rd_req.rdy @= 1
+  dut.recv_spm_rd_resp.val @= 0
+  dut.recv_spm_rd_resp.msg.data @= 0
   dut.sim_eval_combinational()
   return dut
 
@@ -100,8 +100,8 @@ def test_dma_mvin_one_beat():
     else:
       pending_resp = None
 
-    if dut.spm.write.val & dut.spm.write.rdy:
-      spm_writes.append((int(dut.spm.write.msg.addr), int(dut.spm.write.msg.data)))
+    if dut.send_spm_wr_req.val & dut.send_spm_wr_req.rdy:
+      spm_writes.append((int(dut.send_spm_wr_req.msg.addr), int(dut.send_spm_wr_req.msg.data)))
 
     if dut.dma_done.val:
       assert int(dut.dma_done.msg.tag) == 0x5a
@@ -147,15 +147,15 @@ def test_dma_mvout_partial_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.spm.read_resp.val @= 0
+    dut.recv_spm_rd_resp.val @= 0
     if pending_rresp is not None:
-      dut.spm.read_resp.val @= 1
-      dut.spm.read_resp.msg.data @= pending_rresp
+      dut.recv_spm_rd_resp.val @= 1
+      dut.recv_spm_rd_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.spm.read.val & dut.spm.read.rdy:
-      pending_rresp = spm[int(dut.spm.read.msg.addr)]
+    if dut.send_spm_rd_req.val & dut.send_spm_rd_req.rdy:
+      pending_rresp = spm[int(dut.send_spm_rd_req.msg.addr)]
     else:
       pending_rresp = None
 
@@ -204,15 +204,15 @@ def test_dma_mvout_full_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.spm.read_resp.val @= 0
+    dut.recv_spm_rd_resp.val @= 0
     if pending_rresp is not None:
-      dut.spm.read_resp.val @= 1
-      dut.spm.read_resp.msg.data @= pending_rresp
+      dut.recv_spm_rd_resp.val @= 1
+      dut.recv_spm_rd_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.spm.read.val & dut.spm.read.rdy:
-      pending_rresp = spm[int(dut.spm.read.msg.addr)]
+    if dut.send_spm_rd_req.val & dut.send_spm_rd_req.rdy:
+      pending_rresp = spm[int(dut.send_spm_rd_req.msg.addr)]
     else:
       pending_rresp = None
 
