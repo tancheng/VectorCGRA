@@ -228,9 +228,21 @@ class CgraTemplateRTL(Component):
       # DMA engine <-> controller side of the SPM path.
       s.dma_spm //= s.controller.dma_spm_from_dma
 
-      # Controller <-> data memory side of the SPM path.
-      s.controller.dma_spm_to_mem //= s.data_mem.dma_spm
+    else:
+      # Grounds the DMA ports when no DMA engine is attached.
+      s.controller.dma_cmd.rdy //= 0
+      s.controller.dma_done.val //= 0
+      s.controller.dma_done.msg //= DmaDoneType()
 
+      s.controller.dma_spm_from_dma.write.val //= 0
+      s.controller.dma_spm_from_dma.write.msg //= DmaSpmWriteReqType()
+      s.controller.dma_spm_from_dma.read.val //= 0
+      s.controller.dma_spm_from_dma.read.msg //= DmaSpmReadReqType()
+      s.controller.dma_spm_from_dma.read_resp.rdy //= 0
+
+    # Controller <-> data memory side of the SPM path.
+    s.controller.dma_spm_to_mem //= s.data_mem.dma_spm
+    
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
     s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request

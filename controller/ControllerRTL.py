@@ -12,7 +12,6 @@ Author : Cheng Tan
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL
 from ..lib.basic.val_rdy.ifcs import DmaSpmMasterIfcRTL, DmaSpmMinionIfcRTL
-from ..lib.basic.val_rdy.ifcs import DmaWireIfcRTL, DmaSpmWireIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..lib.messages import *
 from ..lib.opt_type import *
@@ -97,45 +96,21 @@ class ControllerRTL(Component):
     s.send_to_tile_load_response = SendIfcRTL(InterCgraPktType)
     s.send_to_mem_store_request = SendIfcRTL(InterCgraPktType)
 
-    if has_dma_ports:
-      # Controller-owned command path from CPU packets to the DMA engine.
-      s.dma_cmd = SendIfcRTL(DmaCmdType)
+    # Controller-owned command path from CPU packets to the DMA engine.
+    # Send the decoded DMA command to the DMA engine.
+    s.dma_cmd = SendIfcRTL(DmaCmdType)
+    # Receive the DMA done signal from the DMA engine.
+    s.dma_done = RecvIfcRTL(DmaDoneType)
 
-      s.dma_done = RecvIfcRTL(DmaDoneType)
-
-      # DMA engine side of the controller-forwarded SPM access path.
-      s.dma_spm_from_dma = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
-                                              DmaSpmReadReqType,
-                                              DmaSpmReadRespType)
-
-      # Data memory side of the same SPM access path.
-      s.dma_spm_to_mem = DmaSpmMasterIfcRTL(DmaSpmWriteReqType,
+    # DMA engine side of the controller-forwarded SPM access path.
+    s.dma_spm_from_dma = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
                                             DmaSpmReadReqType,
                                             DmaSpmReadRespType)
-    else:
-      s.dma_cmd = DmaWireIfcRTL(DmaCmdType)
-      s.dma_cmd.rdy //= 0
 
-      s.dma_done = DmaWireIfcRTL(DmaDoneType)
-      s.dma_done.val //= 0
-      s.dma_done.msg //= DmaDoneType()
-
-      s.dma_spm_from_dma = DmaSpmWireIfcRTL(DmaSpmWriteReqType,
-                                            DmaSpmReadReqType,
-                                            DmaSpmReadRespType)
-      s.dma_spm_from_dma.write.val //= 0
-      s.dma_spm_from_dma.write.msg //= DmaSpmWriteReqType()
-      s.dma_spm_from_dma.read.val //= 0
-      s.dma_spm_from_dma.read.msg //= DmaSpmReadReqType()
-      s.dma_spm_from_dma.read_resp.rdy //= 0
-
-      s.dma_spm_to_mem = DmaSpmWireIfcRTL(DmaSpmWriteReqType,
+    # Data memory side of the same SPM access path.
+    s.dma_spm_to_mem = DmaSpmMasterIfcRTL(DmaSpmWriteReqType,
                                           DmaSpmReadReqType,
                                           DmaSpmReadRespType)
-      s.dma_spm_to_mem.write.rdy //= 0
-      s.dma_spm_to_mem.read.rdy //= 0
-      s.dma_spm_to_mem.read_resp.val //= 0
-      s.dma_spm_to_mem.read_resp.msg //= DmaSpmReadRespType()
 
 
     # Component
@@ -244,6 +219,16 @@ class ControllerRTL(Component):
         s.dma_spm_from_dma.read_resp.val @= s.dma_spm_to_mem.read_resp.val
         s.dma_spm_to_mem.read_resp.rdy   @= s.dma_spm_from_dma.read_resp.rdy
         s.dma_spm_from_dma.read_resp.msg @= s.dma_spm_to_mem.read_resp.msg
+      else:
+        s.dma_spm_to_mem.write.val @= 0
+        s.dma_spm_to_mem.write.msg @= DmaSpmWriteReqType()
+        s.dma_spm_to_mem.read.val @= 0
+        s.dma_spm_to_mem.read.msg @= DmaSpmReadReqType()
+        s.dma_spm_to_mem.read_resp.rdy @= 0
+        s.dma_spm_from_dma.write.rdy @= 0
+        s.dma_spm_from_dma.read.rdy @= 0
+        s.dma_spm_from_dma.read_resp.val @= 0
+        s.dma_spm_from_dma.read_resp.msg @= DmaSpmReadRespType()
 
     @update
     def update_received_msg():
@@ -258,15 +243,14 @@ class ControllerRTL(Component):
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
 
-      if has_dma_ports:
-        s.dma_cmd.val       @= 0
-        s.dma_cmd.msg       @= DmaCmdType(
-          DmaOpcodeType(DMA_MVIN),
-          concat(s.dma_dram_addr_hi, s.dma_dram_addr_lo),
-          s.dma_spm_addr,
-          s.dma_bytes,
-          s.dma_tag)
-        s.dma_done.rdy      @= 0
+      s.dma_cmd.val       @= 0
+      s.dma_cmd.msg       @= DmaCmdType(
+        DmaOpcodeType(DMA_MVIN),
+        concat(s.dma_dram_addr_hi, s.dma_dram_addr_lo),
+        s.dma_spm_addr,
+        s.dma_bytes,
+        s.dma_tag)
+      s.dma_done.rdy      @= 0
 
       for i in range(CONTROLLER_CROSSBAR_INPORTS):
         s.crossbar.recv[i].val @= 0

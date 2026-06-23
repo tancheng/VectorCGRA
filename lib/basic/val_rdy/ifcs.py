@@ -86,20 +86,6 @@ class MinionIfcRTL( Interface ):
   def __str__( s ):
     return f"{s.req}|{s.resp}"
 
-class DmaWireIfcRTL( Interface ):
-  """Undirected val/rdy stub interface for disabled DMA paths.
-
-  Uses OutPort for all signals so parent components can tie off unused
-  DMA stubs with structural connections during Verilog translation.
-  """
-  def construct( s, Type ):
-    s.msg = OutPort( Type )
-    s.val = OutPort()
-    s.rdy = OutPort()
-    s.trace_len = len(str(Type()))
-  def __str__( s ):
-    return valrdy_to_str( s.msg, s.val, s.rdy, s.trace_len )
-
 class DmaSpmMasterIfcRTL( Interface ):
   """
     DMA-to-SPM Master Interface.
@@ -146,22 +132,6 @@ class DmaSpmMinionIfcRTL( Interface ):
     s.read_resp = SendIfcRTL( ReadRespType )
   def __str__( s ):
     return f"wr:{s.write}|rd:{s.read}|resp:{s.read_resp}"
-
-class DmaSpmWireIfcRTL( Interface ):
-  """
-   Wire interface/connection for DMA-to-SPM, no direction.
-
-  """
-  def construct( s, WriteReqType, ReadReqType, ReadRespType ):
-    s.WriteReqType  = WriteReqType
-    s.ReadReqType   = ReadReqType
-    s.ReadRespType  = ReadRespType
-    s.write     = DmaWireIfcRTL( WriteReqType )
-    s.read      = DmaWireIfcRTL( ReadReqType )
-    s.read_resp = DmaWireIfcRTL( ReadRespType )
-  def __str__( s ):
-    return f"wr:{s.write}|rd:{s.read}|resp:{s.read_resp}"
-
 
 class DmaDramWrReqIfcRTL( Interface ):
   """

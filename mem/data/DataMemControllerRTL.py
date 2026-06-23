@@ -29,7 +29,7 @@ Author : Cheng Tan
 from .DataMemWrapperRTL import DataMemWrapperRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import DmaSpmMinionIfcRTL, DmaSpmWireIfcRTL
+from ...lib.basic.val_rdy.ifcs import DmaSpmMinionIfcRTL
 from ...lib.messages import *
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.util.data_struct_attr import *
@@ -157,42 +157,9 @@ class DataMemControllerRTL(Component):
     s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
     s.send_to_noc_store_pkt = SendIfcRTL(NocPktType)
 
-    if has_dma_ports:
-      s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
-                                     DmaSpmReadReqType,
-                                     DmaSpmReadRespType)
-    else:
-      s.dma_spm = DmaSpmWireIfcRTL(DmaSpmWriteReqType,
+    s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
                                    DmaSpmReadReqType,
                                    DmaSpmReadRespType)
-      s.dma_spm.write.val //= 0
-      s.dma_spm.write.msg //= DmaSpmWriteReqType()
-      s.dma_spm.read.val //= 0
-      s.dma_spm.read.msg //= DmaSpmReadReqType()
-      s.dma_spm.read_resp.rdy //= 0
-
-      # Keep these as internal wires so PyMTL's static update-block analysis
-      # can see declared objects even when the optional DMA interface is off.
-      s.spm_dma_wval  = Wire()
-      s.spm_dma_wrdy  = Wire()
-      s.spm_dma_waddr = Wire(AddrType)
-      s.spm_dma_wdata = Wire(DmaDataType)
-      s.spm_dma_wmask = Wire(DmaMaskType)
-
-      s.spm_dma_rval       = Wire()
-      s.spm_dma_rrdy       = Wire()
-      s.spm_dma_raddr      = Wire(AddrType)
-      s.spm_dma_rresp_val  = Wire()
-      s.spm_dma_rresp_rdy  = Wire()
-      s.spm_dma_rresp_data = Wire(DmaDataType)
-
-      s.spm_dma_wval      //= 0
-      s.spm_dma_waddr     //= AddrType(0)
-      s.spm_dma_wdata     //= DmaDataType(0)
-      s.spm_dma_wmask     //= DmaMaskType(0)
-      s.spm_dma_rval      //= 0
-      s.spm_dma_raddr     //= AddrType(0)
-      s.spm_dma_rresp_rdy //= 0
 
     # Components.
     # A list of DataMemWrapperRTL instances. Each one is a single memory bank.
@@ -396,11 +363,10 @@ class DataMemControllerRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
-      if has_dma_ports:
-        s.dma_spm.write.rdy          @= 0
-        s.dma_spm.read.rdy           @= 0
-        s.dma_spm.read_resp.val      @= 0
-        s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(DmaSpmDataType(0))
+      s.dma_spm.write.rdy          @= 0
+      s.dma_spm.read.rdy           @= 0
+      s.dma_spm.read_resp.val      @= 0
+      s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(DmaSpmDataType(0))
 
       s.send_to_noc_load_request_pkt.msg @= \
           NocPktType(0, # src
