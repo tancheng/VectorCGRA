@@ -29,7 +29,6 @@ Author : Cheng Tan
 from .DataMemWrapperRTL import DataMemWrapperRTL
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import DmaSpmMinionIfcRTL
 from ...lib.messages import *
 from ...noc.PyOCN.pymtl3_net.xbar.XbarBypassQueueRTL import XbarBypassQueueRTL
 from ...lib.util.data_struct_attr import *
@@ -157,9 +156,9 @@ class DataMemControllerRTL(Component):
     s.send_to_noc_load_request_pkt = SendIfcRTL(NocPktType)
     s.send_to_noc_store_pkt = SendIfcRTL(NocPktType)
 
-    s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
-                                   DmaSpmReadReqType,
-                                   DmaSpmReadRespType)
+    s.recv_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+    s.recv_spm_rd_req = RecvIfcRTL(DmaSpmReadReqType)
+    s.send_spm_rd_resp = SendIfcRTL(DmaSpmReadRespType)
 
     # Components.
     # A list of DataMemWrapperRTL instances. Each one is a single memory bank.
@@ -274,7 +273,7 @@ class DataMemControllerRTL(Component):
         dma_rd_idx = XbarInRdType(num_xbar_in_rd_ports - 1)
         dma_wr_idx = XbarInWrType(num_xbar_in_wr_ports - 1)
 
-        recv_raddr_from_dma = trunc(s.dma_spm.read.msg.addr, AddrType)
+        recv_raddr_from_dma = trunc(s.recv_spm_rd_req.msg.addr, AddrType)
         if (recv_raddr_from_dma >= s.address_lower) & (recv_raddr_from_dma <= s.address_upper):
           bank_index_load_from_dma = trunc((recv_raddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutRdType)
         else:
@@ -287,7 +286,7 @@ class DataMemControllerRTL(Component):
                                                0,                           # src_tile
                                                0)                           # remote_src_port
 
-        recv_waddr_from_dma = trunc(s.dma_spm.write.msg.addr, AddrType)
+        recv_waddr_from_dma = trunc(s.recv_spm_wr_req.msg.addr, AddrType)
         if (recv_waddr_from_dma >= s.address_lower) & (recv_waddr_from_dma <= s.address_upper):
           bank_index_store_from_dma = trunc((recv_waddr_from_dma - s.address_lower) >> per_bank_addr_nbits, XbarOutWrType)
         else:
@@ -295,7 +294,7 @@ class DataMemControllerRTL(Component):
         s.wr_pkt[dma_wr_idx] @= MemWritePktType(dma_wr_idx,                 # src
                                                 bank_index_store_from_dma,  # dst
                                                 recv_waddr_from_dma,        # addr
-                                                DataType(zext(s.dma_spm.write.msg.data, PayloadType), 1, 0, 0),
+                                                DataType(zext(s.recv_spm_wr_req.msg.data, PayloadType), 1, 0, 0),
                                                 0,                          # src_cgra
                                                 0,                          # src_tile
                                                 0)                          # remote_src_port
@@ -363,10 +362,10 @@ class DataMemControllerRTL(Component):
         s.write_crossbar.recv[i].val @= 0
         s.write_crossbar.recv[i].msg @= MemWritePktType(0, 0, 0, DataType(0, 0, 0, 0), 0, 0, 0)
 
-      s.dma_spm.write.rdy          @= 0
-      s.dma_spm.read.rdy           @= 0
-      s.dma_spm.read_resp.val      @= 0
-      s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(DmaSpmDataType(0))
+      s.recv_spm_wr_req.rdy          @= 0
+      s.recv_spm_rd_req.rdy           @= 0
+      s.send_spm_rd_resp.val      @= 0
+      s.send_spm_rd_resp.msg      @= DmaSpmReadRespType(DmaSpmDataType(0))
 
       s.send_to_noc_load_request_pkt.msg @= \
           NocPktType(0, # src
@@ -399,9 +398,9 @@ class DataMemControllerRTL(Component):
         # NOTE Don't use `dma_rd_idx = num_rd_tiles + 1` here since it will cause the bit mismatch error 
         # between `dma_rd_idx` and `num_xbar_in_rd_ports`.
         dma_rd_idx = XbarInRdType(num_xbar_in_rd_ports - 1)
-        s.read_crossbar.recv[dma_rd_idx].val @= s.dma_spm.read.val
+        s.read_crossbar.recv[dma_rd_idx].val @= s.recv_spm_rd_req.val
         s.read_crossbar.recv[dma_rd_idx].msg @= s.rd_pkt[dma_rd_idx]
-        s.dma_spm.read.rdy @= s.read_crossbar.recv[dma_rd_idx].rdy
+        s.recv_spm_rd_req.rdy @= s.read_crossbar.recv[dma_rd_idx].rdy
       
       # Connects the store request ports (from tiles and NoC) to the xbar targetting memory and NoC.
       for i in range(num_wr_tiles):
@@ -419,9 +418,9 @@ class DataMemControllerRTL(Component):
         # NOTE Don't use `dma_wr_idx = num_wr_tiles + 1` here since it will cause the bit mismatch error 
         # between `dma_wr_idx` and `num_xbar_in_wr_ports`.
         dma_wr_idx = XbarInWrType(num_xbar_in_wr_ports - 1)
-        s.write_crossbar.recv[dma_wr_idx].val @= s.dma_spm.write.val
+        s.write_crossbar.recv[dma_wr_idx].val @= s.recv_spm_wr_req.val
         s.write_crossbar.recv[dma_wr_idx].msg @= s.wr_pkt[dma_wr_idx]
-        s.dma_spm.write.rdy @= s.write_crossbar.recv[dma_wr_idx].rdy
+        s.recv_spm_wr_req.rdy @= s.write_crossbar.recv[dma_wr_idx].rdy
 
       # Connects the response ports to tiles and NoC from the xbar.
       # Number of load responses is expected to be the same as the number of load requests.
@@ -454,10 +453,10 @@ class DataMemControllerRTL(Component):
           s.send_to_noc_load_response_pkt.val @= s.response_crossbar.send[i].val
           s.response_crossbar.send[i].rdy @= s.send_to_noc_load_response_pkt.rdy
         elif has_dma_ports:
-          s.dma_spm.read_resp.msg      @= DmaSpmReadRespType(
+          s.send_spm_rd_resp.msg      @= DmaSpmReadRespType(
             trunc(s.response_crossbar.send[i].msg.data.payload, DmaSpmDataType))
-          s.dma_spm.read_resp.val      @= s.response_crossbar.send[i].val
-          s.response_crossbar.send[i].rdy @= s.dma_spm.read_resp.rdy
+          s.send_spm_rd_resp.val      @= s.response_crossbar.send[i].val
+          s.response_crossbar.send[i].rdy @= s.send_spm_rd_resp.rdy
 
       # Handles the request (not response) towards the others via the NoC. The dst would be
       # updated in the controller.
