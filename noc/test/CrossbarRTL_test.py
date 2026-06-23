@@ -24,7 +24,8 @@ class TestHarness(Component):
 
   def construct(s, CrossbarUnit, DataType, CtrlType,
                 num_inports, num_outports, src_data, src_routing,
-                sink_out):
+                sink_out, prologue_counts = None,
+                ctrl_addr_sequence = None):
 
     num_tiles = 1
     ctrl_mem_size = 6
@@ -33,6 +34,7 @@ class TestHarness(Component):
 
     # InType for the crossbar's crossbar_outport: clog2(num_inports+1) bits.
     InType = mk_bits(clog2(num_inports + 1))
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
 
     s.src_opt = TestSrcRTL(CtrlType, src_routing)
     s.src_data = [TestSrcRTL(DataType, src_data[i])
@@ -46,8 +48,19 @@ class TestHarness(Component):
     for i in range(num_inports):
       s.src_data[i].send //= s.dut.recv_data[i]
       for addr in range(ctrl_mem_size):
-        s.dut.prologue_count_inport[addr][i] //= 0
+        count = 0 if prologue_counts is None else \
+            prologue_counts.get((addr, i), 0)
+        s.dut.prologue_count_inport[addr][i] //= count
     s.src_opt.send //= s.dut.recv_opt
+    s.dut.compute_done //= 0
+    s.ctrl_addr_sequence = ctrl_addr_sequence or [0]
+
+    @update
+    def connect_ctrl_addr():
+      idx = s.src_opt.idx
+      if idx >= len(s.ctrl_addr_sequence):
+        idx = len(s.ctrl_addr_sequence) - 1
+      s.dut.ctrl_addr_inport @= CtrlAddrType(s.ctrl_addr_sequence[idx])
 
     # routing_xbar_outport in CtrlType may be wider than the crossbar's InType
     # (because mk_ctrl now uses clog2(num_tile_inports+num_fu_inports+1)).
@@ -144,3 +157,38 @@ def test_multi_cast():
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 
+# Concrete example: the first control word routes input 0 to output 0,
+# but ctrl addr 0 has prologue_count=1. The input token 7 should be
+# consumed and dropped during that skipped cycle, so the next routed token 9
+# is the only value observed by the sink.
+def test_prologue_consumes_skipped_input():
+  src_opt = [CtrlType(OPT_ADD, pickRegister,
+                      [TileInType(1), TileInType(0), TileInType(0)],
+                      [FuOutType(0), FuOutType(0), FuOutType(0)]),
+             CtrlType(OPT_ADD, pickRegister,
+                      [TileInType(1), TileInType(0), TileInType(0)],
+                      [FuOutType(0), FuOutType(0), FuOutType(0)])]
+  src_data = [[DataType(7, 1), DataType(9, 1)], [], []]
+  sink_out = [[DataType(9, 1)], [], []]
+  th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
+                   num_routing_outports, src_data, src_opt, sink_out,
+                   prologue_counts = {(0, 0): 1})
+  run_sim(th)
+
+def test_prologue_keeps_terminal_route_aligned():
+  src_opt = [CtrlType(OPT_ADD, pickRegister,
+                      [TileInType(1), TileInType(0), TileInType(0)],
+                      [FuOutType(0), FuOutType(0), FuOutType(0)]),
+             CtrlType(OPT_ADD, pickRegister,
+                      [TileInType(0), TileInType(1), TileInType(0)],
+                      [FuOutType(0), FuOutType(0), FuOutType(0)]),
+             CtrlType(OPT_ADD, pickRegister,
+                      [TileInType(1), TileInType(0), TileInType(0)],
+                      [FuOutType(0), FuOutType(0), FuOutType(0)])]
+  src_data = [[DataType(0, 1), DataType(1, 1), DataType(0, 1)], [], []]
+  sink_out = [[DataType(0, 1), DataType(0, 1)], [], []]
+  th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
+                   num_routing_outports, src_data, src_opt, sink_out,
+                   prologue_counts = {(0, 0): 1},
+                   ctrl_addr_sequence = [4, 0, 4])
+  run_sim(th)
