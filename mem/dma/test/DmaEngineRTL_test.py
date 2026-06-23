@@ -22,17 +22,17 @@ def make_dut():
   dut.dma_cmd.msg.tag @= 0
   dut.dma_done.rdy @= 1
 
-  dut.send_dram_rd_req.rdy @= 1
-  dut.recv_dram_rd_resp.val @= 0
-  dut.recv_dram_rd_resp.msg @= 0
+  dut.send_to_dram_rd_req.rdy @= 1
+  dut.recv_from_dram_rd_resp.val @= 0
+  dut.recv_from_dram_rd_resp.msg @= 0
   dut.send_to_dram_wr_req.rdy @= 1
   dut.recv_from_dram_wr_resp.val @= 1
   dut.recv_from_dram_wr_resp.msg @= 0
 
-  dut.send_spm_wr_req.rdy @= 1
-  dut.send_spm_rd_req.rdy @= 1
-  dut.recv_spm_rd_resp.val @= 0
-  dut.recv_spm_rd_resp.msg.data @= 0
+  dut.send_to_spm_wr_req.rdy @= 1
+  dut.send_to_spm_rd_req.rdy @= 1
+  dut.recv_from_spm_rd_resp.val @= 0
+  dut.recv_from_spm_rd_resp.msg.data @= 0
   dut.sim_eval_combinational()
   return dut
 
@@ -89,20 +89,20 @@ def test_dma_mvin_one_beat():
   spm_writes = []
 
   for _ in range(20):
-    dut.recv_dram_rd_resp.val @= 0
+    dut.recv_from_dram_rd_resp.val @= 0
     if pending_resp is not None:
-      dut.recv_dram_rd_resp.val @= 1
-      dut.recv_dram_rd_resp.msg @= pending_resp
+      dut.recv_from_dram_rd_resp.val @= 1
+      dut.recv_from_dram_rd_resp.msg @= pending_resp
 
     dut.sim_eval_combinational()
 
-    if dut.send_dram_rd_req.val & dut.send_dram_rd_req.rdy:
-      pending_resp = dram[int(dut.send_dram_rd_req.msg)]
+    if dut.send_to_dram_rd_req.val & dut.send_to_dram_rd_req.rdy:
+      pending_resp = dram[int(dut.send_to_dram_rd_req.msg)]
     else:
       pending_resp = None
 
-    if dut.send_spm_wr_req.val & dut.send_spm_wr_req.rdy:
-      spm_writes.append((int(dut.send_spm_wr_req.msg.addr), int(dut.send_spm_wr_req.msg.data)))
+    if dut.send_to_spm_wr_req.val & dut.send_to_spm_wr_req.rdy:
+      spm_writes.append((int(dut.send_to_spm_wr_req.msg.addr), int(dut.send_to_spm_wr_req.msg.data)))
 
     if dut.dma_done.val:
       assert int(dut.dma_done.msg.tag) == 0x5a
@@ -148,15 +148,15 @@ def test_dma_mvout_partial_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.recv_spm_rd_resp.val @= 0
+    dut.recv_from_spm_rd_resp.val @= 0
     if pending_rresp is not None:
-      dut.recv_spm_rd_resp.val @= 1
-      dut.recv_spm_rd_resp.msg.data @= pending_rresp
+      dut.recv_from_spm_rd_resp.val @= 1
+      dut.recv_from_spm_rd_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.send_spm_rd_req.val & dut.send_spm_rd_req.rdy:
-      pending_rresp = spm[int(dut.send_spm_rd_req.msg.addr)]
+    if dut.send_to_spm_rd_req.val & dut.send_to_spm_rd_req.rdy:
+      pending_rresp = spm[int(dut.send_to_spm_rd_req.msg.addr)]
     else:
       pending_rresp = None
 
@@ -205,15 +205,15 @@ def test_dma_mvout_full_beat():
   mem_writes = []
 
   for _ in range(30):
-    dut.recv_spm_rd_resp.val @= 0
+    dut.recv_from_spm_rd_resp.val @= 0
     if pending_rresp is not None:
-      dut.recv_spm_rd_resp.val @= 1
-      dut.recv_spm_rd_resp.msg.data @= pending_rresp
+      dut.recv_from_spm_rd_resp.val @= 1
+      dut.recv_from_spm_rd_resp.msg.data @= pending_rresp
 
     dut.sim_eval_combinational()
 
-    if dut.send_spm_rd_req.val & dut.send_spm_rd_req.rdy:
-      pending_rresp = spm[int(dut.send_spm_rd_req.msg.addr)]
+    if dut.send_to_spm_rd_req.val & dut.send_to_spm_rd_req.rdy:
+      pending_rresp = spm[int(dut.send_to_spm_rd_req.msg.addr)]
     else:
       pending_rresp = None
 

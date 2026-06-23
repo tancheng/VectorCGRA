@@ -156,9 +156,9 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.recv_from_cpu_pkt.val @= 0
   dut.recv_from_cpu_pkt.msg @= CtrlPktType()
   dut.send_to_cpu_pkt.rdy @= 1
-  dut.send_dram_rd_req.rdy @= 1
-  dut.recv_dram_rd_resp.val @= 0
-  dut.recv_dram_rd_resp.msg @= 0
+  dut.send_to_dram_rd_req.rdy @= 1
+  dut.recv_from_dram_rd_resp.val @= 0
+  dut.recv_from_dram_rd_resp.msg @= 0
   dut.send_to_dram_wr_req.rdy @= 1
   dut.recv_from_dram_wr_resp.val @= 0
   dut.recv_from_dram_wr_resp.msg @= 0
@@ -172,15 +172,15 @@ def test_cgra_dma_mvin_to_local_spm():
   pending_resp = False
 
   for _ in range(40):
-    dut.recv_dram_rd_resp.val @= 0
+    dut.recv_from_dram_rd_resp.val @= 0
     if pending_resp:
-      dut.recv_dram_rd_resp.val @= 1
+      dut.recv_from_dram_rd_resp.val @= 1
       # Simulate the read response from DRAM.
-      dut.recv_dram_rd_resp.msg @= beat
+      dut.recv_from_dram_rd_resp.msg @= beat
 
     dut.sim_eval_combinational()
 
-    pending_resp = bool(dut.send_dram_rd_req.val & dut.send_dram_rd_req.rdy)
+    pending_resp = bool(dut.send_to_dram_rd_req.val & dut.send_to_dram_rd_req.rdy)
 
     if observed_dma_done(dut, 0x33):
       break
@@ -254,9 +254,9 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.recv_from_cpu_pkt.val @= 0
   dut.recv_from_cpu_pkt.msg @= CtrlPktType()
   dut.send_to_cpu_pkt.rdy @= 1
-  dut.send_dram_rd_req.rdy @= 1
-  dut.recv_dram_rd_resp.val @= 0
-  dut.recv_dram_rd_resp.msg @= 0
+  dut.send_to_dram_rd_req.rdy @= 1
+  dut.recv_from_dram_rd_resp.val @= 0
+  dut.recv_from_dram_rd_resp.msg @= 0
   dut.send_to_dram_wr_req.rdy @= 1
   dut.recv_from_dram_wr_resp.val @= 0
   dut.recv_from_dram_wr_resp.msg @= 0

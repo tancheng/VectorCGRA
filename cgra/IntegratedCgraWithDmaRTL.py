@@ -109,8 +109,8 @@ class CgraDmaRTL( Component ):
 
     # Abstract external dram memory interfaces for the internal DMA engine.
 
-    s.send_dram_rd_req = SendIfcRTL(DmaDramAddrType)
-    s.recv_dram_rd_resp = RecvIfcRTL(DmaMemDataType)
+    s.send_to_dram_rd_req = SendIfcRTL(DmaDramAddrType)
+    s.recv_from_dram_rd_resp = RecvIfcRTL(DmaMemDataType)
 
     s.send_to_dram_wr_req = SendIfcRTL(DmaDramWrReqType)
     s.recv_from_dram_wr_resp = RecvIfcRTL(mk_bits(1))
@@ -178,17 +178,17 @@ class CgraDmaRTL( Component ):
     s.cgra.dma_cmd  //= s.dma.dma_cmd
     s.dma.dma_done  //= s.cgra.dma_done
 
-    s.send_dram_rd_req  //= s.dma.send_dram_rd_req
-    s.recv_dram_rd_resp //= s.dma.recv_dram_rd_resp
+    s.send_to_dram_rd_req  //= s.dma.send_to_dram_rd_req
+    s.recv_from_dram_rd_resp //= s.dma.recv_from_dram_rd_resp
 
     s.send_to_dram_wr_req       //= s.dma.send_to_dram_wr_req
     s.recv_from_dram_wr_resp      //= s.dma.recv_from_dram_wr_resp
 
     # DMA to controller-forwarded SPM connections.
 
-    s.dma.send_spm_wr_req //= s.cgra.recv_from_dma_spm_wr_req
-    s.dma.send_spm_rd_req  //= s.cgra.recv_from_dma_spm_rd_req
-    s.dma.recv_spm_rd_resp //= s.cgra.send_to_dma_spm_rd_resp
+    s.dma.send_to_spm_wr_req //= s.cgra.recv_from_dma_spm_wr_req
+    s.dma.send_to_spm_rd_req  //= s.cgra.recv_from_dma_spm_rd_req
+    s.dma.recv_from_spm_rd_resp //= s.cgra.send_to_dma_spm_rd_resp
 
   def line_trace(s):
     return f"{s.dma.line_trace()} || {s.cgra.line_trace()}"
