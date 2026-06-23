@@ -10,7 +10,6 @@ memory interface and the CGRA dataSPM.
 from pymtl3 import *
 from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.basic.val_rdy.ifcs import DmaDramWrReqIfcRTL
 from ...lib.messages import *
 from ...lib.util.common import DMA_MVIN, DMA_MVOUT, CHAR_BIT, StateType, STATE_DMA_IDLE, STATE_DMA_MVIN_REQ, STATE_DMA_MVIN_RESP, STATE_DMA_MVIN_WRITE, STATE_DMA_MVOUT_READ, STATE_DMA_MVOUT_RESP, STATE_DMA_MVOUT_WRITE, STATE_DMA_MVOUT_WAIT, STATE_DMA_DONE
 
@@ -63,6 +62,7 @@ class DmaEngineRTL( Component ):
     DmaSpmWriteReqType = mk_dma_spm_write_req(spm_addr_nbits, spm_data_nbits)
     DmaSpmReadReqType = mk_dma_spm_read_req(spm_addr_nbits)
     DmaSpmReadRespType = mk_dma_spm_read_resp(spm_data_nbits)
+    DmaDramWrReqType = mk_dma_dram_wr_req(dram_addr_nbits, dram_data_nbits, dram_data_nbits // 8)
 
     # Command interface
     # Receives a DMA command from the controller.
@@ -78,9 +78,8 @@ class DmaEngineRTL( Component ):
     s.recv_dram_rd_resp = RecvIfcRTL( MemDataType )
 
     # Request to write to DRAM
-    s.dram_wr_req = DmaDramWrReqIfcRTL(DramAddrType, MemDataType, MemMaskType)
-    s.dram_wr_resp_val   = InPort()
-    s.dram_wr_resp_rdy   = OutPort()
+    s.send_to_dram_wr_req = SendIfcRTL(DmaDramWrReqType)
+    s.recv_from_dram_wr_resp = RecvIfcRTL(mk_bits(1))
 
     # Send write request to SPM.
     s.send_spm_wr_req = SendIfcRTL(DmaSpmWriteReqType)
@@ -136,12 +135,12 @@ class DmaEngineRTL( Component ):
       s.send_dram_rd_req.msg    @= s.dram_addr_reg
       s.recv_dram_rd_resp.rdy   @= s.state == STATE_DMA_MVIN_RESP
 
-      s.dram_wr_req.val    @= s.state == STATE_DMA_MVOUT_WRITE
-      s.dram_wr_req.addr   @= s.dram_addr_reg
-      s.dram_wr_req.data   @= s.beat_reg
-      s.dram_wr_req.mask   @= s.wr_mask_reg
+      s.send_to_dram_wr_req.val    @= s.state == STATE_DMA_MVOUT_WRITE
+      s.send_to_dram_wr_req.msg.addr   @= s.dram_addr_reg
+      s.send_to_dram_wr_req.msg.data   @= s.beat_reg
+      s.send_to_dram_wr_req.msg.mask   @= s.wr_mask_reg
 
-      s.dram_wr_resp_rdy   @= s.state == STATE_DMA_MVOUT_WAIT
+      s.recv_from_dram_wr_resp.rdy   @= s.state == STATE_DMA_MVOUT_WAIT
 
       spm_wdata = SpmDataType(0)
 
@@ -270,11 +269,11 @@ class DmaEngineRTL( Component ):
               s.state_ff    <<= STATE_DMA_MVOUT_READ
 
         elif s.state == STATE_DMA_MVOUT_WRITE:
-          if s.dram_wr_req.val & s.dram_wr_req.rdy:
+          if s.send_to_dram_wr_req.val & s.send_to_dram_wr_req.rdy:
             s.state_ff    <<= STATE_DMA_MVOUT_WAIT
 
         elif s.state == STATE_DMA_MVOUT_WAIT:
-          if s.dram_wr_resp_val & s.dram_wr_resp_rdy:
+          if s.recv_from_dram_wr_resp.val & s.recv_from_dram_wr_resp.rdy:
             # Turn to the +16 address after writing 16 bytes data.
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_data_nbits // CHAR_BIT )
             s.beat_ff       <<= MemDataType( 0 )

@@ -12,7 +12,6 @@ from pymtl3 import *
 from .CgraTemplateRTL import CgraTemplateRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..lib.basic.val_rdy.ifcs import DmaDramWrReqIfcRTL
 from ..lib.messages import *
 from ..lib.util.data_struct_attr import *
 from ..mem.dma.DmaEngineRTL import DmaEngineRTL
@@ -82,6 +81,7 @@ class CgraDmaRTL( Component ):
     DmaDramAddrType = DmaCmdType.get_field_type(kAttrDramAddr)
     DmaMemDataType  = DmaDataType.get_field_type(kAttrDramData)
     DmaMemMaskType  = DmaDataType.get_field_type(kAttrDramMask)
+    DmaDramWrReqType = mk_dma_dram_wr_req(DmaDramAddrType.nbits, DmaMemDataType.nbits, DmaMemMaskType.nbits)
 
     # Existing CGRA-facing interfaces.
     # CGRA <-> CPU
@@ -112,10 +112,8 @@ class CgraDmaRTL( Component ):
     s.send_dram_rd_req = SendIfcRTL(DmaDramAddrType)
     s.recv_dram_rd_resp = RecvIfcRTL(DmaMemDataType)
 
-    s.dram_wr_req = DmaDramWrReqIfcRTL(DmaDramAddrType, DmaMemDataType, DmaMemMaskType)
-
-    s.dram_wr_resp_val   = InPort()
-    s.dram_wr_resp_rdy   = OutPort()
+    s.send_to_dram_wr_req = SendIfcRTL(DmaDramWrReqType)
+    s.recv_from_dram_wr_resp = RecvIfcRTL(mk_bits(1))
 
     # Components.
 
@@ -183,10 +181,8 @@ class CgraDmaRTL( Component ):
     s.send_dram_rd_req  //= s.dma.send_dram_rd_req
     s.recv_dram_rd_resp //= s.dma.recv_dram_rd_resp
 
-    s.dram_wr_req       //= s.dma.dram_wr_req
-
-    s.dram_wr_resp_val   //= s.dma.dram_wr_resp_val
-    s.dram_wr_resp_rdy   //= s.dma.dram_wr_resp_rdy
+    s.send_to_dram_wr_req       //= s.dma.send_to_dram_wr_req
+    s.recv_from_dram_wr_resp      //= s.dma.recv_from_dram_wr_resp
 
     # DMA to controller-forwarded SPM connections.
 

@@ -6,7 +6,7 @@ CgraDmaRTL_test.py
 
 from pymtl3 import *
 
-from ..CgraDmaRTL import CgraDmaRTL
+from ..IntegratedCgraWithDmaRTL import CgraDmaRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.RetRTL import RetRTL
@@ -159,8 +159,9 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.send_dram_rd_req.rdy @= 1
   dut.recv_dram_rd_resp.val @= 0
   dut.recv_dram_rd_resp.msg @= 0
-  dut.dram_wr_req.rdy @= 1
-  dut.dram_wr_resp_val @= 0
+  dut.send_to_dram_wr_req.rdy @= 1
+  dut.recv_from_dram_wr_resp.val @= 0
+  dut.recv_from_dram_wr_resp.msg @= 0
 
   # Read 16 bytes from DRAM address 0x1000 and write them to SPM words 0..3.
   issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
@@ -256,8 +257,9 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.send_dram_rd_req.rdy @= 1
   dut.recv_dram_rd_resp.val @= 0
   dut.recv_dram_rd_resp.msg @= 0
-  dut.dram_wr_req.rdy @= 1
-  dut.dram_wr_resp_val @= 0
+  dut.send_to_dram_wr_req.rdy @= 1
+  dut.recv_from_dram_wr_resp.val @= 0
+  dut.recv_from_dram_wr_resp.msg @= 0
 
   # Read SPM words 0..3 and write 16 bytes to DRAM address 0x2000.
   issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
@@ -270,16 +272,16 @@ def test_cgra_dma_mvout_from_local_spm():
   done = False
   pending_wr_resp = False
   for _ in range(40):
-    dut.dram_wr_resp_val @= 0
+    dut.recv_from_dram_wr_resp.val @= 0
     if pending_wr_resp:
-      dut.dram_wr_resp_val @= 1
+      dut.recv_from_dram_wr_resp.val @= 1
       pending_wr_resp = False
 
     dut.sim_eval_combinational()
 
-    if dut.dram_wr_req.val & dut.dram_wr_req.rdy:
-      assert dut.dram_wr_req.addr == 0x2000
-      assert dut.dram_wr_req.data == expected_beat
+    if dut.send_to_dram_wr_req.val & dut.send_to_dram_wr_req.rdy:
+      assert dut.send_to_dram_wr_req.msg.addr == 0x2000
+      assert dut.send_to_dram_wr_req.msg.data == expected_beat
       pending_wr_resp = True
 
     if observed_dma_done(dut, 0x44):

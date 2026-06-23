@@ -272,6 +272,31 @@ def mk_dma_done(tag_nbits = 8,
     namespace = {'__str__': str_func}
   )
 
+#=========================================================================
+# DMA DRAM write request type
+#=========================================================================
+def mk_dma_dram_wr_req(addr_nbits = 64,
+                       data_nbits = 128,
+                       mask_nbits = 16,
+                       prefix = "DmaDramWrReq"):
+
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  MaskType = mk_bits(mask_nbits)
+
+  new_name = f"{prefix}_{addr_nbits}_{data_nbits}_{mask_nbits}"
+
+  def str_func(s):
+    return f"dma_dram_wr(addr={s.addr},data={s.data},mask={s.mask})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+      'data': DataType,
+      'mask': MaskType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
 def mk_dma_spm_write_req(addr_nbits = 32,
                          data_nbits = 32,
                          prefix = "DmaSpmWriteReq"):

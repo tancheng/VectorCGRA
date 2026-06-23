@@ -85,22 +85,3 @@ class MinionIfcRTL( Interface ):
     s.resp = SendIfcRTL( Type=RespType )
   def __str__( s ):
     return f"{s.req}|{s.resp}"
-
-class DmaDramWrReqIfcRTL( Interface ):
-  """
-    DMA-to-DRAM Write Request Interface.
-    
-    This interface is instantiated on the DMA side. 
-    It initiates a write request to the DRAM.
-    
-    Direction:
-    - req: Output (Send). DMA sends write requests to DRAM.
-  """
-  def construct( s, DramAddrType, DmaMemDataType, DmaMemMaskType ):
-    s.val = OutPort()
-    s.rdy = InPort()
-    s.addr = OutPort(DramAddrType)
-    s.data = OutPort(DmaMemDataType)
-    s.mask = OutPort(DmaMemMaskType)
-  def __str__( s ):
-    return f"val:{s.val}|rdy:{s.rdy}|addr:{s.addr}|data:{s.data}|mask:{s.mask}"
