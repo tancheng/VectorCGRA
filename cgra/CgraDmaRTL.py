@@ -190,7 +190,9 @@ class CgraDmaRTL( Component ):
 
     # DMA to controller-forwarded SPM connections.
 
-    s.dma.spm //= s.cgra.dma_spm
+    s.dma.send_spm_wr_req //= s.cgra.recv_from_dma_spm_wr_req
+    s.dma.send_spm_rd_req  //= s.cgra.recv_from_dma_spm_rd_req
+    s.dma.recv_spm_rd_resp //= s.cgra.send_to_dma_spm_rd_resp
 
   def line_trace(s):
     return f"{s.dma.line_trace()} || {s.cgra.line_trace()}"

@@ -9,7 +9,6 @@ Author : Cheng Tan
 from ..controller.ControllerRTL import ControllerRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..lib.basic.val_rdy.ifcs import DmaSpmMinionIfcRTL
 from ..lib.basic.val_rdy.queues import BypassQueueRTL
 from ..lib.opt_type import *
 from ..lib.util.common import *
@@ -154,9 +153,12 @@ class CgraTemplateRTL(Component):
 
       s.dma_done = RecvIfcRTL(DmaDoneType)
 
-      s.dma_spm = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
-                                     DmaSpmReadReqType,
-                                     DmaSpmReadRespType)
+      # Receive the request of writing into SPM from the DMA.
+      s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+      # Receive the request of reading from SPM from the DMA.
+      s.recv_from_dma_spm_rd_req  = RecvIfcRTL(DmaSpmReadReqType)
+      # Send the response of reading from SPM to the DMA.
+      s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
 
 
     if is_multi_cgra:
@@ -225,8 +227,9 @@ class CgraTemplateRTL(Component):
       s.dma_cmd  //= s.controller.dma_cmd
       s.dma_done //= s.controller.dma_done
 
-      # DMA engine <-> controller side of the SPM path.
-      s.dma_spm //= s.controller.dma_spm_from_dma
+      s.recv_from_dma_spm_wr_req //= s.controller.recv_from_dma_spm_wr_req
+      s.recv_from_dma_spm_rd_req  //= s.controller.recv_from_dma_spm_rd_req
+      s.send_to_dma_spm_rd_resp   //= s.controller.send_to_dma_spm_rd_resp
 
     else:
       # Grounds the DMA ports when no DMA engine is attached.
@@ -234,14 +237,16 @@ class CgraTemplateRTL(Component):
       s.controller.dma_done.val //= 0
       s.controller.dma_done.msg //= DmaDoneType()
 
-      s.controller.dma_spm_from_dma.write.val //= 0
-      s.controller.dma_spm_from_dma.write.msg //= DmaSpmWriteReqType()
-      s.controller.dma_spm_from_dma.read.val //= 0
-      s.controller.dma_spm_from_dma.read.msg //= DmaSpmReadReqType()
-      s.controller.dma_spm_from_dma.read_resp.rdy //= 0
+      s.controller.recv_from_dma_spm_wr_req.val //= 0
+      s.controller.recv_from_dma_spm_wr_req.msg //= DmaSpmWriteReqType()
+      s.controller.recv_from_dma_spm_rd_req.val //= 0
+      s.controller.recv_from_dma_spm_rd_req.msg //= DmaSpmReadReqType()
+      s.controller.send_to_dma_spm_rd_resp.rdy //= 0
 
-    # Controller <-> data memory side of the SPM path.
-    s.controller.dma_spm_to_mem //= s.data_mem.dma_spm
+    # Controller <-> SPM/data_mem
+    s.controller.send_to_mem_spm_wr_req   //= s.data_mem.recv_spm_wr_req
+    s.controller.send_to_mem_spm_rd_req    //= s.data_mem.recv_spm_rd_req
+    s.controller.recv_from_mem_spm_rd_resp //= s.data_mem.send_spm_rd_resp
     
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
