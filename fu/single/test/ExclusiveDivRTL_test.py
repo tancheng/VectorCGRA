@@ -32,13 +32,14 @@ class TestHarness(Component):
                 data_bitwidth,
                 num_inports, num_outports, data_mem_size,
                 src0_msgs, src1_msgs, src_const, ctrl_msgs,
-                sink_msgs):
+                sink_msgs, sink_initial_delay = 0):
 
     s.src_in0 = TestSrcRTL(DataType, src0_msgs)
     s.src_in1 = TestSrcRTL(DataType, src1_msgs)
     s.src_in2 = TestSrcRTL(DataType, src1_msgs)
     s.src_opt = TestSrcRTL(ConfigType, ctrl_msgs)
-    s.sink_out = TestSinkRTL(DataType, sink_msgs)
+    s.sink_out = TestSinkRTL(DataType, sink_msgs,
+                             initial_delay = sink_initial_delay)
 
     s.const_queue = ConstQueueRTL(DataType, src_const)
     s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
@@ -56,7 +57,11 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def test_mul():
+# Concrete example: the second parametrized run stalls the output sink for
+# 12 cycles. The completed 8/4 result must stay valid in the divider
+# pipeline until the sink becomes ready instead of being overwritten or lost.
+@pytest.mark.parametrize('sink_initial_delay', [0, 12])
+def test_div_pipeline_backpressure(sink_initial_delay):
   FU = ExclusiveDivRTL
   data_bitwidth = 32
   DataType = mk_data(data_bitwidth, 1)
@@ -84,5 +89,5 @@ def test_mul():
                    data_bitwidth,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_const, src_opt,
-                   sink_out)
+                   sink_out, sink_initial_delay)
   run_sim(th)
