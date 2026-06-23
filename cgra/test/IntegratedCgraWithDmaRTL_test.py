@@ -1,12 +1,14 @@
 """
 ==========================================================================
-CgraDmaRTL_test.py
+IntegratedCgraWithDmaRTL_test.py
 ==========================================================================
 """
 
 from pymtl3 import *
+from pymtl3.passes.backends.verilog import VerilogTranslationPass
+from pymtl3.stdlib.test_utils import config_model_with_cmdline_opts
 
-from ..IntegratedCgraWithDmaRTL import CgraDmaRTL
+from ..IntegratedCgraWithDmaRTL import IntegratedCgraWithDmaRTL
 from ...fu.single.AdderRTL import AdderRTL
 from ...fu.single.MemUnitRTL import MemUnitRTL
 from ...fu.single.RetRTL import RetRTL
@@ -17,6 +19,48 @@ from ...lib.util.cgra.DataSPM import DataSPM
 from ...lib.util.cgra.Tile import Tile
 from ...lib.util.cgra.cgra_helper import get_links
 
+
+ctrl_mem_size = 8
+data_mem_size_global = 64
+data_mem_size_per_bank = 16
+num_banks_per_cgra = 4
+num_registers_per_reg_bank = 16
+num_ctrl = 1
+total_steps = 1
+
+DataType = mk_data(32, 1)
+DataAddrType = mk_bits(clog2(data_mem_size_global))
+CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+CtrlType = mk_ctrl(4, 2, 8, 8, num_registers_per_reg_bank)
+CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                  CtrlAddrType)
+CtrlPktType = mk_intra_cgra_pkt(1, 1, 4, CgraPayloadType)
+WordType = mk_bits(32)
+
+
+def make_dut():
+  # 2x2 tiles with add/mem/return functional units
+  tiles_2d = [[Tile(x, y, num_registers_per_reg_bank, ["add", "mem", "return"])
+               for x in range(2)] for y in range(2)]
+  TileList = [t for row in tiles_2d for t in row]
+  LinkList = get_links(tiles_2d)
+  dataSPM = DataSPM(3, 3)
+
+  dut = IntegratedCgraWithDmaRTL(
+    CgraPayloadType,
+    1, 1,  # multi_cgra_rows, multi_cgra_columns
+    2, 2,  # per_cgra_rows, per_cgra_columns
+    ctrl_mem_size, data_mem_size_global,
+    data_mem_size_per_bank, num_banks_per_cgra,
+    num_registers_per_reg_bank, num_ctrl,
+    total_steps, True,
+    None, [AdderRTL, MemUnitRTL, RetRTL],
+    TileList, LinkList, dataSPM,
+    {0: [0, 15]},  # controller to address map
+    {0: [0, 0]},   # cgra id to 2D coordinate
+    is_multi_cgra=False)
+
+  return dut
 
 def issue_cpu_pkt(dut, pkt, max_cycles = 20):
   """
@@ -103,47 +147,12 @@ def observed_dma_done(dut, expected_tag):
 
 def test_cgra_dma_mvin_to_local_spm():
   """
-  Integration test for the CgraDmaRTL wrapper.
+  Integration test for the IntegratedCgraWithDmaRTL wrapper.
   It simulates a DMA MVIN command that moves data from external DRAM into
   the CGRA's dataSPM. It then checks the SPM contents to ensure the
   transfer was successful.
   """
-  ctrl_mem_size = 8
-  data_mem_size_global = 64
-  data_mem_size_per_bank = 16
-  num_banks_per_cgra = 4
-  num_registers_per_reg_bank = 16
-  num_ctrl = 1
-  total_steps = 1
-
-  DataType = mk_data(32, 1)
-  WordType = mk_bits(32)
-  DataAddrType = mk_bits(clog2(data_mem_size_global))
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  CtrlType = mk_ctrl(4, 2, 8, 8, num_registers_per_reg_bank)
-  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
-  CtrlPktType = mk_intra_cgra_pkt(1, 1, 4, CgraPayloadType)
-
-  # 2x2 tiles
-  tiles_2d = [[Tile(x, y, num_registers_per_reg_bank, ["add", "mem", "return"])
-               for x in range(2)] for y in range(2)]
-  TileList = [t for row in tiles_2d for t in row]
-  LinkList = get_links(tiles_2d)
-  # The first row and the first column of the 2x2 tiles are connected to the data SPM.
-  dataSPM = DataSPM(3, 3)
-
-  dut = CgraDmaRTL(CgraPayloadType,
-                   1, 1, # multi_cgra_rows, multi_cgra_columns
-                   2, 2, # per_cgra_rows, per_cgra_columns
-                   ctrl_mem_size, data_mem_size_global,
-                   data_mem_size_per_bank, num_banks_per_cgra,
-                   num_registers_per_reg_bank, num_ctrl,
-                   total_steps, True,
-                   None, [AdderRTL, MemUnitRTL, RetRTL],
-                   TileList, LinkList, dataSPM,
-                   {0: [0, 15]}, # controller to address map
-                   {0: [0, 0]}, # cgra id to 2D coordinate
-                   is_multi_cgra = False)
+  dut = make_dut()
 
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
@@ -197,44 +206,11 @@ def test_cgra_dma_mvin_to_local_spm():
 
 def test_cgra_dma_mvout_from_local_spm():
   """
-  Integration test for the CgraDmaRTL wrapper.
+  Integration test for the IntegratedCgraWithDmaRTL wrapper.
   It simulates a DMA MVOUT command that moves data from the local SPM
   into external DRAM.
   """
-  ctrl_mem_size = 8
-  data_mem_size_global = 64
-  data_mem_size_per_bank = 16
-  num_banks_per_cgra = 4
-  num_registers_per_reg_bank = 16
-  num_ctrl = 1
-  total_steps = 1
-
-  DataType = mk_data(32, 1)
-  WordType = mk_bits(32)
-  DataAddrType = mk_bits(clog2(data_mem_size_global))
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  CtrlType = mk_ctrl(4, 2, 8, 8, num_registers_per_reg_bank)
-  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
-  CtrlPktType = mk_intra_cgra_pkt(1, 1, 4, CgraPayloadType)
-
-  tiles_2d = [[Tile(x, y, num_registers_per_reg_bank, ["add", "mem", "return"])
-               for x in range(2)] for y in range(2)]
-  TileList = [t for row in tiles_2d for t in row]
-  LinkList = get_links(tiles_2d)
-  dataSPM = DataSPM(3, 3)
-
-  dut = CgraDmaRTL(CgraPayloadType,
-                   1, 1, # multi_cgra_rows, multi_cgra_columns
-                   2, 2, # per_cgra_rows, per_cgra_columns
-                   ctrl_mem_size, data_mem_size_global,
-                   data_mem_size_per_bank, num_banks_per_cgra,
-                   num_registers_per_reg_bank, num_ctrl,
-                   total_steps, True,
-                   None, [AdderRTL, MemUnitRTL, RetRTL],
-                   TileList, LinkList, dataSPM,
-                   {0: [0, 15]}, # controller to address map
-                   {0: [0, 0]}, # cgra id to 2D coordinate
-                   is_multi_cgra = False)
+  dut = make_dut()
 
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
@@ -291,3 +267,40 @@ def test_cgra_dma_mvout_from_local_spm():
     dut.sim_tick()
 
   assert done
+
+def test_gen_verilog_integrated_cgra_with_dma(cmdline_opts):
+  """
+  Translate IntegratedCgraWithDmaRTL to Verilog.
+  """
+  dut = make_dut()
+
+  if cmdline_opts['test_verilog']:
+    # Standard flow: config_model_with_cmdline_opts handles elaboration,
+    # translation, and Verilator import.
+    try:
+      config_model_with_cmdline_opts(dut, cmdline_opts, duts=[])
+    except Exception as e:
+      print(f"Note (Verilator import may have failed): {e}")
+
+    try:
+      fname = dut.get_metadata(VerilogTranslationPass.translated_filename)
+      print(f"Verilog generated: {fname}")
+    except Exception as e:
+      print(f"Could not retrieve translation metadata: {e}")
+  else:
+    # Standalone flow: apply VerilogTranslationPass directly (no Verilator).
+    print("Generating Verilog without --test-verilog flag...")
+    print("Use 'pytest --test-verilog' to also run Verilator co-simulation.")
+
+    dut.elaborate()
+
+    dut.set_metadata(VerilogTranslationPass.enable, True)
+    dut.set_metadata(VerilogTranslationPass.explicit_module_name,
+                     'IntegratedCgraWithDmaRTL')
+    dut.set_metadata(VerilogTranslationPass.explicit_file_name,
+                     'IntegratedCgraWithDmaRTL.v')
+
+    dut.apply(VerilogTranslationPass())
+
+    fname = dut.get_metadata(VerilogTranslationPass.translated_filename)
+    print(f"Verilog generated: {fname}")

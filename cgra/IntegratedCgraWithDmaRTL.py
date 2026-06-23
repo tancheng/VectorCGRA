@@ -1,6 +1,6 @@
 """
 =========================================================================
-CgraDmaRTL.py
+IntegratedCgraWithDmaRTL.py
 =========================================================================
 
 Wrapper that composes a CGRA template with a DMA engine attached to the
@@ -17,9 +17,9 @@ from ..lib.util.data_struct_attr import *
 from ..mem.dma.DmaEngineRTL import DmaEngineRTL
 
 
-class CgraDmaRTL( Component ):
+class IntegratedCgraWithDmaRTL( Component ):
   """
-  CgraDmaRTL is a top-level wrapper that integrates a CGRA instance with a
+  IntegratedCgraWithDmaRTL is a top-level wrapper that integrates a CGRA instance with a
   DMA engine.
 
   Architectural Design:
@@ -46,7 +46,7 @@ class CgraDmaRTL( Component ):
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
                 is_multi_cgra = True, cgra_id = 0,
-                # For heterogeneous multi-cgra support.(maybe remove it in CgraDmaRTL for simplicity?)
+                # For heterogeneous multi-cgra support.(maybe remove it in IntegratedCgraWithDmaRTL for simplicity?)
                 provided_max_per_cgra_rows = None,
                 provided_max_per_cgra_cols = None,
                 provided_max_num_rd_tiles = None,
