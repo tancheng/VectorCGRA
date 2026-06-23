@@ -11,7 +11,6 @@ Author : Cheng Tan
 
 from ..lib.basic.val_rdy.ifcs import RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import SendIfcRTL
-from ..lib.basic.val_rdy.ifcs import DmaSpmMasterIfcRTL, DmaSpmMinionIfcRTL
 from ..lib.basic.val_rdy.queues import NormalQueueRTL
 from ..lib.messages import *
 from ..lib.opt_type import *
@@ -102,15 +101,20 @@ class ControllerRTL(Component):
     # Receive the DMA done signal from the DMA engine.
     s.dma_done = RecvIfcRTL(DmaDoneType)
 
-    # DMA engine side of the controller-forwarded SPM access path.
-    s.dma_spm_from_dma = DmaSpmMinionIfcRTL(DmaSpmWriteReqType,
-                                            DmaSpmReadReqType,
-                                            DmaSpmReadRespType)
+    # Receive the request of writing into SPM from the DMA.
+    s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+    # Receive the request of reading from SPM from the DMA.
+    s.recv_from_dma_spm_rd_req  = RecvIfcRTL(DmaSpmReadReqType)
+    # Send the response of reading from SPM to the DMA.
+    s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
 
     # Data memory side of the same SPM access path.
-    s.dma_spm_to_mem = DmaSpmMasterIfcRTL(DmaSpmWriteReqType,
-                                          DmaSpmReadReqType,
-                                          DmaSpmReadRespType)
+    # Send the request of writing into SPM to the data_mem controller.
+    s.send_to_mem_spm_wr_req   = SendIfcRTL(DmaSpmWriteReqType)
+    # Send the request of reading from SPM to the data_mem controller.
+    s.send_to_mem_spm_rd_req    = SendIfcRTL(DmaSpmReadReqType)
+    # Receive the response of reading from SPM from the data_mem controller.
+    s.recv_from_mem_spm_rd_resp = RecvIfcRTL(DmaSpmReadRespType)
 
 
     # Component
@@ -209,26 +213,26 @@ class ControllerRTL(Component):
     @update
     def update_dma_spm_forwarding():
       if has_dma_ports:
-        s.dma_spm_to_mem.write.val @= s.dma_spm_from_dma.write.val
-        s.dma_spm_from_dma.write.rdy @= s.dma_spm_to_mem.write.rdy
-        s.dma_spm_to_mem.write.msg @= s.dma_spm_from_dma.write.msg
+        s.send_to_mem_spm_wr_req.val @= s.recv_from_dma_spm_wr_req.val
+        s.recv_from_dma_spm_wr_req.rdy @= s.send_to_mem_spm_wr_req.rdy
+        s.send_to_mem_spm_wr_req.msg @= s.recv_from_dma_spm_wr_req.msg
 
-        s.dma_spm_to_mem.read.val     @= s.dma_spm_from_dma.read.val
-        s.dma_spm_from_dma.read.rdy   @= s.dma_spm_to_mem.read.rdy
-        s.dma_spm_to_mem.read.msg     @= s.dma_spm_from_dma.read.msg
-        s.dma_spm_from_dma.read_resp.val @= s.dma_spm_to_mem.read_resp.val
-        s.dma_spm_to_mem.read_resp.rdy   @= s.dma_spm_from_dma.read_resp.rdy
-        s.dma_spm_from_dma.read_resp.msg @= s.dma_spm_to_mem.read_resp.msg
+        s.send_to_mem_spm_rd_req.val     @= s.recv_from_dma_spm_rd_req.val
+        s.recv_from_dma_spm_rd_req.rdy   @= s.send_to_mem_spm_rd_req.rdy
+        s.send_to_mem_spm_rd_req.msg     @= s.recv_from_dma_spm_rd_req.msg
+        s.send_to_dma_spm_rd_resp.val @= s.recv_from_mem_spm_rd_resp.val
+        s.recv_from_mem_spm_rd_resp.rdy   @= s.send_to_dma_spm_rd_resp.rdy
+        s.send_to_dma_spm_rd_resp.msg @= s.recv_from_mem_spm_rd_resp.msg
       else:
-        s.dma_spm_to_mem.write.val @= 0
-        s.dma_spm_to_mem.write.msg @= DmaSpmWriteReqType()
-        s.dma_spm_to_mem.read.val @= 0
-        s.dma_spm_to_mem.read.msg @= DmaSpmReadReqType()
-        s.dma_spm_to_mem.read_resp.rdy @= 0
-        s.dma_spm_from_dma.write.rdy @= 0
-        s.dma_spm_from_dma.read.rdy @= 0
-        s.dma_spm_from_dma.read_resp.val @= 0
-        s.dma_spm_from_dma.read_resp.msg @= DmaSpmReadRespType()
+        s.send_to_mem_spm_wr_req.val @= 0
+        s.send_to_mem_spm_wr_req.msg @= DmaSpmWriteReqType()
+        s.send_to_mem_spm_rd_req.val @= 0
+        s.send_to_mem_spm_rd_req.msg @= DmaSpmReadReqType()
+        s.recv_from_mem_spm_rd_resp.rdy @= 0
+        s.recv_from_dma_spm_wr_req.rdy @= 0
+        s.recv_from_dma_spm_rd_req.rdy @= 0
+        s.send_to_dma_spm_rd_resp.val @= 0
+        s.send_to_dma_spm_rd_resp.msg @= DmaSpmReadRespType()
 
     @update
     def update_received_msg():

@@ -86,53 +86,6 @@ class MinionIfcRTL( Interface ):
   def __str__( s ):
     return f"{s.req}|{s.resp}"
 
-class DmaSpmMasterIfcRTL( Interface ):
-  """
-    DMA-to-SPM Master Interface.
-    
-    This interface is instantiated on the DMA side. 
-    It initiates all transfer requests (both write and read) to the SPM 
-    and receives the corresponding read data back.
-    
-    Direction:
-    - write   : Output (Send). DMA sends write requests to SPM.
-    - read    : Output (Send). DMA sends read requests to SPM.
-    - read_resp: Input  (Recv). DMA receives read data from SPM.
-  """
-
-  def construct( s, WriteReqType, ReadReqType, ReadRespType ):
-    s.WriteReqType  = WriteReqType
-    s.ReadReqType   = ReadReqType
-    s.ReadRespType  = ReadRespType
-    s.write     = SendIfcRTL( WriteReqType )
-    s.read      = SendIfcRTL( ReadReqType )
-    s.read_resp = RecvIfcRTL( ReadRespType )
-  def __str__( s ):
-    return f"wr:{s.write}|rd:{s.read}|resp:{s.read_resp}"
-
-class DmaSpmMinionIfcRTL( Interface ):
-  """
-    DMA-to-SPM Minion Interface.
-    
-    This interface is instantiated on the SPM side.
-    It passively accepts incoming transfer requests from the DMA master, 
-    performs the requested memory operations, and returns read data if needed.
-    
-    Direction:
-    - write   : Input  (Recv). SPM receives write requests from DMA.
-    - read    : Input  (Recv). SPM receives read requests from DMA.
-    - read_resp: Output (Send). SPM sends read data back to DMA.
-  """
-  def construct( s, WriteReqType, ReadReqType, ReadRespType ):
-    s.WriteReqType  = WriteReqType
-    s.ReadReqType   = ReadReqType
-    s.ReadRespType  = ReadRespType
-    s.write     = RecvIfcRTL( WriteReqType )
-    s.read      = RecvIfcRTL( ReadReqType )
-    s.read_resp = SendIfcRTL( ReadRespType )
-  def __str__( s ):
-    return f"wr:{s.write}|rd:{s.read}|resp:{s.read_resp}"
-
 class DmaDramWrReqIfcRTL( Interface ):
   """
     DMA-to-DRAM Write Request Interface.
