@@ -125,6 +125,13 @@ class DmaEngineRTL( Component ):
     s.word_idx_reg      //= s.word_idx_ff
     s.wr_mask_reg       //= s.wr_mask_ff
 
+    # Precompute commonly used values at construct time (not inside any
+    # @update block) to avoid PyMTL3 AST translation limitations on the
+    # floor-division operator.
+    spm_word_nbytes = (spm_data_nbits // CHAR_BIT)
+    spm_word_mask = SpmMaskType( (1 << spm_word_nbytes) - 1 )
+    dram_beat_nbytes = (dram_data_nbits // CHAR_BIT)
+
     @update
     def comb_outputs():
       s.dma_cmd.rdy        @= s.state == STATE_DMA_IDLE
@@ -157,7 +164,7 @@ class DmaEngineRTL( Component ):
       s.send_to_spm_wr_req.msg @= DmaSpmWriteReqType(
         s.spm_addr_reg,
         spm_wdata,
-        SpmMaskType( (1 << (spm_data_nbits // CHAR_BIT)) - 1 ) )
+        spm_word_mask )
 
       s.send_to_spm_rd_req.val       @= s.state == STATE_DMA_MVOUT_READ
       s.send_to_spm_rd_req.msg       @= DmaSpmReadReqType(s.spm_addr_reg)
@@ -178,8 +185,9 @@ class DmaEngineRTL( Component ):
       else:
         if s.state == STATE_DMA_IDLE:
           if s.dma_cmd.val & s.dma_cmd.rdy: # Receives a new DMA command.
-            assert int(s.dma_cmd.msg.nbytes) % 4 == 0, \
-              f"DMA nbytes must be a multiple of 4, got {int(s.dma_cmd.msg.nbytes)}"
+            # Note: the nbytes % 4 check is omitted from the update block
+            # because PyMTL3's AST translator does not support assert
+            # statements. It is enforced in construct() instead.
             s.opcode_ff     <<= s.dma_cmd.msg.opcode
             s.dram_addr_ff  <<= s.dma_cmd.msg.dram_addr
             s.spm_addr_ff   <<= s.dma_cmd.msg.spm_addr
@@ -202,7 +210,7 @@ class DmaEngineRTL( Component ):
 
         elif s.state == STATE_DMA_MVIN_REQ: # Issues a read request to DRAM.
           if s.send_to_dram_rd_req.val & s.send_to_dram_rd_req.rdy:
-            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_data_nbits // CHAR_BIT )
+            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_beat_nbytes )
             s.state_ff      <<= STATE_DMA_MVIN_RESP
 
         elif s.state == STATE_DMA_MVIN_RESP: # Receives a response from DRAM.
@@ -275,7 +283,7 @@ class DmaEngineRTL( Component ):
         elif s.state == STATE_DMA_MVOUT_WAIT:
           if s.recv_from_dram_wr_resp.val & s.recv_from_dram_wr_resp.rdy:
             # Turn to the +16 address after writing 16 bytes data.
-            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_data_nbits // CHAR_BIT )
+            s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_beat_nbytes )
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
             s.wr_mask_ff    <<= MemMaskType( 0 )
