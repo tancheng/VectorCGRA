@@ -129,6 +129,9 @@ class DmaEngineRTL( Component ):
     # @update block) to avoid PyMTL3 AST translation limitations on the
     # floor-division operator.
     spm_word_nbytes = (spm_data_nbits // CHAR_BIT)
+    # SPM write mask: always all byte lanes enabled (0xf) because the DMA
+    # writes full 32-bit words to SPM. Byte-granular SPM writes are not
+    # needed in the current design.
     spm_word_mask = SpmMaskType( (1 << spm_word_nbytes) - 1 )
     dram_beat_nbytes = (dram_data_nbits // CHAR_BIT)
 
@@ -260,16 +263,19 @@ class DmaEngineRTL( Component ):
             s.words_left_ff <<= s.words_left_reg - BytesType( 1 )
 
             if s.words_left_reg == BytesType( 1 ):
+              # Last beat of MVOUT: compute byte-mask based on how many
+              # valid 32-bit words are in this final beat.
               if s.word_idx_reg == b2( 0 ):
-                s.wr_mask_ff <<= MemMaskType( 0x000f )
+                s.wr_mask_ff <<= MemMaskType( 0x000f )  # 1 word  (bytes 0-3)
               elif s.word_idx_reg == b2( 1 ):
-                s.wr_mask_ff <<= MemMaskType( 0x00ff )
+                s.wr_mask_ff <<= MemMaskType( 0x00ff )  # 2 words (bytes 0-7)
               elif s.word_idx_reg == b2( 2 ):
-                s.wr_mask_ff <<= MemMaskType( 0x0fff )
+                s.wr_mask_ff <<= MemMaskType( 0x0fff )  # 3 words (bytes 0-11)
               else:
-                s.wr_mask_ff <<= MemMaskType( 0xffff )
+                s.wr_mask_ff <<= MemMaskType( 0xffff )  # 4 words (bytes 0-15)
               s.state_ff    <<= STATE_DMA_MVOUT_WRITE
             elif s.word_idx_reg == b2( 3 ):
+              # Full beat (4 words): all 16 bytes are valid.
               s.wr_mask_ff  <<= MemMaskType( 0xffff )
               s.state_ff    <<= STATE_DMA_MVOUT_WRITE
             else:

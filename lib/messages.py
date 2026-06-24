@@ -233,6 +233,27 @@ def mk_dma_cmd(dram_addr_nbits = 64,
   )
 
 # A data structure to represent the data to be transferred by DMA.
+#
+# === Mask Design ===
+# Data transfer granularity between DRAM and SPM is 1 word (4 bytes)
+# The `dram_mask` and `spm_mask` fields define the bitwidth of byte
+# masks for DRAM and SPM data respectively.
+#
+# Actual mask *values* are generated independently by the DMA engine
+# FSM (see DmaEngineRTL), NOT carried in this struct:
+#
+# - dram_mask (16-bit, one bit per byte of 128-bit(16 bytes) DRAM beat):
+#   Dynamically computed during MVOUT (SPM -> DRAM) based on the
+#   number of valid words in the last beat. Values range from 0x000f
+#   (1 word) to 0xffff (full beat). For example, if DMA move 1 word from SPM to DRAM, the mask is 0x000f.
+#   If DMA move 2 words from SPM to DRAM, the mask is 0x00ff.
+#   If DMA move 3 words from SPM to DRAM, the mask is 0x0fff.
+#   If DMA move 4 words from SPM to DRAM, the mask is 0xffff.
+#
+# - spm_mask (4-bit, one bit per byte of 32-bit SPM word):
+#   SPM writes always write full words, so the mask is
+#   hardcoded to 0xf. This field is reserved for
+#   future byte-granular SPM write support.
 def mk_dma_data(dram_data_nbits = 128,
                 dram_mask_nbits = 16,
                 spm_data_nbits = 32,
@@ -249,8 +270,11 @@ def mk_dma_data(dram_data_nbits = 128,
   
   return mk_bitstruct(new_name, {
     'dram_data': DramDataType,
+    # 16-bit byte mask for 16-bytes DRAM beat.
     'dram_mask': DramMaskType,
     'spm_data': SpmDataType,
+    # 4-bit byte mask for 4-bytes SPM word.
+    # Always 0xf in current implementation (full-word writes only).
     'spm_mask': SpmMaskType,
   },
   namespace = {'__str__': str_func}
@@ -273,7 +297,7 @@ def mk_dma_done(tag_nbits = 8,
   )
 
 #=========================================================================
-# DMA DRAM write request type
+# The type of write request signal from DMA to DRAM
 #=========================================================================
 def mk_dma_dram_wr_req(addr_nbits = 64,
                        data_nbits = 128,
@@ -297,6 +321,7 @@ def mk_dma_dram_wr_req(addr_nbits = 64,
     namespace = {'__str__': str_func}
   )
 
+# The type of write request signal from DMA to SPM
 def mk_dma_spm_write_req(addr_nbits = 32,
                          data_nbits = 32,
                          prefix = "DmaSpmWriteReq"):
@@ -318,6 +343,7 @@ def mk_dma_spm_write_req(addr_nbits = 32,
     namespace = {'__str__': str_func}
   )
 
+# The type of read request signal from DMA to SPM
 def mk_dma_spm_read_req(addr_nbits = 32,
                         prefix = "DmaSpmReadReq"):
 
@@ -334,6 +360,7 @@ def mk_dma_spm_read_req(addr_nbits = 32,
     namespace = {'__str__': str_func}
   )
 
+# The type of read response signal from SPM to DMA
 def mk_dma_spm_read_resp(data_nbits = 32,
                          prefix = "DmaSpmReadResp"):
 
