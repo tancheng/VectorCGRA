@@ -338,7 +338,8 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) :
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) :
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
           s.send_to_ctrl_ring_pkt.msg @= \
