@@ -23,6 +23,7 @@ class LinkOrRTL(Component):
     # Interface
     s.recv_fu = RecvIfcRTL(DataType)
     s.recv_xbar = RecvIfcRTL(DataType)
+    s.fu_xbar_rdy = InPort(b1)
     s.send = SendIfcRTL(DataType)
 
     @update
@@ -30,20 +31,26 @@ class LinkOrRTL(Component):
       # Initializes the delivered message.
       s.send.msg @= DataType()
 
-      # The messages from two sources (i.e., xbar and FU) won't be valid
-      # simultaneously (confliction would be caused if they both are valid),
-      # which is guaranteed by the compiler/software.
-      s.send.msg.predicate @= s.recv_fu.msg.predicate | s.recv_xbar.msg.predicate
-      s.send.msg.payload @= s.recv_xbar.msg.payload | s.recv_fu.msg.payload
+      fu_active = s.recv_fu.val & s.fu_xbar_rdy
+      xbar_active = s.recv_xbar.val
+
+      if fu_active:
+        s.send.msg.predicate @= s.send.msg.predicate | s.recv_fu.msg.predicate
+        s.send.msg.payload @= s.send.msg.payload | s.recv_fu.msg.payload
+      if xbar_active:
+        s.send.msg.predicate @= s.send.msg.predicate | s.recv_xbar.msg.predicate
+        s.send.msg.payload @= s.send.msg.payload | s.recv_xbar.msg.payload
 
       # FIXME: bypass won't be necessary any more with separate xbar design.
       # s.send.msg.bypass @= 0
       # s.send.msg.delay @= s.recv_fu.msg.delay | s.recv_xbar.msg.delay
 
-      s.send.val @= s.recv_fu.val | s.recv_xbar.val
-      s.recv_fu.rdy @= s.send.rdy
+      # Only let FU traffic win once the FU crossbar has actually committed
+      # the multicast/send for this cycle; otherwise the link can expose
+      # transient FU output and create cross-tile bubbles.
+      s.send.val @= fu_active | xbar_active
+      s.recv_fu.rdy @= s.send.rdy & s.fu_xbar_rdy
       s.recv_xbar.rdy @= s.send.rdy
 
   def line_trace(s):
     return f"from_fu:{s.recv_fu.msg} or from_xbar:{s.recv_xbar.msg} => out:{s.send.msg} ## "
-
