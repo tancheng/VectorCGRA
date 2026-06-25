@@ -45,7 +45,7 @@ class TestHarness(Component):
 
   def construct(s, DataType, ConfigType, num_reg_banks, num_registers,
                 src_opt, src_msgs_routing_xbar, src_msgs_fu_xbar,
-                src_msgs_const, sink_msgs):
+                src_msgs_const, sink_msgs, sink_initial_delay = 0):
 
     s.num_reg_banks = num_reg_banks
     s.src_opt = Wire(ConfigType)
@@ -57,7 +57,8 @@ class TestHarness(Component):
     s.src_const = [TestSrcRTL(DataType, src_msgs_const[i])
                    for i in range(num_reg_banks)]
 
-    s.sink = [TestSinkRTL(DataType, sink_msgs[i])
+    s.sink = [TestSinkRTL(DataType, sink_msgs[i],
+                          initial_delay = sink_initial_delay)
               for i in range(num_reg_banks)]
 
     s.reg_cluster = RegisterClusterRTL(DataType, ConfigType, num_reg_banks,
@@ -170,6 +171,33 @@ def test_reg_bank():
                    src_data_from_fu_xbar,
                    src_data_from_const,
                    expected_sink_data)
+  run_sim(th)
+
+# Concrete example: the last RET control writes routing token 42 into
+# register 3 and reads register 3 for the FU in the same cycle. Without this
+# bypass the FU sees the old register value, so the returned value is stale.
+def test_last_ret_bypasses_same_cycle_routing_write():
+  DataType = mk_data(16, 1)
+  num_reg_banks = 4
+  num_registers = 16
+  ConfigType = mk_ctrl(4, 2, 4, 4, num_registers)
+  FuInType = mk_bits(clog2(5))
+
+  ctrl = ConfigType(OPT_RET, [FuInType(x + 1) for x in range(4)])
+  ctrl.is_last_ctrl = 1
+  ctrl.write_reg_from[0] = b2(PORT_ROUTING_CROSSBAR)
+  ctrl.write_reg_idx[0] = b4(3)
+  ctrl.read_reg_towards[0] = b2(READ_TOWARDS_FU)
+  ctrl.read_reg_idx[0] = b4(3)
+
+  th = TestHarness(
+      DataType, ConfigType, num_reg_banks, num_registers, ctrl,
+      [[DataType(42, 1)], [], [], []],
+      [[] for _ in range(num_reg_banks)],
+      [[] for _ in range(num_reg_banks)],
+      [[DataType(42, 1)], [], [], []],
+      sink_initial_delay = 1,
+  )
   run_sim(th)
 
 #-------------------------------------------------------------------------
