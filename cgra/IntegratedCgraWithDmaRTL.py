@@ -139,7 +139,7 @@ class IntegratedCgraWithDmaRTL( Component ):
     DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
     DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
     DmaBytesType = DmaCmdType.get_field_type(kAttrNBytes)
-    DmaTagType = DmaCmdType.get_field_type(kAttrTag)
+    DmaTagType = DmaCmdType.get_field_type(kAttrDmaTag)
     s.dma = DmaEngineRTL(spm_data_nbits = DmaSpmDataType.nbits,
                          dram_data_nbits = DmaMemDataType.nbits,
                          dram_addr_nbits = DmaDramAddrType.nbits,

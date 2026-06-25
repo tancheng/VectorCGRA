@@ -60,7 +60,7 @@ class ControllerRTL(Component):
     DmaDramAddrType = DmaCmdType.get_field_type(kAttrDramAddr)
     DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
     DmaBytesType = DmaCmdType.get_field_type(kAttrNBytes)
-    DmaTagType = DmaCmdType.get_field_type(kAttrTag)
+    DmaTagType = DmaCmdType.get_field_type(kAttrDmaTag)
     DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
     # Lower and higher 32 bits of the DRAM address.
     DmaDramAddrPartType = mk_bits(DmaDramAddrType.nbits // 2)
