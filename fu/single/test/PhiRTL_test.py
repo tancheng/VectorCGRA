@@ -115,9 +115,9 @@ def test_Phi_start():
   IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
-               # Each PHI_START mapped on the same tile has its own s.first, 
-               # s.first[0] becomes 0 after receiving DataType(2, 1), but first[1] still 1, which is why 
-               # the output at clock cycle 2 is DataType(3, 1), rather than the pending DataType(8, 1).
+               # Each PHI_START mapped on the same tile has its own s.first.
+               # The first dynamic execution takes src0; later executions
+               # consume src0 for alignment but select the loop-carried src1.
   src_in0 =   [DataType(2, 1), DataType(3, 0), DataType(6, 0), DataType(3, 1)]
   src_in1 =   [                                DataType(8, 1), DataType(5, 0)]
   src_const = []
@@ -127,7 +127,7 @@ def test_Phi_start():
                CtrlType(OPT_PHI_START, pickRegister),
                CtrlType(OPT_PHI_START, pickRegister)]
   src_ctrl_addr = [CtrlAddrType(0), CtrlAddrType(1), CtrlAddrType(0), CtrlAddrType(1)]
-  sink_out = [DataType(2, 1), DataType(3, 1), DataType(8, 1), DataType(3, 1)]
+  sink_out = [DataType(2, 1), DataType(3, 1), DataType(8, 1), DataType(5, 0)]
   th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out, src_ctrl_addr)
