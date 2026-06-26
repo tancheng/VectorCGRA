@@ -44,13 +44,13 @@ def drive_defaults(dut, DataAddrType, DataType, NocPktType, num_rd_tiles, num_wr
   dut.send_to_noc_store_pkt.rdy @= 1
 
   DmaSpmAddrType = mk_dma_cmd().get_field_type(kAttrSpmAddr)
-  dut.recv_from_ctrl_spm_wr_req.val @= 0
-  dut.recv_from_ctrl_spm_wr_req.msg.addr @= DmaSpmAddrType(0)
-  dut.recv_from_ctrl_spm_wr_req.msg.data @= 0
-  dut.recv_from_ctrl_spm_wr_req.msg.mask @= 0
-  dut.recv_from_ctrl_spm_rd_req.val @= 0
-  dut.recv_from_ctrl_spm_rd_req.msg.addr @= DmaSpmAddrType(0)
-  dut.send_to_ctrl_spm_rd_resp.rdy @= 1
+  dut.recv_from_controller_spm_wr_req.val @= 0
+  dut.recv_from_controller_spm_wr_req.msg.addr @= DmaSpmAddrType(0)
+  dut.recv_from_controller_spm_wr_req.msg.data @= 0
+  dut.recv_from_controller_spm_wr_req.msg.mask @= 0
+  dut.recv_from_controller_spm_rd_req.val @= 0
+  dut.recv_from_controller_spm_rd_req.msg.addr @= DmaSpmAddrType(0)
+  dut.send_to_controller_spm_rd_resp.rdy @= 1
 
   dut.cgra_id @= 0
   dut.address_lower @= DataAddrType(0)
@@ -91,25 +91,25 @@ def test_dma_ports_write_then_read():
   drive_defaults(dut, DataAddrType, DataType, NocPktType, num_rd_tiles, num_wr_tiles)
 
   DmaSpmAddrType = mk_dma_cmd().get_field_type(kAttrSpmAddr)
-  dut.recv_from_ctrl_spm_wr_req.val @= 1
-  dut.recv_from_ctrl_spm_wr_req.msg.addr @= DmaSpmAddrType(3)
-  dut.recv_from_ctrl_spm_wr_req.msg.data @= 0xaaaabbbb
-  dut.recv_from_ctrl_spm_wr_req.msg.mask @= 0xf
+  dut.recv_from_controller_spm_wr_req.val @= 1
+  dut.recv_from_controller_spm_wr_req.msg.addr @= DmaSpmAddrType(3)
+  dut.recv_from_controller_spm_wr_req.msg.data @= 0xaaaabbbb
+  dut.recv_from_controller_spm_wr_req.msg.mask @= 0xf
   dut.sim_eval_combinational()
-  assert dut.recv_from_ctrl_spm_wr_req.rdy
+  assert dut.recv_from_controller_spm_wr_req.rdy
   dut.sim_tick()
-  dut.recv_from_ctrl_spm_wr_req.val @= 0
+  dut.recv_from_controller_spm_wr_req.val @= 0
 
-  dut.recv_from_ctrl_spm_rd_req.val @= 1
-  dut.recv_from_ctrl_spm_rd_req.msg.addr @= DmaSpmAddrType(3)
+  dut.recv_from_controller_spm_rd_req.val @= 1
+  dut.recv_from_controller_spm_rd_req.msg.addr @= DmaSpmAddrType(3)
 
   seen_response = False
   for _ in range(10):
     dut.sim_eval_combinational()
-    if dut.recv_from_ctrl_spm_rd_req.val & dut.recv_from_ctrl_spm_rd_req.rdy:
-      dut.recv_from_ctrl_spm_rd_req.val @= 0
-    if dut.send_to_ctrl_spm_rd_resp.val:
-      assert int(dut.send_to_ctrl_spm_rd_resp.msg.data) == 0xaaaabbbb
+    if dut.recv_from_controller_spm_rd_req.val & dut.recv_from_controller_spm_rd_req.rdy:
+      dut.recv_from_controller_spm_rd_req.val @= 0
+    if dut.send_to_controller_spm_rd_resp.val:
+      assert int(dut.send_to_controller_spm_rd_resp.msg.data) == 0xaaaabbbb
       seen_response = True
       break
     dut.sim_tick()

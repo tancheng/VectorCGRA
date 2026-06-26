@@ -97,7 +97,7 @@ def issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
     dram_addr: The DRAM address to transfer data from or to.(64 bits)
     spm_addr: The SPM address to transfer data from or to.(32 bits)
     nbytes: The number of bytes to transfer.
-    tag: The tag of the DMA command.
+    tag: The tag of the DMA command. This tag isn't used now. We may use it to distinguish different DMA commands.
   """
   # NOTE nbytes is the number of bytes to transfer.
   # Currently, only nbytes that are multiples of 4 are supported.

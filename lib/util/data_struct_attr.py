@@ -44,6 +44,7 @@ kAttrAddr = 'addr'
 kAttrOpcode = 'opcode'
 kAttrDramAddr = 'dram_addr'
 kAttrNBytes = 'nbytes'
+# This dma_tag isn't used now. We may use it to distinguish different DMA commands.
 kAttrDmaTag = 'dma_tag'
 kAttrSpmAddr = 'spm_addr'
 kAttrSpmData = 'spm_data'

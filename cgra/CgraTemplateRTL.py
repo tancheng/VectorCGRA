@@ -244,9 +244,9 @@ class CgraTemplateRTL(Component):
       s.controller.send_to_dma_spm_rd_resp.rdy //= 0
 
     # Controller <-> SPM/data_mem
-    s.controller.send_to_mem_spm_wr_req   //= s.data_mem.recv_from_ctrl_spm_wr_req
-    s.controller.send_to_mem_spm_rd_req    //= s.data_mem.recv_from_ctrl_spm_rd_req
-    s.controller.recv_from_mem_spm_rd_resp //= s.data_mem.send_to_ctrl_spm_rd_resp
+    s.controller.send_to_mem_spm_wr_req   //= s.data_mem.recv_from_controller_spm_wr_req
+    s.controller.send_to_mem_spm_rd_req    //= s.data_mem.recv_from_controller_spm_rd_req
+    s.controller.recv_from_mem_spm_rd_resp //= s.data_mem.send_to_controller_spm_rd_resp
     
     # Connects data memory with controller.
     s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request

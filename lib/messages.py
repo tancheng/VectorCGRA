@@ -227,7 +227,8 @@ def mk_dma_cmd(dram_addr_nbits = 64,
       # NOTE nbytes is the number of bytes to transfer.
       # Currently, only nbytes that are multiples of 4 are supported.
       'nbytes'   : BytesType,
-      'dma_tag'      : TagType,
+      # This dma_tag isn't used now. We may use it to distinguish different DMA commands.
+      'dma_tag'  : TagType,
     },
     namespace = {'__str__': str_func}
   )
