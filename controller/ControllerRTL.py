@@ -495,6 +495,11 @@ class ControllerRTL(Component):
         #   # TODO: Handle other cmd types.
         #   assert(False)
 
+      # WARNING
+      # A possible conflict occurs when dma_done.valis True and the received message is CMD_COMPLETEat the same time
+      # — that is, when a DMA command and CMD_COMPLETE appear in the same clock cycle.
+      # In this case, both require the CGRA to send a return signal to the CPU, which may causes a conflict.
+      # Related discussion: https://github.com/tancheng/VectorCGRA/pull/293#discussion_r3418482217
       if has_dma_ports & s.dma_done.val:
         s.dma_done.rdy @= s.send_to_cpu_pkt_queue.recv.rdy
         s.send_to_cpu_pkt_queue.recv.val @= 1
