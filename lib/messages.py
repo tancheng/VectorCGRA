@@ -218,7 +218,7 @@ def mk_dma_cmd(dram_addr_nbits = 64,
   new_name = f"{prefix}_{dram_addr_nbits}_{spm_addr_nbits}_{bytes_nbits}_{tag_nbits}"
 
   def str_func(s):
-    return f"dma_cmd(op={s.opcode},dram={s.dram_addr},spm={s.spm_addr},bytes={s.nbytes},tag={s.tag})"
+    return f"dma_cmd(op={s.opcode},dram={s.dram_addr},spm={s.spm_addr},bytes={s.nbytes},tag={s.dma_tag})"
 
   return mk_bitstruct(new_name, {
       'opcode'   : OpcodeType,
