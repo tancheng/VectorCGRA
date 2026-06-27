@@ -289,10 +289,10 @@ def mk_dma_done(tag_nbits = 8,
   new_name = f"{prefix}_{tag_nbits}"
 
   def str_func(s):
-    return f"dma_done(tag={s.tag})"
+    return f"dma_done(dma_tag={s.dma_tag})"
 
   return mk_bitstruct(new_name, {
-      'tag': TagType,
+      'dma_tag': TagType,
     },
     namespace = {'__str__': str_func}
   )

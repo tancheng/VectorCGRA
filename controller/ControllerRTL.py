@@ -512,11 +512,11 @@ class ControllerRTL(Component):
                              s.idTo2d_y_lut[s.cgra_id],
                              s.idTo2d_x_lut[s.cgra_id],
                              s.idTo2d_y_lut[s.cgra_id],
-                             s.dma_done.msg.tag,
+                             s.dma_done.msg.dma_tag,
                              0,
                              CgraPayloadType(
                                CMD_DMA_DONE,
-                              DataType(zext(s.dma_done.msg.tag, DataPayloadType), 1, 0, 0),
+                              DataType(zext(s.dma_done.msg.dma_tag, DataPayloadType), 1, 0, 0),
                                0, 0, 0))
 
     @update

@@ -19,7 +19,7 @@ def make_dut():
   dut.dma_cmd.msg.dram_addr @= 0
   dut.dma_cmd.msg.spm_addr @= 0
   dut.dma_cmd.msg.nbytes @= 0
-  dut.dma_cmd.msg.tag @= 0
+  dut.dma_cmd.msg.dma_tag @= 0
   dut.dma_done.rdy @= 1
 
   dut.send_to_dram_rd_req.rdy @= 1
@@ -57,7 +57,7 @@ def issue_cmd(dut, opcode, dram_addr, spm_addr, nbytes, tag):
   dut.dma_cmd.msg.dram_addr @= dram_addr
   dut.dma_cmd.msg.spm_addr @= spm_addr
   dut.dma_cmd.msg.nbytes @= nbytes
-  dut.dma_cmd.msg.tag @= tag
+  dut.dma_cmd.msg.dma_tag @= tag
   dut.sim_eval_combinational()
   assert dut.dma_cmd.rdy
   dut.sim_tick()
@@ -105,7 +105,7 @@ def test_dma_mvin_one_beat():
       spm_writes.append((int(dut.send_to_spm_wr_req.msg.addr), int(dut.send_to_spm_wr_req.msg.data)))
 
     if dut.dma_done.val:
-      assert int(dut.dma_done.msg.tag) == 0x5a
+      assert int(dut.dma_done.msg.dma_tag) == 0x5a
       break
 
     dut.sim_tick()
@@ -166,7 +166,7 @@ def test_dma_mvout_partial_beat():
                          int(dut.send_to_dram_wr_req.msg.mask)))
 
     if dut.dma_done.val:
-      assert int(dut.dma_done.msg.tag) == 0xa5
+      assert int(dut.dma_done.msg.dma_tag) == 0xa5
       break
 
     dut.sim_tick()
@@ -223,7 +223,7 @@ def test_dma_mvout_full_beat():
                          int(dut.send_to_dram_wr_req.msg.mask)))
 
     if dut.dma_done.val:
-      assert int(dut.dma_done.msg.tag) == 0xa5
+      assert int(dut.dma_done.msg.dma_tag) == 0xa5
       break
 
     dut.sim_tick()
