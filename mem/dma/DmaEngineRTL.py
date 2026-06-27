@@ -197,7 +197,7 @@ class DmaEngineRTL( Component ):
             # Converts the transfer size from bytes to words.
             # NOTE We only support nbytes that are multiples of 4 now.
             # If nbytes is not a multiple of 4, we will add 1 to the number of words to transfer.
-            s.words_left_ff <<= (s.dma_cmd.msg.nbytes >> 2) if (s.dma_cmd.msg.nbytes % 4 == 0) else (s.dma_cmd.msg.nbytes >> 2) + 1
+            s.words_left_ff <<= (s.dma_cmd.msg.nbytes >> 2)
             s.tag_ff        <<= s.dma_cmd.msg.dma_tag
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
@@ -245,19 +245,19 @@ class DmaEngineRTL( Component ):
           if s.recv_from_spm_rd_resp.val & s.recv_from_spm_rd_resp.rdy:
             # Pack the response from SPM into a 128-bit beat by left-shifting.
             if s.word_idx_reg == b2( 0 ): # 1st word
-              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits:spm_data_nbits*4],
+              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits : spm_data_nbits<<2],
                                     s.recv_from_spm_rd_resp.msg.data )
             elif s.word_idx_reg == b2( 1 ):
-              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits*2:spm_data_nbits*4],
+              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits<<1 : spm_data_nbits<<2],
                                     s.recv_from_spm_rd_resp.msg.data,
                                     s.beat_reg[0:spm_data_nbits] )
             elif s.word_idx_reg == b2( 2 ):
-              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits*3:spm_data_nbits*4],
+              s.beat_ff <<= concat( s.beat_reg[(spm_data_nbits<<1)+spm_data_nbits : spm_data_nbits<<2],
                                     s.recv_from_spm_rd_resp.msg.data,
-                                    s.beat_reg[0:spm_data_nbits*2] )
+                                    s.beat_reg[0:spm_data_nbits<<1] )
             else:
               s.beat_ff <<= concat( s.recv_from_spm_rd_resp.msg.data,
-                                    s.beat_reg[0:spm_data_nbits*3] )
+                                    s.beat_reg[0 : (spm_data_nbits<<1)+spm_data_nbits] )
 
             s.spm_addr_ff   <<= s.spm_addr_reg + SpmAddrType( 1 )
             s.words_left_ff <<= s.words_left_reg - BytesType( 1 )
