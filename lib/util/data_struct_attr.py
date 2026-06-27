@@ -46,6 +46,7 @@ kAttrDramAddr = 'dram_addr'
 kAttrNBytes = 'nbytes'
 # This dma_tag isn't used now. We may use it to distinguish different DMA commands.
 kAttrDmaTag = 'dma_tag'
+# TODO: https://github.com/tancheng/VectorCGRA/issues/316 -- Consolidates attributes.
 kAttrSpmAddr = 'spm_addr'
 kAttrSpmData = 'spm_data'
 kAttrSpmMask = 'spm_mask'

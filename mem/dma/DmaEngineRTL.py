@@ -198,7 +198,7 @@ class DmaEngineRTL( Component ):
             # NOTE We only support nbytes that are multiples of 4 now.
             # If nbytes is not a multiple of 4, we will add 1 to the number of words to transfer.
             s.words_left_ff <<= (s.dma_cmd.msg.nbytes >> 2) if (s.dma_cmd.msg.nbytes % 4 == 0) else (s.dma_cmd.msg.nbytes >> 2) + 1
-            s.tag_ff        <<= s.dma_cmd.msg.tag
+            s.tag_ff        <<= s.dma_cmd.msg.dma_tag
             s.beat_ff       <<= MemDataType( 0 )
             s.word_idx_ff   <<= b2( 0 )
             s.wr_mask_ff    <<= MemMaskType( 0 )
