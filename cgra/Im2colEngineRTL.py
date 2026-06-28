@@ -1,12 +1,14 @@
 """
 ==========================================================================
-Im2colToCgraBridge.py
+Im2colEngineRTL.py
 ==========================================================================
-Bridge module that runs the stand-alone Im2colRTL engine on a preloaded
-input image, then streams the lowered (kH*kW) x (Hout*Wout) matrix into
-a CGRA's CPU-facing packet interface as a sequence of CMD_STORE_REQUEST
-packets. The (dst_tile, data_addr) destination for each emitted value
-is fixed at elaboration time by the dst_tiles / data_addrs lists.
+Packaged im2col engine: wraps the stand-alone Im2colRTL data mover with
+a pair of scratchpads and a packet-emit FSM. After running Im2col on a
+preloaded input image, it streams the lowered (kH*kW) x (Hout*Wout)
+matrix to a CGRA's CPU-facing packet interface as a sequence of
+CMD_STORE_REQUEST packets. The (dst_tile, data_addr) destination for
+each emitted value is fixed at elaboration time by the dst_tiles /
+data_addrs lists.
 
 State machine: IDLE -> IM2COL -> EMIT -> DONE
 - IDLE: wait for `start`; pulses Im2col's start on the IDLE->IM2COL edge.
@@ -29,7 +31,7 @@ from ..lib.util.data_struct_attr import (kAttrCmd, kAttrCtrl, kAttrCtrlAddr,
 from ..mem.data.DataMemRTL import DataMemRTL
 
 
-class Im2colToCgraBridge(Component):
+class Im2colEngineRTL(Component):
 
   def construct(s, DataType, IntraCgraPktType, CgraPayloadType,
                 scratch_mem_size,
@@ -43,7 +45,7 @@ class Im2colToCgraBridge(Component):
     assert len(dst_tiles)  == num_outputs
     assert len(data_addrs) == num_outputs
 
-    # Derive widths from the passed-in packet types so the bridge stays
+    # Derive widths from the passed-in packet types so the engine stays
     # generic across CGRA configurations.
     ScratchAddrType = mk_bits(clog2(scratch_mem_size))
     TileIdType      = IntraCgraPktType.get_field_type(kAttrDst)
@@ -107,14 +109,23 @@ class Im2colToCgraBridge(Component):
     s.cur_dst  = Wire(TileIdType)
     s.cur_addr = Wire(DataAddrType)
 
+    # Per-output constant ROMs as Wire arrays. The verilator translator
+    # accepts indexed access into Wire-arrays of bitstructs natively;
+    # plain Python lists / tuples of pymtl3-typed values do not translate.
+    s.dst_tile_rom  = [Wire(TileIdType)   for _ in range(num_outputs)]
+    s.data_addr_rom = [Wire(DataAddrType) for _ in range(num_outputs)]
+    for i in range(num_outputs):
+      s.dst_tile_rom[i]  //= TileIdType(dst_tiles[i])
+      s.data_addr_rom[i] //= DataAddrType(data_addrs[i])
+
     @update
     def select_dst_and_addr():
-      s.cur_dst  @= TileIdType(dst_tiles[0])
-      s.cur_addr @= DataAddrType(data_addrs[0])
+      s.cur_dst  @= s.dst_tile_rom[0]
+      s.cur_addr @= s.data_addr_rom[0]
       for i in range(num_outputs):
         if s.emit_idx == IdxType(i):
-          s.cur_dst  @= TileIdType(dst_tiles[i])
-          s.cur_addr @= DataAddrType(data_addrs[i])
+          s.cur_dst  @= s.dst_tile_rom[i]
+          s.cur_addr @= s.data_addr_rom[i]
 
     # Tie off the unused write port on the input scratchpad.
     @update
@@ -132,15 +143,18 @@ class Im2colToCgraBridge(Component):
     def drive_im2col_start():
       s.im2col.start @= (s.state == S_IDLE) & s.start
 
-    # EMIT-phase packet construction.
+    # EMIT-phase packet construction. We pass integer zeros (rather than
+    # type constructors like CtrlType()) for the don't-care fields so the
+    # verilator translator can encode them as constants -- it can't handle
+    # default constructors of bitstructs that contain list-of-bits fields
+    # (e.g. the CtrlType.fu_in array) inside behavioral RTLIR.
     @update
     def build_send_pkt():
-      s.send_pkt.val            @= b1(0)
-      s.send_pkt.msg            @= IntraCgraPktType()
       s.out_mem.recv_raddr[0].val @= b1(0)
       s.out_mem.recv_raddr[0].msg @= ScratchAddrType(0)
       s.out_mem.send_rdata[0].rdy @= b1(0)
-      s.done                    @= b1(0)
+      s.done                      @= b1(0)
+      s.send_pkt.val              @= b1(0)
 
       if s.state == S_EMIT:
         s.out_mem.recv_raddr[0].val @= b1(1)
@@ -149,20 +163,25 @@ class Im2colToCgraBridge(Component):
         s.out_mem.send_rdata[0].rdy @= s.send_pkt.rdy
         s.send_pkt.val              @= s.out_mem.send_rdata[0].val
         s.send_pkt.msg              @= IntraCgraPktType(
-            TileIdType(0),                                   # src
-            s.cur_dst,                                       # dst
-            CgraIdType(0), CgraIdType(0),                    # src/dst cgra_id
-            CgraXType(0),  CgraYType(0),                     # src cgra x/y
-            CgraXType(0),  CgraYType(0),                     # dst cgra x/y
-            OpqType(0),
-            VcIdType(0),
+            0,             # src
+            s.cur_dst,     # dst
+            0, 0,          # src/dst cgra_id
+            0, 0,          # src cgra x/y
+            0, 0,          # dst cgra x/y
+            0,             # opaque
+            0,             # vc_id
             PayloadType(
                 CmdType(CMD_STORE_REQUEST),
                 s.out_mem.send_rdata[0].msg,
                 s.cur_addr,
-                CtrlType(),
-                CtrlAddrType(0),
+                0,         # ctrl (zero)
+                0,         # ctrl_addr
             ),
+        )
+      else:
+        s.send_pkt.msg @= IntraCgraPktType(
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            PayloadType(0, 0, 0, 0, 0),
         )
 
       if s.state == S_DONE:
@@ -193,6 +212,6 @@ class Im2colToCgraBridge(Component):
   def line_trace(s):
     state_map = {0: "IDLE", 1: "IM2COL", 2: "EMIT", 3: "DONE"}
     st = state_map[int(s.state)]
-    return (f"bridge[{st} emit_idx={int(s.emit_idx)} done={int(s.done)} "
+    return (f"engine[{st} emit_idx={int(s.emit_idx)} done={int(s.done)} "
             f"send_val={int(s.send_pkt.val)} send_rdy={int(s.send_pkt.rdy)}] "
             f"|| im2col[{s.im2col.line_trace()}]")
