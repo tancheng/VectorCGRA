@@ -91,9 +91,9 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt = RecvIfcRTL(InterCgraPktType)
     s.recv_from_tile_store_request_pkt = RecvIfcRTL(InterCgraPktType)
 
-    s.send_to_mem_load_request = SendIfcRTL(InterCgraPktType)
+    s.send_to_sram_load_request_from_noc = SendIfcRTL(InterCgraPktType)
     s.send_to_tile_load_response = SendIfcRTL(InterCgraPktType)
-    s.send_to_mem_store_request = SendIfcRTL(InterCgraPktType)
+    s.send_to_sram_store_request_from_noc = SendIfcRTL(InterCgraPktType)
 
     # Controller-owned command path from CPU packets to the DMA engine.
     # Send the decoded DMA command to the DMA engine.
@@ -101,6 +101,13 @@ class ControllerRTL(Component):
     # Receive the DMA done signal from the DMA engine.
     s.dma_done = RecvIfcRTL(DmaDoneType)
 
+    # -------------------------------------------------------
+    # SPM (SRAM) access path from the DMA engine.
+    # The DMA and the inter-tile NoC (above) each have their own
+    # dedicated SPM access interfaces to the data memory controller.
+    # They are kept separate because the DMA can perform burst data
+    # movement.
+    # -------------------------------------------------------
     # Receive the request of writing into SPM from the DMA.
     s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
     # Receive the request of reading from SPM from the DMA.
@@ -108,13 +115,13 @@ class ControllerRTL(Component):
     # Send the response of reading from SPM to the DMA.
     s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
 
-    # Data memory side of the same SPM access path.
+    # SRAM data memory side of the SPM access path (DMA).
     # Send the request of writing into SPM to the data_mem controller.
-    s.send_to_mem_spm_wr_req   = SendIfcRTL(DmaSpmWriteReqType)
+    s.send_to_sram_store_request_from_dma   = SendIfcRTL(DmaSpmWriteReqType)
     # Send the request of reading from SPM to the data_mem controller.
-    s.send_to_mem_spm_rd_req    = SendIfcRTL(DmaSpmReadReqType)
+    s.send_to_sram_load_request_from_dma    = SendIfcRTL(DmaSpmReadReqType)
     # Receive the response of reading from SPM from the data_mem controller.
-    s.recv_from_mem_spm_rd_resp = RecvIfcRTL(DmaSpmReadRespType)
+    s.recv_from_sram_load_response = RecvIfcRTL(DmaSpmReadRespType)
 
 
     # Component
@@ -178,9 +185,9 @@ class ControllerRTL(Component):
     s.recv_from_tile_store_request_pkt_queue.recv //= s.recv_from_tile_store_request_pkt
 
     # Requests towards local from others, 1 cycle delay to improve timing.
-    s.send_to_mem_load_request_queue.send //= s.send_to_mem_load_request
+    s.send_to_mem_load_request_queue.send //= s.send_to_sram_load_request_from_noc
     s.send_to_tile_load_response_queue.send //= s.send_to_tile_load_response
-    s.send_to_mem_store_request_queue.send //= s.send_to_mem_store_request
+    s.send_to_mem_store_request_queue.send //= s.send_to_sram_store_request_from_noc
 
     # For control signals delivery from CPU to tiles.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
@@ -213,22 +220,22 @@ class ControllerRTL(Component):
     @update
     def update_dma_spm_forwarding():
       if has_dma_ports:
-        s.send_to_mem_spm_wr_req.val @= s.recv_from_dma_spm_wr_req.val
-        s.recv_from_dma_spm_wr_req.rdy @= s.send_to_mem_spm_wr_req.rdy
-        s.send_to_mem_spm_wr_req.msg @= s.recv_from_dma_spm_wr_req.msg
+        s.send_to_sram_store_request_from_dma.val @= s.recv_from_dma_spm_wr_req.val
+        s.recv_from_dma_spm_wr_req.rdy @= s.send_to_sram_store_request_from_dma.rdy
+        s.send_to_sram_store_request_from_dma.msg @= s.recv_from_dma_spm_wr_req.msg
 
-        s.send_to_mem_spm_rd_req.val     @= s.recv_from_dma_spm_rd_req.val
-        s.recv_from_dma_spm_rd_req.rdy   @= s.send_to_mem_spm_rd_req.rdy
-        s.send_to_mem_spm_rd_req.msg     @= s.recv_from_dma_spm_rd_req.msg
-        s.send_to_dma_spm_rd_resp.val @= s.recv_from_mem_spm_rd_resp.val
-        s.recv_from_mem_spm_rd_resp.rdy   @= s.send_to_dma_spm_rd_resp.rdy
-        s.send_to_dma_spm_rd_resp.msg @= s.recv_from_mem_spm_rd_resp.msg
+        s.send_to_sram_load_request_from_dma.val     @= s.recv_from_dma_spm_rd_req.val
+        s.recv_from_dma_spm_rd_req.rdy   @= s.send_to_sram_load_request_from_dma.rdy
+        s.send_to_sram_load_request_from_dma.msg     @= s.recv_from_dma_spm_rd_req.msg
+        s.send_to_dma_spm_rd_resp.val @= s.recv_from_sram_load_response.val
+        s.recv_from_sram_load_response.rdy   @= s.send_to_dma_spm_rd_resp.rdy
+        s.send_to_dma_spm_rd_resp.msg @= s.recv_from_sram_load_response.msg
       else:
-        s.send_to_mem_spm_wr_req.val @= 0
-        s.send_to_mem_spm_wr_req.msg @= DmaSpmWriteReqType()
-        s.send_to_mem_spm_rd_req.val @= 0
-        s.send_to_mem_spm_rd_req.msg @= DmaSpmReadReqType()
-        s.recv_from_mem_spm_rd_resp.rdy @= 0
+        s.send_to_sram_store_request_from_dma.val @= 0
+        s.send_to_sram_store_request_from_dma.msg @= DmaSpmWriteReqType()
+        s.send_to_sram_load_request_from_dma.val @= 0
+        s.send_to_sram_load_request_from_dma.msg @= DmaSpmReadReqType()
+        s.recv_from_sram_load_response.rdy @= 0
         s.recv_from_dma_spm_wr_req.rdy @= 0
         s.recv_from_dma_spm_rd_req.rdy @= 0
         s.send_to_dma_spm_rd_resp.val @= 0
@@ -544,8 +551,8 @@ class ControllerRTL(Component):
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
     recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)
     crossbar_str = "crossbar: {" + s.crossbar.line_trace() + "}"
-    send_to_mem_load_request_str = "send_to_mem_load_request: " + str(s.send_to_mem_load_request.msg)
-    send_to_mem_store_request_str = "send_to_mem_store_request: " + str(s.send_to_mem_store_request.msg)
+    send_to_mem_load_request_str = "send_to_sram_load_request_from_noc: " + str(s.send_to_sram_load_request_from_noc.msg)
+    send_to_mem_store_request_str = "send_to_sram_store_request_from_noc: " + str(s.send_to_sram_store_request_from_noc.msg)
     recv_from_noc_str ="recv_from_noc_pkt.val: " + str(s.recv_from_inter_cgra_noc.val) + " recv_from_noc_pkt.msg: " + str(s.recv_from_inter_cgra_noc.msg) + " recv_from_noc_pkt.rdy: " + str(s.recv_from_inter_cgra_noc.rdy)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_inter_cgra_noc.msg) + "; rdy: " + str(s.send_to_inter_cgra_noc.rdy) + "; val: " + str(s.send_to_inter_cgra_noc.val)
     return f'{recv_from_cpu_pkt_str} || {recv_from_cpu_pkt_queue_str} || {crossbar_recv_str} ||  {send_to_ctrl_ring_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_mem_load_request_str} || {send_to_mem_store_request_str} || {recv_from_noc_str} || {send_to_noc_str}\n'
