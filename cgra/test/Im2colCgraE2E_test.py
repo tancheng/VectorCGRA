@@ -126,19 +126,13 @@ class TestHarness(Component):
     CompleteCountType = mk_bits(clog2(complete_count_value + 1))
     s.complete_count = Wire(CompleteCountType)
 
-    # One-cycle start pulse for the integrated module after reset.
-    s.started = Wire(b1)
-
-    @update
-    def drive_start_im2col():
-      s.dut.start_im2col @= ~s.started
-
-    @update_ff
-    def update_started():
-      if s.reset:
-        s.started <<= b1(0)
-      else:
-        s.started <<= b1(1)
+    # Send one CMD_LAUNCH packet to recv_im2col_pkt to trigger the
+    # engine; tie send_im2col_pkt.rdy high so the engine's CMD_COMPLETE
+    # response is drained as soon as it appears.
+    launch_pkt = CgraPayloadType(CMD_LAUNCH, 0, 0, 0, 0)
+    s.src_im2col_pkt = TestSrcRTL(CgraPayloadType, [launch_pkt])
+    s.src_im2col_pkt.send  //= s.dut.recv_im2col_pkt
+    s.dut.send_im2col_pkt.rdy //= 1
 
     # Two-way arbiter (config vs query). The engine-vs-cpu mux now lives
     # inside IntegratedIm2ColWithCgraRTL, so this harness only chooses
