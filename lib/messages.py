@@ -236,23 +236,28 @@ def mk_dma_cmd(dram_addr_nbits = 64,
 # A data structure to represent the data to be transferred by DMA.
 #
 # === Mask Design ===
-# Data transfer granularity between DRAM and SPM is 1 word (4 bytes)
+# Data transfer granularity between DRAM and SPM is 1 word (= 4 bytes)
 # The `dram_mask` and `spm_mask` fields define the bitwidth of byte
 # masks for DRAM and SPM data respectively.
 #
 # Actual mask *values* are generated independently by the DMA engine
 # FSM (see DmaEngineRTL), NOT carried in this struct:
 #
-# - dram_mask (16-bit, one bit per byte of 128-bit(16 bytes) DRAM beat):
+# - dram_mask (16-bit, one bit per byte of 128-bit (16 bytes) DRAM beat):
 #   Dynamically computed during MVOUT (SPM -> DRAM) based on the
 #   number of valid words in the last beat. Values range from 0x000f
-#   (1 word) to 0xffff (full beat). For example, if DMA move 1 word from SPM to DRAM, the mask is 0x000f.
+#   (1 word) to 0xffff (full beat). 
+#   The SPM has a data width of 32 bits, so it can only read 32 bits per cycle.
+#   In contrast, the DRAM has a data width of 128 bits.
+#   Therefore, the amount of data transferred by the DMA from the SPM to the DRAM determines the write mask applied to the DRAM.
+#   For example:
+#   if DMA move 1 word from SPM to DRAM, the mask is 0x000f.
 #   If DMA move 2 words from SPM to DRAM, the mask is 0x00ff.
 #   If DMA move 3 words from SPM to DRAM, the mask is 0x0fff.
 #   If DMA move 4 words from SPM to DRAM, the mask is 0xffff.
 #
 # - spm_mask (4-bit, one bit per byte of 32-bit SPM word):
-#   SPM writes always write full words, so the mask is
+#   SPM writes always write one full word, so the mask is
 #   hardcoded to 0xf. This field is reserved for
 #   future byte-granular SPM write support.
 def mk_dma_data(dram_data_nbits = 128,

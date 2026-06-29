@@ -103,7 +103,7 @@ class ControllerRTL(Component):
 
     # -------------------------------------------------------
     # SPM (SRAM) access path from the DMA engine.
-    # The DMA and the inter-tile NoC (above) each have their own
+    # The DMA and the inter-cgra NoC (above) each have their own
     # dedicated SPM access interfaces to the data memory controller.
     # They are kept separate because the DMA can perform burst data
     # movement.
