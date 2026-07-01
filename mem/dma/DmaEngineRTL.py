@@ -263,8 +263,9 @@ class DmaEngineRTL( Component ):
             s.words_left_ff <<= s.words_left_reg - BytesType( 1 )
 
             if s.words_left_reg == BytesType( 1 ):
-              # Last beat of MVOUT: compute byte-mask based on how many
-              # valid 32-bit words are in this final beat.
+              # Compute the byte mask based on the number of valid words in the beat.
+              # If DMA moves 1 word from SPM to DRAM, the mask is 0x000f.
+              # 0x00ff for 2 words, 0x0fff for 3 words, 0xffff for 4 words.
               if s.word_idx_reg == b2( 0 ):
                 s.wr_mask_ff <<= MemMaskType( 0x000f )  # 1 word  (bytes 0-3)
               elif s.word_idx_reg == b2( 1 ):
