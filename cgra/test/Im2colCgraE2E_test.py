@@ -126,18 +126,12 @@ class TestHarness(Component):
     CompleteCountType = mk_bits(clog2(complete_count_value + 1))
     s.complete_count = Wire(CompleteCountType)
 
-    # Send one CMD_LAUNCH packet to recv_im2col_pkt to trigger the
-    # engine; tie send_im2col_pkt.rdy high so the engine's CMD_COMPLETE
-    # response is drained as soon as it appears.
-    launch_pkt = CgraPayloadType(CMD_LAUNCH, 0, 0, 0, 0)
-    s.src_im2col_pkt = TestSrcRTL(CgraPayloadType, [launch_pkt])
-    s.src_im2col_pkt.send  //= s.dut.recv_im2col_pkt
-    s.dut.send_im2col_pkt.rdy //= 1
-
     # Two-way arbiter (config vs query). The engine-vs-cpu mux now lives
     # inside IntegratedIm2ColWithCgraRTL, so this harness only chooses
     # between the residual config stream and the post-complete query
-    # stream.
+    # stream. Note the launch packet (cmd=CMD_IM2COL_LAUNCH) is now the
+    # first entry of src_ctrl_pkt: the controller inside the CGRA forks
+    # it off to the engine's DMA outport.
     @update
     def issue_pkt():
       s.dut.recv_from_cpu_pkt.val @= b1(0)
@@ -363,6 +357,14 @@ def _run(pe_weights, expected_outputs,
       build_systolic_packets(IntraCgraPktType, CgraPayloadType, CtrlType,
                              DataType, TileInType, FuInType, FuOutType,
                              updated_ctrl_steps, pe_weights, expected_outputs)
+
+  # DMA-style trigger: prepend a CMD_IM2COL_LAUNCH packet. The CGRA
+  # controller inspects the payload.cmd and forks this one packet off
+  # to send_to_im2col_engine_pkt (its DMA outport); all other packets
+  # continue into the controller's crossbar as before.
+  launch_pkt = IntraCgraPktType(
+      payload = CgraPayloadType(CMD_IM2COL_LAUNCH))
+  src_ctrl_pkt = [launch_pkt] + src_ctrl_pkt
 
   th = TestHarness(FuList, IntraCgraPktType, CgraPayloadType, DataType,
                    cgra_id, x_tiles, y_tiles,

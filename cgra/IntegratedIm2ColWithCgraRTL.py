@@ -2,42 +2,50 @@
 ==========================================================================
 IntegratedIm2ColWithCgraRTL.py
 ==========================================================================
-Top-level RTL module that integrates an Im2col engine with a CGRA.
+Top-level RTL module that integrates an Im2col engine with a CGRA in a
+DMA-style topology: the CPU only talks to the CGRA controller, and the
+Im2col engine sits behind the controller like a DMA peripheral.
 
-The Im2colEngineRTL produces a stream of CMD_STORE_REQUEST packets that
-preload activations into the CGRA's data memory; this stream is
-arbitrated together with the external `recv_from_cpu_pkt` stream into
-the single packet input of the CGRA controller. The engine wins until
-it asserts `done`, then the external stream takes over.
+A CPU-issued IntraCgraPkt whose payload carries cmd = CMD_IM2COL_LAUNCH
+is diverted by the controller (via its new send_to_im2col_engine_pkt
+outport) directly to the engine, which then reads the preloaded image
+from its input scratchpad, computes im2col, and streams the lowered
+(kH*kW) x (Hout*Wout) matrix back into the CGRA's data memory as a
+sequence of CMD_STORE_REQUEST packets. Those preload packets still ride
+the arbiter into the controller's recv_from_cpu_pkt during the preload
+phase; once engine.done rises, the arbiter yields the port to the
+external CPU packet stream.
 
 Architecture:
 
-    +----------------- IntegratedIm2ColWithCgraRTL ----------------------+
-    |                                                                    |
-    |  recv_im2col_pkt (val/rdy, CgraPayloadType, cmd=CMD_LAUNCH)        |
-    |       |                                                            |
-    |       v                                                            |
-    |  +--------------------+                                            |
-    |  |   Im2colEngineRTL  |  engine.send_pkt                           |
-    |  | (Im2col +          | --------------+                            |
-    |  |  scratchpads +     |               |                            |
-    |  |  emit FSM)         |               v                            |
-    |  +--------------------+         +-----------+                      |
-    |       |                         | preload   | --> cgra             |
-    |       v                         | arbiter   |     .recv_from_      |
-    |  send_im2col_pkt                +-----------+     cpu_pkt          |
-    |  (val/rdy, CgraPayloadType,           ^                            |
-    |   cmd=CMD_COMPLETE on done)           |                            |
-    |                                       |                            |
-    |  recv_from_cpu_pkt ------------------'                             |
-    |  (residual systolic                                                |
-    |   config + query pkts)                                             |
-    |                                                                    |
-    |  CgraRTL (controller, ctrl_ring, data_mem, tile[0..n-1], NoC)      |
-    |                                                                    |
-    |  send_to_cpu_pkt <-- cgra.send_to_cpu_pkt                          |
-    |  ... boundary / inter-cgra ports pass through to cgra ...          |
-    +--------------------------------------------------------------------+
+    +----------------- IntegratedIm2ColWithCgraRTL --------------------+
+    |                                                                  |
+    |  recv_from_cpu_pkt (val/rdy, IntraCgraPktType)                   |
+    |         |                                                        |
+    |         v          +-----------+                                 |
+    |         +--------->|  preload  |                                 |
+    |                    |  arbiter  |----> cgra.recv_from_cpu_pkt     |
+    |         +--------->|           |                                 |
+    |         |          +-----------+                                 |
+    |         |                                                        |
+    |         |                       cgra.send_to_im2col_engine_pkt   |
+    |         |                    (CMD_IM2COL_LAUNCH forked by ctrl)  |
+    |         |                              |                         |
+    |         |                              v                         |
+    |         |                       +------+----------+               |
+    |         |                       |  Im2colEngineRTL |              |
+    |         |                       |  (Im2col +       |              |
+    |         |                       |   scratchpads +  |              |
+    |         |                       |   emit FSM)      |              |
+    |         |                       +--------+---------+              |
+    |         |                                | engine.send_pkt        |
+    |         +--------------------------------+                        |
+    |                       (CMD_STORE_REQUEST preload back into ctrl)  |
+    |                                                                   |
+    |  CgraRTL (controller dispatches to tiles / data_mem / engine)     |
+    |  send_to_cpu_pkt <-- cgra.send_to_cpu_pkt                         |
+    |  ... boundary / inter-cgra ports pass through to cgra ...         |
+    +-------------------------------------------------------------------+
 """
 
 from pymtl3 import *
@@ -46,7 +54,6 @@ from .CgraRTL import CgraRTL
 from .Im2colEngineRTL import Im2colEngineRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ..lib.cmd_type import CMD_COMPLETE
 from ..lib.messages import (mk_cgra_id_type, mk_inter_cgra_pkt,
                             mk_intra_cgra_pkt)
 from ..lib.util.common import KING_MESH, MESH
@@ -85,18 +92,11 @@ class IntegratedIm2ColWithCgraRTL(Component):
 
     assert(cgra_topology == MESH or cgra_topology == KING_MESH)
 
-    # External interface (mirrors CgraRTL plus a val/rdy command pair for
-    # the im2col engine; the inter-CGRA NoC ports are not exposed because
-    # the integration is single-CGRA by design, and the inner CGRA is
-    # instantiated with is_multi_cgra=False so it bypasses inter-CGRA
-    # traffic internally).
-    #
-    # The engine is triggered by a packet on recv_im2col_pkt whose
-    # payload carries cmd = CMD_LAUNCH; when the engine finishes it
-    # emits a packet on send_im2col_pkt with cmd = CMD_COMPLETE.
-    s.recv_im2col_pkt = RecvIfcRTL(CgraPayloadType)
-    s.send_im2col_pkt = SendIfcRTL(CgraPayloadType)
-
+    # External interface. The CPU has exactly one packet input port
+    # (recv_from_cpu_pkt) into the CGRA controller; the engine sits
+    # behind the controller and receives its trigger from
+    # controller.send_to_im2col_engine_pkt. The inter-CGRA NoC ports
+    # are not exposed because the integration is single-CGRA by design.
     s.recv_from_cpu_pkt = RecvIfcRTL(CtrlPktType)
     s.send_to_cpu_pkt   = SendIfcRTL(CtrlPktType)
 
@@ -130,24 +130,15 @@ class IntegratedIm2ColWithCgraRTL(Component):
                      FunctionUnit, FuList, cgra_topology,
                      controller2addr_map, idTo2d_map,
                      is_multi_cgra = False,
-                     has_ctrl_ring = has_ctrl_ring)
+                     has_ctrl_ring = has_ctrl_ring,
+                     has_im2col_engine = True)
 
-    # Wire engine control through val/rdy CMD packet interfaces.
-    # recv_im2col_pkt: caller asserts val with cmd=CMD_LAUNCH; we drive
-    #   engine.start = val (a one-cycle pulse, since the caller drops val
-    #   after the handshake) and always assert rdy. The cmd field is part
-    #   of the contract -- this port carries CMD_LAUNCH packets -- but we
-    #   don't gate on it since this is a dedicated port (not a shared bus).
-    # send_im2col_pkt: when engine.done rises (and stays high in DONE
-    #   state), we present a CgraPayloadType packet with cmd=CMD_COMPLETE
-    #   for the caller to consume.
-    s.engine.start          //= s.recv_im2col_pkt.val
-    s.recv_im2col_pkt.rdy   //= 1
-
-    @update
-    def emit_im2col_done_pkt():
-      s.send_im2col_pkt.val @= s.engine.done
-      s.send_im2col_pkt.msg @= CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0)
+    # DMA-style trigger. The CGRA controller forks packets whose
+    # payload.cmd == CMD_IM2COL_LAUNCH to send_to_im2col_engine_pkt;
+    # we drive engine.start with the val of that stream (one-cycle
+    # pulse) and always acknowledge with rdy=1.
+    s.engine.start                       //= s.cgra.send_to_im2col_engine_pkt.val
+    s.cgra.send_to_im2col_engine_pkt.rdy //= 1
 
     # Pass-through wiring to CgraRTL.
     s.cgra.cgra_id       //= s.cgra_id
@@ -159,10 +150,7 @@ class IntegratedIm2ColWithCgraRTL(Component):
     # Tie off the inner CGRA's unused inter-CGRA NoC ports. With
     # is_multi_cgra=False the inner CGRA bypasses inter-CGRA traffic
     # internally but still exposes these top-level ports; we drive
-    # them to a quiescent state so elaboration sees a writer. We use
-    # construct-level //= rather than an @update block so the verilator
-    # translator sees a constant net (the NoC payload contains nested
-    # list-of-bits fields that the behavioral translator can't encode).
+    # them to a quiescent state so elaboration sees a writer.
     s.cgra.recv_from_inter_cgra_noc.val //= 0
     s.cgra.recv_from_inter_cgra_noc.msg //= NocPktType()
     s.cgra.send_to_inter_cgra_noc.rdy   //= 0
@@ -180,17 +168,30 @@ class IntegratedIm2ColWithCgraRTL(Component):
       s.send_data_on_boundary_west[i] //= s.cgra.send_data_on_boundary_west[i]
 
     # Preload-packet arbiter into the controller-facing recv_from_cpu_pkt.
-    # The engine has priority until it asserts done; afterwards the
-    # external CPU packet stream owns the port. We drive cgra.*.msg from a
-    # real signal in BOTH branches (rather than zero-defaulting at the
-    # top with CtrlPktType()) because the verilator translator can't
-    # encode nested-bitstruct default constructors in behavioral RTLIR.
+    # The CPU owns the bus initially (so the CMD_IM2COL_LAUNCH packet can
+    # reach the controller, which then forks it to the engine). Once the
+    # engine starts, `engine_active` latches high and the arbiter gives
+    # the bus to the engine's preload packet stream. When the engine
+    # asserts done, the latch clears and the bus returns to the CPU for
+    # the systolic config / launch / query stream.
+    s.engine_active = Wire(b1)
+
+    @update_ff
+    def update_engine_active():
+      if s.reset:
+        s.engine_active <<= b1(0)
+      else:
+        if s.engine.start:
+          s.engine_active <<= b1(1)
+        elif s.engine.done:
+          s.engine_active <<= b1(0)
+
     @update
     def preload_pkt_arbiter():
       s.engine.send_pkt.rdy   @= b1(0)
       s.recv_from_cpu_pkt.rdy @= b1(0)
 
-      if ~s.engine.done:
+      if s.engine_active:
         s.cgra.recv_from_cpu_pkt.val @= s.engine.send_pkt.val
         s.cgra.recv_from_cpu_pkt.msg @= s.engine.send_pkt.msg
         s.engine.send_pkt.rdy        @= s.cgra.recv_from_cpu_pkt.rdy

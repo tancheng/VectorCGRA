@@ -32,7 +32,8 @@ class ControllerRTL(Component):
                 idTo2d_map,
                 has_dma_ports = False,
                 DmaDataType = mk_dma_data(),
-                DmaCmdType = mk_dma_cmd()):
+                DmaCmdType = mk_dma_cmd(),
+                has_im2col_engine = False):
 
     # Derives types from InterCgraPktType.
     CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
@@ -85,6 +86,17 @@ class ControllerRTL(Component):
 
     s.recv_from_ctrl_ring_pkt = RecvIfcRTL(IntraCgraPktType)
     s.send_to_cpu_pkt = SendIfcRTL(IntraCgraPktType)
+
+    # DMA-style outbound port to an Im2col engine (or any similar
+    # peripheral). Packets arriving on recv_from_cpu_pkt whose payload
+    # carries cmd == CMD_IM2COL_LAUNCH are steered here instead of into
+    # the crossbar, so the engine sits behind the controller like a DMA.
+    # Unconditionally declared so pymtl3's static AST analysis on the
+    # @update block below can find the field. The has_im2col_engine
+    # flag only guards whether the block actually drives val to a
+    # non-zero value; when False the port stays quiescent (val=0)
+    # and the containing CgraRTL ties off rdy internally.
+    s.send_to_im2col_engine_pkt = SendIfcRTL(IntraCgraPktType)
 
     # Request from/to tiles.
     s.recv_from_tile_load_request_pkt = RecvIfcRTL(InterCgraPktType)
@@ -263,6 +275,9 @@ class ControllerRTL(Component):
         s.dma_tag)
       s.dma_done.rdy      @= 0
 
+      s.send_to_im2col_engine_pkt.val @= 0
+      s.send_to_im2col_engine_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
       for i in range(CONTROLLER_CROSSBAR_INPORTS):
         s.crossbar.recv[i].val @= 0
         s.crossbar.recv[i].msg @= ControllerXbarPktType(0, 0)
@@ -343,6 +358,13 @@ class ControllerRTL(Component):
             s.dma_bytes,
             s.dma_tag)
         s.recv_from_cpu_pkt_queue.send.rdy @= s.dma_cmd.rdy
+
+      elif has_im2col_engine & (cpu_cmd == CMD_IM2COL_LAUNCH):
+        # Fork the launch packet to the Im2col engine outport (DMA-style)
+        # instead of feeding it into the crossbar.
+        s.send_to_im2col_engine_pkt.val @= s.recv_from_cpu_pkt_queue.send.val
+        s.send_to_im2col_engine_pkt.msg @= s.recv_from_cpu_pkt_queue.send.msg
+        s.recv_from_cpu_pkt_queue.send.rdy @= s.send_to_im2col_engine_pkt.rdy
 
       else:
         # For the ctrl and data preloading.
