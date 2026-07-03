@@ -7,8 +7,7 @@ module that packages the Im2col data mover and the 3x3 weight-stationary
 systolic CGRA together. The engine inside the integration module emits
 the lowered activations as CMD_STORE_REQUEST packets that enter the CGRA
 through the same controller-facing port the host CPU uses for ordinary
-config / launch / query packets. See doc/figures/im2col_cgra_integration.md
-for the architecture diagram.
+config / launch / query packets.
 
 Two tests:
 
@@ -392,7 +391,7 @@ def _run(pe_weights, expected_outputs,
 #-------------------------------------------------------------------------
 
 def test_im2col_to_systolic_3x3(cmdline_opts):
-  # Bridge inputs: image + geometry chosen so lowered matrix == [1,2,3,4],
+  # Engine inputs: image + geometry chosen so lowered matrix == [1,2,3,4],
   # i.e. the same activation values the original systolic test preloads.
   engine_image       = [1, 3, 2, 4]
   engine_geom        = dict(in_base = 0, out_base = 16,
