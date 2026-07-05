@@ -4,43 +4,42 @@ IntegratedIm2ColWithCgraRTL.py
 ==========================================================================
 Top-level RTL module that integrates an Im2col engine with a CGRA in a
 DMA-style topology: the CPU only talks to the CGRA controller, and the
-Im2col engine sits behind the controller like a DMA peripheral.
+Im2col engine sits behind the controller like a DMA peripheral, with
+its own dedicated packet ports on the controller.
 
-A CPU-issued IntraCgraPkt whose payload carries cmd = CMD_IM2COL_LAUNCH
-is diverted by the controller (via its new send_to_im2col_engine_pkt
-outport) directly to the engine, which then reads the preloaded image
+The launch flow: a CPU-issued IntraCgraPkt with cmd = CMD_IM2COL_LAUNCH
+enters the controller through recv_from_cpu_pkt; the controller
+recognizes the cmd and forwards the packet on send_to_im2col_engine_pkt
+to trigger engine.start. The engine then reads the preloaded image
 from its input scratchpad, computes im2col, and streams the lowered
-(kH*kW) x (Hout*Wout) matrix back into the CGRA's data memory as a
-sequence of CMD_STORE_REQUEST packets. Those preload packets still ride
-the arbiter into the controller's recv_from_cpu_pkt during the preload
-phase; once engine.done rises, the arbiter yields the port to the
-external CPU packet stream.
+(kH*kW) x (Hout*Wout) matrix into the CGRA's data memory as a sequence
+of CMD_STORE_REQUEST packets that enter the controller through the
+engine-dedicated recv_from_im2col_pkt (a separate port so its source is
+obvious at the interface level). Both packet streams reach the same
+internal crossbar, so they still share downstream routing to data_mem
+/ ctrl_ring / NoC.
 
 Architecture:
 
     +----------------- IntegratedIm2ColWithCgraRTL --------------------+
     |                                                                  |
-    |  recv_from_cpu_pkt (val/rdy, IntraCgraPktType)                   |
-    |         |                                                        |
-    |         v          +-----------+                                 |
-    |         +--------->|  preload  |                                 |
-    |                    |  arbiter  |----> cgra.recv_from_cpu_pkt     |
-    |         +--------->|           |                                 |
-    |         |          +-----------+                                 |
-    |         |                                                        |
-    |         |                       cgra.send_to_im2col_engine_pkt   |
-    |         |                    (CMD_IM2COL_LAUNCH forked by ctrl)  |
-    |         |                              |                         |
-    |         |                              v                         |
-    |         |                       +------+----------+               |
-    |         |                       |  Im2colEngineRTL |              |
-    |         |                       |  (Im2col +       |              |
-    |         |                       |   scratchpads +  |              |
-    |         |                       |   emit FSM)      |              |
-    |         |                       +--------+---------+              |
-    |         |                                | engine.send_pkt        |
-    |         +--------------------------------+                        |
-    |                       (CMD_STORE_REQUEST preload back into ctrl)  |
+    |  recv_from_cpu_pkt --------> cgra.recv_from_cpu_pkt              |
+    |  (CPU: config / launch /                |                        |
+    |   query / CMD_IM2COL_LAUNCH)            |                        |
+    |                                         |  send_to_im2col_       |
+    |                                         |  engine_pkt (fork of   |
+    |                                         |  CMD_IM2COL_LAUNCH)    |
+    |                                         v                        |
+    |                                  +------+----------+             |
+    |                                  |  Im2colEngineRTL |             |
+    |                                  |  (Im2col +       |             |
+    |                                  |   scratchpads +  |             |
+    |                                  |   emit FSM)      |             |
+    |                                  +--------+---------+             |
+    |                                           | engine.send_pkt       |
+    |                                           v                       |
+    |                                cgra.recv_from_im2col_pkt          |
+    |                                (CMD_STORE_REQUEST preload)        |
     |                                                                   |
     |  CgraRTL (controller dispatches to tiles / data_mem / engine)     |
     |  send_to_cpu_pkt <-- cgra.send_to_cpu_pkt                         |
@@ -167,13 +166,25 @@ class IntegratedIm2ColWithCgraRTL(Component):
       s.recv_data_on_boundary_west[i] //= s.cgra.recv_data_on_boundary_west[i]
       s.send_data_on_boundary_west[i] //= s.cgra.send_data_on_boundary_west[i]
 
-    # Preload-packet arbiter into the controller-facing recv_from_cpu_pkt.
-    # The CPU owns the bus initially (so the CMD_IM2COL_LAUNCH packet can
-    # reach the controller, which then forks it to the engine). Once the
-    # engine starts, `engine_active` latches high and the arbiter gives
-    # the bus to the engine's preload packet stream. When the engine
-    # asserts done, the latch clears and the bus returns to the CPU for
-    # the systolic config / launch / query stream.
+    # Direct point-to-point wiring for the two producer streams. The
+    # CPU and the engine each drive their own dedicated port into the
+    # CGRA controller, so the source of every packet is honest at the
+    # interface.
+    #
+    # However, we still gate the CPU stream while a preload is in
+    # flight: the CPU packet list contains the systolic config/launch
+    # packets for every tile immediately after the CMD_IM2COL_LAUNCH,
+    # and without this gate the tile launches would race the engine's
+    # store requests and execute against un-preloaded SRAM.
+    #
+    # `engine_active` rises on engine.start (the cycle we fork
+    # CMD_IM2COL_LAUNCH to the engine) and clears on engine.done. While
+    # high, the CPU-facing recv_from_cpu_pkt is held (rdy=0) so
+    # subsequent CPU packets wait. The engine's dedicated
+    # recv_from_im2col_pkt is unaffected -- it carries the preload
+    # stream freely.
+    s.engine.send_pkt //= s.cgra.recv_from_im2col_pkt
+
     s.engine_active = Wire(b1)
 
     @update_ff
@@ -187,14 +198,11 @@ class IntegratedIm2ColWithCgraRTL(Component):
           s.engine_active <<= b1(0)
 
     @update
-    def preload_pkt_arbiter():
-      s.engine.send_pkt.rdy   @= b1(0)
-      s.recv_from_cpu_pkt.rdy @= b1(0)
-
+    def gate_cpu_stream():
       if s.engine_active:
-        s.cgra.recv_from_cpu_pkt.val @= s.engine.send_pkt.val
-        s.cgra.recv_from_cpu_pkt.msg @= s.engine.send_pkt.msg
-        s.engine.send_pkt.rdy        @= s.cgra.recv_from_cpu_pkt.rdy
+        s.cgra.recv_from_cpu_pkt.val @= b1(0)
+        s.cgra.recv_from_cpu_pkt.msg @= s.recv_from_cpu_pkt.msg
+        s.recv_from_cpu_pkt.rdy      @= b1(0)
       else:
         s.cgra.recv_from_cpu_pkt.val @= s.recv_from_cpu_pkt.val
         s.cgra.recv_from_cpu_pkt.msg @= s.recv_from_cpu_pkt.msg

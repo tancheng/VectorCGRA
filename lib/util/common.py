@@ -47,12 +47,12 @@ MAX_CTRL_COUNT = 1024
 PROLOGUE_MAX_COUNT = 7
 
 # Constant for number of inports on the controller xbar towards NoC.
-# Crossbar with 6 inports (load and store requests towards remote
+# Crossbar with 7 inports (load and store requests towards remote
 # memory, load response from local memory, ctrl&data packet from cpu,
-# command signal from inter-tile, i.e., intra-cgra -- ring, and
-# global reduce unit) and 1 outport (only allow one request be sent
-# out per cycle).
-CONTROLLER_CROSSBAR_INPORTS = 6
+# command signal from inter-tile, i.e., intra-cgra -- ring,
+# global reduce unit, and preload packets from an im2col engine) and
+# 1 outport (only allow one request be sent out per cycle).
+CONTROLLER_CROSSBAR_INPORTS = 7
 
 GLOBAL_REDUCE_MAX_COUNT = 4
 

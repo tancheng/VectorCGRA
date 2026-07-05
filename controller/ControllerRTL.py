@@ -87,16 +87,22 @@ class ControllerRTL(Component):
     s.recv_from_ctrl_ring_pkt = RecvIfcRTL(IntraCgraPktType)
     s.send_to_cpu_pkt = SendIfcRTL(IntraCgraPktType)
 
-    # DMA-style outbound port to an Im2col engine (or any similar
-    # peripheral). Packets arriving on recv_from_cpu_pkt whose payload
-    # carries cmd == CMD_IM2COL_LAUNCH are steered here instead of into
-    # the crossbar, so the engine sits behind the controller like a DMA.
-    # Unconditionally declared so pymtl3's static AST analysis on the
-    # @update block below can find the field. The has_im2col_engine
-    # flag only guards whether the block actually drives val to a
-    # non-zero value; when False the port stays quiescent (val=0)
-    # and the containing CgraRTL ties off rdy internally.
+    # DMA-style bidirectional interface with an Im2col engine (or any
+    # similar peripheral).
+    #  - send_to_im2col_engine_pkt: launch/config packets forwarded
+    #    from recv_from_cpu_pkt whose payload carries
+    #    cmd == CMD_IM2COL_LAUNCH.
+    #  - recv_from_im2col_pkt: preload packets that the engine emits
+    #    back into the CGRA (typically CMD_STORE_REQUEST). Kept
+    #    separate from recv_from_cpu_pkt so the source of a packet is
+    #    obvious from the port name.
+    # Both are unconditionally declared so pymtl3's static AST analysis
+    # can find the fields. The has_im2col_engine flag only guards
+    # whether the @update block actually drives val to a non-zero
+    # value; when False the ports stay quiescent (val=0) and the
+    # containing CgraRTL ties off the corresponding rdy/val internally.
     s.send_to_im2col_engine_pkt = SendIfcRTL(IntraCgraPktType)
+    s.recv_from_im2col_pkt      = RecvIfcRTL(IntraCgraPktType)
 
     # Request from/to tiles.
     s.recv_from_tile_load_request_pkt = RecvIfcRTL(InterCgraPktType)
@@ -151,6 +157,12 @@ class ControllerRTL(Component):
     # outport (only allow one request be sent out per cycle).
     s.crossbar = XbarRTL(ControllerXbarPktType, CONTROLLER_CROSSBAR_INPORTS, 1)
     s.recv_from_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
+    # Use ChannelRTL for the im2col preload path -- matches how tile
+    # load/store request queues are wired and cleanly forwards the
+    # packet cycle-by-cycle without the 2-entry buffering that
+    # NormalQueueRTL uses (which was letting packets leapfrog under
+    # crossbar contention).
+    s.recv_from_im2col_pkt_queue = ChannelRTL(IntraCgraPktType, latency = 1)
     s.send_to_cpu_pkt_queue = NormalQueueRTL(IntraCgraPktType)
 
     # Global reduce unit.
@@ -204,6 +216,10 @@ class ControllerRTL(Component):
     # For control signals delivery from CPU to tiles.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
+    # Im2col engine's preload packets enter their own queue -- kept
+    # separate from recv_from_cpu_pkt_queue so the source of every
+    # queued packet is obvious.
+    s.recv_from_im2col_pkt //= s.recv_from_im2col_pkt_queue.recv
 
     @update_ff
     def update_dma_cmd_regs():
@@ -261,6 +277,7 @@ class ControllerRTL(Component):
       kFromCpuCtrlAndDataIdx = 3
       kFromInterTileRingIdx = 4
       kFromReduceUnitIdx = 5
+      kFromIm2colIdx = 6
 
       s.send_to_cpu_pkt_queue.recv.val @= 0
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -277,6 +294,8 @@ class ControllerRTL(Component):
 
       s.send_to_im2col_engine_pkt.val @= 0
       s.send_to_im2col_engine_pkt.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+      s.recv_from_im2col_pkt_queue.send.rdy @= 0
 
       for i in range(CONTROLLER_CROSSBAR_INPORTS):
         s.crossbar.recv[i].val @= 0
@@ -327,6 +346,25 @@ class ControllerRTL(Component):
           s.global_reduce_unit.send.val
       s.global_reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
       s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_unit.send.msg
+
+      # For the preload packets from the Im2col engine. The engine
+      # produces CMD_STORE_REQUEST packets that carry the lowered
+      # activation values; they enter the crossbar the same way a
+      # tile-store or CPU-store request would.
+      s.crossbar.recv[kFromIm2colIdx].val @= \
+          s.recv_from_im2col_pkt_queue.send.val
+      s.recv_from_im2col_pkt_queue.send.rdy @= s.crossbar.recv[kFromIm2colIdx].rdy
+      s.crossbar.recv[kFromIm2colIdx].msg @= \
+          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                InterCgraPktType(s.cgra_id, # src
+                                                 s.recv_from_im2col_pkt_queue.send.msg.dst_cgra_id, # dst
+                                                 0, 0,
+                                                 s.idTo2d_x_lut[s.recv_from_im2col_pkt_queue.send.msg.dst_cgra_id],
+                                                 s.idTo2d_y_lut[s.recv_from_im2col_pkt_queue.send.msg.dst_cgra_id],
+                                                 num_tiles,
+                                                 s.recv_from_im2col_pkt_queue.send.msg.dst,
+                                                 0, 0, 0,
+                                                 s.recv_from_im2col_pkt_queue.send.msg.payload))
 
       cpu_payload = s.recv_from_cpu_pkt_queue.send.msg.payload
       cpu_cmd = cpu_payload.cmd

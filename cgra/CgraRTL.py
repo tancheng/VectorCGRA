@@ -84,10 +84,12 @@ class CgraRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
-    # DMA-style outbound port to an Im2col engine. Only present when
-    # has_im2col_engine=True; existing tests use the default False.
+    # DMA-style bidirectional interface with an Im2col engine. Only
+    # exposed on the CGRA when has_im2col_engine=True; existing tests
+    # use the default False.
     if has_im2col_engine:
       s.send_to_im2col_engine_pkt = SendIfcRTL(CtrlPktType)
+      s.recv_from_im2col_pkt      = RecvIfcRTL(CtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -162,14 +164,19 @@ class CgraRTL(Component):
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
-    # The controller unconditionally exposes send_to_im2col_engine_pkt so
-    # its @update block can reference the port. When no external engine
-    # is attached (has_im2col_engine=False), we tie off the rdy input
-    # internally so elaboration doesn't see a headless net.
+    # The controller unconditionally exposes send_to_im2col_engine_pkt
+    # and recv_from_im2col_pkt so its @update block can reference the
+    # fields. When no external engine is attached (has_im2col_engine=
+    # False), we tie off the rdy input (for the send port) and the val
+    # / msg inputs (for the recv port) internally so elaboration
+    # doesn't see a headless net.
     if has_im2col_engine:
       s.send_to_im2col_engine_pkt //= s.controller.send_to_im2col_engine_pkt
+      s.recv_from_im2col_pkt      //= s.controller.recv_from_im2col_pkt
     else:
       s.controller.send_to_im2col_engine_pkt.rdy //= 0
+      s.controller.recv_from_im2col_pkt.val      //= 0
+      s.controller.recv_from_im2col_pkt.msg      //= CtrlPktType()
 
     # Assigns tile id.
     for i in range(s.num_tiles):
