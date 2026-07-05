@@ -218,8 +218,18 @@ class ControllerRTL(Component):
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
     # Im2col engine's preload packets enter their own queue -- kept
     # separate from recv_from_cpu_pkt_queue so the source of every
-    # queued packet is obvious.
-    s.recv_from_im2col_pkt //= s.recv_from_im2col_pkt_queue.recv
+    # queued packet is obvious. The external recv_from_im2col_pkt is
+    # wired to the queue only when has_im2col_engine=True; when False,
+    # the queue's recv end is tied off internally (queue.recv is a
+    # sub-component port, so pymtl3 allows the enclosing controller
+    # to drive it). The controller's own InPorts (recv_from_im2col_pkt.
+    # val/msg and send_to_im2col_engine_pkt.rdy) still need to be tied
+    # off by the ENCLOSING module (CgraRTL takes care of that).
+    if has_im2col_engine:
+      s.recv_from_im2col_pkt //= s.recv_from_im2col_pkt_queue.recv
+    else:
+      s.recv_from_im2col_pkt_queue.recv.val //= 0
+      s.recv_from_im2col_pkt_queue.recv.msg //= IntraCgraPktType()
 
     @update_ff
     def update_dma_cmd_regs():

@@ -164,12 +164,10 @@ class CgraRTL(Component):
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
-    # The controller unconditionally exposes send_to_im2col_engine_pkt
-    # and recv_from_im2col_pkt so its @update block can reference the
-    # fields. When no external engine is attached (has_im2col_engine=
-    # False), we tie off the rdy input (for the send port) and the val
-    # / msg inputs (for the recv port) internally so elaboration
-    # doesn't see a headless net.
+    # The controller unconditionally declares its im2col ports for
+    # pymtl3 AST reasons. When has_im2col_engine=True, expose them on
+    # the CGRA boundary; when False, tie them off internally here so
+    # existing CGRA tests (that don't wire them) still elaborate.
     if has_im2col_engine:
       s.send_to_im2col_engine_pkt //= s.controller.send_to_im2col_engine_pkt
       s.recv_from_im2col_pkt      //= s.controller.recv_from_im2col_pkt
