@@ -71,6 +71,66 @@ from ...lib.util.common import *
 
 
 #-------------------------------------------------------------------------
+# Shared CGRA / mesh configuration for every test in this file.
+#-------------------------------------------------------------------------
+
+TOPOLOGY                    = "Mesh"
+X_TILES                     = 3
+Y_TILES                     = 3
+DATA_BITWIDTH               = 32
+CTRL_MEM_SIZE               = 6
+DATA_MEM_SIZE_GLOBAL        = 128
+DATA_MEM_SIZE_PER_BANK      = 16
+NUM_BANKS_PER_CGRA          = 2
+NUM_CGRA_COLUMNS            = 4
+NUM_CGRA_ROWS               = 1
+NUM_REGISTERS_PER_REG_BANK  = 16
+NUM_TILE_INPORTS            = 4  # Mesh
+NUM_TILE_OUTPORTS           = 4
+NUM_FU_INPORTS              = 4
+NUM_FU_OUTPORTS             = 2
+CTRL_STEPS                  = 2
+ENGINE_SCRATCH_MEM_SIZE     = 64
+
+NUM_CGRAS          = NUM_CGRA_COLUMNS * NUM_CGRA_ROWS
+NUM_TILES          = X_TILES * Y_TILES
+PER_CGRA_DATA_SIZE = DATA_MEM_SIZE_GLOBAL // NUM_CGRAS
+
+DataAddrType = mk_bits(clog2(DATA_MEM_SIZE_GLOBAL))
+CtrlAddrType = mk_bits(clog2(CTRL_MEM_SIZE))
+DataType     = mk_data(DATA_BITWIDTH, 1)
+# Width must accommodate tile inports AND register-bank inports
+# (mk_ctrl was widened upstream when read-from-reg routing was added).
+TileInType   = mk_bits(clog2(NUM_TILE_INPORTS + NUM_FU_INPORTS + 1))
+FuInType     = mk_bits(clog2(NUM_FU_INPORTS + 1))
+FuOutType    = mk_bits(clog2(NUM_FU_OUTPORTS + 1))
+
+CtrlType = mk_ctrl(NUM_FU_INPORTS, NUM_FU_OUTPORTS,
+                   NUM_TILE_INPORTS, NUM_TILE_OUTPORTS,
+                   NUM_REGISTERS_PER_REG_BANK)
+CgraPayloadType = mk_cgra_payload(DataType, DataAddrType,
+                                  CtrlType, CtrlAddrType)
+IntraCgraPktType = mk_intra_cgra_pkt(NUM_CGRA_COLUMNS, NUM_CGRA_ROWS,
+                                     NUM_TILES, CgraPayloadType)
+
+CONTROLLER2ADDR_MAP = {i: [i * PER_CGRA_DATA_SIZE,
+                           (i + 1) * PER_CGRA_DATA_SIZE - 1]
+                       for i in range(NUM_CGRAS)}
+ID_TO_2D_MAP = {0: [0, 0], 1: [1, 0], 2: [2, 0], 3: [3, 0]}
+
+# Full FU list for functional e2e tests (includes Fp / vector FUs).
+FULL_FU_LIST = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL,
+                GrantRTL, MemUnitRTL, SelRTL, FpAddRTL, FpMulRTL,
+                SeqMulAdderRTL, VectorMulComboRTL, VectorAdderComboRTL]
+
+# Compact FU list for the Verilog-gen smoke test -- skips Fp* /
+# HardFloat FUs whose Verilog-imported HardFloat sub-modules require
+# the full Verilator import flow to elaborate cleanly.
+COMPACT_FU_LIST = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL,
+                   GrantRTL, MemUnitRTL, SelRTL]
+
+
+#-------------------------------------------------------------------------
 # Test harness: thin wrapper around the integrated module.
 #-------------------------------------------------------------------------
 
@@ -304,59 +364,12 @@ def build_systolic_packets(IntraCgraPktType, CgraPayloadType, CtrlType,
 def _run(pe_weights, expected_outputs,
          engine_image, engine_geom, engine_dst_tiles, engine_data_addrs,
          cmdline_opts):
-  topology              = "Mesh"
-  x_tiles               = 3
-  y_tiles               = 3
-  data_bitwidth         = 32
-  ctrl_mem_size         = 6
-  data_mem_size_global  = 128
-  data_mem_size_per_bank = 16
-  num_banks_per_cgra    = 2
-  num_cgra_columns      = 4
-  num_cgra_rows         = 1
-  num_cgras             = num_cgra_columns * num_cgra_rows
-  num_registers_per_reg_bank = 16
-  num_tile_inports      = 4  # Mesh
-  num_tile_outports     = 4
-  num_fu_inports        = 4
-  num_fu_outports       = 2
-  num_tiles             = x_tiles * y_tiles
-  per_cgra_data_size    = data_mem_size_global // num_cgras
-  updated_ctrl_steps    = 2
-  ctrl_steps            = 2
-  engine_scratch_mem_size = 64
-
-  FuList = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL,
-            GrantRTL, MemUnitRTL, SelRTL, FpAddRTL, FpMulRTL,
-            SeqMulAdderRTL, VectorMulComboRTL, VectorAdderComboRTL]
-
-  DataAddrType = mk_bits(clog2(data_mem_size_global))
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  DataType     = mk_data(data_bitwidth, 1)
-  # Width must accommodate tile inports AND register-bank inports
-  # (mk_ctrl was widened upstream when read-from-reg routing was added).
-  TileInType   = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
-  FuInType     = mk_bits(clog2(num_fu_inports + 1))
-  FuOutType    = mk_bits(clog2(num_fu_outports + 1))
-
-  CtrlType = mk_ctrl(num_fu_inports, num_fu_outports,
-                     num_tile_inports, num_tile_outports,
-                     num_registers_per_reg_bank)
-  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType,
-                                    CtrlType, CtrlAddrType)
-  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns, num_cgra_rows,
-                                       num_tiles, CgraPayloadType)
-
   cgra_id = 0
-  controller2addr_map = {i: [i * per_cgra_data_size,
-                             (i + 1) * per_cgra_data_size - 1]
-                         for i in range(num_cgras)}
-  idTo2d_map = {0: [0, 0], 1: [1, 0], 2: [2, 0], 3: [3, 0]}
 
   src_ctrl_pkt, src_query_pkt, complete_signal_sink_out = \
       build_systolic_packets(IntraCgraPktType, CgraPayloadType, CtrlType,
                              DataType, TileInType, FuInType, FuOutType,
-                             updated_ctrl_steps, pe_weights, expected_outputs)
+                             CTRL_STEPS, pe_weights, expected_outputs)
 
   # DMA-style trigger: prepend a CMD_IM2COL_LAUNCH packet. The CGRA
   # controller inspects the payload.cmd and forks this one packet off
@@ -366,18 +379,18 @@ def _run(pe_weights, expected_outputs,
       payload = CgraPayloadType(CMD_IM2COL_LAUNCH))
   src_ctrl_pkt = [launch_pkt] + src_ctrl_pkt
 
-  th = TestHarness(FuList, IntraCgraPktType, CgraPayloadType, DataType,
-                   cgra_id, x_tiles, y_tiles,
-                   ctrl_mem_size, data_mem_size_global,
-                   data_mem_size_per_bank, num_banks_per_cgra,
-                   num_registers_per_reg_bank,
-                   src_ctrl_pkt, ctrl_steps,
-                   True, topology,
-                   controller2addr_map, idTo2d_map,
+  th = TestHarness(FULL_FU_LIST, IntraCgraPktType, CgraPayloadType, DataType,
+                   cgra_id, X_TILES, Y_TILES,
+                   CTRL_MEM_SIZE, DATA_MEM_SIZE_GLOBAL,
+                   DATA_MEM_SIZE_PER_BANK, NUM_BANKS_PER_CGRA,
+                   NUM_REGISTERS_PER_REG_BANK,
+                   src_ctrl_pkt, CTRL_STEPS,
+                   True, TOPOLOGY,
+                   CONTROLLER2ADDR_MAP, ID_TO_2D_MAP,
                    complete_signal_sink_out,
-                   num_cgra_rows, num_cgra_columns, src_query_pkt,
+                   NUM_CGRA_ROWS, NUM_CGRA_COLUMNS, src_query_pkt,
                    engine_image, engine_geom, engine_dst_tiles,
-                   engine_data_addrs, engine_scratch_mem_size)
+                   engine_data_addrs, ENGINE_SCRATCH_MEM_SIZE)
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
@@ -460,61 +473,20 @@ def test_im2col_conv1d_to_systolic_3x3(cmdline_opts):
 
 def _make_dut():
   """Construct a standalone IntegratedIm2ColWithCgraRTL for translation."""
-  data_bitwidth              = 32
-  ctrl_mem_size              = 6
-  data_mem_size_global       = 128
-  data_mem_size_per_bank     = 16
-  num_banks_per_cgra         = 2
-  num_cgra_columns           = 4
-  num_cgra_rows              = 1
-  num_cgras                  = num_cgra_columns * num_cgra_rows
-  num_registers_per_reg_bank = 16
-  num_tile_inports           = 4  # Mesh
-  num_tile_outports          = 4
-  num_fu_inports             = 4
-  num_fu_outports            = 2
-  x_tiles                    = 3
-  y_tiles                    = 3
-  num_tiles                  = x_tiles * y_tiles
-  per_cgra_data_size         = data_mem_size_global // num_cgras
-  num_ctrl                   = 2
-  total_steps                = 2
-
-  # Compact FuList for the Verilog-gen smoke test -- skips Fp* /
-  # HardFloat FUs whose Verilog-imported HardFloat sub-modules
-  # require the Verilator import flow to be fully set up (which is
-  # only the case under --test-verilog).
-  FuList = [AdderRTL, MulRTL, LogicRTL, ShifterRTL, PhiRTL, CompRTL,
-            GrantRTL, MemUnitRTL, SelRTL]
-
-  DataAddrType = mk_bits(clog2(data_mem_size_global))
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  DataType     = mk_data(data_bitwidth, 1)
-  CtrlType     = mk_ctrl(num_fu_inports, num_fu_outports,
-                         num_tile_inports, num_tile_outports,
-                         num_registers_per_reg_bank)
-  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType,
-                                    CtrlType, CtrlAddrType)
-
-  controller2addr_map = {i: [i * per_cgra_data_size,
-                             (i + 1) * per_cgra_data_size - 1]
-                         for i in range(num_cgras)}
-  idTo2d_map = {0: [0, 0], 1: [1, 0], 2: [2, 0], 3: [3, 0]}
-
   return IntegratedIm2ColWithCgraRTL(
       CgraPayloadType,
-      num_cgra_rows, num_cgra_columns,
-      x_tiles, y_tiles, ctrl_mem_size,
-      data_mem_size_global, data_mem_size_per_bank,
-      num_banks_per_cgra, num_registers_per_reg_bank,
-      num_ctrl, total_steps,
-      True,                        # mem_access_is_combinational
-      FlexibleFuRTL, FuList, "Mesh",
-      controller2addr_map, idTo2d_map,
+      NUM_CGRA_ROWS, NUM_CGRA_COLUMNS,
+      X_TILES, Y_TILES, CTRL_MEM_SIZE,
+      DATA_MEM_SIZE_GLOBAL, DATA_MEM_SIZE_PER_BANK,
+      NUM_BANKS_PER_CGRA, NUM_REGISTERS_PER_REG_BANK,
+      CTRL_STEPS, CTRL_STEPS,       # num_ctrl, total_steps
+      True,                         # mem_access_is_combinational
+      FlexibleFuRTL, COMPACT_FU_LIST, TOPOLOGY,
+      CONTROLLER2ADDR_MAP, ID_TO_2D_MAP,
       # Im2col engine parameters (same geometry as
       # test_im2col_to_systolic_3x3 -- image [1,3,2,4] with 1x2 kernel
       # stride 2 lowers to [1,2,3,4]).
-      engine_scratch_mem_size = 64,
+      engine_scratch_mem_size = ENGINE_SCRATCH_MEM_SIZE,
       engine_in_base = 0, engine_out_base = 16,
       engine_H = 1, engine_W = 4,
       engine_kH = 1, engine_kW = 2, engine_stride = 2,
