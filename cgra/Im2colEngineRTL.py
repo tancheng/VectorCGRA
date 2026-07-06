@@ -109,23 +109,24 @@ class Im2colEngineRTL(Component):
     s.cur_dst  = Wire(TileIdType)
     s.cur_addr = Wire(DataAddrType)
 
-    # Per-output constant ROMs as Wire arrays. The verilator translator
-    # accepts indexed access into Wire-arrays of bitstructs natively;
-    # plain Python lists / tuples of pymtl3-typed values do not translate.
-    s.dst_tile_rom  = [Wire(TileIdType)   for _ in range(num_outputs)]
-    s.data_addr_rom = [Wire(DataAddrType) for _ in range(num_outputs)]
+    # Per-output constants as combinational Wire arrays. The verilator
+    # translator accepts indexed access into Wire-arrays of bitstructs
+    # natively; plain Python lists / tuples of pymtl3-typed values do
+    # not translate.
+    s.dst_tile_const  = [Wire(TileIdType)   for _ in range(num_outputs)]
+    s.data_addr_const = [Wire(DataAddrType) for _ in range(num_outputs)]
     for i in range(num_outputs):
-      s.dst_tile_rom[i]  //= TileIdType(dst_tiles[i])
-      s.data_addr_rom[i] //= DataAddrType(data_addrs[i])
+      s.dst_tile_const[i]  //= TileIdType(dst_tiles[i])
+      s.data_addr_const[i] //= DataAddrType(data_addrs[i])
 
     @update
     def select_dst_and_addr():
-      s.cur_dst  @= s.dst_tile_rom[0]
-      s.cur_addr @= s.data_addr_rom[0]
+      s.cur_dst  @= s.dst_tile_const[0]
+      s.cur_addr @= s.data_addr_const[0]
       for i in range(num_outputs):
         if s.emit_idx == IdxType(i):
-          s.cur_dst  @= s.dst_tile_rom[i]
-          s.cur_addr @= s.data_addr_rom[i]
+          s.cur_dst  @= s.dst_tile_const[i]
+          s.cur_addr @= s.data_addr_const[i]
 
     # Tie off the unused write port on the input scratchpad.
     @update
