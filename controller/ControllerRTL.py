@@ -21,17 +21,6 @@ from ..noc.PyOCN.pymtl3_net.xbar.XbarRTL import XbarRTL
 from .GlobalReduceUnitRTL import GlobalReduceUnitRTL
 from ..lib.util.data_struct_attr import *
 
-# Command types received via the inter-CGRA NoC that are handled by their
-# own dedicated branch below rather than being generically forwarded to
-# the ctrl ring.
-kNonGenericForwardCmds = (CMD_LOAD_REQUEST,
-                          CMD_STORE_REQUEST,
-                          CMD_LOAD_RESPONSE,
-                          CMD_COMPLETE,
-                          CMD_LEAF_COUNTER_COMPLETE,
-                          CMD_GLOBAL_REDUCE_ADD,
-                          CMD_GLOBAL_REDUCE_COUNT)
-
 class ControllerRTL(Component):
 
   def construct(s,
@@ -472,14 +461,13 @@ class ControllerRTL(Component):
           s.global_reduce_unit.recv_count.val @= 1
           s.global_reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
 
-        # Catch-all: any type not specially handled above (i.e., not one of
-        # the kNonGenericForwardCmds declared above) is forwarded to the
-        # ctrl ring as-is. This avoids silently dropping newly-added command
-        # types that forget to be added to an explicit allow-list here (see
-        # #188). Note: PyMTL3's RTLIR translator does not support the
-        # `in`/`not in` operators on hardware values, so membership against
-        # kNonGenericForwardCmds has to be spelled out as a `!=` chain
-        # instead of a single "not in" check.
+        # Catch-all: any type not consumed by a dedicated branch above is
+        # forwarded to the ctrl ring as-is. This avoids silently dropping
+        # newly-added command types that forget to be added to an explicit
+        # allow-list here (see #188). The set handled above is
+        # CTRL_NON_GENERIC_FORWARD_CMDS (defined in lib/util/common.py);
+        # PyMTL3's RTLIR translator has no `in`/`not in` on hardware values,
+        # so it is spelled out here as a `!=` chain over each member.
         elif (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_REQUEST) & \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_STORE_REQUEST) & \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_RESPONSE) & \
