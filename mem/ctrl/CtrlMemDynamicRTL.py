@@ -88,9 +88,36 @@ class CtrlMemDynamicRTL(Component):
     s.prologue_count_reg_routing_crossbar = \
         [[Wire(PrologueCountType) for _ in range(num_routing_xbar_inports)] for _ in range(ctrl_mem_size)]
 
+    # Match vectors derived from the command-type groupings declared in
+    # lib/util/common.py: bit i of each vector indicates whether the
+    # received cmd equals member i of the corresponding tuple. Loading the
+    # tuple members into constant wires keeps the tuples the single source
+    # of truth, since PyMTL3's RTLIR translator supports neither
+    # `in`/`not in` nor tuple-valued free variables inside update blocks.
+    CmdType = CgraPayloadType.get_field_type(kAttrCmd)
+    num_send_to_element_cmds = len(CTRL_MEM_SEND_TO_ELEMENT_CMDS)
+    num_accepted_cmds = len(CTRL_MEM_ACCEPTED_CMDS)
+    s.send_to_element_cmds = [Wire(CmdType) for _ in range(num_send_to_element_cmds)]
+    s.accepted_cmds = [Wire(CmdType) for _ in range(num_accepted_cmds)]
+    s.recv_cmd_send_to_element_match = Wire(num_send_to_element_cmds)
+    s.recv_cmd_accepted_match = Wire(num_accepted_cmds)
+    for i, cmd in enumerate(CTRL_MEM_SEND_TO_ELEMENT_CMDS):
+      s.send_to_element_cmds[i] //= CmdType(cmd)
+    for i, cmd in enumerate(CTRL_MEM_ACCEPTED_CMDS):
+      s.accepted_cmds[i] //= CmdType(cmd)
+
     # Connections.
     s.recv_pkt_from_controller //= s.recv_pkt_from_controller_queue.recv
     s.recv_from_element //= s.recv_from_element_queue.recv
+
+    @update
+    def update_recv_cmd_match():
+      for i in range(num_send_to_element_cmds):
+        s.recv_cmd_send_to_element_match[i] @= \
+            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == s.send_to_element_cmds[i])
+      for i in range(num_accepted_cmds):
+        s.recv_cmd_accepted_match[i] @= \
+            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == s.accepted_cmds[i])
 
     @update
     def update_msg():
@@ -129,42 +156,16 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
         s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.vector_factor_power
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.is_last_ctrl
-      # Mirrors CTRL_MEM_SEND_TO_ELEMENT_CMDS (defined in lib/util/common.py).
+      # The cmd is one of CTRL_MEM_SEND_TO_ELEMENT_CMDS (defined in
+      # lib/util/common.py, from which the match vector is derived).
       elif s.recv_pkt_from_controller_queue.send.val & \
-           ((s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER)):
+           (s.recv_cmd_send_to_element_match != 0):
         s.send_to_element.msg @= s.recv_pkt_from_controller_queue.send.msg.payload
         s.send_to_element.val @= 1
 
-      # Mirrors CTRL_MEM_ACCEPTED_CMDS (defined in lib/util/common.py).
-      if (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_TERMINATE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_PAUSE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_PRESERVE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESUME) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
-         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER):
+      # The cmd is one of CTRL_MEM_ACCEPTED_CMDS (defined in
+      # lib/util/common.py, from which the match vector is derived).
+      if s.recv_cmd_accepted_match != 0:
         s.recv_pkt_from_controller_queue.send.rdy @= 1
       # TODO: Extend for the other commands. Maybe another queue to
       # handle complicated actions.

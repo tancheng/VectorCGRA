@@ -97,17 +97,17 @@ STATE_DMA_DONE          = StateType( 8 ) # Signaling command completion
 # Command-type groupings for packet dispatch.
 ############################################
 # Centralizes the command-type sets used by the controller / ctrl-mem
-# dispatch logic so each grouping is defined in exactly one place.
-#
-# Note: PyMTL3's RTLIR translator does not support the `in`/`not in`
-# operators on hardware values, so the `@update` conditions in those
-# components cannot test membership directly; they compare against each
-# member by name (a `!=`/`==` chain). These tuples are the canonical,
-# documented definition of each set that those chains mirror.
+# dispatch logic so each grouping is defined in exactly one place. The
+# components load these tuples into constant wires and compare the
+# received cmd against them, so editing a tuple here directly updates
+# the generated hardware -- no per-member condition needs to be touched.
+# (The indirection through constant wires exists because PyMTL3's RTLIR
+# translator supports neither `in`/`not in` on hardware values nor
+# tuple-valued free variables inside update blocks.)
 
 # Command types the CGRA controller consumes via a dedicated branch in its
 # inter-CGRA NoC handler, i.e. that are NOT generically forwarded to the
-# ctrl ring (see issue #188). Mirrored by ControllerRTL's NoC handler.
+# ctrl ring (see issue #188). Used by ControllerRTL.
 CTRL_NON_GENERIC_FORWARD_CMDS = (CMD_LOAD_REQUEST,
                                  CMD_STORE_REQUEST,
                                  CMD_LOAD_RESPONSE,
@@ -117,7 +117,7 @@ CTRL_NON_GENERIC_FORWARD_CMDS = (CMD_LOAD_REQUEST,
                                  CMD_GLOBAL_REDUCE_COUNT)
 
 # Command types CtrlMemDynamicRTL forwards to another element (e.g. the loop
-# counter), in addition to accepting them. Mirrored by its `update_msg`.
+# counter), in addition to accepting them. Used by its `update_msg`.
 CTRL_MEM_SEND_TO_ELEMENT_CMDS = (CMD_GLOBAL_REDUCE_ADD_RESPONSE,
                                  CMD_GLOBAL_REDUCE_MUL_RESPONSE,
                                  CMD_CONFIG_LOOP_LOWER,
@@ -128,7 +128,7 @@ CTRL_MEM_SEND_TO_ELEMENT_CMDS = (CMD_GLOBAL_REDUCE_ADD_RESPONSE,
 
 # All command types CtrlMemDynamicRTL recognizes / accepts. Unlike the
 # controller's generic catch-all, this is a curated allow-list -- the
-# component only knows what to do with these. Mirrored by its `update_msg`.
+# component only knows what to do with these. Used by its `update_msg`.
 CTRL_MEM_ACCEPTED_CMDS = CTRL_MEM_SEND_TO_ELEMENT_CMDS + (
     CMD_CONFIG,
     CMD_CONFIG_PROLOGUE_FU,

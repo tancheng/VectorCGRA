@@ -178,6 +178,22 @@ class ControllerRTL(Component):
     s.dma_bytes        = Wire(DmaBytesType)
     s.dma_tag          = Wire(DmaTagType)
 
+    # Bit i indicates whether the cmd received from the inter-CGRA NoC
+    # matches CTRL_NON_GENERIC_FORWARD_CMDS[i] (declared in
+    # lib/util/common.py), i.e., is consumed by a dedicated branch in
+    # update_received_msg rather than generically forwarded to the ctrl
+    # ring. Derived from the tuple so newly added command types are
+    # forwarded by default without touching this file (see #188). The
+    # tuple members are loaded into constant wires because PyMTL3's RTLIR
+    # translator supports neither `in`/`not in` nor tuple-valued free
+    # variables inside update blocks.
+    CmdType = CgraPayloadType.get_field_type(kAttrCmd)
+    num_non_generic_forward_cmds = len(CTRL_NON_GENERIC_FORWARD_CMDS)
+    s.recv_cmd_non_generic_match = Wire(num_non_generic_forward_cmds)
+    s.non_generic_forward_cmds = [Wire(CmdType) for _ in range(num_non_generic_forward_cmds)]
+    for i, cmd in enumerate(CTRL_NON_GENERIC_FORWARD_CMDS):
+      s.non_generic_forward_cmds[i] //= CmdType(cmd)
+
     # Connections.
     # Requests towards others, 1 cycle delay to improve timing.
     s.recv_from_tile_load_request_pkt_queue.recv //= s.recv_from_tile_load_request_pkt
@@ -240,6 +256,12 @@ class ControllerRTL(Component):
         s.recv_from_dma_spm_rd_req.rdy @= 0
         s.send_to_dma_spm_rd_resp.val @= 0
         s.send_to_dma_spm_rd_resp.msg @= DmaSpmReadRespType()
+
+    @update
+    def update_recv_cmd_non_generic_match():
+      for i in range(num_non_generic_forward_cmds):
+        s.recv_cmd_non_generic_match[i] @= \
+            (s.recv_from_inter_cgra_noc.msg.payload.cmd == s.non_generic_forward_cmds[i])
 
     @update
     def update_received_msg():
@@ -461,20 +483,13 @@ class ControllerRTL(Component):
           s.global_reduce_unit.recv_count.val @= 1
           s.global_reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
 
-        # Catch-all: any type not consumed by a dedicated branch above is
-        # forwarded to the ctrl ring as-is. This avoids silently dropping
-        # newly-added command types that forget to be added to an explicit
-        # allow-list here (see #188). The set handled above is
-        # CTRL_NON_GENERIC_FORWARD_CMDS (defined in lib/util/common.py);
-        # PyMTL3's RTLIR translator has no `in`/`not in` on hardware values,
-        # so it is spelled out here as a `!=` chain over each member.
-        elif (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_REQUEST) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_STORE_REQUEST) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_RESPONSE) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_COMPLETE) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LEAF_COUNTER_COMPLETE) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_GLOBAL_REDUCE_ADD) & \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_GLOBAL_REDUCE_COUNT):
+        # Catch-all: any type not consumed by a dedicated branch above
+        # (i.e., not in CTRL_NON_GENERIC_FORWARD_CMDS, from which
+        # s.recv_cmd_non_generic_match is derived) is forwarded to the
+        # ctrl ring as-is. This avoids silently dropping newly-added
+        # command types that forget to be added to an explicit allow-list
+        # here (see #188).
+        elif s.recv_cmd_non_generic_match == 0:
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
           s.send_to_ctrl_ring_pkt.msg @= \
