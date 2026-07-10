@@ -20,6 +20,45 @@ from ...lib.opt_type import *
 from ...lib.util.common import *
 from ...lib.util.data_struct_attr import *
 
+# Command types that are forwarded to another element (e.g., the loop
+# counter) in `update_msg` below, in addition to being accepted here.
+kSendToElementCmds = (CMD_GLOBAL_REDUCE_ADD_RESPONSE,
+                      CMD_GLOBAL_REDUCE_MUL_RESPONSE,
+                      CMD_CONFIG_LOOP_LOWER,
+                      CMD_CONFIG_LOOP_UPPER,
+                      CMD_CONFIG_LOOP_STEP,
+                      CMD_UPDATE_COUNTER_SHADOW_VALUE,
+                      CMD_RESET_LEAF_COUNTER)
+
+# All command types recognized anywhere in this file, i.e., that this
+# component accepts (sets `recv_pkt_from_controller_queue.send.rdy`) in
+# `update_msg` below. This must stay in sync with every CMD_* referenced
+# elsewhere in this file (e.g. in issue_complete, update_raddr_and_fu_prologue,
+# update_upper_bound, update_total_ctrl_steps) -- unlike ControllerRTL's
+# generic catch-all (#188), this component only knows what to do with a
+# fixed, curated set of commands, so it can't safely default-accept
+# anything it doesn't recognize.
+kAcceptedCmds = kSendToElementCmds + (CMD_CONFIG,
+                                      CMD_CONFIG_PROLOGUE_FU,
+                                      CMD_CONFIG_PROLOGUE_FU_CROSSBAR,
+                                      CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR,
+                                      CMD_LAUNCH,
+                                      CMD_TERMINATE,
+                                      CMD_PAUSE,
+                                      CMD_PRESERVE,
+                                      CMD_RESUME,
+                                      CMD_CONFIG_TOTAL_CTRL_COUNT,
+                                      CMD_CONFIG_COUNT_PER_ITER,
+                                      CMD_CONFIG_CTRL_LOWER_BOUND,
+                                      CMD_RECORD_PHI_ADDR,
+                                      CMD_CONFIG_STREAMING_LD_START_ADDR,
+                                      CMD_CONFIG_STREAMING_LD_STRIDE,
+                                      CMD_CONFIG_STREAMING_LD_END_ADDR)
+
+# Static self-check: every command that's forwarded to another element must
+# also be accepted, or it would never reach the elif branch that forwards it.
+assert set(kSendToElementCmds) <= set(kAcceptedCmds)
+
 class CtrlMemDynamicRTL(Component):
 
   def construct(s, IntraCgraPktType,
@@ -129,6 +168,7 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
         s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.vector_factor_power
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.is_last_ctrl
+      # Mirrors kSendToElementCmds (see module-level comment above).
       elif s.recv_pkt_from_controller_queue.send.val & \
            ((s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
@@ -140,6 +180,7 @@ class CtrlMemDynamicRTL(Component):
         s.send_to_element.msg @= s.recv_pkt_from_controller_queue.send.msg.payload
         s.send_to_element.val @= 1
 
+      # Mirrors kAcceptedCmds (see module-level comment above).
       if (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
