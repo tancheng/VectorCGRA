@@ -461,28 +461,19 @@ class ControllerRTL(Component):
           s.global_reduce_unit.recv_count.val @= 1
           s.global_reduce_unit.recv_count.msg @= s.recv_from_inter_cgra_noc.msg
 
-        elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_FU_CROSSBAR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_TOTAL_CTRL_COUNT) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_COUNT_PER_ITER) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_CTRL_LOWER_BOUND) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONST) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_START_ADDR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_STRIDE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_STREAMING_LD_END_ADDR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PAUSE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_PRESERVE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RESUME) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_RECORD_PHI_ADDR) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_TERMINATE) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) :
+        # Catch-all: any type not specially handled above (i.e., not one of
+        # CMD_LOAD_REQUEST/CMD_STORE_REQUEST/CMD_LOAD_RESPONSE/CMD_COMPLETE/
+        # CMD_LEAF_COUNTER_COMPLETE/CMD_GLOBAL_REDUCE_ADD/CMD_GLOBAL_REDUCE_COUNT)
+        # is forwarded to the ctrl ring as-is. This avoids silently dropping
+        # newly-added command types that forget to be added to an explicit
+        # allow-list here (see #188).
+        elif (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_REQUEST) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_STORE_REQUEST) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LOAD_RESPONSE) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_COMPLETE) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_LEAF_COUNTER_COMPLETE) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_GLOBAL_REDUCE_ADD) & \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd != CMD_GLOBAL_REDUCE_COUNT):
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
           s.send_to_ctrl_ring_pkt.msg @= \
@@ -497,10 +488,6 @@ class ControllerRTL(Component):
                                0, # opaque
                                0, # vc_id
                                s.recv_from_inter_cgra_noc.msg.payload)
-
-        # else:
-        #   # TODO: Handle other cmd types.
-        #   assert(False)
 
       # WARNING
       # A possible conflict occurs when dma_done.valis True and the received message is CMD_COMPLETEat the same time,
