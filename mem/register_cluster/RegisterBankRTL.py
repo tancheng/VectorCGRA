@@ -9,9 +9,15 @@ one write port (from routing crossbar, fu crossbar, or const) and two
 read ports (one towards FU, one towards routing crossbar).
 
 Each register entry tracks whether it holds an unconsumed token
-(https://github.com/tancheng/VectorCGRA/issues/321):
+(https://github.com/tancheng/VectorCGRA/issues/321). Token discipline
+applies to "armed" registers, i.e., registers that have been written at
+least once since reset; a never-written register keeps the legacy
+behavior of always asserting `val` on a configured read, acting as a
+default-token source, which existing kernels rely on for liveness (e.g.,
+tiles consuming data from their own register cluster that nothing
+writes). For an armed register:
 - The token bit is set when a token is written.
-- A read only asserts `val` while the selected entry holds a token.
+- A read only asserts `val` while the entry holds an unconsumed token.
 - The token bit is cleared once every configured destination has
   completed a val/rdy handshake (for read_reg_towards=BOTH, both the FU
   and the routing-crossbar paths must accept before the token is
@@ -66,6 +72,13 @@ class RegisterBankRTL(Component):
                               wr_ports = 1)
     # Bit r indicates whether reg[r] holds an unconsumed token.
     s.token_valid = Wire(num_registers)
+    # Bit r indicates whether reg[r] has ever been written ("armed").
+    # Token discipline only applies to armed registers; a never-written
+    # register keeps the legacy behavior of always asserting `val` on a
+    # configured read (acting as a default-token source), which existing
+    # kernels rely on (e.g., reading a register cluster that nothing
+    # writes to keep an independent pipeline live).
+    s.armed = Wire(num_registers)
     # Tracks which destination paths have already accepted the token
     # currently being read (only meaningful until the token is released;
     # needed for read_reg_towards=BOTH, whose two destinations can accept
@@ -77,6 +90,7 @@ class RegisterBankRTL(Component):
     s.read_towards_fu = Wire(1)
     s.read_towards_xbar = Wire(1)
     s.read_token_valid = Wire(1)
+    s.read_armed = Wire(1)
     s.wr_en = Wire(1)
     s.fu_accept = Wire(1)
     s.xbar_accept = Wire(1)
@@ -96,10 +110,12 @@ class RegisterBankRTL(Component):
 
       # Token status of the register selected for read/write.
       s.read_token_valid @= 0
+      s.read_armed @= 0
       s.outport_wr_rdy @= 0
       for r in range(num_registers):
         if s.inport_opt.read_reg_idx[reg_bank_id] == r:
           s.read_token_valid @= s.token_valid[r]
+          s.read_armed @= s.armed[r]
         if s.inport_opt.write_reg_idx[reg_bank_id] == r:
           s.outport_wr_rdy @= ~s.token_valid[r]
 
@@ -133,12 +149,14 @@ class RegisterBankRTL(Component):
 
     @update
     def update_send_val():
-      # Sends only while the selected entry holds a token that the
-      # corresponding destination path has not accepted yet.
+      # An armed register sends only while it holds a token that the
+      # corresponding destination path has not accepted yet. A
+      # never-written register keeps the legacy always-valid read
+      # behavior (default-token source).
       s.send_data.val @= ~s.reset & s.read_towards_fu & \
-                         s.read_token_valid & ~s.fu_taken
+                         ((s.read_token_valid & ~s.fu_taken) | ~s.read_armed)
       s.send_data_to_xbar.val @= ~s.reset & s.read_towards_xbar & \
-                                 s.read_token_valid & ~s.xbar_taken
+                                 ((s.read_token_valid & ~s.xbar_taken) | ~s.read_armed)
 
       s.fu_accept @= s.send_data.val & s.send_data.rdy
       s.xbar_accept @= s.send_data_to_xbar.val & s.send_data_to_xbar.rdy
@@ -169,16 +187,21 @@ class RegisterBankRTL(Component):
         s.fu_taken <<= 0
         s.xbar_taken <<= 0
         s.token_valid <<= 0
+        s.armed <<= 0
       else:
         s.token_valid <<= (s.token_valid | s.token_set_mask) & \
                           ~s.token_clear_mask
+        # A register becomes (and stays) armed once first written.
+        s.armed <<= s.armed | s.token_set_mask
 
+        # The taken bits only track acceptances of real tokens; legacy
+        # (never-written) reads are not tracked and can repeat freely.
         if s.release_token:
           s.fu_taken <<= 0
           s.xbar_taken <<= 0
         else:
-          s.fu_taken <<= s.fu_taken | s.fu_accept
-          s.xbar_taken <<= s.xbar_taken | s.xbar_accept
+          s.fu_taken <<= s.fu_taken | (s.fu_accept & s.read_token_valid)
+          s.xbar_taken <<= s.xbar_taken | (s.xbar_accept & s.read_token_valid)
 
   def line_trace(s):
     inport_opt_str = "inport_opt: " + str(s.inport_opt)

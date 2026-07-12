@@ -160,13 +160,13 @@ def test_reg_bank():
 
   expected_sink_data = \
       [[DataType(5, 1)],
-        # Cycle 2: no token in reg[15] yet, so the register read asserts no
-        # `val` and the routing-crossbar data (10) passes through to the FU.
-        # Cycle 3: the token (12, written from the FU-crossbar inport in
-        # cycle 2) is readable and takes priority over the routing-crossbar
-        # data (11), which is consumed-and-dropped by the pre-existing
-        # passthrough-rdy behavior. The token is delivered exactly once.
-       [DataType(10, 1), DataType(12, 1)],
+        # The first two reads happen before reg[15] is ever written
+        # ("armed"), so they keep the legacy always-valid behavior and
+        # return the default value (taking priority over, and dropping,
+        # the routing-crossbar data 10 and 11). Once written, token
+        # discipline applies (issue #321) and the token (12) is delivered
+        # exactly once.
+       [DataType(0, 0), DataType(0, 0), DataType(12, 1)],
        [],
        [DataType(42, 1)]
       ]
@@ -272,11 +272,11 @@ def test_reg_cluster_read_towards_routing_xbar():
   # register data is NOT forwarded to FU.
   # Routing-xbar sink: TestSrcRTL starts sending in cycle 2 (1 cycle after
   # reset), so the write lands at end of cycle 2 and its token is readable
-  # in cycle 3. The read only asserts `val` while the entry holds an
-  # unconsumed token, so there is no leading garbage data and the token is
-  # delivered exactly once (issue #321).
+  # in cycle 3 — the two leading DataType(0,0) are legacy reads of the
+  # not-yet-written ("unarmed") register. Once written, token discipline
+  # applies and 77 is delivered exactly once (issue #321).
   sink_msgs_fu   = [[] for _ in range(num_reg_banks)]
-  sink_msgs_xbar = [[DataType(77, 1)], [], [], []]
+  sink_msgs_xbar = [[DataType(0, 0), DataType(0, 0), DataType(77, 1)], [], [], []]
 
   th = TestHarnessWithXbarSink(
       DataType, ConfigType, num_reg_banks, num_registers_per_reg_bank,
@@ -322,15 +322,14 @@ def test_reg_cluster_read_towards_both():
   src_data_from_fu_xbar      = [[] for _ in range(num_reg_banks)]
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
-  # Bank 2: the routing-crossbar data (55) reaches the FU twice: once in
-  # cycle 2 via the direct passthrough (which is not affected by token
-  # tracking) while the same value is also written into reg[7], and once
-  # in cycle 3 when the written token is read back (read_reg_towards=BOTH).
-  # The xbar path only sees the token read in cycle 3. The token is
-  # released only after BOTH paths have accepted it (issue #321), and no
-  # leading garbage data is emitted.
-  sink_msgs_fu   = [[], [], [DataType(55, 1), DataType(55, 1)], []]
-  sink_msgs_xbar = [[], [], [DataType(55, 1)], []]
+  # Bank 2: the two leading DataType(0,0) on both paths are legacy reads
+  # of the not-yet-written ("unarmed") register (the unarmed read takes
+  # priority over the routing-crossbar passthrough on the FU path while
+  # 55 is being written into reg[7] in cycle 2). Once written, token
+  # discipline applies: 55 is delivered exactly once to each path, and
+  # the token is released only after BOTH paths accept it (issue #321).
+  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1)], []]
+  sink_msgs_xbar = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1)], []]
 
   th = TestHarnessWithXbarSink(
       DataType, ConfigType, num_reg_banks, num_registers_per_reg_bank,
@@ -375,11 +374,12 @@ def test_reg_cluster_read_towards_fu_no_xbar_output():
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
   # FU sink for bank 1: TestSrcRTL starts sending in cycle 2, write lands
-  # at end of cycle 2, and its token is read in cycle 3. No leading
-  # garbage data since the read only asserts `val` while the entry holds
-  # an unconsumed token (issue #321).
+  # at end of cycle 2, and its token is read in cycle 3 — the two leading
+  # DataType(0,0) are legacy reads of the not-yet-written ("unarmed")
+  # register. Once written, token discipline applies and 33 is delivered
+  # exactly once (issue #321).
   # Xbar sink stays empty because read_reg_towards=1 (FU only).
-  sink_msgs_fu   = [[], [DataType(33, 1)], [], []]
+  sink_msgs_fu   = [[], [DataType(0, 0), DataType(0, 0), DataType(33, 1)], [], []]
   sink_msgs_xbar = [[] for _ in range(num_reg_banks)]
 
   th = TestHarnessWithXbarSink(
@@ -455,7 +455,10 @@ def test_reg_cluster_both_paths_skewed_acceptance():
   for several cycles. The FU accepts each token first; the token must be
   held (and not re-sent to the FU, and not overwritten by the next write)
   until the routing-crossbar path also accepts it (issue #321). Each sink
-  must observe each token exactly once, in order.
+  must observe each token exactly once, in order. The undelayed FU sink
+  additionally observes the legacy reads of the not-yet-written
+  ("unarmed") register before the first write lands; the delayed xbar
+  sink does not, since it is stalled through the unarmed phase.
   """
   DataType   = mk_data(16, 1)
   num_fu_inports             = 4
@@ -480,7 +483,7 @@ def test_reg_cluster_both_paths_skewed_acceptance():
   src_data_from_fu_xbar      = [[], [], [DataType(55, 1), DataType(66, 1)], []]
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
-  sink_msgs_fu   = [[], [], [DataType(55, 1), DataType(66, 1)], []]
+  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1), DataType(66, 1)], []]
   sink_msgs_xbar = [[], [], [DataType(55, 1), DataType(66, 1)], []]
 
   th = TestHarnessWithXbarSink(
