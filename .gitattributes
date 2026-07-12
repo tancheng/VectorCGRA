@@ -1,0 +1,9 @@
+# Set all the text files to use LF line endings.
+* text=auto eol=lf
+
+# Set all the binary files to use binary mode(avoid corruption).
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
