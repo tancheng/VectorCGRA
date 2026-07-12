@@ -66,6 +66,12 @@ class RegisterBankRTL(Component):
     # can currently accept a token (i.e., holds no unconsumed token).
     # The cluster uses it to backpressure the selected write source.
     s.outport_wr_rdy = OutPort(mk_bits(1))
+    # Clears all token bookkeeping (token/armed/taken bits) on task
+    # switching, so a newly launched task starts from the legacy
+    # (unarmed) behavior regardless of what a previous task left behind.
+    # Register data itself is preserved, matching the other clearable
+    # components (FUs, crossbars, const mem keep their own conventions).
+    s.clear = InPort(mk_bits(1))
 
     # Component
     s.reg_file = RegisterFile(DataType, num_registers, rd_ports = 1,
@@ -183,7 +189,7 @@ class RegisterBankRTL(Component):
 
     @update_ff
     def update_token_valid():
-      if s.reset:
+      if s.reset | s.clear:
         s.fu_taken <<= 0
         s.xbar_taken <<= 0
         s.token_valid <<= 0

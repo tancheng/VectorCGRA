@@ -199,6 +199,7 @@ class TileWithContextSwitchRTL(Component):
       else:
         s.element.clear[i] //= 0
     s.fu_crossbar.clear //= s.clear
+    s.register_cluster.clear //= s.clear
     s.routing_crossbar.clear //= s.clear
     s.const_mem.clear //= s.clear
 
