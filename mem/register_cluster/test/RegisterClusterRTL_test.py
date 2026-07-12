@@ -77,6 +77,8 @@ class TestHarness(Component):
       # The routing-crossbar read path is unused in this harness.
       s.reg_cluster.send_data_to_routing_crossbar[i].rdy //= 0
     s.reg_cluster.clear //= 0
+    # No ctrl stepping in this harness; tokens are held (level reads).
+    s.reg_cluster.inport_ctrl_proceed //= 0
 
   def done(s):
     for i in range(s.num_reg_banks):
@@ -185,11 +187,20 @@ def test_reg_bank():
 #-------------------------------------------------------------------------
 
 class TestHarnessWithXbarSink(Component):
+  """
+  When `emulate_ctrl_proceed` is set, the harness mimics the tile's
+  per-ctrl-step done-tracking: `inport_ctrl_proceed` pulses once every
+  configured read path of every bank has been accepted at least once
+  (with sticky per-path done bits, as the tile latches element/crossbar
+  doneness), consuming the tokens of the completing "step". Otherwise
+  `inport_ctrl_proceed` is tied low and tokens are held (level reads).
+  """
 
   def construct(s, DataType, ConfigType, num_reg_banks, num_registers,
                 src_opt, src_msgs_routing_xbar, src_msgs_fu_xbar,
                 src_msgs_const, sink_msgs_fu, sink_msgs_xbar,
-                sink_fu_initial_delay = 0, sink_xbar_initial_delay = 0):
+                sink_fu_initial_delay = 0, sink_xbar_initial_delay = 0,
+                sink_fu_interval_delay = 0, emulate_ctrl_proceed = False):
 
     s.num_reg_banks = num_reg_banks
     s.src_opt = Wire(ConfigType)
@@ -202,7 +213,8 @@ class TestHarnessWithXbarSink(Component):
                           for i in range(num_reg_banks)]
 
     s.sink_fu   = [TestSinkRTL(DataType, sink_msgs_fu[i],
-                               initial_delay = sink_fu_initial_delay)
+                               initial_delay = sink_fu_initial_delay,
+                               interval_delay = sink_fu_interval_delay)
                    for i in range(num_reg_banks)]
     s.sink_xbar = [TestSinkRTL(DataType, sink_msgs_xbar[i],
                                initial_delay = sink_xbar_initial_delay)
@@ -223,6 +235,47 @@ class TestHarnessWithXbarSink(Component):
       s.reg_cluster.send_data_to_fu[i]              //= s.sink_fu[i].recv
       s.reg_cluster.send_data_to_routing_crossbar[i] //= s.sink_xbar[i].recv
     s.reg_cluster.clear //= 0
+
+    if not emulate_ctrl_proceed:
+      s.reg_cluster.inport_ctrl_proceed //= 0
+    else:
+      # Mimics the tile's per-step done-tracking (element_done /
+      # routing_crossbar_done): a path is "done" once it accepted this
+      # step's data; the step completes (ctrl_proceed pulses) once every
+      # configured read path of every bank is done.
+      s.fu_path_done = [Wire(1) for _ in range(num_reg_banks)]
+      s.xbar_path_done = [Wire(1) for _ in range(num_reg_banks)]
+      s.ctrl_proceed = Wire(1)
+
+      s.reg_cluster.inport_ctrl_proceed //= s.ctrl_proceed
+
+      @update
+      def emulate_step_completion():
+        s.ctrl_proceed @= 1
+        for i in range(num_reg_banks):
+          read_towards = s.src_opt.read_reg_towards[i]
+          towards_fu = (read_towards == READ_TOWARDS_FU) | \
+                       (read_towards == READ_TOWARDS_BOTH)
+          towards_xbar = (read_towards == READ_TOWARDS_ROUTING_XBAR) | \
+                         (read_towards == READ_TOWARDS_BOTH)
+          if towards_fu & ~s.fu_path_done[i] & \
+             ~(s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy):
+            s.ctrl_proceed @= 0
+          if towards_xbar & ~s.xbar_path_done[i] & \
+             ~(s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy):
+            s.ctrl_proceed @= 0
+
+      @update_ff
+      def latch_path_done():
+        for i in range(num_reg_banks):
+          if s.reset | s.ctrl_proceed:
+            s.fu_path_done[i] <<= 0
+            s.xbar_path_done[i] <<= 0
+          else:
+            s.fu_path_done[i] <<= s.fu_path_done[i] | \
+                (s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy)
+            s.xbar_path_done[i] <<= s.xbar_path_done[i] | \
+                (s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy)
 
   def done(s):
     for i in range(s.num_reg_banks):
@@ -404,8 +457,10 @@ def test_reg_cluster_token_not_overwritten():
   the FU-crossbar path while the FU sink stalls for several cycles
   (initial_delay). Without token tracking, 200 would overwrite 100 before
   the FU consumed it and 100 would be lost. With token tracking
-  (issue #321), the second write is backpressured until the first token
-  completes its val/rdy handshake, so the FU receives 100 and then 200.
+  (issue #321), the second write is backpressured until the step reading
+  the first token completes, so the FU receives 100 and then 200. The
+  harness emulates the tile's per-step done-tracking to drive
+  inport_ctrl_proceed.
   """
   DataType   = mk_data(16, 1)
   num_fu_inports             = 4
@@ -442,7 +497,8 @@ def test_reg_cluster_token_not_overwritten():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar,
-      sink_fu_initial_delay = 5)
+      sink_fu_initial_delay = 5,
+      emulate_ctrl_proceed = True)
   run_sim(th, max_cycles = 25)
 
 #-------------------------------------------------------------------------
@@ -454,13 +510,13 @@ def test_reg_cluster_both_paths_skewed_acceptance():
   """
   Sends two values (55, then 66) into reg[7] of bank 2 via the FU-crossbar
   path with read_reg_towards=BOTH, while the routing-crossbar sink stalls
-  for several cycles. The FU accepts each token first; the token must be
-  held (and not re-sent to the FU, and not overwritten by the next write)
-  until the routing-crossbar path also accepts it (issue #321). Each sink
-  must observe each token exactly once, in order. The undelayed FU sink
-  additionally observes the legacy reads of the not-yet-written
-  ("unarmed") register before the first write lands; the delayed xbar
-  sink does not, since it is stalled through the unarmed phase.
+  longer than the FU sink. The token must be held (and not overwritten by
+  the pending next write) until BOTH paths have accepted it and the step
+  completes (issue #321; the harness emulates the tile's per-step
+  done-tracking to drive inport_ctrl_proceed). Both sinks are stalled
+  through the unarmed phase, so each observes exactly the two real
+  tokens, in order; the FU sink's interval delay keeps it from
+  re-accepting the held token while the xbar path catches up.
   """
   DataType   = mk_data(16, 1)
   num_fu_inports             = 4
@@ -485,7 +541,7 @@ def test_reg_cluster_both_paths_skewed_acceptance():
   src_data_from_fu_xbar      = [[], [], [DataType(55, 1), DataType(66, 1)], []]
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
-  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1), DataType(66, 1)], []]
+  sink_msgs_fu   = [[], [], [DataType(55, 1), DataType(66, 1)], []]
   sink_msgs_xbar = [[], [], [DataType(55, 1), DataType(66, 1)], []]
 
   th = TestHarnessWithXbarSink(
@@ -496,5 +552,8 @@ def test_reg_cluster_both_paths_skewed_acceptance():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar,
-      sink_xbar_initial_delay = 5)
-  run_sim(th, max_cycles = 25)
+      sink_fu_initial_delay = 3,
+      sink_xbar_initial_delay = 6,
+      sink_fu_interval_delay = 5,
+      emulate_ctrl_proceed = True)
+  run_sim(th, max_cycles = 30)

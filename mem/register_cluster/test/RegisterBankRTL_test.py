@@ -41,6 +41,8 @@ class TestHarness(Component):
     # The routing-crossbar read path is unused in this test.
     s.reg_bank.send_data_to_xbar.rdy //= 0
     s.reg_bank.clear //= 0
+    # No ctrl stepping in this harness; tokens are held (level reads).
+    s.reg_bank.inport_ctrl_proceed //= 0
 
   def done(s):
     return s.sink.done()
