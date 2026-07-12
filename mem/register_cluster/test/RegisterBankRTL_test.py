@@ -100,13 +100,14 @@ def test_reg_bank():
   src_opt.read_reg_idx[reg_bank_id] = b4(15) # read after write
 
   write_data = [DataType(10, 1), DataType(11, 1), DataType(12, 1)]
-  # Each write deposits a token that is delivered exactly once; the next
-  # write is only accepted after the previous token has been consumed, so
-  # the write/read pattern alternates: write 11 (from the FU-crossbar
-  # inport, i.e., write_reg_from=2), deliver 11, write 11 again, deliver
-  # again, and so on. Reading an entry without a token asserts no `val`,
-  # hence no leading garbage data (issue #321).
-  expected_read_data = [DataType(11, 1), DataType(11, 1), DataType(11, 1)]
+  # The first read happens before reg[15] is ever written ("armed"), so it
+  # keeps the legacy always-valid behavior and returns the default value.
+  # Once written, token discipline applies (issue #321): each write
+  # deposits a token that is delivered exactly once, and the next write is
+  # only accepted after the previous token has been consumed, so the
+  # write/read pattern alternates (write 11 from the FU-crossbar inport,
+  # i.e., write_reg_from=2; deliver 11; write 11 again; deliver again).
+  expected_read_data = [DataType(0, 0), DataType(11, 1), DataType(11, 1)]
 
   th = TestHarness(DataType, ConfigType, reg_bank_id, num_registers_per_reg_bank,
                    src_opt, write_data, expected_read_data)
