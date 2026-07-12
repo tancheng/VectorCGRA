@@ -40,6 +40,7 @@ class TestHarness(Component):
     s.reg_bank.send_data //= s.sink.recv
     # The routing-crossbar read path is unused in this test.
     s.reg_bank.send_data_to_xbar.rdy //= 0
+    s.reg_bank.clear //= 0
 
   def done(s):
     return s.sink.done()
