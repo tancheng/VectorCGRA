@@ -50,7 +50,7 @@ Architecture:
 from pymtl3 import *
 
 from .CgraRTL import CgraRTL
-from .Im2colEngineRTL import Im2colEngineRTL
+from ..fu.others.Im2colEngineRTL import Im2colEngineRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.messages import (mk_cgra_id_type, mk_inter_cgra_pkt,
@@ -73,9 +73,9 @@ class IntegratedIm2ColWithCgraRTL(Component):
                 controller2addr_map, idTo2d_map,
                 # Im2col engine parameters (geometry + per-cell routing).
                 engine_scratch_mem_size,
-                engine_in_base, engine_out_base,
+                engine_in_base,
                 engine_H, engine_W, engine_kH, engine_kW, engine_stride,
-                engine_dst_tiles, engine_data_addrs, engine_preload_image,
+                engine_data_addrs, engine_preload_image,
                 has_ctrl_ring = True):
 
     DataType        = CgraPayloadType.get_field_type(kAttrData)
@@ -116,9 +116,9 @@ class IntegratedIm2ColWithCgraRTL(Component):
     s.engine = Im2colEngineRTL(
         DataType, CtrlPktType, CgraPayloadType,
         engine_scratch_mem_size,
-        engine_in_base, engine_out_base,
+        engine_in_base,
         engine_H, engine_W, engine_kH, engine_kW, engine_stride,
-        engine_dst_tiles, engine_data_addrs, engine_preload_image)
+        engine_data_addrs, engine_preload_image)
 
     s.cgra = CgraRTL(CgraPayloadType,
                      multi_cgra_rows, multi_cgra_columns,

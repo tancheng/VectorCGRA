@@ -146,7 +146,7 @@ class TestHarness(Component):
                 topology, controller2addr_map,
                 idTo2d_map, complete_signal_sink_out,
                 multi_cgra_rows, multi_cgra_columns, src_query_pkt,
-                engine_image, engine_geom, engine_dst_tiles,
+                engine_image, engine_geom,
                 engine_data_addrs, engine_scratch_mem_size):
 
     DataAddrType = mk_bits(clog2(data_mem_size_global))
@@ -165,11 +165,11 @@ class TestHarness(Component):
         FlexibleFuRTL, FuList, topology,
         controller2addr_map, idTo2d_map,
         engine_scratch_mem_size,
-        engine_geom['in_base'],  engine_geom['out_base'],
+        engine_geom['in_base'],
         engine_geom['H'],        engine_geom['W'],
         engine_geom['kH'],       engine_geom['kW'],
         engine_geom['stride'],
-        engine_dst_tiles,        engine_data_addrs,
+        engine_data_addrs,
         engine_image)
 
     cmp_fn = lambda a, b: (a.payload.data == b.payload.data and
@@ -362,7 +362,7 @@ def build_systolic_packets(IntraCgraPktType, CgraPayloadType, CtrlType,
 #-------------------------------------------------------------------------
 
 def _run(pe_weights, expected_outputs,
-         engine_image, engine_geom, engine_dst_tiles, engine_data_addrs,
+         engine_image, engine_geom, engine_data_addrs,
          cmdline_opts):
   cgra_id = 0
 
@@ -389,7 +389,7 @@ def _run(pe_weights, expected_outputs,
                    CONTROLLER2ADDR_MAP, ID_TO_2D_MAP,
                    complete_signal_sink_out,
                    NUM_CGRA_ROWS, NUM_CGRA_COLUMNS, src_query_pkt,
-                   engine_image, engine_geom, engine_dst_tiles,
+                   engine_image, engine_geom,
                    engine_data_addrs, ENGINE_SCRATCH_MEM_SIZE)
 
   th.elaborate()
@@ -408,9 +408,8 @@ def test_im2col_to_systolic_3x3(cmdline_opts):
   # Engine inputs: image + geometry chosen so lowered matrix == [1,2,3,4],
   # i.e. the same activation values the original systolic test preloads.
   engine_image       = [1, 3, 2, 4]
-  engine_geom        = dict(in_base = 0, out_base = 16,
+  engine_geom        = dict(in_base = 0,
                             H = 1, W = 4, kH = 1, kW = 2, stride = 2)
-  engine_dst_tiles   = [6, 6, 3, 3]
   engine_data_addrs  = [0, 1, 2, 3]
 
   # Original systolic weights and expected outputs (verbatim from
@@ -419,7 +418,7 @@ def test_im2col_to_systolic_3x3(cmdline_opts):
   expected_outputs   = {4: 0x0e, 5: 0x14, 6: 0x1e, 7: 0x2c}
 
   _run(pe_weights, expected_outputs,
-       engine_image, engine_geom, engine_dst_tiles, engine_data_addrs,
+       engine_image, engine_geom, engine_data_addrs,
        cmdline_opts)
 
 
@@ -452,13 +451,12 @@ def test_im2col_conv1d_to_systolic_3x3(cmdline_opts):
   pe_weights = {7: filters[0][0], 4: filters[0][1],
                 8: filters[1][0], 5: filters[1][1]}
 
-  engine_geom       = dict(in_base = 0, out_base = 16,
+  engine_geom       = dict(in_base = 0,
                            H = H, W = W, kH = kH, kW = kW, stride = stride)
-  engine_dst_tiles  = [6, 6, 3, 3]
   engine_data_addrs = [0, 1, 2, 3]
 
   _run(pe_weights, expected_outputs,
-       image, engine_geom, engine_dst_tiles, engine_data_addrs,
+       image, engine_geom, engine_data_addrs,
        cmdline_opts)
 
 
@@ -487,10 +485,9 @@ def _make_dut():
       # test_im2col_to_systolic_3x3 -- image [1,3,2,4] with 1x2 kernel
       # stride 2 lowers to [1,2,3,4]).
       engine_scratch_mem_size = ENGINE_SCRATCH_MEM_SIZE,
-      engine_in_base = 0, engine_out_base = 16,
+      engine_in_base = 0,
       engine_H = 1, engine_W = 4,
       engine_kH = 1, engine_kW = 2, engine_stride = 2,
-      engine_dst_tiles     = [6, 6, 3, 3],
       engine_data_addrs    = [0, 1, 2, 3],
       engine_preload_image = [1, 3, 2, 4])
 

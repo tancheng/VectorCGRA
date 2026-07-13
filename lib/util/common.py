@@ -54,6 +54,17 @@ PROLOGUE_MAX_COUNT = 7
 # 1 outport (only allow one request be sent out per cycle).
 CONTROLLER_CROSSBAR_INPORTS = 7
 
+# Named indices of the inports on the controller xbar. Kept alongside
+# CONTROLLER_CROSSBAR_INPORTS so any producer (ControllerRTL or a
+# peripheral tie-off site) reads them from a single source of truth.
+kLoadRequestInportIdx    = 0
+kLoadResponseInportIdx   = 1
+kStoreRequestInportIdx   = 2
+kFromCpuCtrlAndDataIdx   = 3
+kFromInterTileRingIdx    = 4
+kFromReduceUnitIdx       = 5
+kFromIm2colIdx           = 6
+
 GLOBAL_REDUCE_MAX_COUNT = 4
 
 # Cgra Topology

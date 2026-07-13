@@ -281,14 +281,6 @@ class ControllerRTL(Component):
 
     @update
     def update_received_msg():
-      kLoadRequestInportIdx = 0
-      kLoadResponseInportIdx = 1
-      kStoreRequestInportIdx = 2
-      kFromCpuCtrlAndDataIdx = 3
-      kFromInterTileRingIdx = 4
-      kFromReduceUnitIdx = 5
-      kFromIm2colIdx = 6
-
       s.send_to_cpu_pkt_queue.recv.val @= 0
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
