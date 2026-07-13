@@ -16,18 +16,10 @@ from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ...lib.opt_type import *
 from ...lib.util.common import *
 
-# Canonical definitions live in common.py; keep local aliases to minimize churn.
-from ...lib.util.common import (
-  READ_TOWARDS_NOTHING,
-  READ_TOWARDS_FU,
-  READ_TOWARDS_ROUTING_XBAR,
-  READ_TOWARDS_BOTH,
-)
-
-kReadTowardsNothing     = READ_TOWARDS_NOTHING
-kReadTowardsFu          = READ_TOWARDS_FU
-kReadTowardsRoutingXbar = READ_TOWARDS_ROUTING_XBAR
-kReadTowardsBoth        = READ_TOWARDS_BOTH
+# Direction filtering of the register read paths happens inside
+# RegisterBankRTL (which asserts each send interface's val only for its
+# own configured direction), so this module no longer needs the
+# READ_TOWARDS_* constants.
 
 class RegisterClusterRTL(Component):
 
@@ -80,9 +72,11 @@ class RegisterClusterRTL(Component):
 
       for i in range(num_reg_banks):
         # Data from register bank has priority over routing crossbar data
-        # for FU path. Note: reg_bank[i].send_data.val is only asserted
-        # while the selected register holds an unconsumed token that the
-        # FU path has not accepted yet (and read_reg_towards includes FU).
+        # for FU path. Note: the bank asserts send_data.val only when
+        # read_reg_towards includes FU and the selected register either
+        # holds an unconsumed token or has never been written (legacy
+        # default-token source), so no additional direction check is
+        # needed here.
         if s.reg_bank[i].send_data.val:
           s.send_data_to_fu[i].msg @= \
             s.reg_bank[i].send_data.msg
