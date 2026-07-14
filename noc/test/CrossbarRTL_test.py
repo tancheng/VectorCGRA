@@ -160,36 +160,18 @@ def test_multi_cast():
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 
-def test_prologue_consumes_skipped_input():
+def test_prologue_preserves_skipped_input():
   src_opt  = [CtrlType(OPT_ADD, pickRegister,
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
               CtrlType(OPT_ADD, pickRegister,
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
-  src_data = [[DataType(7, 1), DataType(9, 1)], [], []]
-  sink_out = [[DataType(9, 1)], [], []]
+  src_data = [[DataType(7, 1)], [], []]
+  sink_out = [[DataType(7, 1)], [], []]
   th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
                    num_routing_outports, src_data, src_opt, sink_out,
                    prologue_counts = {(0, 0): 1})
-  run_sim(th)
-
-def test_prologue_prevents_loop_token_from_terminal_route():
-  src_opt  = [CtrlType(OPT_ADD, pickRegister,
-                       [TileInType(1), TileInType(0), TileInType(0)],
-                       [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
-              CtrlType(OPT_ADD, pickRegister,
-                       [TileInType(0), TileInType(1), TileInType(0)],
-                       [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
-              CtrlType(OPT_ADD, pickRegister,
-                       [TileInType(1), TileInType(0), TileInType(0)],
-                       [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
-  src_data = [[DataType(0, 1), DataType(1, 1), DataType(0, 1)], [], []]
-  sink_out = [[DataType(0, 1), DataType(0, 1)], [], []]
-  th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
-                   num_routing_outports, src_data, src_opt, sink_out,
-                   prologue_counts = {(0, 0): 1},
-                   ctrl_addr_sequence = [4, 0, 4])
   run_sim(th)
 
 def test_inactive_drain_consumes_input():

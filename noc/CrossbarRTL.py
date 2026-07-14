@@ -126,8 +126,8 @@ class CrossbarRTL(Component):
             s.all_send_accepted @= 0
 
         for i in range(num_inports):
-          # Prologued inputs are still required so the skipped token is
-          # consumed; send_required_vector decides whether it is forwarded.
+          # Prologued inputs are not consumed; they are ignored for this
+          # control step and remain available for a later non-prologue step.
           s.recv_data[i].rdy @= reduce_and(s.recv_valid_or_prologue_allowing_vector) & \
                                 s.all_send_accepted & \
                                 s.recv_required_vector[i]
@@ -290,9 +290,10 @@ class CrossbarRTL(Component):
         s.recv_required_vector[i] @= 0
 
       for i in range(num_outports):
-        # Prologued inputs are still required so the skipped token is
-        # consumed; send_required_vector decides whether it is forwarded.
-        if s.in_dir[i] > 0:
+        # Prologued inputs are ignored by this control step: do not consume
+        # their input token, and let recv_valid_or_prologue_allowing_vector
+        # allow the control stream to proceed without waiting for the token.
+        if (s.in_dir[i] > 0) & ~s.prologue_allowing_vector[i]:
           s.recv_required_vector[s.in_dir_local[i]] @= 1
 
     @update
