@@ -69,6 +69,10 @@ class TestHarness(Component):
       s.reg_cluster.inport_opt //= s.src_opt
       s.reg_cluster.recv_data_from_routing_crossbar[i] //= \
           s.src_routing_xbar[i].send
+      s.reg_cluster.write_data_from_routing_crossbar[i] //= \
+          s.src_routing_xbar[i].send.msg
+      s.reg_cluster.write_valid_from_routing_crossbar[i] //= \
+          s.src_routing_xbar[i].send.val
       s.reg_cluster.recv_data_from_fu_crossbar[i] //= \
           s.src_fu_xbar[i].send
       s.reg_cluster.recv_data_from_const[i] //= \
@@ -233,6 +237,10 @@ class TestHarnessWithXbarSink(Component):
       s.reg_cluster.inport_opt //= s.src_opt
       s.reg_cluster.recv_data_from_routing_crossbar[i] //= \
           s.src_routing_xbar[i].send
+      s.reg_cluster.write_data_from_routing_crossbar[i] //= \
+          s.src_routing_xbar[i].send.msg
+      s.reg_cluster.write_valid_from_routing_crossbar[i] //= \
+          s.src_routing_xbar[i].send.val
       s.reg_cluster.recv_data_from_fu_crossbar[i] //= \
           s.src_fu_xbar[i].send
       s.reg_cluster.recv_data_from_const[i] //= \
