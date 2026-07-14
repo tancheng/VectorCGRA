@@ -122,7 +122,7 @@ def test_flexible_alu():
                    src_in0, src_in1, src_opt, sink_out0)
   run_sim(th)
 
-def test_flexible_fu_prologue_consumes_skipped_const():
+def test_flexible_fu_prologue_advances_without_const():
   FuList = [AdderRTL]
   data_bitwidth = 16
   data_mem_size = 2
@@ -141,13 +141,13 @@ def test_flexible_fu_prologue_consumes_skipped_const():
 
   # Concrete example: this control word is ADD_CONST and prologue_count=1,
   # so FlexibleFuRTL turns the FU operation into OPT_NAH for this cycle. The
-  # control stream still advances, so const=7 must be consumed here; otherwise
-  # the next real const-consuming control would see this stale const.
+  # control stream still advances, but no real const token is required or
+  # consumed during prologue.
   th = TestHarness(
       FlexibleFuRTL, FuList, IntraCgraPktType, DataType, CtrlType,
       data_mem_size, ctrl_mem_size, num_inports, num_outports,
       [], [], [CtrlType(OPT_ADD_CONST, pick_register)], [],
-      const_msgs = [DataType(7, 1)], prologue_count = 1,
+      const_msgs = [], prologue_count = 1,
   )
   run_sim(th)
 
