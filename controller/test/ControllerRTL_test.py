@@ -78,9 +78,9 @@ class TestHarness(Component):
     s.src_from_tile_load_response_pkt.send //= s.dut.recv_from_tile_load_response_pkt
     s.src_from_tile_store_request_pkt.send //= s.dut.recv_from_tile_store_request_pkt
 
-    s.dut.send_to_mem_store_request //= s.sink_to_mem_store_request.recv
+    s.dut.send_to_sram_store_request_from_noc //= s.sink_to_mem_store_request.recv
     s.dut.send_to_tile_load_response //= s.sink_to_mem_load_response.recv
-    s.dut.send_to_mem_load_request //= s.sink_to_mem_load_request.recv
+    s.dut.send_to_sram_load_request_from_noc //= s.sink_to_mem_load_request.recv
 
     s.src_from_noc.send //= s.dut.recv_from_inter_cgra_noc
     s.dut.send_to_inter_cgra_noc //= s.sink_to_noc.recv
