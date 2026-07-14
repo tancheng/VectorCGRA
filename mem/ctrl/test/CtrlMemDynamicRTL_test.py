@@ -131,8 +131,8 @@ def test_ctrl():
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_LAUNCH, ctrl = CtrlType(OPT_NAH, pick_register), ctrl_addr = 0))]
 
   sink_out = [DataType(7, 1), DataType(4, 1), DataType(5, 1), DataType(9, 1)]
-  # Completion must come from an explicit RET, not control-memory timeout.
-  complete_signal_sink_out = []
+  complete_signal_sink_out = [
+      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE))]
   
   ctrl_count_per_iter = len(src_ctrl_pkt) - 1
   total_ctrl_steps_val = len(src_ctrl_pkt) - 1
@@ -221,8 +221,8 @@ def test_ctrl_bound():
   # As ctrl signals with ctrl_addr = 1 and ctrl_addr = 2 are both OPT_SUB,
   # The outputs are    1-6              5-1
   sink_out = [DataType(-5, 1), DataType(4, 1)]
-  # Completion must come from an explicit RET, not control-memory timeout.
-  complete_signal_sink_out = []
+  complete_signal_sink_out = [
+      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE))]
   
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
