@@ -15,7 +15,7 @@ Author : Shangkun LI
 from pymtl3 import *
 from ..basic.Fu import Fu
 from ...lib.opt_type import *
-
+from ...lib.util.data_struct_attr import *
 class ExtractPredicateRTL(Fu):
 
   def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
@@ -60,7 +60,7 @@ class ExtractPredicateRTL(Fu):
           # When loop is running (predicate=1) -> payload=1
           # When loop terminates (predicate=0) -> payload=0
           # Downstream NOT will invert: running->0 (no RET), done->1 (trigger RET)
-          s.send_out[0].msg.payload @= zext(s.recv_in[s.in0_idx].msg.predicate, s.DataType.get_field_type('payload'))
+          s.send_out[0].msg.payload @= zext(s.recv_in[s.in0_idx].msg.predicate, s.DataType.get_field_type(kAttrPayload))
           s.send_out[0].msg.predicate @= 1
           
           s.send_out[0].val @= s.recv_in[s.in0_idx].val
