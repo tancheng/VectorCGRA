@@ -83,7 +83,10 @@ class CgraTemplateRTL(Component):
                 provided_max_per_cgra_rows = None,
                 provided_max_per_cgra_cols = None,
                 provided_max_num_rd_tiles = None,
-                provided_max_num_wr_tiles = None):
+                provided_max_num_wr_tiles = None,
+                has_dma_ports = False,
+                DmaDataType = mk_dma_data(),
+                DmaCmdType = mk_dma_cmd()):
     """
     provided_max_per_cgra_rows: the row number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
     provided_max_per_cgra_cols: the column number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
@@ -126,6 +129,14 @@ class CgraTemplateRTL(Component):
     CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
+    DmaTagType = DmaCmdType.get_field_type(kAttrDmaTag)
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
+    DmaDoneType = mk_dma_done(DmaTagType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
+                                              DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -134,6 +145,21 @@ class CgraTemplateRTL(Component):
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
+
+    # Optional DMA engine-facing ports. The controller owns command decode and
+    # forwards DMA SPM access to the data memory.
+    if has_dma_ports:
+      s.dma_cmd = SendIfcRTL(DmaCmdType)
+
+      s.dma_done = RecvIfcRTL(DmaDoneType)
+
+      # Receive the request of writing into SPM from the DMA.
+      s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+      # Receive the request of reading from SPM from the DMA.
+      s.recv_from_dma_spm_rd_req  = RecvIfcRTL(DmaSpmReadReqType)
+      # Send the response of reading from SPM to the DMA.
+      s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
+
 
     if is_multi_cgra:
       # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
@@ -168,11 +194,17 @@ class CgraTemplateRTL(Component):
                                       multi_cgra_columns,
                                       max_num_tiles,
                                       mem_access_is_combinational,
-                                      idTo2d_map)
+                                      idTo2d_map,
+                                      has_dma_ports,
+                                      DmaCmdType,
+                                      DmaDataType)
     s.cgra_id = InPort(CgraIdType)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
-                                  max_num_tiles, controller2addr_map, idTo2d_map)
+                                  max_num_tiles, controller2addr_map, idTo2d_map,
+                                  has_dma_ports,
+                                  DmaDataType,
+                                  DmaCmdType)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
@@ -190,9 +222,35 @@ class CgraTemplateRTL(Component):
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
+    if has_dma_ports:
+      # CPU packets are decoded by the controller before becoming DMA commands.
+      s.dma_cmd  //= s.controller.dma_cmd
+      s.dma_done //= s.controller.dma_done
+
+      s.recv_from_dma_spm_wr_req //= s.controller.recv_from_dma_spm_wr_req
+      s.recv_from_dma_spm_rd_req  //= s.controller.recv_from_dma_spm_rd_req
+      s.send_to_dma_spm_rd_resp   //= s.controller.send_to_dma_spm_rd_resp
+
+    else:
+      # Grounds the DMA ports when no DMA engine is attached.
+      s.controller.dma_cmd.rdy //= 0
+      s.controller.dma_done.val //= 0
+      s.controller.dma_done.msg //= DmaDoneType()
+
+      s.controller.recv_from_dma_spm_wr_req.val //= 0
+      s.controller.recv_from_dma_spm_wr_req.msg //= DmaSpmWriteReqType()
+      s.controller.recv_from_dma_spm_rd_req.val //= 0
+      s.controller.recv_from_dma_spm_rd_req.msg //= DmaSpmReadReqType()
+      s.controller.send_to_dma_spm_rd_resp.rdy //= 0
+
+    # Controller <-> SPM/data_mem
+    s.controller.send_to_sram_store_request_from_dma   //= s.data_mem.recv_from_controller_spm_wr_req
+    s.controller.send_to_sram_load_request_from_dma    //= s.data_mem.recv_from_controller_spm_rd_req
+    s.controller.recv_from_sram_load_response //= s.data_mem.send_to_controller_spm_rd_resp
+    
     # Connects data memory with controller.
-    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
-    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
+    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_sram_load_request_from_noc
+    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_sram_store_request_from_noc
     s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
