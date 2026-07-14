@@ -39,7 +39,7 @@ class TileRTL(Component):
 
   def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports,
+                total_steps, num_fu_inports, num_fu_outports, 
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
@@ -50,9 +50,7 @@ class TileRTL(Component):
     CtrlPktType = IntraCgraPktType
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
-    PayloadType = DataType.get_field_type(kAttrPayload)
     CtrlSignalType = CgraPayloadType.get_field_type(kAttrCtrl)
-    CmdType = CgraPayloadType.get_field_type(kAttrCmd)
     data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
 
     # Constants.
@@ -64,10 +62,6 @@ class TileRTL(Component):
 
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size))
-    DebugTimeType = mk_bits(clog2(max(MAX_CTRL_COUNT, total_steps) + 1))
-    DebugOpType = CtrlSignalType.get_field_type(kAttrOperation)
-    FuInType = mk_bits(clog2(num_fu_inports + 1))
-    PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
 
     # Interfaces.
     s.recv_data = [RecvIfcRTL(DataType)
@@ -87,7 +81,7 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports,
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, 
                               num_fu_outports, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
@@ -136,8 +130,6 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
-    s.routing_crossbar_idle_drain = Wire(1)
-    s.fu_crossbar_idle_drain = Wire(1)
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -150,12 +142,11 @@ class TileRTL(Component):
     s.fu_crossbar.tile_id //= s.tile_id
     s.routing_crossbar.cgra_id //= s.cgra_id
     s.routing_crossbar.tile_id //= s.tile_id
-    s.routing_crossbar.drain_when_inactive //= s.routing_crossbar_idle_drain
-    s.fu_crossbar.drain_when_inactive //= s.fu_crossbar_idle_drain
 
     # Assigns crossbar id.
     s.routing_crossbar.crossbar_id //= PORT_INDEX_ROUTING_CROSSBAR
     s.fu_crossbar.crossbar_id //= PORT_INDEX_FU_CROSSBAR
+
     # Constant queue.
     s.element.recv_const //= s.const_mem.send_const
 
@@ -228,7 +219,6 @@ class TileRTL(Component):
           s.routing_crossbar.send_data[i].msg
       s.tile_out_or_link[i].recv_xbar.val //= \
           s.routing_crossbar.send_data[i].val
-      s.tile_out_or_link[i].fu_xbar_rdy //= s.fu_crossbar.recv_opt.rdy
       s.send_data[i].msg //= s.tile_out_or_link[i].send.msg
       s.send_data[i].val //= s.tile_out_or_link[i].send.val
       s.tile_out_or_link[i].send.rdy //= s.send_data[i].rdy
@@ -339,10 +329,9 @@ class TileRTL(Component):
 
       # FIXME: Do we still need separate element and routing_xbar?
       # FIXME: Do we need to consider reg bank here?
-      # Keep the FU-side control live until the FU crossbar has also
-      # consumed the result. Otherwise a FU that finishes one cycle
-      # ahead of the fu_crossbar can drop its output while ctrl still
-      # waits for fu_crossbar_done.
+      # Keep FU-side control live until the FU crossbar has also consumed
+      # the result. Otherwise a FU that finishes one cycle ahead of the
+      # fu_crossbar can drop its output while ctrl still waits.
       s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & \
                                 ~(s.element_done & s.fu_crossbar_done)
       s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
@@ -377,11 +366,8 @@ class TileRTL(Component):
 
     @update
     def notify_crossbars_compute_status():
-      s.routing_crossbar.compute_done @= s.element.recv_opt.rdy | s.element_done
-      s.fu_crossbar.compute_done @= s.element.recv_opt.rdy | s.element_done
-      s.routing_crossbar_idle_drain @= ~s.routing_crossbar_done | ~s.ctrl_mem.send_ctrl.val
-      s.fu_crossbar_idle_drain @= ~s.fu_crossbar_done | ~s.ctrl_mem.send_ctrl.val
-
+      s.routing_crossbar.compute_done @= s.element_done
+      s.fu_crossbar.compute_done @= s.element_done
 
   # Line trace
   def line_trace(s):
