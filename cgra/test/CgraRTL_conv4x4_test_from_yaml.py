@@ -248,7 +248,8 @@ class TestHarness(Component):
 
       if s.dut.send_to_cpu_pkt.val & \
          (s.dut.send_to_cpu_pkt.msg.src == expected_return_src) & \
-         (s.dut.send_to_cpu_pkt.msg.payload.cmd == CMD_COMPLETE):
+         (s.dut.send_to_cpu_pkt.msg.payload.cmd == CMD_COMPLETE) & \
+         s.dut.send_to_cpu_pkt.msg.payload.data.predicate:
         if skip_bad_returns & \
            (s.dut.send_to_cpu_pkt.msg.payload.data.payload !=
             expected_return_data):
@@ -699,6 +700,8 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
       trace_logger.log_cycle(th.dut)
     if int(th.dut.send_to_cpu_pkt.val) & int(th.dut.send_to_cpu_pkt.rdy):
       cpu_pkt = th.dut.send_to_cpu_pkt.msg
+      if int(cpu_pkt.payload.data.predicate) == 0:
+        continue
       print("cpu_pkt:",
             "cycle", cycle,
             "src", int(cpu_pkt.src),
