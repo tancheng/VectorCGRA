@@ -15,7 +15,7 @@ Author : Shiran Guo
 from pymtl3 import *
 from ..basic.Fu import Fu
 from ...lib.opt_type import OPT_LOOP_CONTROL, OPT_SYMBOL_DICT
-
+from ...lib.util.data_struct_attr import *
 class LoopControlRTL(Fu):
 
   def construct(s, CtrlPktType, num_inports, num_outports, vector_factor_power = 0):
@@ -34,8 +34,8 @@ class LoopControlRTL(Fu):
 
     super(LoopControlRTL, s).construct(CtrlPktType, num_inports, num_outports, 1, vector_factor_power)
 
-    PayloadType = s.DataType.get_field_type('payload')
-    PredicateType = s.DataType.get_field_type('predicate')
+    PayloadType = s.DataType.get_field_type(kAttrPayload)
+    PredicateType = s.DataType.get_field_type(kAttrPredicate)
     FuInType = mk_bits(clog2(num_inports + 1))
     
     # Internal state for loop control
