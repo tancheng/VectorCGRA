@@ -236,7 +236,11 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.rdata[0].is_last_ctrl | \
           ((s.total_ctrl_steps_val > 0) & \
            (s.times == s.total_ctrl_steps_val - TimeType(1)))
-      s.send_ctrl.msg.operation           @= s.reg_file.rdata[0].operation
+      # Keep FUs idle while their prologue inputs are still being skipped.
+      if s.prologue_count_outport_fu != 0:
+        s.send_ctrl.msg.operation @= OPT_NAH
+      else:
+        s.send_ctrl.msg.operation @= s.reg_file.rdata[0].operation
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
