@@ -57,7 +57,7 @@ class DivRTL(Fu):
 
       s.div_quotient @= quotient
       if s.divisor != 0:
-        s.div_remainder @= s.dividend % s.divisor
+        s.div_remainder @= trunc(remainder, PayloadType)
       else:
         s.div_remainder @= 0
 
