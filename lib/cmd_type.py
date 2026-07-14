@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 44
+NUM_CMDS = 52
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -69,6 +69,17 @@ CMD_LC_ALL_COMPLETE                  = 42  # LC -> Controller: all outer loops c
 # GEP FU Configuration Commands.
 CMD_CONFIG_GEP_STRIDE                = 43  # Controller -> GEP FU: Configures stride for 2D GEP
 
+# DMA commands. The CPU configures the controller-side command registers
+# before issuing CMD_DMA_MVIN/CMD_DMA_MVOUT.
+CMD_DMA_CONFIG_DRAM_ADDR_LO          = 44  # Configures lower 32 bits of DRAM address
+CMD_DMA_CONFIG_DRAM_ADDR_HI          = 45  # Configures higher 32 bits of DRAM address
+CMD_DMA_CONFIG_SPM_ADDR              = 46  # Configures SPM address
+CMD_DMA_CONFIG_BYTES                 = 47  # Configures number of bytes to transfer
+CMD_DMA_CONFIG_TAG                   = 48  # Configures tag of the DMA command
+CMD_DMA_MVIN                         = 49  # Issues a DMA_MVIN command
+CMD_DMA_MVOUT                        = 50  # Issues a DMA_MVOUT command
+CMD_DMA_DONE                         = 51  # Signals that the DMA command is complete
+
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
   CMD_PAUSE:                            "(PAUSE_EXECUTION)",
@@ -114,5 +125,13 @@ CMD_SYMBOL_DICT = {
   CMD_LC_CHILD_RESET:                   "(LC_CHILD_RESET)",
   CMD_LC_ALL_COMPLETE:                  "(LC_ALL_COMPLETE)",
   CMD_CONFIG_GEP_STRIDE:                "(CONFIG_GEP_STRIDE)",
+  CMD_DMA_CONFIG_DRAM_ADDR_LO:          "(DMA_CONFIG_DRAM_ADDR_LO)",
+  CMD_DMA_CONFIG_DRAM_ADDR_HI:          "(DMA_CONFIG_DRAM_ADDR_HI)",
+  CMD_DMA_CONFIG_SPM_ADDR:              "(DMA_CONFIG_SPM_ADDR)",
+  CMD_DMA_CONFIG_BYTES:                 "(DMA_CONFIG_BYTES)",
+  CMD_DMA_CONFIG_TAG:                   "(DMA_CONFIG_TAG)",
+  CMD_DMA_MVIN:                         "(DMA_MVIN)",
+  CMD_DMA_MVOUT:                        "(DMA_MVOUT)",
+  CMD_DMA_DONE:                         "(DMA_DONE)",
 }
 

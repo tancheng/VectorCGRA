@@ -29,11 +29,15 @@ class ControllerRTL(Component):
                 multi_cgra_columns,
                 num_tiles,
                 controller2addr_map,
-                idTo2d_map):
+                idTo2d_map,
+                has_dma_ports = False,
+                DmaDataType = mk_dma_data(),
+                DmaCmdType = mk_dma_cmd()):
 
     # Derives types from InterCgraPktType.
     CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
+    DataPayloadType = DataType.get_field_type(kAttrPayload)
     DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
     
     # Derives CgraIdType from grid dimensions.
@@ -52,6 +56,22 @@ class ControllerRTL(Component):
     YType = mk_bits(max(clog2(multi_cgra_rows), 1))
     TileIdType = mk_bits(clog2(num_tiles + 1))
     ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
+    DmaOpcodeType = DmaCmdType.get_field_type(kAttrOpcode)
+    DmaDramAddrType = DmaCmdType.get_field_type(kAttrDramAddr)
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
+    DmaBytesType = DmaCmdType.get_field_type(kAttrNBytes)
+    DmaTagType = DmaCmdType.get_field_type(kAttrDmaTag)
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
+    # Lower and higher 32 bits of the DRAM address.
+    DmaDramAddrPartType = mk_bits(DmaDramAddrType.nbits // 2)
+    DmaDoneType = mk_dma_done(DmaTagType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
+                                              DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
+
+    if has_dma_ports:
+      assert DmaSpmDataType.nbits == 32
 
     # Interface
     s.cgra_id = InPort(CgraIdType)
@@ -71,9 +91,38 @@ class ControllerRTL(Component):
     s.recv_from_tile_load_response_pkt = RecvIfcRTL(InterCgraPktType)
     s.recv_from_tile_store_request_pkt = RecvIfcRTL(InterCgraPktType)
 
-    s.send_to_mem_load_request = SendIfcRTL(InterCgraPktType)
+    s.send_to_sram_load_request_from_noc = SendIfcRTL(InterCgraPktType)
     s.send_to_tile_load_response = SendIfcRTL(InterCgraPktType)
-    s.send_to_mem_store_request = SendIfcRTL(InterCgraPktType)
+    s.send_to_sram_store_request_from_noc = SendIfcRTL(InterCgraPktType)
+
+    # Controller-owned command path from CPU packets to the DMA engine.
+    # Send the decoded DMA command to the DMA engine.
+    s.dma_cmd = SendIfcRTL(DmaCmdType)
+    # Receive the DMA done signal from the DMA engine.
+    s.dma_done = RecvIfcRTL(DmaDoneType)
+
+    # -------------------------------------------------------
+    # SPM (SRAM) access path from the DMA engine.
+    # The DMA and the inter-cgra NoC (above) each have their own
+    # dedicated SPM access interfaces to the data memory controller.
+    # They are kept separate because the DMA can perform burst data
+    # movement.
+    # -------------------------------------------------------
+    # Receive the request of writing into SPM from the DMA.
+    s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+    # Receive the request of reading from SPM from the DMA.
+    s.recv_from_dma_spm_rd_req  = RecvIfcRTL(DmaSpmReadReqType)
+    # Send the response of reading from SPM to the DMA.
+    s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
+
+    # SRAM data memory side of the SPM access path (DMA).
+    # Send the request of writing into SPM to the data_mem controller.
+    s.send_to_sram_store_request_from_dma   = SendIfcRTL(DmaSpmWriteReqType)
+    # Send the request of reading from SPM to the data_mem controller.
+    s.send_to_sram_load_request_from_dma    = SendIfcRTL(DmaSpmReadReqType)
+    # Receive the response of reading from SPM from the data_mem controller.
+    s.recv_from_sram_load_response = RecvIfcRTL(DmaSpmReadRespType)
+
 
     # Component
     s.recv_from_tile_load_request_pkt_queue = ChannelRTL(InterCgraPktType, latency = 1)
@@ -123,6 +172,12 @@ class ControllerRTL(Component):
 
     s.addr_dst_id = Wire(CgraIdType)
 
+    s.dma_dram_addr_lo = Wire(DmaDramAddrPartType)
+    s.dma_dram_addr_hi = Wire(DmaDramAddrPartType)
+    s.dma_spm_addr     = Wire(DmaSpmAddrType)
+    s.dma_bytes        = Wire(DmaBytesType)
+    s.dma_tag          = Wire(DmaTagType)
+
     # Connections.
     # Requests towards others, 1 cycle delay to improve timing.
     s.recv_from_tile_load_request_pkt_queue.recv //= s.recv_from_tile_load_request_pkt
@@ -130,13 +185,61 @@ class ControllerRTL(Component):
     s.recv_from_tile_store_request_pkt_queue.recv //= s.recv_from_tile_store_request_pkt
 
     # Requests towards local from others, 1 cycle delay to improve timing.
-    s.send_to_mem_load_request_queue.send //= s.send_to_mem_load_request
+    s.send_to_mem_load_request_queue.send //= s.send_to_sram_load_request_from_noc
     s.send_to_tile_load_response_queue.send //= s.send_to_tile_load_response
-    s.send_to_mem_store_request_queue.send //= s.send_to_mem_store_request
+    s.send_to_mem_store_request_queue.send //= s.send_to_sram_store_request_from_noc
 
     # For control signals delivery from CPU to tiles.
     s.recv_from_cpu_pkt //= s.recv_from_cpu_pkt_queue.recv
     s.send_to_cpu_pkt //= s.send_to_cpu_pkt_queue.send
+
+    @update_ff
+    def update_dma_cmd_regs():
+      if s.reset:
+        s.dma_dram_addr_lo <<= DmaDramAddrPartType(0)
+        s.dma_dram_addr_hi <<= DmaDramAddrPartType(0)
+        s.dma_spm_addr     <<= DmaSpmAddrType(0)
+        s.dma_bytes        <<= DmaBytesType(0)
+        s.dma_tag          <<= DmaTagType(0)
+      elif has_dma_ports:
+        cpu_payload = s.recv_from_cpu_pkt_queue.send.msg.payload
+        cpu_cmd = cpu_payload.cmd
+        cpu_data = cpu_payload.data.payload
+        if s.recv_from_cpu_pkt_queue.send.val & s.recv_from_cpu_pkt_queue.send.rdy:
+          if cpu_cmd == CMD_DMA_CONFIG_DRAM_ADDR_LO:
+            s.dma_dram_addr_lo <<= DmaDramAddrPartType(cpu_data)
+          elif cpu_cmd == CMD_DMA_CONFIG_DRAM_ADDR_HI:
+            s.dma_dram_addr_hi <<= DmaDramAddrPartType(cpu_data)
+          elif cpu_cmd == CMD_DMA_CONFIG_SPM_ADDR:
+            s.dma_spm_addr <<= zext(cpu_payload.data_addr, DmaSpmAddrType)
+          elif cpu_cmd == CMD_DMA_CONFIG_BYTES:
+            s.dma_bytes <<= DmaBytesType(cpu_data)
+          elif cpu_cmd == CMD_DMA_CONFIG_TAG:
+            s.dma_tag <<= trunc(cpu_data, DmaTagType)
+
+    @update
+    def update_dma_spm_forwarding():
+      if has_dma_ports:
+        s.send_to_sram_store_request_from_dma.val @= s.recv_from_dma_spm_wr_req.val
+        s.recv_from_dma_spm_wr_req.rdy @= s.send_to_sram_store_request_from_dma.rdy
+        s.send_to_sram_store_request_from_dma.msg @= s.recv_from_dma_spm_wr_req.msg
+
+        s.send_to_sram_load_request_from_dma.val     @= s.recv_from_dma_spm_rd_req.val
+        s.recv_from_dma_spm_rd_req.rdy   @= s.send_to_sram_load_request_from_dma.rdy
+        s.send_to_sram_load_request_from_dma.msg     @= s.recv_from_dma_spm_rd_req.msg
+        s.send_to_dma_spm_rd_resp.val @= s.recv_from_sram_load_response.val
+        s.recv_from_sram_load_response.rdy   @= s.send_to_dma_spm_rd_resp.rdy
+        s.send_to_dma_spm_rd_resp.msg @= s.recv_from_sram_load_response.msg
+      else:
+        s.send_to_sram_store_request_from_dma.val @= 0
+        s.send_to_sram_store_request_from_dma.msg @= DmaSpmWriteReqType()
+        s.send_to_sram_load_request_from_dma.val @= 0
+        s.send_to_sram_load_request_from_dma.msg @= DmaSpmReadReqType()
+        s.recv_from_sram_load_response.rdy @= 0
+        s.recv_from_dma_spm_wr_req.rdy @= 0
+        s.recv_from_dma_spm_rd_req.rdy @= 0
+        s.send_to_dma_spm_rd_resp.val @= 0
+        s.send_to_dma_spm_rd_resp.msg @= DmaSpmReadRespType()
 
     @update
     def update_received_msg():
@@ -150,6 +253,15 @@ class ControllerRTL(Component):
       s.send_to_cpu_pkt_queue.recv.val @= 0
       s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_ring_pkt.rdy @= 0
+
+      s.dma_cmd.val       @= 0
+      s.dma_cmd.msg       @= DmaCmdType(
+        DmaOpcodeType(DMA_MVIN),
+        concat(s.dma_dram_addr_hi, s.dma_dram_addr_lo),
+        s.dma_spm_addr,
+        s.dma_bytes,
+        s.dma_tag)
+      s.dma_done.rdy      @= 0
 
       for i in range(CONTROLLER_CROSSBAR_INPORTS):
         s.crossbar.recv[i].val @= 0
@@ -201,24 +313,56 @@ class ControllerRTL(Component):
       s.global_reduce_unit.send.rdy @= s.crossbar.recv[kFromReduceUnitIdx].rdy
       s.crossbar.recv[kFromReduceUnitIdx].msg @= s.global_reduce_unit.send.msg
 
-      # For the ctrl and data preloading.
-      s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
-          s.recv_from_cpu_pkt_queue.send.val
-      s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
-      s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
-          ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
-                                InterCgraPktType(s.cgra_id, # src
-                                                 s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
-                                                 0, # src_x
-                                                 0, # src_y
-                                                 s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
-                                                 s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
-                                                 num_tiles, # src_tile_id, num_tiles is used to indicate the request is from CPU, so the LOAD response can come back.
-                                                 s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id
-                                                 0, # remote_src_port, only used for inter-cgra remote load request/response.
-                                                 0, # opaque
-                                                 0, # vc_id
-                                                 s.recv_from_cpu_pkt_queue.send.msg.payload))
+      cpu_payload = s.recv_from_cpu_pkt_queue.send.msg.payload
+      cpu_cmd = cpu_payload.cmd
+
+      if has_dma_ports & (
+          (cpu_cmd == CMD_DMA_CONFIG_DRAM_ADDR_LO) |
+          (cpu_cmd == CMD_DMA_CONFIG_DRAM_ADDR_HI) |
+          (cpu_cmd == CMD_DMA_CONFIG_SPM_ADDR) |
+          (cpu_cmd == CMD_DMA_CONFIG_BYTES) |
+          (cpu_cmd == CMD_DMA_CONFIG_TAG)):
+        s.recv_from_cpu_pkt_queue.send.rdy @= 1
+
+      elif has_dma_ports & (
+          (cpu_cmd == CMD_DMA_MVIN) |
+          (cpu_cmd == CMD_DMA_MVOUT)):
+        s.dma_cmd.val @= s.recv_from_cpu_pkt_queue.send.val
+        if cpu_cmd == CMD_DMA_MVIN:
+          s.dma_cmd.msg @= DmaCmdType(
+            DmaOpcodeType(DMA_MVIN),
+            concat(s.dma_dram_addr_hi, s.dma_dram_addr_lo),
+            s.dma_spm_addr,
+            s.dma_bytes,
+            s.dma_tag)
+        else:
+          s.dma_cmd.msg @= DmaCmdType(
+            DmaOpcodeType(DMA_MVOUT),
+            concat(s.dma_dram_addr_hi, s.dma_dram_addr_lo),
+            s.dma_spm_addr,
+            s.dma_bytes,
+            s.dma_tag)
+        s.recv_from_cpu_pkt_queue.send.rdy @= s.dma_cmd.rdy
+
+      else:
+        # For the ctrl and data preloading.
+        s.crossbar.recv[kFromCpuCtrlAndDataIdx].val @= \
+            s.recv_from_cpu_pkt_queue.send.val
+        s.recv_from_cpu_pkt_queue.send.rdy @= s.crossbar.recv[kFromCpuCtrlAndDataIdx].rdy
+        s.crossbar.recv[kFromCpuCtrlAndDataIdx].msg @= \
+            ControllerXbarPktType(0, # dst (always 0 to align with the single outport of the crossbar, i.e., NoC)
+                                  InterCgraPktType(s.cgra_id, # src
+                                                   s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id, # dst
+                                                   0, # src_x
+                                                   0, # src_y
+                                                   s.idTo2d_x_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_x
+                                                   s.idTo2d_y_lut[s.recv_from_cpu_pkt_queue.send.msg.dst_cgra_id], # dst_y
+                                                   num_tiles, # src_tile_id, num_tiles is used to indicate the request is from CPU, so the LOAD response can come back.
+                                                   s.recv_from_cpu_pkt_queue.send.msg.dst, # dst_tile_id
+                                                   0, # remote_src_port, only used for inter-cgra remote load request/response.
+                                                   0, # opaque
+                                                   0, # vc_id
+                                                   s.recv_from_cpu_pkt_queue.send.msg.payload))
 
       # TODO: For the other cmd types.
 
@@ -359,6 +503,30 @@ class ControllerRTL(Component):
         #   # TODO: Handle other cmd types.
         #   assert(False)
 
+      # WARNING
+      # A possible conflict occurs when dma_done.valis True and the received message is CMD_COMPLETEat the same time,
+      # that is, when a DMA command and CMD_COMPLETE appear in the same clock cycle.
+      # In this case, both require the CGRA to send a return signal to the CPU, which may causes a conflict.
+      # Related discussion: https://github.com/tancheng/VectorCGRA/pull/293#discussion_r3418482217
+      if has_dma_ports & s.dma_done.val:
+        s.dma_done.rdy @= s.send_to_cpu_pkt_queue.recv.rdy
+        s.send_to_cpu_pkt_queue.recv.val @= 1
+        s.send_to_cpu_pkt_queue.recv.msg @= \
+            IntraCgraPktType(num_tiles, # src_tile_id: controller/DMA sideband source
+                             num_tiles, # dst_tile_id: CPU-facing controller endpoint
+                             s.cgra_id,
+                             s.cgra_id,
+                             s.idTo2d_x_lut[s.cgra_id],
+                             s.idTo2d_y_lut[s.cgra_id],
+                             s.idTo2d_x_lut[s.cgra_id],
+                             s.idTo2d_y_lut[s.cgra_id],
+                             s.dma_done.msg.dma_tag,
+                             0,
+                             CgraPayloadType(
+                               CMD_DMA_DONE,
+                              DataType(zext(s.dma_done.msg.dma_tag, DataPayloadType), 1, 0, 0),
+                               0, 0, 0))
+
     @update
     def update_sending_to_noc_msg():
       s.send_to_inter_cgra_noc.val @= s.crossbar.send[0].val
@@ -384,8 +552,8 @@ class ControllerRTL(Component):
     recv_from_tile_load_response_pkt_str = "recv_from_tile_load_response_pkt: " + str(s.recv_from_tile_load_response_pkt.msg)
     recv_from_tile_store_request_pkt_str = "recv_from_tile_store_request_pkt: " + str(s.recv_from_tile_store_request_pkt.msg)
     crossbar_str = "crossbar: {" + s.crossbar.line_trace() + "}"
-    send_to_mem_load_request_str = "send_to_mem_load_request: " + str(s.send_to_mem_load_request.msg)
-    send_to_mem_store_request_str = "send_to_mem_store_request: " + str(s.send_to_mem_store_request.msg)
+    send_to_mem_load_request_str = "send_to_sram_load_request_from_noc: " + str(s.send_to_sram_load_request_from_noc.msg)
+    send_to_mem_store_request_str = "send_to_sram_store_request_from_noc: " + str(s.send_to_sram_store_request_from_noc.msg)
     recv_from_noc_str ="recv_from_noc_pkt.val: " + str(s.recv_from_inter_cgra_noc.val) + " recv_from_noc_pkt.msg: " + str(s.recv_from_inter_cgra_noc.msg) + " recv_from_noc_pkt.rdy: " + str(s.recv_from_inter_cgra_noc.rdy)
     send_to_noc_str = "send_to_noc_pkt: " + str(s.send_to_inter_cgra_noc.msg) + "; rdy: " + str(s.send_to_inter_cgra_noc.rdy) + "; val: " + str(s.send_to_inter_cgra_noc.val)
     return f'{recv_from_cpu_pkt_str} || {recv_from_cpu_pkt_queue_str} || {crossbar_recv_str} ||  {send_to_ctrl_ring_pkt_str} || {recv_from_tile_load_request_pkt_str} || {recv_from_tile_load_response_pkt_str} || {recv_from_tile_store_request_pkt_str} || {crossbar_str} || {send_to_mem_load_request_str} || {send_to_mem_store_request_str} || {recv_from_noc_str} || {send_to_noc_str}\n'

@@ -131,8 +131,8 @@ class CgraWithContextSwitchRTL(Component):
     s.data_mem.address_upper //= s.address_upper
 
     # Connects data memory with controller.
-    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
-    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
+    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_sram_load_request_from_noc
+    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_sram_store_request_from_noc
     s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
