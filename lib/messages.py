@@ -160,7 +160,7 @@ def mk_ctrl(num_fu_inports = 4,
 
   field_dict[kAttrVectorFactorPower] = VectorFactorPowerType
 
-  field_dict[kAttrIsLastCtrl] = b1
+  field_dict[kAttrIsLastCtrl] = mk_bits(1)
 
   # Register file related signals.
   # Indicates whether to write data into the register bank, and the
@@ -195,6 +195,190 @@ def mk_cmd(num_commands = 12,
 
   return mk_bitstruct(new_name, {
       'cmd': CmdType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+#=========================================================================
+# DMA messages
+#=========================================================================
+
+def mk_dma_cmd(dram_addr_nbits = 64,
+               spm_addr_nbits = 32,
+               bytes_nbits = 32,
+               tag_nbits = 8,
+               prefix = "DmaCmd"):
+
+  OpcodeType   = mk_bits(3)
+  DramAddrType = mk_bits(dram_addr_nbits)
+  SpmAddrType  = mk_bits(spm_addr_nbits)
+  BytesType    = mk_bits(bytes_nbits)
+  TagType      = mk_bits(tag_nbits)
+
+  new_name = f"{prefix}_{dram_addr_nbits}_{spm_addr_nbits}_{bytes_nbits}_{tag_nbits}"
+
+  def str_func(s):
+    return f"dma_cmd(op={s.opcode},dram={s.dram_addr},spm={s.spm_addr},bytes={s.nbytes},tag={s.dma_tag})"
+
+  return mk_bitstruct(new_name, {
+      'opcode'   : OpcodeType,
+      'dram_addr': DramAddrType,
+      'spm_addr' : SpmAddrType,
+      # NOTE nbytes is the number of bytes to transfer.
+      # Currently, only nbytes that are multiples of 4 are supported.
+      'nbytes'   : BytesType,
+      # This dma_tag isn't used now. We may use it to distinguish different DMA commands.
+      'dma_tag'  : TagType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+# A data structure to represent the data to be transferred by DMA.
+#
+# === Mask Design ===
+# Data transfer granularity between DRAM and SPM is 1 word (= 4 bytes)
+# The `dram_mask` and `spm_mask` fields define the bitwidth of byte
+# masks for DRAM and SPM data respectively.
+#
+# Actual mask *values* are generated independently by the DMA engine
+# FSM (see DmaEngineRTL), NOT carried in this struct:
+#
+# - dram_mask (16-bit, one bit per byte of 128-bit (16 bytes) DRAM beat):
+#   Dynamically computed during MVOUT (SPM -> DRAM) based on the
+#   number of valid words in the last beat. Values range from 0x000f
+#   (1 word) to 0xffff (full beat). 
+#   The SPM has a data width of 32 bits, so it can only read 32 bits per cycle.
+#   In contrast, the DRAM has a data width of 128 bits.
+#   Therefore, the amount of data transferred by the DMA from the SPM to the DRAM determines the write mask applied to the DRAM.
+#   For example:
+#   if DMA move 1 word from SPM to DRAM, the mask is 0x000f.
+#   If DMA move 2 words from SPM to DRAM, the mask is 0x00ff.
+#   If DMA move 3 words from SPM to DRAM, the mask is 0x0fff.
+#   If DMA move 4 words from SPM to DRAM, the mask is 0xffff.
+#
+# - spm_mask (4-bit, one bit per byte of 32-bit SPM word):
+#   SPM writes always write one full word, so the mask is
+#   hardcoded to 0xf. This field is reserved for
+#   future byte-granular SPM write support.
+def mk_dma_data(dram_data_nbits = 128,
+                dram_mask_nbits = 16,
+                spm_data_nbits = 32,
+                spm_mask_nbits = 4,
+                prefix = "DmaData"):
+  DramDataType = mk_bits(dram_data_nbits)
+  DramMaskType = mk_bits(dram_mask_nbits)
+  SpmDataType = mk_bits(spm_data_nbits)
+  SpmMaskType = mk_bits(spm_mask_nbits)
+  new_name = f"{prefix}_{dram_data_nbits}_{dram_mask_nbits}_{spm_data_nbits}"
+
+  def str_func(s):
+    return f"dma_data(dram_data={s.dram_data},dram_mask={s.dram_mask},spm_data={s.spm_data})"
+  
+  return mk_bitstruct(new_name, {
+    'dram_data': DramDataType,
+    # 16-bit byte mask for 16-bytes DRAM beat.
+    'dram_mask': DramMaskType,
+    'spm_data': SpmDataType,
+    # 4-bit byte mask for 4-bytes SPM word.
+    # Always 0xf in current implementation (full-word writes only).
+    'spm_mask': SpmMaskType,
+  },
+  namespace = {'__str__': str_func}
+  )
+
+def mk_dma_done(tag_nbits = 8,
+                prefix = "DmaDone"):
+
+  TagType = mk_bits(tag_nbits)
+
+  new_name = f"{prefix}_{tag_nbits}"
+
+  def str_func(s):
+    return f"dma_done(dma_tag={s.dma_tag})"
+
+  return mk_bitstruct(new_name, {
+      'dma_tag': TagType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+#=========================================================================
+# The type of write request signal from DMA to DRAM
+#=========================================================================
+def mk_dma_dram_wr_req(addr_nbits = 64,
+                       data_nbits = 128,
+                       mask_nbits = 16,
+                       prefix = "DmaDramWrReq"):
+
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  MaskType = mk_bits(mask_nbits)
+
+  new_name = f"{prefix}_{addr_nbits}_{data_nbits}_{mask_nbits}"
+
+  def str_func(s):
+    return f"dma_dram_wr(addr={s.addr},data={s.data},mask={s.mask})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+      'data': DataType,
+      'mask': MaskType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+# The type of write request signal from DMA to SPM
+def mk_dma_spm_write_req(addr_nbits = 32,
+                         data_nbits = 32,
+                         prefix = "DmaSpmWriteReq"):
+
+  AddrType = mk_bits(addr_nbits)
+  DataType = mk_bits(data_nbits)
+  MaskType = mk_bits(max(1, data_nbits // 8))
+
+  new_name = f"{prefix}_{addr_nbits}_{data_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_wr(addr={s.addr},data={s.data},mask={s.mask})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+      'data': DataType,
+      'mask': MaskType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+# The type of read request signal from DMA to SPM
+def mk_dma_spm_read_req(addr_nbits = 32,
+                        prefix = "DmaSpmReadReq"):
+
+  AddrType = mk_bits(addr_nbits)
+
+  new_name = f"{prefix}_{addr_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_rd(addr={s.addr})"
+
+  return mk_bitstruct(new_name, {
+      'addr': AddrType,
+    },
+    namespace = {'__str__': str_func}
+  )
+
+# The type of read response signal from SPM to DMA
+def mk_dma_spm_read_resp(data_nbits = 32,
+                         prefix = "DmaSpmReadResp"):
+
+  DataType = mk_bits(data_nbits)
+
+  new_name = f"{prefix}_{data_nbits}"
+
+  def str_func(s):
+    return f"dma_spm_rd_resp(data={s.data})"
+
+  return mk_bitstruct(new_name, {
+      'data': DataType,
     },
     namespace = {'__str__': str_func}
   )

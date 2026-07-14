@@ -39,3 +39,16 @@ kAttrSrcCgraY = 'src_cgra_y'
 kAttrDstCgraX = 'dst_cgra_x'
 kAttrDstCgraY = 'dst_cgra_y'
 kAttrAddr = 'addr'
+
+# DMA attributes
+kAttrOpcode = 'opcode'
+kAttrDramAddr = 'dram_addr'
+kAttrNBytes = 'nbytes'
+# This dma_tag isn't used now. We may use it to distinguish different DMA commands.
+kAttrDmaTag = 'dma_tag'
+# TODO: https://github.com/tancheng/VectorCGRA/issues/316 -- Consolidates attributes.
+kAttrSpmAddr = 'spm_addr'
+kAttrSpmData = 'spm_data'
+kAttrSpmMask = 'spm_mask'
+kAttrDramData = 'dram_data'
+kAttrDramMask = 'dram_mask'
