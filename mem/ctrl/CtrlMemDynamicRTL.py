@@ -208,8 +208,10 @@ class CtrlMemDynamicRTL(Component):
       if s.start_iterate_ctrl == b1(1):
         if s.sent_complete:
           s.send_ctrl.val @= 0
-        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
-           (s.reg_file.rdata[0].operation == OPT_START):
+        elif (((s.total_ctrl_steps_val > 0) & \
+               (s.times == s.total_ctrl_steps_val) & \
+               ~s.has_ret_ctrl) | \
+              (s.reg_file.rdata[0].operation == OPT_START)):
           s.send_ctrl.val @= b1(0)
         else:
           s.send_ctrl.val @= 1
@@ -235,7 +237,7 @@ class CtrlMemDynamicRTL(Component):
       s.send_ctrl.msg.is_last_ctrl        @= \
           s.reg_file.rdata[0].is_last_ctrl | \
           ((s.total_ctrl_steps_val > 0) & \
-           (s.times == s.total_ctrl_steps_val - TimeType(1)))
+           (s.times >= s.total_ctrl_steps_val - TimeType(1)))
       # Keep FUs idle while their prologue inputs are still being skipped.
       if s.prologue_count_outport_fu != 0:
         s.send_ctrl.msg.operation @= OPT_NAH

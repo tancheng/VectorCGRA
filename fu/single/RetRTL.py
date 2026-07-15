@@ -73,11 +73,15 @@ class RetRTL(Fu):
           if s.already_done[s.ctrl_addr_inport]:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val
             s.recv_opt.rdy @= s.recv_all_val
-          elif s.recv_in[s.in0_idx].msg.predicate & s.recv_opt.msg.is_last_ctrl:
+          elif s.recv_opt.msg.is_last_ctrl:
             # Only the final dynamic RET sends the value back to CPU.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
-            # s.send_to_ctrl_mem.msg @= s.recv_in[s.in0_idx].msg
-            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
+            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
+                CMD_COMPLETE,
+                s.DataType(s.recv_in[s.in0_idx].msg.payload, 1,
+                           s.recv_in[s.in0_idx].msg.bypass,
+                           s.recv_in[s.in0_idx].msg.delay),
+                0, s.recv_opt.msg, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:
@@ -90,7 +94,7 @@ class RetRTL(Fu):
           if s.already_done[s.ctrl_addr_inport]:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val
             s.recv_opt.rdy @= s.recv_all_val
-          elif s.recv_in[s.in0_idx].msg.predicate & s.recv_opt.msg.is_last_ctrl:
+          elif s.recv_opt.msg.is_last_ctrl:
             # RET_VOID: only the final dynamic RET_VOID notifies ctrl mem.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
             # Sends 0 as data (controller is supposed to know it's RET_VOID based on the operation and data type).
