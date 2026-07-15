@@ -26,9 +26,17 @@ writes). For an armed register:
   (e.g., VectorAllReduceRTL's base operand), and for
   read_reg_towards=BOTH the tile only lets the step complete once both
   the FU and the routing-crossbar paths have been served.
-- A write is rejected (and reported as not-ready via `outport_wr_rdy`)
-  while the destination register still holds an unconsumed token, so an
-  earlier token can never be silently overwritten by a later iteration.
+- A write targeting a register that still holds an unconsumed token, or
+  that is being read by the current ctrl step, is accepted into a
+  one-entry write skid buffer (if free) and committed into the register
+  file once this cannot disturb an in-flight read, so an earlier token
+  can never be silently overwritten and a register being read stays
+  stable until the step completes — while a producer whose destination
+  register is being read by its own ctrl step (same-register
+  read-modify-write, e.g. an accumulator, or `NOT $0 -> $0, SOUTH`
+  under backpressure, see issues #281/#286) can still complete its
+  write handshake and let the step finish. Only while the skid buffer
+  is occupied are writes backpressured (via `outport_wr_rdy`).
 
 Author : Cheng Tan
   Date : Feb 6, 2025
@@ -70,14 +78,15 @@ class RegisterBankRTL(Component):
     # proceeds to the next ctrl signal); consumes the token of the
     # register read by the completing step.
     s.inport_ctrl_proceed = InPort(mk_bits(1))
-    # Indicates whether the destination register of the configured write
-    # can currently accept a token (i.e., holds no unconsumed token).
-    # The cluster uses it to backpressure the selected write source.
+    # Indicates whether the configured write can be accepted this cycle
+    # (directly or into the skid buffer). The cluster uses it to
+    # backpressure the selected write source.
     s.outport_wr_rdy = OutPort(mk_bits(1))
-    # Clears all token bookkeeping (token/armed bits) on task switching,
-    # so a newly launched task starts from the legacy (unarmed) behavior
-    # regardless of what a previous task left behind. Register data
-    # itself is preserved, matching the other clearable components.
+    # Clears all token bookkeeping (token/armed/skid state) on task
+    # switching, so a newly launched task starts from the legacy
+    # (unarmed) behavior regardless of what a previous task left behind.
+    # Register data itself is preserved, matching the other clearable
+    # components.
     s.clear = InPort(mk_bits(1))
 
     # Component
@@ -90,16 +99,48 @@ class RegisterBankRTL(Component):
     # register keeps the legacy behavior of always asserting `val` on a
     # configured read (acting as a default-token source).
     s.armed = Wire(num_registers)
+    # Write skid buffer (one entry; the bank has one write port, so at
+    # most one write can be blocked at a time). A write that cannot land
+    # directly is accepted ("parked") here and committed into the
+    # register file once that cannot disturb an in-flight read. This is
+    # what allows an operation to read and write the same register
+    # within one ctrl step (e.g., an accumulator, or `NOT $0 -> $0,
+    # SOUTH` under backpressure — see issues #281/#286): the producer's
+    # write handshake completes immediately via the skid, so the step
+    # can finish and release the old token, while the register keeps
+    # the old value stable for any re-reads until the step completes.
+    s.skid_valid = Wire(1)
+    s.skid_data = Wire(DataType)
+    s.skid_idx = Wire(AddrType)
 
     # Wires derived from the ctrl signal and the token state.
     s.read_towards_fu = Wire(1)
     s.read_towards_xbar = Wire(1)
     s.read_token_valid = Wire(1)
     s.read_armed = Wire(1)
+    # Token status of the configured write target and of the skid
+    # entry's target.
+    s.wr_target_token = Wire(1)
+    s.skid_target_token = Wire(1)
+    # The current ctrl step is reading the write target / the skid
+    # entry's target. A register being read must stay stable until the
+    # step completes (reads are level signals), so such writes park in
+    # the skid and commit exactly when the step completes.
+    s.wr_target_read = Wire(1)
+    s.skid_target_read = Wire(1)
+    # The skid entry commits into the register file this cycle.
+    s.skid_commit = Wire(1)
+    # A write is accepted from the selected source this cycle...
+    s.wr_accept = Wire(1)
+    # ...and lands directly in the register file...
     s.wr_en = Wire(1)
+    # ...or is parked in the skid buffer.
+    s.skid_park = Wire(1)
+    # Write data selected from the configured source.
+    s.wr_sel_data = Wire(DataType)
     # One-hot masks selecting the register whose token bit is set (on a
-    # write) or cleared (on the completion of the ctrl step reading it)
-    # at the end of this cycle.
+    # direct write or a skid commit) or cleared (on the completion of
+    # the ctrl step reading it) at the end of this cycle.
     s.token_set_mask = Wire(num_registers)
     s.token_clear_mask = Wire(num_registers)
 
@@ -111,16 +152,46 @@ class RegisterBankRTL(Component):
       s.read_towards_xbar @= (read_towards == READ_TOWARDS_ROUTING_XBAR) | \
                              (read_towards == READ_TOWARDS_BOTH)
 
-      # Token status of the register selected for read/write.
+      # Token status of the registers selected for read/write and of the
+      # skid entry's target.
       s.read_token_valid @= 0
       s.read_armed @= 0
-      s.outport_wr_rdy @= 0
+      s.wr_target_token @= 0
+      s.skid_target_token @= 0
       for r in range(num_registers):
         if s.inport_opt.read_reg_idx[reg_bank_id] == r:
           s.read_token_valid @= s.token_valid[r]
           s.read_armed @= s.armed[r]
         if s.inport_opt.write_reg_idx[reg_bank_id] == r:
-          s.outport_wr_rdy @= ~s.token_valid[r]
+          s.wr_target_token @= s.token_valid[r]
+        if s.skid_idx == r:
+          s.skid_target_token @= s.token_valid[r]
+
+      s.wr_target_read @= (s.read_towards_fu | s.read_towards_xbar) & \
+          (s.inport_opt.read_reg_idx[reg_bank_id] == \
+           s.inport_opt.write_reg_idx[reg_bank_id])
+      s.skid_target_read @= (s.read_towards_fu | s.read_towards_xbar) & \
+          (s.inport_opt.read_reg_idx[reg_bank_id] == s.skid_idx)
+
+      # The parked write drains into the register file as soon as this
+      # cannot disturb an in-flight read: if the current step reads the
+      # skid's target, the commit happens exactly when that step
+      # completes (its new token atomically replaces the one the step
+      # consumes); otherwise it happens once the target holds no token.
+      s.skid_commit @= s.skid_valid & \
+          ((s.skid_target_read & s.inport_ctrl_proceed) | \
+           (~s.skid_target_read & ~s.skid_target_token))
+
+      # A write is accepted whenever the skid buffer is free: it lands
+      # directly in the register file if that cannot disturb anything,
+      # and parks in the skid otherwise. Occupied skid -> not ready.
+      # Keeping this a pure function of registered state means the
+      # producer's rdy never combinationally depends on any consumer's
+      # readiness (in particular not on skid_commit, which derives from
+      # inport_ctrl_proceed and would otherwise close a loop through
+      # the FU's rdy chain), and it also guarantees a direct write can
+      # never collide with a skid commit on the single write port.
+      s.outport_wr_rdy @= ~s.skid_valid
 
     @update
     def access_registers():
@@ -131,7 +202,10 @@ class RegisterBankRTL(Component):
       s.reg_file.waddr[0] @= AddrType()
       s.reg_file.wdata[0] @= DataType()
       s.reg_file.wen[0] @= 0
+      s.wr_accept @= 0
       s.wr_en @= 0
+      s.skid_park @= 0
+      s.wr_sel_data @= DataType()
 
       read_towards = s.inport_opt.read_reg_towards[reg_bank_id]
       # Reads from register if towards FU (1), routing_xbar (2), or both (3)
@@ -142,13 +216,35 @@ class RegisterBankRTL(Component):
 
       write_reg_from = s.inport_opt.write_reg_from[reg_bank_id]
       if ~s.reset & (write_reg_from > 0):
-        # Rejects the write while the destination register still holds an
-        # unconsumed token.
+        s.wr_sel_data @= s.inport_wdata[write_reg_from - 1]
+        # Accepts the write if the skid buffer is free; a write is never
+        # lost or overwritten.
         if s.inport_valid[write_reg_from - 1] & s.outport_wr_rdy:
-          s.reg_file.waddr[0] @= s.inport_opt.write_reg_idx[reg_bank_id]
-          s.reg_file.wdata[0] @= s.inport_wdata[write_reg_from - 1]
-          s.reg_file.wen[0] @= 1
-          s.wr_en @= 1
+          s.wr_accept @= 1
+          # Lands directly if that cannot disturb an in-flight read: the
+          # target holds no token and is not being read by the current
+          # step (a register being read must stay stable until the step
+          # completes), or the reading step completes this very cycle
+          # (the write lands at the step boundary; a consumed token is
+          # atomically replaced since set wins over clear). Otherwise
+          # parks in the skid buffer.
+          if (~s.wr_target_token & ~s.wr_target_read) | \
+             (s.wr_target_read & s.inport_ctrl_proceed):
+            s.wr_en @= 1
+          else:
+            s.skid_park @= 1
+
+      # The skid commit owns the single write port when it fires; a
+      # direct write never coincides with it (a commit implies the skid
+      # is occupied, and outport_wr_rdy rejects all writes while it is).
+      if s.skid_commit:
+        s.reg_file.waddr[0] @= s.skid_idx
+        s.reg_file.wdata[0] @= s.skid_data
+        s.reg_file.wen[0] @= 1
+      elif s.wr_en:
+        s.reg_file.waddr[0] @= s.inport_opt.write_reg_idx[reg_bank_id]
+        s.reg_file.wdata[0] @= s.wr_sel_data
+        s.reg_file.wen[0] @= 1
 
     @update
     def update_send_val():
@@ -165,13 +261,15 @@ class RegisterBankRTL(Component):
 
     @update
     def update_token_masks():
-      # A write can never target a register that still holds a token
-      # (wr_en is gated by outport_wr_rdy) and a consumption only targets
-      # a register that holds one, so the two masks never select the same
-      # register in the same cycle.
+      # The set and clear masks can select the same register in one
+      # cycle: when a write lands or a skid commit fires on step
+      # completion for the register the step was reading, the new token
+      # atomically replaces the consumed one (set wins in
+      # update_token_valid).
       for r in range(num_registers):
         s.token_set_mask[r] @= \
-            s.wr_en & (s.inport_opt.write_reg_idx[reg_bank_id] == r)
+            (s.wr_en & (s.inport_opt.write_reg_idx[reg_bank_id] == r)) | \
+            (s.skid_commit & (s.skid_idx == r))
         # The completing ctrl step consumes the token it has been reading.
         s.token_clear_mask[r] @= \
             s.inport_ctrl_proceed & \
@@ -184,16 +282,30 @@ class RegisterBankRTL(Component):
       if s.reset | s.clear:
         s.token_valid <<= 0
         s.armed <<= 0
+        s.skid_valid <<= 0
       else:
-        s.token_valid <<= (s.token_valid | s.token_set_mask) & \
-                          ~s.token_clear_mask
+        # Set wins over clear: a write or skid commit coinciding with
+        # the consumption of the same register's token (on step
+        # completion) installs the new token.
+        s.token_valid <<= (s.token_valid & ~s.token_clear_mask) | \
+                          s.token_set_mask
         # A register becomes (and stays) armed once first written.
         s.armed <<= s.armed | s.token_set_mask
+
+        # Parking and committing are mutually exclusive (parking requires
+        # a free skid, committing an occupied one).
+        if s.skid_park:
+          s.skid_valid <<= 1
+          s.skid_data <<= s.wr_sel_data
+          s.skid_idx <<= s.inport_opt.write_reg_idx[reg_bank_id]
+        elif s.skid_commit:
+          s.skid_valid <<= 0
 
   def line_trace(s):
     inport_opt_str = "inport_opt: " + str(s.inport_opt)
     inport_wdata_str = "inport_wdata: " + str(s.inport_wdata)
     content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
-    token_str = "token_valid: " + str(s.token_valid) + ", armed: " + str(s.armed)
+    token_str = "token_valid: " + str(s.token_valid) + ", armed: " + str(s.armed) + \
+                ", skid: " + (f"reg[{int(s.skid_idx)}]={s.skid_data}" if s.skid_valid else "-")
     send_data_to_fu_str = "send_data_to_fu: " + str(s.send_data_to_fu.msg)
     return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || [{token_str}] || {send_data_to_fu_str}'
