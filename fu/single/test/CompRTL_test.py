@@ -43,6 +43,30 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
+class TestHarnessConst(Component):
+
+  def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
+                num_inports, num_outports, data_mem_size, src_data,
+                src_const, src_opt, sink_msgs):
+
+    s.src_data = TestSrcRTL(DataType, src_data)
+    s.src_const = TestSrcRTL(DataType, src_const)
+    s.src_opt = TestSrcRTL(CtrlType, src_opt)
+    s.sink_out = TestSinkRTL(DataType, sink_msgs)
+
+    s.dut = FunctionUnit(IntraCgraPktType, num_inports, num_outports)
+
+    s.src_data.send //= s.dut.recv_in[0]
+    s.src_const.send //= s.dut.recv_const
+    s.src_opt.send //= s.dut.recv_opt
+    s.dut.send_out[0] //= s.sink_out.recv
+
+  def done(s):
+    return s.src_data.done() and s.sink_out.done()
+
+  def line_trace(s):
+    return s.dut.line_trace()
+
 def run_sim(test_harness, max_cycles = 20):
   test_harness.elaborate()
   test_harness.apply(DefaultPassGroup())
@@ -89,3 +113,75 @@ def test_Comp():
                    num_outports, data_mem_size, src_data, src_ref,
                    src_opt, sink_out)
   run_sim(th)
+
+def test_Comp_const():
+  FU = CompRTL
+  DataType = mk_data(32, 1)
+  PredicateType = mk_predicate(1, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pickRegister = [FuInType(x + 1) for x in range(num_inports)]
+  src_data = [DataType(5, 1), DataType(3, 1), DataType(3, 1)]
+  src_const =  [DataType(4, 1), DataType(5, 1), DataType(3, 1)]
+  src_opt =  [CtrlType(OPT_GTE_CONST, pickRegister),
+              CtrlType(OPT_GTE_CONST, pickRegister),
+              CtrlType(OPT_GTE_CONST, pickRegister)]
+  sink_out = [DataType(1, 1), DataType(0, 1), DataType(1, 1)]
+  th = TestHarnessConst(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
+                   num_outports, data_mem_size, src_data, src_const,
+                   src_opt, sink_out)
+  run_sim(th)
+
+# Concrete example: EQ_CONST compares payload 7 with const 7 on the
+# terminal iteration. The comparison result is true, but the output predicate
+# still follows the input predicates.
+def test_Comp_const_terminal_predicate():
+  FU = CompRTL
+  DataType = mk_data(32, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pick_register = [FuInType(x + 1) for x in range(num_inports)]
+
+  th = TestHarnessConst(
+      FU, IntraCgraPktType, DataType, CtrlType, num_inports, num_outports, 8,
+      [DataType(7, 0)], [DataType(7, 1)],
+      [CtrlType(OPT_EQ_CONST, pick_register)], [DataType(1, 0)],
+  )
+  run_sim(th)
+
+def test_Comp_const_predicate_depends_on_const():
+  FU = CompRTL
+  DataType = mk_data(32, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pick_register = [FuInType(x + 1) for x in range(num_inports)]
+
+  th = TestHarnessConst(
+      FU, IntraCgraPktType, DataType, CtrlType, num_inports, num_outports, 8,
+      [DataType(7, 1)], [DataType(7, 0)],
+      [CtrlType(OPT_GTE_CONST, pick_register)], [DataType(1, 0)],
+  )
+  run_sim(th)
+
