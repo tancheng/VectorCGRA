@@ -118,8 +118,6 @@ class TileRTL(Component):
     # connected to the next tiles.
     s.tile_in_channel = [ChannelRTL(DataType, latency = 1)
                          for _ in range(num_tile_inports)]
-    s.routing_to_reg_channel = [ChannelRTL(DataType, latency = 1)
-                                for _ in range(num_fu_inports)]
 
     # The `tile_out_or_link` would "or" the outports of the
     # `tile_out_channel` and the FUs.
@@ -227,14 +225,10 @@ class TileRTL(Component):
     # Whether the required operands for FU are from the "routing_crossbar"
     # or from the "register_cluster" depends on the control signals.
     for i in range(num_fu_inports):
-      s.routing_to_reg_channel[i].recv.msg //= \
+      s.register_cluster.recv_data_from_routing_crossbar[i].msg //= \
           s.routing_crossbar.send_data[num_tile_outports + i].msg
       s.register_cluster.write_data_from_routing_crossbar[i] //= \
           s.routing_crossbar.send_data[num_tile_outports + i].msg
-      s.register_cluster.recv_data_from_routing_crossbar[i].msg //= \
-          s.routing_to_reg_channel[i].send.msg
-      s.register_cluster.recv_data_from_routing_crossbar[i].val //= \
-          s.routing_to_reg_channel[i].send.val
       s.register_cluster.recv_data_from_fu_crossbar[i].msg //= \
           s.fu_crossbar.send_data[num_tile_outports + i].msg
       s.register_cluster.recv_data_from_fu_crossbar[i].val //= \
@@ -255,22 +249,21 @@ class TileRTL(Component):
         is_reg_write = \
             s.ctrl_mem.send_ctrl.msg.write_reg_from[i] == PORT_ROUTING_CROSSBAR
 
-        s.routing_to_reg_channel[i].recv.val @= \
+        s.register_cluster.recv_data_from_routing_crossbar[i].val @= \
             s.routing_crossbar.send_data[num_tile_outports + i].val & \
             ~is_reg_write
         s.register_cluster.write_valid_from_routing_crossbar[i] @= \
             s.routing_crossbar.send_data[num_tile_outports + i].val & \
             is_reg_write
         s.routing_crossbar.send_data[num_tile_outports + i].rdy @= \
-            is_reg_write | s.routing_to_reg_channel[i].recv.rdy
+            is_reg_write | \
+            s.register_cluster.recv_data_from_routing_crossbar[i].rdy
 
     @update
     def update_reg_cluster_input_rdy():
       for i in range(num_tile_outports):
         s.fu_crossbar.send_data[i].rdy @= s.send_data[i].rdy
       for i in range(num_fu_inports):
-        s.routing_to_reg_channel[i].send.rdy @= \
-            s.register_cluster.recv_data_from_routing_crossbar[i].rdy
         s.fu_crossbar.send_data[num_tile_outports + i].rdy @= \
             s.register_cluster.recv_data_from_fu_crossbar[i].rdy
 

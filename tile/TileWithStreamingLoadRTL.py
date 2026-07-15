@@ -208,6 +208,10 @@ class TileWithStreamingLoadRTL(Component):
     for i in range(num_fu_inports):
       s.routing_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_routing_crossbar[i]
+      s.register_cluster.write_data_from_routing_crossbar[i] //= \
+          s.routing_crossbar.send_data[num_tile_outports + i].msg
+      s.register_cluster.write_valid_from_routing_crossbar[i] //= \
+          s.routing_crossbar.send_data[num_tile_outports + i].val
       s.fu_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_fu_crossbar[i]
 
