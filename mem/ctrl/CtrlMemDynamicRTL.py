@@ -181,24 +181,28 @@ class CtrlMemDynamicRTL(Component):
       s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
       s.recv_from_element_queue.send.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
+        element_cmd = s.recv_from_element_queue.send.msg.cmd
         is_active_ret = s.recv_from_element_queue.send.val & \
                         ((s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET) | \
                          (s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET_VOID)) & \
                         s.recv_from_element_queue.send.msg.data.predicate
-        if is_active_ret & (~s.sent_complete):
+        is_ctrl_side_element_msg = s.recv_from_element_queue.send.val & \
+            ((element_cmd == CMD_GLOBAL_REDUCE_ADD) | \
+             (element_cmd == CMD_GLOBAL_REDUCE_MUL))
+        if (is_active_ret | is_ctrl_side_element_msg) & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
-              IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+              IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
                                s.recv_from_element_queue.send.msg)
           s.send_pkt_to_controller.val @= 1
           s.recv_from_element_queue.send.rdy @= s.send_pkt_to_controller.rdy
         elif s.recv_from_element_queue.send.val:
-          # Non-RET or predicated-off element responses are not kernel returns.
+          # Non-RET/predicated-off element responses are not kernel returns.
           s.recv_from_element_queue.send.rdy @= 1
         elif (((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
               (s.reg_file.rdata[0].operation == OPT_START)) & ~s.has_ret_ctrl:
           if ~s.sent_complete:
             s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
                                  CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
 
