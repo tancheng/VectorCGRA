@@ -250,15 +250,13 @@ class CrossbarRTL(Component):
     def update_rdy_vector():
       s.send_rdy_vector @= 0
       for i in range(num_outports):
-        # The `num_inports` indicates the number of outports that go to other tiles.
-        # Specifically, if the compute already done, we shouldn't care the ones
-        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
-        # the rdy checking on the FU's inports (connecting from crossbar_outport) if
-        # the compute is already completed.
-        if s.in_dir[i] > 0:
-          # When prologue is active for this output's input, don't
-          # require the downstream channel to be ready -- we won't be
-          # sending any data through it during prologue anyway.
+        # The `outport_towards_local_base_id` indicates the number of outports
+        # that go to other tiles. Once the FU is done, local FU-input outports
+        # no longer participate in backpressure for this control step.
+        if (s.in_dir[i] > 0) & \
+           (~s.compute_done | (i < outport_towards_local_base_id)):
+          # When prologue is active for this output's input, don't require the
+          # downstream channel to be ready -- we won't send data through it.
           s.send_rdy_vector[i] @= s.send_data[i].rdy | \
                                    s.prologue_allowing_vector[i]
         else:
