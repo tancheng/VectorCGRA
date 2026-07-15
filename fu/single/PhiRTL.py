@@ -120,6 +120,15 @@ class PhiRTL(Fu):
           else:
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.reached_vector_factor
+
+        elif s.recv_opt.msg.operation == OPT_CONST:
+          s.send_out[0].msg.payload @= s.recv_const.msg.payload
+          s.send_out[0].msg.predicate @= s.recv_const.msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_const.val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         else:
           for j in range(num_outports):
@@ -145,4 +154,3 @@ class PhiRTL(Fu):
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
     first_str = ",".join([str(x) for x in s.first])
     return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) (first: {first_str})] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}; ctrl_addr_inport: {s.ctrl_addr_inport}'
-
