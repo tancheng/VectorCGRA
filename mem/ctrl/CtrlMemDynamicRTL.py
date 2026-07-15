@@ -135,6 +135,7 @@ class CtrlMemDynamicRTL(Component):
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER)):
         s.send_to_element.msg @= s.recv_pkt_from_controller_queue.send.msg.payload
@@ -161,6 +162,7 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER):
         s.recv_pkt_from_controller_queue.send.rdy @= 1

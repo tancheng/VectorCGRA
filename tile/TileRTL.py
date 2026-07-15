@@ -39,7 +39,7 @@ class TileRTL(Component):
 
   def construct(s, IntraCgraPktType,
                 ctrl_mem_size, data_mem_size, num_ctrl,
-                total_steps, num_fu_inports, num_fu_outports, 
+                total_steps, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
@@ -81,7 +81,7 @@ class TileRTL(Component):
     s.to_mem_wdata = SendIfcRTL(DataType)
 
     # Components.
-    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, 
+    s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports,
                               num_fu_outports, num_tiles, FuList)
     s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
@@ -258,7 +258,8 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
@@ -332,4 +333,3 @@ class TileRTL(Component):
     ctrl_mem = s.ctrl_mem.line_trace()
     const_mem = s.const_mem.line_trace()
     return f"send_str: {send_str}, tile_inports: {recv_str} => [tile_in_channel: {tile_in_channel_str} || routing_crossbar: {s.routing_crossbar.recv_opt.msg} || fu_crossbar: {s.fu_crossbar.recv_opt.msg} || element: {s.element.line_trace()} || s.element_done: {s.element_done}, s.fu_crossbar_done: {s.fu_crossbar_done}, s.routing_crossbar_done: {s.routing_crossbar_done} ||  ctrl_mem: {ctrl_mem}, const_mem: {const_mem} ## "
-
