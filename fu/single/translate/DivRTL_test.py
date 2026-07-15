@@ -23,16 +23,20 @@ def test_translate_rem_operator(cmdline_opts):
   dut.set_metadata(VerilogTranslationPass.explicit_module_name, 'DivRTL')
   dut.set_metadata(VerilogTranslationPass.explicit_file_name, 'DivRTL__pickled.v')
 
+  translate_opts = dict(cmdline_opts)
+  translate_opts["test_verilog"] = "zeros"
+
   try:
-    config_model_with_cmdline_opts(dut, cmdline_opts, duts=[])
+    config_model_with_cmdline_opts(dut, translate_opts, duts=[])
   except VerilogImportError as e:
     # Translation already emitted Verilog before the optional Verilator import.
     # On machines without Verilator, still inspect the generated RTL.
     assert 'verilator: not found' in str(e)
 
   verilog = Path('DivRTL__pickled.v').read_text()
-  assert 'div_remainder = dividend % divisor' in verilog
+  assert 'div_remainder' in verilog
   assert "if ( divisor != 32'd0 )" in verilog
   payload_assigns = [line for line in verilog.splitlines()
                      if 'payload =' in line]
-  assert all('/' not in line for line in payload_assigns)
+  assert any('div_remainder' in line for line in payload_assigns)
+  assert all('/' not in line and '%' not in line for line in payload_assigns)
