@@ -159,7 +159,7 @@ class GepRTL(Fu):
     @update_ff
     def update_stride():
       if s.reset:
-        s.stride <<= s.DataType(0, 0)
+        s.stride <<= s.DataType()
       else:
         if s.recv_from_ctrl_mem.val & \
            (s.recv_from_ctrl_mem.msg.cmd == CMD_CONFIG_GEP_STRIDE):
