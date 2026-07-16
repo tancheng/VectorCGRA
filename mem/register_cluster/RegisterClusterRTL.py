@@ -80,17 +80,18 @@ class RegisterClusterRTL(Component):
         # Checks if data should go towards routing_xbar (2 or 3)
         reg_towards_routing_xbar = active_ctrl & \
                                     ((read_towards == kReadTowardsRoutingXbar) | (read_towards == kReadTowardsBoth))
-        ret_last_routing_write_bypass = active_ctrl & \
-            s.inport_opt.is_last_ctrl & \
-            (s.inport_opt.operation == OPT_RET) & \
+        routing_write_to_fu_bypass = active_ctrl & \
             reg_towards_fu & \
             (s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
             (s.inport_opt.write_reg_idx[i] == s.inport_opt.read_reg_idx[i]) & \
-            s.write_valid_from_routing_crossbar[i]
+            s.write_valid_from_routing_crossbar[i] & \
+            ((s.inport_opt.operation != OPT_RET) | \
+             s.write_data_from_routing_crossbar[i].predicate)
 
-        # Data from register bank has priority over routing crossbar data for FU path,
-        # except for final RET reading the same value being written by routing xbar.
-        if ret_last_routing_write_bypass:
+        # Same-slot routing write/read should be visible to the FU immediately.
+        # For RET, keep predicated-off routing writes from hiding the register's
+        # last valid value.
+        if routing_write_to_fu_bypass:
           s.send_data_to_fu[i].msg @= s.write_data_from_routing_crossbar[i]
         elif s.reg_bank[i].send_data.val & reg_towards_fu:
           s.send_data_to_fu[i].msg @= \
@@ -100,7 +101,7 @@ class RegisterClusterRTL(Component):
             s.recv_data_from_routing_crossbar[i].msg
 
         s.send_data_to_fu[i].val @= active_ctrl & \
-            (ret_last_routing_write_bypass | \
+            (routing_write_to_fu_bypass | \
              s.recv_data_from_routing_crossbar[i].val | \
              (s.reg_bank[i].send_data.val & reg_towards_fu))
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
