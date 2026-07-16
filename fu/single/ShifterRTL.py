@@ -73,6 +73,12 @@ class ShifterRTL(Fu):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         elif s.recv_opt.msg.operation == OPT_LLS_CONST:
+          # Const shift uses the const queue for a fixed shift amount, avoiding
+          # a second dynamic operand. Example: payload=3, const=2 => 12; the
+          # output predicate still requires both the input and const predicates.
+          # Shift amount comes from the per-tile const queue. This is used by
+          # generated address arithmetic where the value is dataflow input but
+          # the left-shift amount is a static kernel constant.
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload << s.recv_const.msg.payload
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_const.msg.predicate & \
