@@ -246,6 +246,11 @@ class TileRTL(Component):
       for i in range(num_tile_outports):
         s.routing_crossbar.send_data[i].rdy @= s.send_data[i].rdy
       for i in range(num_fu_inports):
+        # A local routing-crossbar output is either an operand for the FU or a
+        # register write, never both in this interface. Split val/rdy so a
+        # register write can complete without waiting for the FU input port.
+        # Example: DATA_MOV writes r2 from routing_xbar; recv_data_to_fu stays
+        # invalid, write_valid_from_routing_crossbar carries the token.
         is_reg_write = \
             s.ctrl_mem.send_ctrl.msg.write_reg_from[i] == PORT_ROUTING_CROSSBAR
 
@@ -322,9 +327,10 @@ class TileRTL(Component):
 
       # FIXME: Do we still need separate element and routing_xbar?
       # FIXME: Do we need to consider reg bank here?
-      # Keep FU-side control live until the FU crossbar has also consumed
-      # the result. Otherwise a FU that finishes one cycle ahead of the
-      # fu_crossbar can drop its output while ctrl still waits.
+      # Keep FU-side control live until the FU crossbar has also consumed the
+      # result. Example: the element produces a MUL result this cycle, but the
+      # FU crossbar output is backpressured; advancing ctrl now would let the
+      # element overwrite/drop that result before the crossbar accepts it.
       s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & \
                                 ~(s.element_done & s.fu_crossbar_done)
       s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
