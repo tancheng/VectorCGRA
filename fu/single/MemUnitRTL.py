@@ -194,11 +194,17 @@ class MemUnitRTL(Component):
           s.recv_opt.rdy @= s.send_out[0].rdy & s.from_mem_rdata.val
 
         elif s.recv_opt.msg.operation == OPT_STR:
+          # Stores must be side-effect free when either address or data is
+          # predicated off. Example: addr.pred=0,data.pred=1 should retire the
+          # ctrl step but must not assert either memory write val.
           s.recv_all_val @= s.recv_in[s.in0_idx].val & \
                             s.recv_in[s.in1_idx].val
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.to_mem_waddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
+          # A predicated-off store still consumes its operands/control token,
+          # but must not issue either the address or data side of the memory
+          # write. Otherwise inactive loop lanes can corrupt memory.
           s.to_mem_waddr.val @= s.recv_all_val & \
                                 s.recv_in[s.in0_idx].msg.predicate & \
                                 s.recv_in[s.in1_idx].msg.predicate
@@ -217,11 +223,18 @@ class MemUnitRTL(Component):
 
         # STR_CONST indicates the address is a const.
         elif s.recv_opt.msg.operation == OPT_STR_CONST:
+          # Same rule for const-address stores: the const supplies the address,
+          # but the memory write is real only when both const and data tokens
+          # have predicate=1. Predicated-off stores still consume their tokens
+          # so later loop iterations stay aligned.
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.recv_const.rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           # Only needs one input register to indicate the storing data.
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.to_mem_waddr.msg @= AddrType(s.recv_const.msg.payload[0:AddrType.nbits])
+          # Same store predicate rule when the address is supplied by a const:
+          # consume the data/const handshake, but suppress the memory write if
+          # either predicate is false.
           s.to_mem_waddr.val @= s.recv_all_val & \
                                 s.recv_in[s.in0_idx].msg.predicate & \
                                 s.recv_const.msg.predicate
