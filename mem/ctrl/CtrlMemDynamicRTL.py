@@ -180,8 +180,10 @@ class CtrlMemDynamicRTL(Component):
       s.send_pkt_to_controller.val @= 0
       s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
       s.recv_from_element_queue.send.rdy @= 0
+      element_cmd = s.recv_from_element_queue.send.msg.cmd
+      is_active_ret = b1(0)
+      is_ctrl_side_element_msg = b1(0)
       if s.start_iterate_ctrl == b1(1):
-        element_cmd = s.recv_from_element_queue.send.msg.cmd
         is_active_ret = s.recv_from_element_queue.send.val & \
                         ((s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET) | \
                          (s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET_VOID)) & \

@@ -404,6 +404,7 @@ class ControllerRTL(Component):
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
+      is_empty_ret_complete = b1(0)
       if s.recv_from_inter_cgra_noc.val:
         if s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LOAD_REQUEST:
           s.send_to_mem_load_request_queue.recv.val @= 1
