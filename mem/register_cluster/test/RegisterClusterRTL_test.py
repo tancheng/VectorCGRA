@@ -347,9 +347,9 @@ def test_reg_cluster_read_towards_both():
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
   # Bank 2: reg data (55) goes to both FU and routing_xbar.
-  # TestSrcRTL starts sending in cycle 2, write lands at end of cycle 2,
-  # value readable in cycle 3 — two leading DataType(0,0) on both paths.
-  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1)], []]
+  # Same-slot routing-write/read bypass lets the FU observe the value one
+  # cycle before the registered routing-xbar read path.
+  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(55, 1)], []]
   sink_msgs_xbar = [[], [], [DataType(0, 0), DataType(0, 0), DataType(55, 1)], []]
 
   th = TestHarnessWithXbarSink(
