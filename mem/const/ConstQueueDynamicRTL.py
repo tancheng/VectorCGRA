@@ -106,7 +106,7 @@ class ConstQueueDynamicRTL(Component):
         # ctrl_proceed pulse. (Matches the original advance condition when
         # rdy and ctrl_proceed happen in the same cycle, but also covers the
         # case where rdy was asserted one cycle and ctrl_proceed only pulses
-        # later — previously that handshake was silently lost.)
+        # later - previously that handshake was silently lost.)
         handshake_now = s.send_const.rdy
         consume_retire = (s.consume_pending | handshake_now) & s.ctrl_proceed
         if consume_retire:
