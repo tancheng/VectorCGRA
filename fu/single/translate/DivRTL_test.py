@@ -29,8 +29,10 @@ def test_translate_rem_operator(cmdline_opts):
   try:
     config_model_with_cmdline_opts(dut, translate_opts, duts=[])
   except VerilogImportError as e:
-    # Translation already emitted Verilog before the optional Verilator import.
-    # On machines without Verilator, still inspect the generated RTL.
+    # This is not a PyMTL translation failure: config_model_with_cmdline_opts
+    # first emits DivRTL__pickled.v, then optionally imports it with Verilator
+    # when test_verilog is enabled. CI/dev machines without Verilator can fail
+    # the import step even though the generated RTL is present and checkable.
     assert 'verilator: not found' in str(e)
 
   verilog = Path('DivRTL__pickled.v').read_text()
