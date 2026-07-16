@@ -622,10 +622,6 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                          ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                           'ALWCOMBORDER'])
-    th.dut.set_metadata(
-      VerilogVerilatorImportPass.vl_mk_dir,
-      os.environ.get("CGRA_VERILATOR_MK_DIR", "obj_dir_conv4x4_light"),
-    )
     verilator_opts = dict(cmdline_opts)
     verilator_opts["test_verilog"] = "zeros"
     th = config_model_with_cmdline_opts(th, verilator_opts, duts = ['dut'])
