@@ -81,6 +81,10 @@ class PhiRTL(Fu):
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
+        # PHI_START has two phases. The first visit uses the entry value
+        # unconditionally; later visits pick whichever predecessor carries
+        # predicate=1. This matches loop-carried PHI behavior where one edge
+        # can be inactive and should not block the selected true token.
         elif s.recv_opt.msg.operation == OPT_PHI_START:
           if s.first[s.ctrl_addr_inport]:
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
@@ -95,9 +99,11 @@ class PhiRTL(Fu):
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= 0
 
-          # After the first PHI_START execution, the selected predecessor is
-          # identified by its predicate.  Do not stall the selected true token
-          # behind a later predicated-off token from the other predecessor.
+          # Example after the first iteration: input0 carries loop value with
+          # predicate=1, while input1 is the inactive entry value with
+          # predicate=0 and may arrive later. The active predecessor is already
+          # identified by predicate, so do not stall the true token behind the
+          # inactive one.
           if s.first[s.ctrl_addr_inport]:
             s.recv_all_val @= s.recv_in[s.in0_idx].val
           else:

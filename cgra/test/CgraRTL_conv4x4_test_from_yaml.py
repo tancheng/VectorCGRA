@@ -580,6 +580,10 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
   preload_drain_cycles = 0
 
   if use_verilator:
+    # Verilator runs the full 4x4 conv quickly enough once data is preloaded
+    # through CPU store packets. Pure-Python mode can directly preload memory
+    # below so debug runs can inspect internal tile state without spending
+    # thousands of cycles sending stores.
     src_ctrl_pkt.extend(make_preload_packets())
     preload_pkt_count = 2 * total
     preload_drain_cycles = int(os.environ.get("CGRA_PRELOAD_DRAIN_CYCLES", "10000"))
@@ -622,6 +626,9 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
     th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                          ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                           'ALWCOMBORDER'])
+    # Keep PyMTL's default Verilator object directory. Overriding vl_mk_dir
+    # makes the generated C++ wrapper include one directory while Verilator
+    # emits sources into another, which fails during shared-library build.
     verilator_opts = dict(cmdline_opts)
     verilator_opts["test_verilog"] = "zeros"
     th = config_model_with_cmdline_opts(th, verilator_opts, duts = ['dut'])
@@ -696,6 +703,11 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
       trace_logger.log_cycle(th.dut)
     if int(th.dut.send_to_cpu_pkt.val) & int(th.dut.send_to_cpu_pkt.rdy):
       cpu_pkt = th.dut.send_to_cpu_pkt.msg
+      # A predicated-off RET can appear on the control path but is not an
+      # architectural kernel return. Only predicate=1 COMPLETE packets count.
+      # Some intermediate RET-like packets can be predicated off. The kernel
+      # completes only on a predicated CMD_COMPLETE carrying the expected value;
+      # ignoring predicate=0 here keeps the test aligned with CtrlMemDynamicRTL.
       if int(cpu_pkt.payload.data.predicate) == 0:
         continue
       print("cpu_pkt:",

@@ -31,7 +31,8 @@ class GrantRTL(Fu):
     s.in1_idx = Wire(idx_nbits)
     s.recv_all_val = Wire(1)
     # Per-slot (per ctrl_addr) latch so that multiple GRANT_ONCE ops in the
-    # same tile do not share state.
+    # same tile do not share state. Example: ctrl slot 2 can grant loop bound
+    # A once, while ctrl slot 5 independently grants loop bound B once.
     num_slots = 1 << s.CtrlAddrType.nbits
     s.already_grt_once = [Wire(1) for _ in range(num_slots)]
     s.cur_already_grt_once = Wire(1)
@@ -115,10 +116,12 @@ class GrantRTL(Fu):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
         elif s.recv_opt.msg.operation == OPT_GRT_ONCE_CONST:
-          # GRANT_ONCE_CONST: every non-prologue execution consumes one entry from
-          # the const queue, but predicate=1 is emitted only on the first such
-          # execution for this ctrl_addr; subsequent executions emit predicate=0.
-          # (Prologue cycles see OPT_NAH via FlexibleFuRTL and do not reach here.)
+          # GRANT_ONCE_CONST: every real execution consumes the next const so
+          # the queue remains aligned with the control stream, but only the
+          # first execution for this ctrl_addr emits predicate=1. Example: two
+          # different loop-header constants in the same tile use different
+          # ctrl_addr slots; granting one must not suppress the other. Repeated
+          # executions of the same slot emit predicates 1, 0, 0, ...
           s.send_out[0].msg @= s.recv_const.msg
           s.send_out[0].msg.predicate @= s.reached_vector_factor & ~s.cur_already_grt_once
 

@@ -159,6 +159,9 @@ class GepRTL(Fu):
     @update_ff
     def update_stride():
       if s.reset:
+        # DataType has payload/predicate/bypass/delay fields. Use the default
+        # constructor so Verilator sees all fields reset, instead of passing
+        # only payload/predicate.
         s.stride <<= s.DataType()
       else:
         if s.recv_from_ctrl_mem.val & \

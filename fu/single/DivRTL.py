@@ -44,6 +44,10 @@ class DivRTL(Fu):
     s.div_quotient = Wire(DataPayloadType)
     s.div_remainder = Wire(DataPayloadType)
 
+    # Compute quotient and remainder with shift/subtract logic instead of
+    # Python percent/modulo so Verilator translation sees only fixed-width RTL
+    # operations. Divisor zero is defined as quotient=0 and remainder=0,
+    # matching the deterministic zero-divisor behavior used by the tests.
     @update
     def div_comb():
       quotient = DataPayloadType(0)
