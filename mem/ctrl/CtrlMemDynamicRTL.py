@@ -182,8 +182,10 @@ class CtrlMemDynamicRTL(Component):
       s.recv_from_element_queue.send.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
         # Only a real, predicated RET/RET_VOID is allowed to complete a
-        # dynamic kernel. Other element messages can share this queue, so
-        # forwarding them as COMPLETE would terminate the kernel early.
+        # dynamic kernel. The RET payload is wrapped in CMD_COMPLETE and sent
+        # to the controller, which is the path back to the CPU. Other element
+        # messages can share this queue, so forwarding them as COMPLETE would
+        # terminate the kernel early.
         is_active_ret = s.recv_from_element_queue.send.val & \
                         ((s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET) | \
                          (s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET_VOID)) & \
@@ -202,9 +204,6 @@ class CtrlMemDynamicRTL(Component):
         # the controller must finish once the configured step count retires.
         elif (((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
               (s.reg_file.rdata[0].operation == OPT_START)) & ~s.has_ret_ctrl:
-          # Keep the legacy timeout COMPLETE only for kernels with no RET in
-          # their control memory, e.g., systolic/debug kernels that rely on
-          # total_ctrl_steps_val. RET kernels use the explicit path above.
           if ~s.sent_complete:
             s.send_pkt_to_controller.msg @= \
                 IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
