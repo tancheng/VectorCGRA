@@ -668,7 +668,7 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
   debug_progress_enabled = os.environ.get("CGRA_DEBUG_PROGRESS", "0") == "1"
   debug_every = int(os.environ.get("CGRA_DEBUG_EVERY", "1000"))
   debug_from_cycle = int(os.environ.get("CGRA_DEBUG_FROM_CYCLE", "0"))
-  heartbeat_enabled = os.environ.get("CGRA_HEARTBEAT", "1") != "0"
+  heartbeat_enabled = os.environ.get("CGRA_HEARTBEAT", "0") == "1"
   debug_tile_ids = [2, 3, 5, 6, 7, 9, 10, 11]
   debug_elem_tile_ids = [
       int(x) for x in os.environ.get("CGRA_DEBUG_ELEM_TILES",
@@ -712,36 +712,12 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
             "delay", int(cpu_pkt.payload.data.delay),
             flush=True)
       if int(cpu_pkt.payload.data.payload) != expected_result:
-        if hasattr(th.dut, "debug_tile_times"):
-          print("[mismatch_tile6]",
-                "times", int(th.dut.debug_tile_times[6]),
-                "addr", int(th.dut.debug_tile_ctrl_addr[6]),
-                "op", int(th.dut.debug_tile_op[6]),
-                "reg0_b0", int(th.dut.debug_tile_reg0_data[6][0]),
-                "reg0_b0p", int(th.dut.debug_tile_reg0_pred[6][0]),
-                "reg0_b1", int(th.dut.debug_tile_reg0_data[6][1]),
-                "reg0_b1p", int(th.dut.debug_tile_reg0_pred[6][1]),
-                "reg_rd_b0", int(th.dut.debug_tile_reg_read_data[6][0]),
-                "reg_rd_b0p", int(th.dut.debug_tile_reg_read_pred[6][0]),
-                "reg_rd_b1", int(th.dut.debug_tile_reg_read_data[6][1]),
-                "reg_rd_b1p", int(th.dut.debug_tile_reg_read_pred[6][1]),
-                flush=True)
-        else:
-          t6 = th.dut.tile[6]
-          cm = t6.ctrl_mem
-          print("[mismatch_tile6]",
-                "raddr", int(cm.reg_file.raddr[0]),
-                "times", int(cm.times),
-                "op", int(cm.send_ctrl.msg.operation),
-                "reg0_b0", int(t6.register_cluster.debug_reg0[0].payload),
-                "reg0_b0p", int(t6.register_cluster.debug_reg0[0].predicate),
-                "reg0_b1", int(t6.register_cluster.debug_reg0[1].payload),
-                "reg0_b1p", int(t6.register_cluster.debug_reg0[1].predicate),
-                "reg_rd_b0", int(t6.register_cluster.debug_reg_read[0].payload),
-                "reg_rd_b0p", int(t6.register_cluster.debug_reg_read[0].predicate),
-                "reg_rd_b1", int(t6.register_cluster.debug_reg_read[1].payload),
-                "reg_rd_b1p", int(t6.register_cluster.debug_reg_read[1].predicate),
-                flush=True)
+        print("[mismatch_return]",
+              "cycle", cycle,
+              "expected", expected_result,
+              "actual", int(cpu_pkt.payload.data.payload),
+              "predicate", int(cpu_pkt.payload.data.predicate),
+              flush=True)
       if os.environ.get("CGRA_SKIP_BAD_RETURNS", "0") != "1" or \
          int(cpu_pkt.payload.data.payload) == expected_result:
         assert int(cpu_pkt.payload.data.payload) == expected_result
@@ -876,13 +852,6 @@ def sim_conv(cmdline_opts, mem_access_is_combinational):
                 f":{int(th.dut.debug_tile_reg_write_data[tid][i])}"
                 f".{int(th.dut.debug_tile_reg_write_pred[tid][i])}"
             )
-            if hasattr(th.dut, "debug_tile_reg0_data"):
-              reg_parts.append(
-                  f"b{i}rd:{int(th.dut.debug_tile_reg_read_data[tid][i])}"
-                  f".{int(th.dut.debug_tile_reg_read_pred[tid][i])}"
-                  f"$0:{int(th.dut.debug_tile_reg0_data[tid][i])}"
-                  f".{int(th.dut.debug_tile_reg0_pred[tid][i])}"
-              )
           route_parts.append(
               f"t{tid}:rin[{','.join(recv_parts)}]"
               f"rout[{','.join(send_parts)}]"
