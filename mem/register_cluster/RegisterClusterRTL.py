@@ -80,6 +80,10 @@ class RegisterClusterRTL(Component):
         # Checks if data should go towards routing_xbar (2 or 3)
         reg_towards_routing_xbar = active_ctrl & \
                                     ((read_towards == kReadTowardsRoutingXbar) | (read_towards == kReadTowardsBoth))
+        # Same ctrl slot can both write a routing value into a register and
+        # read that register for the FU. The register file would expose the old
+        # value for that cycle, so bypass the routing write when the read/write
+        # indices match. Example: routing_xbar writes r3=99 while RET reads r3.
         routing_write_to_fu_bypass = active_ctrl & \
             reg_towards_fu & \
             (s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
@@ -89,8 +93,10 @@ class RegisterClusterRTL(Component):
              s.write_data_from_routing_crossbar[i].predicate)
 
         # Same-slot routing write/read should be visible to the FU immediately.
-        # For RET, keep predicated-off routing writes from hiding the register's
-        # last valid value.
+        # Example: a final RET can write reg3 from the routing xbar and read
+        # reg3 for the FU in the same control step. Use the routing value only
+        # when the write is valid; a predicated-off RET write must not hide the
+        # register bank's last valid value.
         if routing_write_to_fu_bypass:
           s.send_data_to_fu[i].msg @= s.write_data_from_routing_crossbar[i]
         elif s.reg_bank[i].send_data.val & reg_towards_fu:
