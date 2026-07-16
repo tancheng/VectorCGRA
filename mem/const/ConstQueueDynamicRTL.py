@@ -101,12 +101,11 @@ class ConstQueueDynamicRTL(Component):
         s.rd_cur <<= 0
         s.consume_pending <<= 0
       else:
-        # A consumption is "owed" whenever the reader raises rdy, or one
-        # was already pending from an earlier cycle. It retires on the next
-        # ctrl_proceed pulse. (Matches the original advance condition when
-        # rdy and ctrl_proceed happen in the same cycle, but also covers the
-        # case where rdy was asserted one cycle and ctrl_proceed only pulses
-        # later; previously that handshake was silently lost.)
+        # A const read is retired only when both sides of the tile control step
+        # agree. Example: cycle N has send_const.rdy=1 but routing_xbar keeps
+        # ctrl_proceed=0; remember that owed consume, then advance rd_cur when
+        # ctrl_proceed pulses at cycle N+1. Without consume_pending, const[0]
+        # would be presented again and all later const operands would shift.
         handshake_now = s.send_const.rdy
         consume_retire = (s.consume_pending | handshake_now) & s.ctrl_proceed
         if consume_retire:
