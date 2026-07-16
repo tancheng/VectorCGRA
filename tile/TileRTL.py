@@ -202,6 +202,9 @@ class TileRTL(Component):
       s.fu_crossbar.crossbar_outport[i] //= \
           s.ctrl_mem.send_ctrl.msg.fu_xbar_outport[i]
 
+      # Only routing-xbar outputs that target the local register/FU side need
+      # preservation. Tile-to-tile outputs still follow normal compute_done
+      # gating because downstream tiles consume them through send_data.
       if i < num_tile_outports:
         s.routing_crossbar.preserve_outport[i] //= 0
         s.fu_crossbar.preserve_outport[i] //= 0
