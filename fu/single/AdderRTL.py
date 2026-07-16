@@ -67,9 +67,11 @@ class AdderRTL(Fu):
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_ADD:
           s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload + s.recv_in[s.in1_idx].msg.payload
-          # Treat a predicated-off zero as the additive identity. Example:
-          # (value=7,pred=1) + (value=0,pred=0) should produce pred=1,
-          # while (value=7,pred=1) + (value=5,pred=0) stays pred=0.
+          # Treat a predicated-off zero as the additive identity: a zero value with
+          # predicate=0 is a neutral placeholder, not a missing contributing
+          # operand. Example: (value=7,pred=1) + (value=0,pred=0) should
+          # produce pred=1, while (value=7,pred=1) + (value=5,pred=0) stays
+          # pred=0.
           if s.recv_in[s.in0_idx].msg.predicate & s.recv_in[s.in1_idx].msg.predicate:
             s.send_out[0].msg.predicate @= s.reached_vector_factor
           elif s.recv_in[s.in0_idx].msg.predicate & \
