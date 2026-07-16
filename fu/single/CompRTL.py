@@ -98,6 +98,7 @@ class CompRTL(Fu):
           else:
             s.send_out[0].msg @= s.const_zero
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_const.msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
@@ -125,6 +126,7 @@ class CompRTL(Fu):
           else:
             s.send_out[0].msg @= s.const_zero
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_const.msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
@@ -138,6 +140,7 @@ class CompRTL(Fu):
           else:
             s.send_out[0].msg @= s.const_zero
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_const.msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
@@ -152,6 +155,7 @@ class CompRTL(Fu):
           else:
             s.send_out[0].msg @= s.const_zero
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_const.msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
           s.send_out[0].val @= s.recv_all_val
