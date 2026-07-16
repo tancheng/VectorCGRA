@@ -62,6 +62,7 @@ class CrossbarRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.crossbar_id = InPort(b1)
     s.compute_done = InPort(b1)
+    s.drain_when_inactive = InPort(b1)
 
     s.ctrl_addr_inport = InPort(CtrlAddrType)
 
@@ -153,6 +154,12 @@ class CrossbarRTL(Component):
 
         s.recv_opt.rdy @= s.all_send_accepted & \
                           reduce_and(s.recv_valid_or_during_prologue_allowing_vector)
+      elif s.drain_when_inactive:
+        # Test-only/manual drain path: when no routing op is active, consume
+        # queued input tokens without producing outputs. Tile-level users tie
+        # this low, so normal scheduled execution is unchanged.
+        for i in range(num_inports):
+          s.recv_data[i].rdy @= 1
 
     @update_ff
     def update_prologue_counter():
