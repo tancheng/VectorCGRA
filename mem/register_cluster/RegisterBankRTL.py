@@ -59,7 +59,7 @@ class RegisterBankRTL(Component):
     # Interface
     s.inport_opt = InPort(CtrlType)
     # Read path towards the FU.
-    s.send_data = SendIfcRTL(DataType)
+    s.send_data_to_fu = SendIfcRTL(DataType)
     # Read path towards the routing crossbar.
     s.send_data_to_xbar = SendIfcRTL(DataType)
     # InPort is enough to expose the data. Recv ifc would complicate
@@ -126,7 +126,7 @@ class RegisterBankRTL(Component):
     def access_registers():
       # Initializes signals.
       s.reg_file.raddr[0] @= AddrType()
-      s.send_data.msg @= DataType()
+      s.send_data_to_fu.msg @= DataType()
       s.send_data_to_xbar.msg @= DataType()
       s.reg_file.waddr[0] @= AddrType()
       s.reg_file.wdata[0] @= DataType()
@@ -137,7 +137,7 @@ class RegisterBankRTL(Component):
       # Reads from register if towards FU (1), routing_xbar (2), or both (3)
       if read_towards > 0:
         s.reg_file.raddr[0] @= s.inport_opt.read_reg_idx[reg_bank_id]
-        s.send_data.msg @= s.reg_file.rdata[0]
+        s.send_data_to_fu.msg @= s.reg_file.rdata[0]
         s.send_data_to_xbar.msg @= s.reg_file.rdata[0]
 
       write_reg_from = s.inport_opt.write_reg_from[reg_bank_id]
@@ -158,7 +158,7 @@ class RegisterBankRTL(Component):
       # the current ctrl step (consumption happens on step completion,
       # see update_token_masks), so a consumer may accept or snoop the
       # data multiple times before the step completes.
-      s.send_data.val @= ~s.reset & s.read_towards_fu & \
+      s.send_data_to_fu.val @= ~s.reset & s.read_towards_fu & \
                          (s.read_token_valid | ~s.read_armed)
       s.send_data_to_xbar.val @= ~s.reset & s.read_towards_xbar & \
                                  (s.read_token_valid | ~s.read_armed)
@@ -195,5 +195,5 @@ class RegisterBankRTL(Component):
     inport_wdata_str = "inport_wdata: " + str(s.inport_wdata)
     content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
     token_str = "token_valid: " + str(s.token_valid) + ", armed: " + str(s.armed)
-    send_data_str = "send_data: " + str(s.send_data.msg)
-    return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || [{token_str}] || {send_data_str}'
+    send_data_to_fu_str = "send_data_to_fu: " + str(s.send_data_to_fu.msg)
+    return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || [{token_str}] || {send_data_to_fu_str}'
