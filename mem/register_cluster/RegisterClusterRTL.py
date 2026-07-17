@@ -72,22 +72,22 @@ class RegisterClusterRTL(Component):
 
       for i in range(num_reg_banks):
         # Data from register bank has priority over routing crossbar data
-        # for FU path. Note: the bank asserts send_data.val only when
+        # for FU path. Note: the bank asserts send_data_to_fu.val only when
         # read_reg_towards includes FU and the selected register either
         # holds an unconsumed token or has never been written (legacy
         # default-token source), so no additional direction check is
         # needed here.
-        if s.reg_bank[i].send_data.val:
+        if s.reg_bank[i].send_data_to_fu.val:
           s.send_data_to_fu[i].msg @= \
-            s.reg_bank[i].send_data.msg
+            s.reg_bank[i].send_data_to_fu.msg
         elif s.recv_data_from_routing_crossbar[i].val:
           s.send_data_to_fu[i].msg @= \
             s.recv_data_from_routing_crossbar[i].msg
 
         s.send_data_to_fu[i].val @= \
             s.recv_data_from_routing_crossbar[i].val | \
-            s.reg_bank[i].send_data.val
-        s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
+            s.reg_bank[i].send_data_to_fu.val
+        s.reg_bank[i].send_data_to_fu.rdy @= s.send_data_to_fu[i].rdy
 
         # A write source is backpressured (not ready) while the
         # destination register still holds an unconsumed token
