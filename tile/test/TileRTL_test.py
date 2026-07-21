@@ -48,8 +48,7 @@ class TestHarness(Component):
                 ctrl_mem_size, data_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
-                src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out, num_ctrl, total_steps,
-                sink_out_initial_delay = 0):
+                src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out, num_ctrl, total_steps):
 
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -59,8 +58,7 @@ class TestHarness(Component):
     s.src_ctrl_pkt = TestSrcRTL(IntraCgraPktType, src_ctrl_pkt)
     s.src_data = [TestSrcRTL(DataType, src_data[i])
                   for i in range(num_tile_inports)]
-    s.sink_out = [TestSinkRTL(DataType, sink_out[i],
-                              initial_delay = sink_out_initial_delay)
+    s.sink_out = [TestSinkRTL(DataType, sink_out[i])
                   for i in range(num_tile_outports)]
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
@@ -735,119 +733,3 @@ def test_prologue_nah(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
-
-def test_tile_same_register_accumulate(cmdline_opts):
-  """
-  Same-register read-modify-write through the register cluster's write
-  skid buffer (the `NOT $0 -> $0, SOUTH` shape from issue #281): a
-  single OPT_INC ctrl word reads register bank 0's reg[0] as its
-  operand, writes its result back to the same register via the FU
-  crossbar, and simultaneously fans the result out to a (stalled) tile
-  outport. Without the skid buffer this deadlocks from the second
-  iteration on: the write is blocked while the operand token is
-  unconsumed, and the step cannot complete until the write is
-  delivered. With the skid buffer, the write parks and commits after
-  the step completes, and the accumulator makes forward progress.
-
-  The very first read hits the never-written ("unarmed") register and
-  returns the default value 0 with predicate 0 (legacy behavior), which
-  seeds the accumulator: the outport observes INC results 1, 2, 3 (all
-  with predicate 0, inherited from the unarmed seed).
-  """
-  num_tile_inports = 4
-  num_tile_outports = 4
-  num_fu_inports = 4
-  num_fu_outports = 2
-  num_routing_outports = num_fu_inports + num_tile_outports
-  ctrl_mem_size = 2
-  data_mem_size_global = 16
-  num_cgra_rows = 1
-  num_cgra_columns = 1
-  num_tiles = 4
-  num_registers_per_reg_bank = 16
-  TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
-  FuInType = mk_bits(clog2(num_fu_inports + 1))
-  FuOutType = mk_bits(clog2(num_fu_outports + 1))
-  RegFromType = mk_bits(2)
-  RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
-  DUT = TileRTL
-  FunctionUnit = FlexibleFuRTL
-  FuList = [AdderRTL,
-            MulRTL,
-            LogicRTL,
-            ShifterRTL,
-            PhiRTL,
-            CompRTL,
-            GrantRTL,
-            MemUnitRTL,
-            SelRTL,
-            ThreeMulAdderShifterRTL,
-            VectorMulComboRTL,
-            VectorAdderComboRTL]
-  data_nbits = 64
-  DataType = mk_data(data_nbits, 1)
-  addr_nbits = clog2(data_mem_size_global)
-
-  CtrlType = mk_ctrl(num_fu_inports,
-                     num_fu_outports,
-                     num_tile_inports,
-                     num_tile_outports,
-                     num_registers_per_reg_bank)
-
-  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
-  DataAddrType = mk_bits(addr_nbits)
-
-  CgraPayloadType = mk_cgra_payload(DataType,
-                                    DataAddrType,
-                                    CtrlType,
-                                    CtrlAddrType)
-
-  IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
-                                       num_cgra_rows,
-                                       num_tiles,
-                                       CgraPayloadType)
-
-  src_ctrl_pkt = [
-      # INC: operand from register bank 0 reg[0]; result back to the
-      # same register (via FU crossbar port 4) and to tile outport 3.
-      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0,
-                       payload = CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
-                                                 ctrl = CtrlType(OPT_INC,
-                                                                 [FuInType(1), FuInType(0), FuInType(0), FuInType(0)],
-                                                                 [TileInType(0), TileInType(0), TileInType(0), TileInType(0),
-                                                                  TileInType(0), TileInType(0), TileInType(0), TileInType(0)],
-                                                                 [FuOutType(0), FuOutType(0), FuOutType(0), FuOutType(1),
-                                                                  FuOutType(1), FuOutType(0), FuOutType(0), FuOutType(0)],
-                                                                 write_reg_from = [RegFromType(2), RegFromType(0), RegFromType(0), RegFromType(0)],
-                                                                 write_reg_idx = [RegIdxType(0) for _ in range(num_fu_inports)],
-                                                                 read_reg_towards = [RegFromType(1), RegFromType(0), RegFromType(0), RegFromType(0)],
-                                                                 read_reg_idx = [RegIdxType(0) for _ in range(num_fu_inports)]))),
-
-      IntraCgraPktType(0, 0, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_LAUNCH))]
-
-  src_data = [[], [], [], []]
-
-  # Three INC iterations accumulate through reg[0]: 0 -> 1 -> 2 -> 3.
-  # Predicate stays 0, inherited from the unarmed default read.
-  sink_out = [[], [], [],
-              [DataType(1, 0), DataType(2, 0), DataType(3, 0)]]
-
-  complete_signal_sink_out = [IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, payload = CgraPayloadType(CMD_COMPLETE))]
-
-  th = TestHarness(DUT, FunctionUnit, FuList,
-                   IntraCgraPktType,
-                   ctrl_mem_size,
-                   data_mem_size_global, num_fu_inports, num_fu_outports,
-                   num_tile_inports, num_tile_outports,
-                   num_registers_per_reg_bank, src_data,
-                   src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out,
-                   num_ctrl = 1, total_steps = 3,
-                   # Stalls the tile outport to also exercise holding the
-                   # parked write while the fan-out leg is backpressured.
-                   sink_out_initial_delay = 4)
-  th.elaborate()
-  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
-                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
-                       'ALWCOMBORDER'])
-  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)

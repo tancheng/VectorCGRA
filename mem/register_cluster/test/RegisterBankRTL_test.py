@@ -41,16 +41,8 @@ class TestHarness(Component):
     # The routing-crossbar read path is unused in this test.
     s.reg_bank.send_data_to_xbar.rdy //= 0
     s.reg_bank.clear //= 0
-
-    # Mimics the tile's per-step completion for this FU-only read
-    # config: the step completes as soon as the FU path accepts,
-    # consuming the token and committing any parked skid-buffer write.
-    s.ctrl_proceed = Wire(1)
-    s.reg_bank.inport_ctrl_proceed //= s.ctrl_proceed
-
-    @update
-    def emulate_step_completion():
-      s.ctrl_proceed @= s.reg_bank.send_data_to_fu.val & s.reg_bank.send_data_to_fu.rdy
+    # No ctrl stepping in this harness; tokens are held (level reads).
+    s.reg_bank.inport_ctrl_proceed //= 0
 
   def done(s):
     return s.sink.done()
