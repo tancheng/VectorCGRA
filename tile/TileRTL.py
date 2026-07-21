@@ -301,7 +301,6 @@ class TileRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
-      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
 
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff

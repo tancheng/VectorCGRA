@@ -335,7 +335,6 @@ class TileWithContextSwitchRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
-      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
     
     @update
     def overwrite_fu_outport():

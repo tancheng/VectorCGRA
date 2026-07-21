@@ -36,9 +36,6 @@ class RegisterClusterRTL(Component):
 
     # Interface
     s.inport_opt = InPort(CtrlType)
-    # Pulses when the current ctrl step completes; consumes the tokens
-    # of the registers read by the completing step.
-    s.inport_ctrl_proceed = InPort(mk_bits(1))
     # Clears the banks' token bookkeeping on task switching.
     s.clear = InPort(mk_bits(1))
     s.recv_data_from_routing_crossbar = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
@@ -55,7 +52,6 @@ class RegisterClusterRTL(Component):
     # Connections.
     for i in range(num_reg_banks):
       s.reg_bank[i].inport_opt //= s.inport_opt
-      s.reg_bank[i].inport_ctrl_proceed //= s.inport_ctrl_proceed
       s.reg_bank[i].clear //= s.clear
       s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].msg
       s.reg_bank[i].inport_wdata[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg

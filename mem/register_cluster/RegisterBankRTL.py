@@ -18,14 +18,10 @@ tiles consuming data from their own register cluster that nothing
 writes). For an armed register:
 - The token bit is set when a token is written.
 - A read only asserts `val` while the entry holds an unconsumed token.
-- The token is consumed (cleared) when the ctrl step that reads the
-  entry completes, signaled via `inport_ctrl_proceed` (the same
-  per-step signal the const queue advances on). Within a ctrl step,
-  reads are repeatable: FUs may accept the operand several times (e.g.,
-  vector-factor replays) or merely snoop it without a val/rdy handshake
-  (e.g., VectorAllReduceRTL's base operand), and for
-  read_reg_towards=BOTH the tile only lets the step complete once both
-  the FU and the routing-crossbar paths have been served.
+- The token bit is cleared once every configured destination has
+  completed a val/rdy handshake (for read_reg_towards=BOTH, both the FU
+  and the routing-crossbar paths must accept before the token is
+  released; each path accepts at most once per token).
 - A write is rejected (and reported as not-ready via `outport_wr_rdy`)
   while the destination register still holds an unconsumed token, so an
   earlier token can never be silently overwritten by a later iteration.
@@ -66,18 +62,15 @@ class RegisterBankRTL(Component):
     # the design and handshake.
     s.inport_wdata = [InPort(DataType) for _ in range(3)]
     s.inport_valid = [InPort(mk_bits(1)) for _ in range(3)]
-    # Pulses when the current ctrl step completes (i.e., the ctrl memory
-    # proceeds to the next ctrl signal); consumes the token of the
-    # register read by the completing step.
-    s.inport_ctrl_proceed = InPort(mk_bits(1))
     # Indicates whether the destination register of the configured write
     # can currently accept a token (i.e., holds no unconsumed token).
     # The cluster uses it to backpressure the selected write source.
     s.outport_wr_rdy = OutPort(mk_bits(1))
-    # Clears all token bookkeeping (token/armed bits) on task switching,
-    # so a newly launched task starts from the legacy (unarmed) behavior
-    # regardless of what a previous task left behind. Register data
-    # itself is preserved, matching the other clearable components.
+    # Clears all token bookkeeping (token/armed/taken bits) on task
+    # switching, so a newly launched task starts from the legacy
+    # (unarmed) behavior regardless of what a previous task left behind.
+    # Register data itself is preserved, matching the other clearable
+    # components (FUs, crossbars, const mem keep their own conventions).
     s.clear = InPort(mk_bits(1))
 
     # Component
@@ -88,8 +81,16 @@ class RegisterBankRTL(Component):
     # Bit r indicates whether reg[r] has ever been written ("armed").
     # Token discipline only applies to armed registers; a never-written
     # register keeps the legacy behavior of always asserting `val` on a
-    # configured read (acting as a default-token source).
+    # configured read (acting as a default-token source), which existing
+    # kernels rely on (e.g., reading a register cluster that nothing
+    # writes to keep an independent pipeline live).
     s.armed = Wire(num_registers)
+    # Tracks which destination paths have already accepted the token
+    # currently being read (only meaningful until the token is released;
+    # needed for read_reg_towards=BOTH, whose two destinations can accept
+    # in different cycles).
+    s.fu_taken = Wire(1)
+    s.xbar_taken = Wire(1)
 
     # Wires derived from the ctrl signal and the token state.
     s.read_towards_fu = Wire(1)
@@ -97,9 +98,11 @@ class RegisterBankRTL(Component):
     s.read_token_valid = Wire(1)
     s.read_armed = Wire(1)
     s.wr_en = Wire(1)
+    s.fu_accept = Wire(1)
+    s.xbar_accept = Wire(1)
+    s.release_token = Wire(1)
     # One-hot masks selecting the register whose token bit is set (on a
-    # write) or cleared (on the completion of the ctrl step reading it)
-    # at the end of this cycle.
+    # write) or cleared (on a release) at the end of this cycle.
     s.token_set_mask = Wire(num_registers)
     s.token_clear_mask = Wire(num_registers)
 
@@ -152,36 +155,43 @@ class RegisterBankRTL(Component):
 
     @update
     def update_send_val():
-      # An armed register sends only while it holds an unconsumed token;
-      # a never-written register keeps the legacy always-valid read
-      # behavior (default-token source). Reads are level signals within
-      # the current ctrl step (consumption happens on step completion,
-      # see update_token_masks), so a consumer may accept or snoop the
-      # data multiple times before the step completes.
+      # An armed register sends only while it holds a token that the
+      # corresponding destination path has not accepted yet. A
+      # never-written register keeps the legacy always-valid read
+      # behavior (default-token source).
       s.send_data.val @= ~s.reset & s.read_towards_fu & \
-                         (s.read_token_valid | ~s.read_armed)
+                         ((s.read_token_valid & ~s.fu_taken) | ~s.read_armed)
       s.send_data_to_xbar.val @= ~s.reset & s.read_towards_xbar & \
-                                 (s.read_token_valid | ~s.read_armed)
+                                 ((s.read_token_valid & ~s.xbar_taken) | ~s.read_armed)
+
+      s.fu_accept @= s.send_data.val & s.send_data.rdy
+      s.xbar_accept @= s.send_data_to_xbar.val & s.send_data_to_xbar.rdy
+
+      # Releases the token once every configured destination path has
+      # accepted it (a destination counts as done if it accepted in an
+      # earlier cycle, i.e., `taken`, or accepts in this cycle).
+      s.release_token @= s.read_token_valid & \
+          (s.read_towards_fu | s.read_towards_xbar) & \
+          (~s.read_towards_fu | s.fu_taken | s.fu_accept) & \
+          (~s.read_towards_xbar | s.xbar_taken | s.xbar_accept)
 
     @update
     def update_token_masks():
       # A write can never target a register that still holds a token
-      # (wr_en is gated by outport_wr_rdy) and a consumption only targets
+      # (wr_en is gated by outport_wr_rdy), and a release only targets
       # a register that holds one, so the two masks never select the same
       # register in the same cycle.
       for r in range(num_registers):
         s.token_set_mask[r] @= \
             s.wr_en & (s.inport_opt.write_reg_idx[reg_bank_id] == r)
-        # The completing ctrl step consumes the token it has been reading.
         s.token_clear_mask[r] @= \
-            s.inport_ctrl_proceed & \
-            (s.read_towards_fu | s.read_towards_xbar) & \
-            (s.inport_opt.read_reg_idx[reg_bank_id] == r) & \
-            s.token_valid[r]
+            s.release_token & (s.inport_opt.read_reg_idx[reg_bank_id] == r)
 
     @update_ff
     def update_token_valid():
       if s.reset | s.clear:
+        s.fu_taken <<= 0
+        s.xbar_taken <<= 0
         s.token_valid <<= 0
         s.armed <<= 0
       else:
@@ -190,10 +200,19 @@ class RegisterBankRTL(Component):
         # A register becomes (and stays) armed once first written.
         s.armed <<= s.armed | s.token_set_mask
 
+        # The taken bits only track acceptances of real tokens; legacy
+        # (never-written) reads are not tracked and can repeat freely.
+        if s.release_token:
+          s.fu_taken <<= 0
+          s.xbar_taken <<= 0
+        else:
+          s.fu_taken <<= s.fu_taken | (s.fu_accept & s.read_token_valid)
+          s.xbar_taken <<= s.xbar_taken | (s.xbar_accept & s.read_token_valid)
+
   def line_trace(s):
     inport_opt_str = "inport_opt: " + str(s.inport_opt)
     inport_wdata_str = "inport_wdata: " + str(s.inport_wdata)
     content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
-    token_str = "token_valid: " + str(s.token_valid) + ", armed: " + str(s.armed)
+    token_str = "token_valid: " + str(s.token_valid)
     send_data_str = "send_data: " + str(s.send_data.msg)
     return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || [{token_str}] || {send_data_str}'

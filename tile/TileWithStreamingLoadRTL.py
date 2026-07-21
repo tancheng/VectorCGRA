@@ -217,8 +217,6 @@ class TileWithStreamingLoadRTL(Component):
       s.register_cluster.send_data_to_fu[i] //= \
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
-      # This tile variant has no direct register -> routing_crossbar path.
-      s.register_cluster.send_data_to_routing_crossbar[i].rdy //= 0
 
     # Clear ports are only useful during context switching.
     # We connect to 0 to make sure they have drivers.
@@ -293,7 +291,6 @@ class TileWithStreamingLoadRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
-      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
 
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
