@@ -37,7 +37,7 @@ class TestHarness(Component):
     s.reg_bank.inport_valid[PORT_INDEX_FU_CROSSBAR] //= 1
     s.reg_bank.inport_valid[PORT_INDEX_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
-    s.reg_bank.send_data_to_fu //= s.sink.recv
+    s.reg_bank.send_data //= s.sink.recv
     # The routing-crossbar read path is unused in this test.
     s.reg_bank.send_data_to_xbar.rdy //= 0
     s.reg_bank.clear //= 0
