@@ -1,0 +1,24 @@
+# This is an example of overriding the CGRAs with heterogeneous shapes.
+# CGRA0: 2x2; CGRA1: 3x3; CGRA2: 2x2; CGRA3: 2x2.
+# NOTE: As the CGRA size increases, both simulation and Verilog generation times become longer.
+# Some test results on a laptop:
+# * default: 2x2, CGRA1(3x3)  ->  simulation: 3.25 minutes;   verilog generation: 33 minutes
+# * default: 4x4, CGRA0(2x2), CGRA1(3x3) -> simulation: 13minutes; verilog generation: Out of memory, killed by OS(may be the limitation of verilator, plz turn to another machine with more memory).
+multi_cgra_defaults:
+  rows: 2
+  columns: 2
+
+cgra_defaults:
+  rows: 2
+  columns: 2
+  configMemSize: 16
+
+tile_defaults:
+  num_registers: 16
+  fu_types: ["add", "mul", "div", "fadd", "fmul", "fdiv", "logic", "cmp", "sel", "type_conv", "vfmul", "fadd_fadd", "fmul_fadd", "grant", "loop_control", "phi", "constant", "mem", "return", "mem_indexed", "alloca", "shift"]
+
+cgra_overrides:
+- cgra_x: 1
+  cgra_y: 0
+  rows: 3
+  columns: 3
