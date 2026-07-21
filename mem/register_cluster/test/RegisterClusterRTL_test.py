@@ -76,7 +76,6 @@ class TestHarness(Component):
           s.sink[i].recv
       # The routing-crossbar read path is unused in this harness.
       s.reg_cluster.send_data_to_routing_crossbar[i].rdy //= 0
-    s.reg_cluster.clear //= 0
 
   def done(s):
     for i in range(s.num_reg_banks):
@@ -222,7 +221,6 @@ class TestHarnessWithXbarSink(Component):
           s.src_const[i].send
       s.reg_cluster.send_data_to_fu[i]              //= s.sink_fu[i].recv
       s.reg_cluster.send_data_to_routing_crossbar[i] //= s.sink_xbar[i].recv
-    s.reg_cluster.clear //= 0
 
   def done(s):
     for i in range(s.num_reg_banks):

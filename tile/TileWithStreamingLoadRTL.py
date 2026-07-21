@@ -223,7 +223,6 @@ class TileWithStreamingLoadRTL(Component):
     for i in range(len(FuList)):
       s.element.clear[i] //= 0
     s.fu_crossbar.clear //= 0
-    s.register_cluster.clear //= 0
     s.routing_crossbar.clear //= 0
 
     @update
