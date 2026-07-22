@@ -112,12 +112,11 @@ class RegisterClusterRTL(Component):
              (s.reg_bank[i].send_data.val & reg_towards_fu))
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
+        # A ready response consumes the routing token. It is safe only when
+        # it performs the legacy NAH register write or the FU accepts it.
         s.recv_data_from_routing_crossbar[i].rdy @= \
-            (~active_ctrl | \
-             ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
+            (((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
               (s.inport_opt.operation == OPT_NAH)) | \
-             (s.inport_opt.fu_in[i] == 0) | \
-             reg_towards_fu | \
              s.send_data_to_fu[i].rdy)
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
