@@ -6,8 +6,9 @@ Merged im2col (image-to-column) engine. Reads an HxW single-channel input
 image from a local input scratchpad and streams the lowered
 (kH*kW) x (Hout*Wout) column matrix into the enclosing CGRA's shared
 data memory as a sequence of CMD_STORE_REQUEST packets on `send_pkt`.
-The SRAM address for each emitted value is fixed at elaboration time
-by the data_addrs list.
+The engine writes output i to CGRA data_mem addr i (i.e. the lowered
+matrix occupies data_mem[0 .. num_outputs)); the consumer configures
+its LD_CONST addresses accordingly.
 
 Note on packet dst_tile: CMD_STORE_REQUEST packets are routed by the
 CGRA controller using the payload.data_addr field alone (see
@@ -37,11 +38,12 @@ State machine: IDLE -> READ -> EMIT -> DONE
   IDLE: wait for `start`.
   READ: assert the read on in_mem at in_addr(ky, kx, oy, ox).
   EMIT: hold the incoming data, drive send_pkt with
-        (data_addr_const[emit_idx], data). On send_pkt fire, advance
-        the nested loop counters (ox innermost, then oy, kx, ky) and
+        (data_addr = emit_idx, data). On send_pkt fire, advance the
+        nested loop counters (ox innermost, then oy, kx, ky) and
         either loop back to READ or transition to DONE. The loop order
         is chosen so emit_idx (the flat output counter) monotonically
-        walks through data_addr_const in order.
+        walks 0 -> num_outputs, which is why we can use emit_idx as
+        the SRAM address directly.
   DONE: assert `done` and stay here until reset.
 """
 
@@ -58,13 +60,11 @@ class Im2colEngineRTL(Component):
   def construct(s, DataType, IntraCgraPktType, CgraPayloadType,
                 scratch_mem_size,
                 in_base, H, W, kH, kW, stride,
-                data_addrs,
                 preload_image):
 
     Hout = (H - kH) // stride + 1
     Wout = (W - kW) // stride + 1
     num_outputs = kH * kW * Hout * Wout
-    assert len(data_addrs) == num_outputs
 
     # Derive widths from the passed-in packet types so the engine stays
     # generic across CGRA configurations.
@@ -116,23 +116,6 @@ class Im2colEngineRTL(Component):
       s.in_col  @= ScratchAddrType(s.ox * stride + s.kx)
       s.in_addr @= ScratchAddrType(in_base + s.in_row * W + s.in_col)
 
-    # Per-output SRAM addresses as combinational Wire arrays. The
-    # verilator translator accepts indexed access into Wire-arrays of
-    # bitstructs natively; plain Python lists/tuples of pymtl3-typed
-    # values do not translate.
-    s.data_addr_const = [Wire(DataAddrType) for _ in range(num_outputs)]
-    for i in range(num_outputs):
-      s.data_addr_const[i] //= DataAddrType(data_addrs[i])
-
-    s.cur_addr = Wire(DataAddrType)
-
-    @update
-    def select_addr():
-      s.cur_addr @= s.data_addr_const[0]
-      for i in range(num_outputs):
-        if s.emit_idx == IdxType(i):
-          s.cur_addr @= s.data_addr_const[i]
-
     # Tie off the unused write port on the input scratchpad.
     @update
     def tie_off_in_mem_wr():
@@ -174,7 +157,7 @@ class Im2colEngineRTL(Component):
             PayloadType(
                 CmdType(CMD_STORE_REQUEST),
                 s.data_reg,
-                s.cur_addr,
+                zext(s.emit_idx, DataAddrType),   # SRAM addr = emit_idx
                 0,         # ctrl (zero)
                 0,         # ctrl_addr
             ),

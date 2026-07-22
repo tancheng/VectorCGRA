@@ -75,7 +75,7 @@ class IntegratedIm2ColWithCgraRTL(Component):
                 engine_scratch_mem_size,
                 engine_in_base,
                 engine_H, engine_W, engine_kH, engine_kW, engine_stride,
-                engine_data_addrs, engine_preload_image,
+                engine_preload_image,
                 has_ctrl_ring = True):
 
     DataType        = CgraPayloadType.get_field_type(kAttrData)
@@ -118,7 +118,7 @@ class IntegratedIm2ColWithCgraRTL(Component):
         engine_scratch_mem_size,
         engine_in_base,
         engine_H, engine_W, engine_kH, engine_kW, engine_stride,
-        engine_data_addrs, engine_preload_image)
+        engine_preload_image)
 
     s.cgra = CgraRTL(CgraPayloadType,
                      multi_cgra_rows, multi_cgra_columns,

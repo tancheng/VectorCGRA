@@ -77,12 +77,12 @@ class TestHarness(Component):
 
   def construct(s, scratch_mem_size,
                 in_base, H, W, kH, kW, stride,
-                data_addrs, preload_image, expected_packets):
+                preload_image, expected_packets):
 
     s.dut = Im2colEngineRTL(DataType, IntraCgraPktType, CgraPayloadType,
                             scratch_mem_size,
                             in_base, H, W, kH, kW, stride,
-                            data_addrs, preload_image)
+                            preload_image)
 
     # Compare only the fields the engine actually populates: cmd, data,
     # data_addr. The dst field is always 0 (STORE_REQUEST is routed by
@@ -110,7 +110,8 @@ class TestHarness(Component):
 # Driver
 #-------------------------------------------------------------------------
 
-def _build_expected_packets(image, H, W, kH, kW, stride, data_addrs):
+def _build_expected_packets(image, H, W, kH, kW, stride):
+  # Engine emits output i to SRAM addr i (0-based, contiguous).
   values, _, _ = golden_im2col(image, H, W, kH, kW, stride)
   pkts = []
   for i, v in enumerate(values):
@@ -120,18 +121,17 @@ def _build_expected_packets(image, H, W, kH, kW, stride, data_addrs):
         0, 0,                      # opaque, vc_id
         CgraPayloadType(cmd = CMD_STORE_REQUEST,
                         data = DataType(v, 1),
-                        data_addr = data_addrs[i])))
+                        data_addr = i)))
   return pkts
 
 
-def run_engine(image, H, W, kH, kW, stride, in_base, data_addrs,
+def run_engine(image, H, W, kH, kW, stride, in_base,
                scratch_mem_size = 64, cmdline_opts = None):
 
-  expected = _build_expected_packets(image, H, W, kH, kW, stride,
-                                     data_addrs)
+  expected = _build_expected_packets(image, H, W, kH, kW, stride)
   th = TestHarness(scratch_mem_size,
                    in_base, H, W, kH, kW, stride,
-                   data_addrs, image, expected)
+                   image, expected)
   th.elaborate()
   if cmdline_opts is not None:
     th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
@@ -145,34 +145,23 @@ def run_engine(image, H, W, kH, kW, stride, in_base, data_addrs,
 def test_engine_4x4_k2_s1(cmdline_opts):
   # 4x4 image, 2x2 kernel, stride 1 -> 3x3 output grid, 4x9 lowered.
   image = list(range(16))
-  H, W, kH, kW, stride = 4, 4, 2, 2, 1
-  num_outputs = kH * kW * ((H - kH) // stride + 1) * ((W - kW) // stride + 1)
-  data_addrs  = list(range(num_outputs))
-  run_engine(image, H, W, kH, kW, stride, in_base = 0,
-             data_addrs = data_addrs,
-             cmdline_opts = cmdline_opts)
+  run_engine(image, H = 4, W = 4, kH = 2, kW = 2, stride = 1,
+             in_base = 0, cmdline_opts = cmdline_opts)
 
 
 def test_engine_4x4_k2_s2(cmdline_opts):
   # Stride-2: 4x4 / 2x2 / s2 -> 2x2 output grid, 4x4 lowered.
   image = [i * 2 + 1 for i in range(16)]
-  H, W, kH, kW, stride = 4, 4, 2, 2, 2
-  num_outputs = kH * kW * ((H - kH) // stride + 1) * ((W - kW) // stride + 1)
-  data_addrs  = list(range(num_outputs))
-  run_engine(image, H, W, kH, kW, stride, in_base = 0,
-             data_addrs = data_addrs,
-             cmdline_opts = cmdline_opts)
+  run_engine(image, H = 4, W = 4, kH = 2, kW = 2, stride = 2,
+             in_base = 0, cmdline_opts = cmdline_opts)
 
 
 def test_engine_5x5_k3_s1(cmdline_opts):
   # 5x5 / 3x3 / s1 -> 3x3 output grid, 9x9 lowered (81 outputs).
   image = list(range(25))
-  H, W, kH, kW, stride = 5, 5, 3, 3, 1
-  num_outputs = kH * kW * ((H - kH) // stride + 1) * ((W - kW) // stride + 1)
-  data_addrs  = [i % 128 for i in range(num_outputs)]
-  run_engine(image, H, W, kH, kW, stride, in_base = 0,
-             data_addrs = data_addrs,
-             scratch_mem_size = 128, cmdline_opts = cmdline_opts)
+  run_engine(image, H = 5, W = 5, kH = 3, kW = 3, stride = 1,
+             in_base = 0, scratch_mem_size = 128,
+             cmdline_opts = cmdline_opts)
 
 
 def test_engine_smoke_matches_e2e_layout(cmdline_opts):
@@ -181,5 +170,4 @@ def test_engine_smoke_matches_e2e_layout(cmdline_opts):
   # to SRAM addr 0..3).
   image = [1, 3, 2, 4]
   run_engine(image, H = 1, W = 4, kH = 1, kW = 2, stride = 2, in_base = 0,
-             data_addrs = [0, 1, 2, 3],
              cmdline_opts = cmdline_opts)
