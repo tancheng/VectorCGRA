@@ -238,12 +238,15 @@ class CtrlMemDynamicRTL(Component):
         s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
       s.send_ctrl.msg.vector_factor_power @= s.reg_file.rdata[0].vector_factor_power
       # Some generated configs do not mark the final dynamic RET statically.
-      # Preserve the configured bit, and also mark the last issued dynamic
-      # control step so final-RET register bypass can fire.
+      # Preserve the configured bit, and also mark RET/RET_VOID controls in
+      # the final dynamic iteration so a return can complete there.
       s.send_ctrl.msg.is_last_ctrl        @= \
           s.reg_file.rdata[0].is_last_ctrl | \
           ((s.total_ctrl_steps_val > 0) & \
-           (s.times == s.total_ctrl_steps_val - TimeType(1)))
+           (s.times >= s.total_ctrl_steps_val - \
+            zext(s.ctrl_count_per_iter_val, TimeType)) & \
+           ((s.reg_file.rdata[0].operation == OPT_RET) | \
+            (s.reg_file.rdata[0].operation == OPT_RET_VOID)))
       s.send_ctrl.msg.operation           @= s.reg_file.rdata[0].operation
 
     @update_ff
