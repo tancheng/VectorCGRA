@@ -160,7 +160,7 @@ def test_multi_cast():
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 
-def test_prologue_preserves_skipped_input():
+def test_prologue_warms_and_preserves_input():
   src_opt  = [CtrlType(OPT_ADD, pickRegister,
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
@@ -168,7 +168,8 @@ def test_prologue_preserves_skipped_input():
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
   src_data = [[DataType(7, 1)], [], []]
-  sink_out = [[DataType(7, 1)], [], []]
+  # The prologue emits a warm-up copy; the following real step consumes it.
+  sink_out = [[DataType(7, 1), DataType(7, 1)], [], []]
   th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
                    num_routing_outports, src_data, src_opt, sink_out,
                    prologue_counts = {(0, 0): 1})

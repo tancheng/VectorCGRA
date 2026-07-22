@@ -247,12 +247,10 @@ class CrossbarRTL(Component):
     def update_rdy_vector():
       s.send_rdy_vector @= 0
       for i in range(num_outports):
-        # After the FU finishes, normal local FU-input outports no longer need
-        # to backpressure this crossbar. preserve_outport is the exception: a
-        # local routing output still matters when it writes a register or feeds
-        # an operand selected from the routing crossbar in this same ctrl step.
+        # After the FU finishes, only directions toward a local consumer still
+        # backpressure the crossbar; routed outputs may drain independently.
         if (s.in_dir[i] > 0) & \
-           (~s.compute_done | (i < outport_towards_local_base_id) | s.preserve_outport[i]):
+           (~s.compute_done | (i < outport_towards_local_base_id)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
         else:
           s.send_rdy_vector[i] @= 1
@@ -261,8 +259,7 @@ class CrossbarRTL(Component):
     def update_valid_vector():
       s.recv_valid_vector @= 0
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & \
-           (~s.compute_done | (i < outport_towards_local_base_id) | s.preserve_outport[i]):
+        if s.in_dir[i] > 0:
           s.recv_valid_vector[i] @= s.recv_data_val[s.in_dir_local[i]]
         else:
           s.recv_valid_vector[i] @= 1
@@ -273,12 +270,10 @@ class CrossbarRTL(Component):
         s.recv_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & \
-           (~s.compute_done | (i < outport_towards_local_base_id) | s.preserve_outport[i]):
-          # During prologue, an input token is intentionally skipped for this
-          # ctrl step. Example: if out0 uses in1 with prologue=1, control may
-          # advance without consuming in1; the next non-prologue step will see
-          # the token still aligned with its real consumer.
+        if s.in_dir[i] > 0:
+          # A prologue forwards a warm-up copy without dequeuing this token.
+          # The following real step consumes it, even after the local FU has
+          # completed, so it cannot block the upstream tile.
           s.recv_required_vector[s.in_dir_local[i]] @= ~s.during_prologue_allowing_vector[i]
 
     @update
@@ -288,9 +283,7 @@ class CrossbarRTL(Component):
         s.send_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if (s.in_dir[i] > 0) & \
-           ~s.during_prologue_allowing_vector[i] & \
-           (~s.compute_done | (i < outport_towards_local_base_id) | s.preserve_outport[i]):
+        if s.in_dir[i] > 0:
           s.send_required_vector[i] @= 1
 
 
