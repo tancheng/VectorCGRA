@@ -22,6 +22,7 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.ConstRTL import ConstRTL
 from ...fu.single.DivRTL import DivRTL
 from ...fu.single.GepRTL import GepRTL
 from ...fu.single.GrantRTL import GrantRTL
@@ -153,6 +154,7 @@ FuList = [AdderRTL,
           LogicRTL,
           ShifterRTL,
           PhiRTL,
+          ConstRTL,
           CompRTL,
           GrantRTL,
           MemUnitRTL,
