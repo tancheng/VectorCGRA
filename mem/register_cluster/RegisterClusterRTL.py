@@ -41,6 +41,7 @@ class RegisterClusterRTL(Component):
     s.recv_data_from_const = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
     s.write_data_from_routing_crossbar = [InPort(DataType) for _ in range(num_reg_banks)]
     s.write_valid_from_routing_crossbar = [InPort(b1) for _ in range(num_reg_banks)]
+    s.routing_write_valid = [Wire(b1) for _ in range(num_reg_banks)]
     s.send_data_to_fu = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
     # Direct output from register banks towards routing crossbar (bypasses FU).
     s.send_data_to_routing_crossbar = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
@@ -55,9 +56,15 @@ class RegisterClusterRTL(Component):
       s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.write_data_from_routing_crossbar[i]
       s.reg_bank[i].inport_wdata[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg
       s.reg_bank[i].inport_wdata[PORT_INDEX_CONST] //= s.recv_data_from_const[i].msg
-      s.reg_bank[i].inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= s.write_valid_from_routing_crossbar[i]
+      s.reg_bank[i].inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= s.routing_write_valid[i]
       s.reg_bank[i].inport_valid[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].val
       s.reg_bank[i].inport_valid[PORT_INDEX_CONST] //= s.recv_data_from_const[i].val
+
+    @update
+    def update_routing_write_valid():
+      for i in range(num_reg_banks):
+        s.routing_write_valid[i] @= s.recv_data_from_routing_crossbar[i].val | \
+                                    s.write_valid_from_routing_crossbar[i]
 
     @update
     def update_msgs_signals():
@@ -112,12 +119,12 @@ class RegisterClusterRTL(Component):
              (s.reg_bank[i].send_data.val & reg_towards_fu))
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
-        # A ready response consumes the routing token. It is safe only when
-        # it performs the legacy NAH register write or the FU accepts it.
+        # A routing token may be retired when this control does not select
+        # the FU input; this keeps prologue/NAH tokens from shifting the
+        # following active step.
         s.recv_data_from_routing_crossbar[i].rdy @= \
-            (((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
-              (s.inport_opt.operation == OPT_NAH)) | \
-             s.send_data_to_fu[i].rdy)
+            (s.inport_opt.operation == OPT_NAH) | \
+            (s.inport_opt.fu_in[i] == 0) | s.send_data_to_fu[i].rdy
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
 
