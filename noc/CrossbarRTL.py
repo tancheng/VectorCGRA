@@ -45,10 +45,6 @@ class CrossbarRTL(Component):
       s.recv_data_val[i] //= s.recv_data[i].val
 
     s.crossbar_outport = [InPort(InType) for _ in range(num_outports)]
-    s.preserve_outport = [InPort(b1) for _ in range(num_outports)]
-    # Local outputs normally stop participating once the FU is done.
-    # preserve_outport keeps selected local outputs live when the same control
-    # step still needs routing-xbar data for a register write or FU operand.
     s.send_data = [SendIfcRTL(DataType) for _ in range(num_outports)]
 
     s.in_dir = [Wire(InType) for _ in range(num_outports)]
@@ -62,7 +58,6 @@ class CrossbarRTL(Component):
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
     s.crossbar_id = InPort(b1)
     s.compute_done = InPort(b1)
-    s.drain_when_inactive = InPort(b1)
 
     s.ctrl_addr_inport = InPort(CtrlAddrType)
 
@@ -134,7 +129,7 @@ class CrossbarRTL(Component):
             s.all_send_accepted @= 0
 
         for i in range(num_inports):
-          s.recv_data[i].rdy @= reduce_and(s.recv_valid_vector) & \
+          s.recv_data[i].rdy @= reduce_and(s.recv_valid_or_during_prologue_allowing_vector) & \
                                 s.all_send_accepted & \
                                 s.recv_required_vector[i]
 
@@ -154,12 +149,6 @@ class CrossbarRTL(Component):
 
         s.recv_opt.rdy @= s.all_send_accepted & \
                           reduce_and(s.recv_valid_or_during_prologue_allowing_vector)
-      elif s.drain_when_inactive:
-        # Test-only/manual drain path: when no routing op is active, consume
-        # queued input tokens without producing outputs. Tile-level users tie
-        # this low, so normal scheduled execution is unchanged.
-        for i in range(num_inports):
-          s.recv_data[i].rdy @= 1
 
     @update_ff
     def update_prologue_counter():
@@ -271,10 +260,9 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         if s.in_dir[i] > 0:
-          # A prologue forwards a warm-up copy without dequeuing this token.
-          # The following real step consumes it, even after the local FU has
-          # completed, so it cannot block the upstream tile.
-          s.recv_required_vector[s.in_dir_local[i]] @= ~s.during_prologue_allowing_vector[i]
+          # A prologue acknowledges an available input but does not route it.
+          # This keeps the input stream aligned with the control schedule.
+          s.recv_required_vector[s.in_dir_local[i]] @= 1
 
     @update
     def update_send_required_vector():
@@ -283,7 +271,7 @@ class CrossbarRTL(Component):
         s.send_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        if (s.in_dir[i] > 0) & ~s.during_prologue_allowing_vector[i]:
           s.send_required_vector[i] @= 1
 
 

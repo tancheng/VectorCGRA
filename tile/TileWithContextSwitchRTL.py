@@ -364,8 +364,6 @@ class TileWithContextSwitchRTL(Component):
     def notify_crossbars_compute_status():
       s.routing_crossbar.compute_done @= s.element_done
       s.fu_crossbar.compute_done @= s.element_done
-      s.routing_crossbar.drain_when_inactive @= 0
-      s.fu_crossbar.drain_when_inactive @= 0
 
   # Line trace
   def line_trace(s):

@@ -31,7 +31,6 @@ from ..mem.register_cluster.RegisterClusterRTL import RegisterClusterRTL
 from ..noc.CrossbarRTL import CrossbarRTL
 from ..noc.LinkOrRTL import LinkOrRTL
 from ..noc.PyOCN.pymtl3_net.channel.ChannelRTL import ChannelRTL
-from ..lib.basic.val_rdy.queues import PipeQueueRTL
 from ..rf.RegisterRTL import RegisterRTL
 from ..lib.util.data_struct_attr import *
 
@@ -117,7 +116,7 @@ class TileRTL(Component):
 
     # The `tile_in_channel` indicates the outport channels that are
     # connected to the next tiles.
-    s.tile_in_channel = [ChannelRTL(DataType, QueueType=PipeQueueRTL, latency = 1)
+    s.tile_in_channel = [ChannelRTL(DataType, latency = 1)
                          for _ in range(num_tile_inports)]
 
     # The `tile_out_or_link` would "or" the outports of the
@@ -129,7 +128,6 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
-    s.routing_preserve_local = [Wire(b1) for _ in range(num_fu_inports)]
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -201,30 +199,6 @@ class TileRTL(Component):
           s.ctrl_mem.send_ctrl.msg.routing_xbar_outport[i]
       s.fu_crossbar.crossbar_outport[i] //= \
           s.ctrl_mem.send_ctrl.msg.fu_xbar_outport[i]
-
-      # Only routing-xbar outputs that target the local register/FU side need
-      # preservation. Tile-to-tile outputs still follow normal compute_done
-      # gating because downstream tiles consume them through send_data.
-      if i < num_tile_outports:
-        s.routing_crossbar.preserve_outport[i] //= 0
-        s.fu_crossbar.preserve_outport[i] //= 0
-      else:
-        local_idx = i - num_tile_outports
-        s.routing_crossbar.preserve_outport[i] //= \
-            s.routing_preserve_local[local_idx]
-        s.fu_crossbar.preserve_outport[i] //= 0
-
-
-    @update
-    def update_routing_preserve_local():
-      for i in range(num_fu_inports):
-        read_towards = s.ctrl_mem.send_ctrl.msg.read_reg_towards[i]
-        read_towards_routing = \
-            (read_towards == READ_TOWARDS_ROUTING_XBAR) | \
-            (read_towards == READ_TOWARDS_BOTH)
-        s.routing_preserve_local[i] @= \
-            (s.ctrl_mem.send_ctrl.msg.write_reg_from[i] == PORT_ROUTING_CROSSBAR) | \
-            read_towards_routing
 
     # Connections on the `fu_crossbar`.
     for i in range(num_fu_outports):
@@ -346,8 +320,6 @@ class TileRTL(Component):
     def notify_crossbars_compute_status():
       s.routing_crossbar.compute_done @= s.element_done
       s.fu_crossbar.compute_done @= s.element_done
-      s.routing_crossbar.drain_when_inactive @= 0
-      s.fu_crossbar.drain_when_inactive @= 0
 
   # Line trace
   def line_trace(s):
