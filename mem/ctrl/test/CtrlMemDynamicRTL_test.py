@@ -265,8 +265,8 @@ def test_return():
 
   # 1 iter has 3 ctrl signals.
   ctrl_count_per_iter = 3
-  # Only executes for 1 iter.
-  total_ctrl_steps_val = 3
+  # Keep the configured ceiling beyond the expected epilogue stop.
+  total_ctrl_steps_val = 8
 
 
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
@@ -289,13 +289,16 @@ def test_return():
 
   FuInType = mk_bits(clog2(num_fu_inports + 1))
   pick_register = [FuInType(x + 1) for x in range(num_fu_inports)]
-  src_data0 = [DataType(5, 0), DataType(6, 1)]
+  src_data0 = [DataType(5, 0), DataType(6, 1), DataType(7, 0),
+               DataType(8, 0), DataType(9, 0)]
   src_data1 = []
                                  # src dst src/dst x/y       opq vc ctrl_action ctrl_addr ctrl_operation ctrl_predicate ctrl_fu_in...
   src_ctrl_pkt = [IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 0)),
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_RET, pick_register), ctrl_addr = 1)),
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_RET, pick_register), ctrl_addr = 2)),
-                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_ADD, pick_register), ctrl_addr = 3)),
+                  # A false-predicate return after the successful return must
+                  # still be consumed so in-flight work can drain.
+                  IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG, ctrl = CtrlType(OPT_RET, pick_register), ctrl_addr = 3)),
                   # Although there are 4 ctrl signals shown above, this testcase only selects 2 of them by specifying CMD_CONFIG_COUNT_PER_ITER = 3 (predicate = 1).
                   IntraCgraPktType(0,  1,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(ctrl_count_per_iter, 1))),
                   # Then specifies the start address of the selected ctrl signals using CMD_CONFIG_CTRL_LOWER_BOUND.
@@ -308,9 +311,7 @@ def test_return():
   # This test only has RetRTL is connected to ctrl mem, so cannot
   # perform other functionalities.
   sink_out = []
-  # Though we have two RET opcodes/instructions need to be executed,
-  # only the second one has the predicate as true, leadint to single
-  # expected output.
+  # Only the second RET has a true predicate, leading to one completion.
   complete_signal_sink_out = [
       IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0), ctrl = CtrlType(OPT_RET, pick_register)))]
 
@@ -332,3 +333,7 @@ def test_return():
                    total_ctrl_steps_val,
                    RetRTL)
   run_sim(th)
+  # The successful return is the second control. One complete II (three
+  # controls) drains after it, then control issue must stop at step five.
+  assert int(th.ctrl_mem.times) == 5
+  assert int(th.ctrl_mem.send_ctrl.val) == 0

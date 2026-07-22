@@ -138,3 +138,64 @@ def test_PseudoMem():
                    src_in1, src_const, src_opt, sink_out)
   run_sim(th)
 
+
+def test_load_ignores_new_false_token_while_response_is_pending():
+  DataType = mk_data(16, 1)
+  num_inports = 2
+  num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(
+      DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+
+  dut = MemUnitRTL(IntraCgraPktType, num_inports, num_outports)
+  dut.elaborate()
+  dut.apply(DefaultPassGroup())
+  dut.sim_reset()
+
+  dut.clear @= 0
+  dut.ctrl_addr_inport @= 0
+  dut.recv_opt.val @= 1
+  dut.recv_opt.msg @= ConfigType(
+      OPT_LD, [FuInType(1), FuInType(2)])
+  dut.recv_in[0].val @= 1
+  dut.recv_in[0].msg @= DataType(5, 1)
+  dut.recv_in[1].val @= 0
+  dut.recv_in[1].msg @= DataType()
+  dut.recv_const.val @= 0
+  dut.recv_const.msg @= DataType()
+  dut.send_out[0].rdy @= 1
+  dut.send_to_ctrl_mem.rdy @= 1
+  dut.recv_from_ctrl_mem.val @= 0
+  dut.recv_from_ctrl_mem.msg @= dut.CgraPayloadType()
+  dut.to_mem_raddr.rdy @= 1
+  dut.from_mem_rdata.val @= 0
+  dut.from_mem_rdata.msg @= DataType()
+  dut.to_mem_waddr.rdy @= 1
+  dut.to_mem_wdata.rdy @= 1
+
+  dut.sim_eval_combinational()
+  assert dut.to_mem_raddr.val
+  assert dut.recv_in[0].rdy
+  assert not dut.recv_opt.rdy
+  dut.sim_tick()
+
+  # The register path can expose the next control's false token while the
+  # first load response is still in flight. It must not retire this load.
+  dut.recv_in[0].msg @= DataType(1, 0)
+  dut.sim_eval_combinational()
+  assert dut.already_sent_raddr
+  assert not dut.recv_in[0].rdy
+  assert not dut.send_out[0].val
+  assert not dut.recv_opt.rdy
+  dut.sim_tick()
+
+  dut.from_mem_rdata.val @= 1
+  dut.from_mem_rdata.msg @= DataType(6, 1)
+  dut.sim_eval_combinational()
+  assert dut.send_out[0].val
+  assert dut.send_out[0].msg == DataType(6, 1)
+  assert dut.recv_opt.rdy

@@ -40,6 +40,7 @@ class RegisterClusterRTL(Component):
     s.recv_data_from_fu_crossbar = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
     s.recv_data_from_const = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
     s.send_data_to_fu = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
+    s.inport_ctrl_proceed = InPort(mk_bits(1))
     # Direct output from register banks towards routing crossbar (bypasses FU).
     s.send_data_to_routing_crossbar = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
 
@@ -50,6 +51,7 @@ class RegisterClusterRTL(Component):
     # Connections.
     for i in range(num_reg_banks):
       s.reg_bank[i].inport_opt //= s.inport_opt
+      s.reg_bank[i].inport_ctrl_proceed //= s.inport_ctrl_proceed
       s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].msg
       s.reg_bank[i].inport_wdata[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg
       s.reg_bank[i].inport_wdata[PORT_INDEX_CONST] //= s.recv_data_from_const[i].msg
@@ -90,8 +92,14 @@ class RegisterClusterRTL(Component):
             (s.reg_bank[i].send_data.val & reg_towards_fu)
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
-        s.recv_data_from_routing_crossbar[i].rdy @= ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) \
-                & (s.inport_opt.operation == OPT_NAH)) | s.send_data_to_fu[i].rdy
+        # Drain routing data when this lane is unused by the FU. This is
+        # required during prologue, where FlexibleFu executes OPT_NAH while
+        # the reusable control word still contains the steady-state opcode.
+        s.recv_data_from_routing_crossbar[i].rdy @= \
+            (s.inport_opt.operation == OPT_NAH) | \
+            (s.inport_opt.fu_in[i] == 0) | \
+            reg_towards_fu | \
+            s.send_data_to_fu[i].rdy
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
 
@@ -103,4 +111,3 @@ class RegisterClusterRTL(Component):
   def line_trace(s):
     reg_bank_str = "reg_banks: " + "|".join([reg_bank.line_trace() for reg_bank in s.reg_bank])
     return f'{reg_bank_str}'
-

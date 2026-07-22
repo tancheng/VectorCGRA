@@ -139,3 +139,47 @@ def test_Comp_const():
                    num_outports, data_mem_size, src_data, src_const,
                    src_opt, sink_out)
   run_sim(th)
+# Concrete example: EQ_CONST compares payload 7 with const 7 on the
+# terminal iteration. The comparison result is true, but the output predicate
+# still follows the input predicates.
+def test_Comp_const_terminal_predicate():
+  FU = CompRTL
+  DataType = mk_data(32, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pick_register = [FuInType(x + 1) for x in range(num_inports)]
+
+  th = TestHarnessConst(
+      FU, IntraCgraPktType, DataType, CtrlType, num_inports, num_outports, 8,
+      [DataType(7, 0)], [DataType(7, 1)],
+      [CtrlType(OPT_EQ_CONST, pick_register)], [DataType(1, 0)],
+  )
+  run_sim(th)
+
+def test_Comp_const_predicate_depends_on_const():
+  FU = CompRTL
+  DataType = mk_data(32, 1)
+  num_inports = 2
+  num_outports = 1
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pick_register = [FuInType(x + 1) for x in range(num_inports)]
+
+  th = TestHarnessConst(
+      FU, IntraCgraPktType, DataType, CtrlType, num_inports, num_outports, 8,
+      [DataType(7, 1)], [DataType(7, 0)],
+      [CtrlType(OPT_GTE_CONST, pick_register)], [DataType(1, 0)],
+  )
+  run_sim(th)

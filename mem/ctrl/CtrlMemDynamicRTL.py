@@ -30,6 +30,7 @@ class CtrlMemDynamicRTL(Component):
 
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
     CtrlType = CgraPayloadType.get_field_type(kAttrCtrl)
+    IntraPktTileIdType = IntraCgraPktType.get_field_type(kAttrSrc)
     # The total_ctrl_steps indicates the number of steps the ctrl
     # signals should proceed. For example, if the number of ctrl
     # signals is 4 and they need to repeat 5 times, then the total
@@ -70,6 +71,7 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
+    s.drain_steps_remaining = Wire(PCType)
     s.ctrl_count_per_iter_val = Wire(PCType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
     s.ctrl_count_upper_bound = Wire(UpperBoundType)
@@ -88,7 +90,6 @@ class CtrlMemDynamicRTL(Component):
         [[Wire(PrologueCountType) for _ in range(num_routing_xbar_inports)] for _ in range(ctrl_mem_size)]
 
     # Connections.
-    s.send_ctrl.msg //= s.reg_file.rdata[0]
     s.recv_pkt_from_controller //= s.recv_pkt_from_controller_queue.recv
     s.recv_from_element //= s.recv_from_element_queue.recv
 
@@ -180,7 +181,7 @@ class CtrlMemDynamicRTL(Component):
       if s.start_iterate_ctrl == b1(1):
         if s.recv_from_element_queue.send.val & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
-              IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+              IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
                                s.recv_from_element_queue.send.msg)
           s.send_pkt_to_controller.val @= 1
           s.recv_from_element_queue.send.rdy @= s.send_pkt_to_controller.rdy
@@ -189,16 +190,17 @@ class CtrlMemDynamicRTL(Component):
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
 
     @update
-    def update_send_ctrl():
+    def update_send_ctrl_val():
       s.send_ctrl.val @= 0
       if s.start_iterate_ctrl == b1(1):
-        if s.sent_complete:
-          s.send_ctrl.val @= 0
-        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
+        # A return can become true before the modulo-scheduled epilogue has
+        # retired. Issue one final II after CMD_COMPLETE, then stop.
+        if (s.sent_complete & (s.drain_steps_remaining == 0)) | \
+           ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
           s.send_ctrl.val @= b1(0)
         else:
@@ -206,6 +208,26 @@ class CtrlMemDynamicRTL(Component):
       if s.recv_pkt_from_controller_queue.send.val & \
           (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_TERMINATE):
         s.send_ctrl.val @= b1(0)
+
+    @update
+    def update_send_ctrl_msg():
+      for i in range(num_fu_inports):
+        s.send_ctrl.msg.fu_in[i]            @= s.reg_file.rdata[0].fu_in[i]
+        s.send_ctrl.msg.write_reg_from[i]   @= s.reg_file.rdata[0].write_reg_from[i]
+        s.send_ctrl.msg.write_reg_idx[i]    @= s.reg_file.rdata[0].write_reg_idx[i]
+        s.send_ctrl.msg.read_reg_towards[i] @= s.reg_file.rdata[0].read_reg_towards[i]
+        s.send_ctrl.msg.read_reg_idx[i]     @= s.reg_file.rdata[0].read_reg_idx[i]
+      for i in range(num_routing_outports):
+        s.send_ctrl.msg.routing_xbar_outport[i] @= s.reg_file.rdata[0].routing_xbar_outport[i]
+        s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
+      s.send_ctrl.msg.vector_factor_power @= s.reg_file.rdata[0].vector_factor_power
+      s.send_ctrl.msg.is_last_ctrl        @= s.reg_file.rdata[0].is_last_ctrl
+      # Sets each FU's op code as NAH when prologue execution has not completed.
+      # As FU is supposed to do nothing during prologue.
+      if s.prologue_count_outport_fu != 0:
+        s.send_ctrl.msg.operation @= OPT_NAH
+      else:
+        s.send_ctrl.msg.operation @= s.reg_file.rdata[0].operation
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
@@ -225,14 +247,25 @@ class CtrlMemDynamicRTL(Component):
     def issue_complete():
       if s.reset:
         s.sent_complete <<= 0
+        s.drain_steps_remaining <<= 0
       else:
         if s.send_pkt_to_controller.val & \
            s.send_pkt_to_controller.rdy & \
            (s.send_pkt_to_controller.msg.payload.cmd == CMD_COMPLETE):
           s.sent_complete <<= 1
+          # The element response is queued, so one post-return control can be
+          # accepted in the same cycle that COMPLETE reaches the controller.
+          if s.send_ctrl.val & s.send_ctrl.rdy & (s.ctrl_count_per_iter_val > 0):
+            s.drain_steps_remaining <<= s.ctrl_count_per_iter_val - PCType(1)
+          else:
+            s.drain_steps_remaining <<= s.ctrl_count_per_iter_val
         elif s.recv_pkt_from_controller_queue.send.val & ( (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
                 (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESUME) ):
           s.sent_complete <<= 0
+          s.drain_steps_remaining <<= 0
+        elif s.sent_complete & (s.drain_steps_remaining > 0) & \
+             s.send_ctrl.val & s.send_ctrl.rdy:
+          s.drain_steps_remaining <<= s.drain_steps_remaining - PCType(1)
 
     @update_ff
     def update_raddr_and_fu_prologue():
@@ -325,4 +358,3 @@ class CtrlMemDynamicRTL(Component):
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
     return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
-

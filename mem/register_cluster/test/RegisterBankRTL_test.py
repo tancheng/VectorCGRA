@@ -37,6 +37,7 @@ class TestHarness(Component):
     s.reg_bank.inport_valid[PORT_INDEX_FU_CROSSBAR] //= 1
     s.reg_bank.inport_valid[PORT_INDEX_CONST] //= 1
     s.reg_bank.inport_opt //= src_opt
+    s.reg_bank.inport_ctrl_proceed //= 0
     s.reg_bank.send_data //= s.sink.recv
 
   def done(s):
@@ -104,3 +105,50 @@ def test_reg_bank():
                    src_opt, write_data, expected_read_data)
   run_sim(th)
 
+
+def test_same_address_read_is_held_until_control_proceeds():
+  DataType = mk_data(16, 1)
+  ConfigType = mk_ctrl(4, 2, 4, 4, 16)
+  dut = RegisterBankRTL(DataType, ConfigType, reg_bank_id=0,
+                        num_registers=16)
+  dut.elaborate()
+  dut.apply(DefaultPassGroup())
+  dut.sim_reset()
+
+  write_only = ConfigType()
+  write_only.write_reg_from[0] = b2(PORT_ROUTING_CROSSBAR)
+  write_only.write_reg_idx[0] = b4(5)
+  dut.inport_opt @= write_only
+  dut.inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] @= DataType(10, 1)
+  dut.inport_valid[PORT_INDEX_ROUTING_CROSSBAR] @= 1
+  dut.inport_valid[PORT_INDEX_FU_CROSSBAR] @= 0
+  dut.inport_valid[PORT_INDEX_CONST] @= 0
+  dut.inport_ctrl_proceed @= 1
+  dut.send_data.rdy @= 0
+  dut.sim_tick()
+
+  read_write = ConfigType()
+  read_write.read_reg_towards[0] = b2(READ_TOWARDS_FU)
+  read_write.read_reg_idx[0] = b4(5)
+  read_write.write_reg_from[0] = b2(PORT_ROUTING_CROSSBAR)
+  read_write.write_reg_idx[0] = b4(5)
+  dut.inport_opt @= read_write
+  dut.inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] @= DataType(20, 1)
+  dut.inport_valid[PORT_INDEX_ROUTING_CROSSBAR] @= 1
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert dut.send_data.msg == DataType(10, 1)
+  dut.sim_tick()
+
+  # The register now contains 20, but the stalled control must continue to
+  # observe the old value 10 until the whole control step completes.
+  dut.inport_valid[PORT_INDEX_ROUTING_CROSSBAR] @= 0
+  dut.sim_eval_combinational()
+  assert dut.reg_file.regs[5] == DataType(20, 1)
+  assert dut.send_data.msg == DataType(10, 1)
+
+  dut.inport_ctrl_proceed @= 1
+  dut.sim_tick()
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert dut.send_data.msg == DataType(20, 1)

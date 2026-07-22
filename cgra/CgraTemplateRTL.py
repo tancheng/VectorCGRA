@@ -79,7 +79,20 @@ class CgraTemplateRTL(Component):
                 total_steps, mem_access_is_combinational,
                 FunctionUnit, FuList, TileList, LinkList,
                 dataSPM, controller2addr_map, idTo2d_map,
-                is_multi_cgra = True, cgra_id = 0):
+                is_multi_cgra = True, cgra_id = 0,
+                provided_max_per_cgra_rows = None,
+                provided_max_per_cgra_cols = None,
+                provided_max_num_rd_tiles = None,
+                provided_max_num_wr_tiles = None,
+                has_dma_ports = False,
+                DmaDataType = mk_dma_data(),
+                DmaCmdType = mk_dma_cmd()):
+    """
+    provided_max_per_cgra_rows: the row number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_per_cgra_cols: the column number of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_num_rd_tiles: the number of read ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    provided_max_num_wr_tiles: the number of write ports of the largest cgra in the multi heterogeneous cgra architecture. None for single cgra arch or Homogeneous multi-cgra arch.
+    """
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     PredicateType = DataType.get_field_type(kAttrPredicate)
@@ -89,24 +102,41 @@ class CgraTemplateRTL(Component):
     CgraIdType = mk_cgra_id_type(multi_cgra_columns, multi_cgra_rows)
 
     # Reconstructs packet types.
-    num_tiles = len(TileList)
-    # Calculates num_rd_tiles from TileList (number of tiles with read ports).
-    num_rd_tiles = dataSPM.getNumOfValidReadPorts()
+    # In the case of heterogeneous multi-cgra, `max_num_tiles` means the tile number of the largest cgra.
+    # In the case of single cgra, it is the tile number of the current cgra.
+    max_per_cgra_rows = provided_max_per_cgra_rows if provided_max_per_cgra_rows is not None else per_cgra_rows
+    max_per_cgra_cols = provided_max_per_cgra_cols if provided_max_per_cgra_cols is not None else per_cgra_columns
+    max_num_tiles = max_per_cgra_rows * max_per_cgra_cols
+    # In the case of heterogeneous multi-cgra, `max_num_rd_tiles` means the number of read ports of the largest cgra.
+    # In the case of single cgra, it is the number of read ports of the current cgra.
+    max_num_rd_tiles = provided_max_num_rd_tiles if provided_max_num_rd_tiles is not None else dataSPM.getNumOfValidReadPorts()
+    max_num_wr_tiles = provided_max_num_wr_tiles if provided_max_num_wr_tiles is not None else dataSPM.getNumOfValidWritePorts()
+    
 
+    # Use largest CGRA shape(max_num_tiles) to set CtrlPktType/NocPktType for compatibility.
     CtrlPktType = mk_intra_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
-                                    num_tiles, CgraPayloadType)
+                                    max_num_tiles, CgraPayloadType)
 
     NocPktType = mk_inter_cgra_pkt(multi_cgra_columns, multi_cgra_rows,
-                                   num_tiles, num_rd_tiles,
+                                   max_num_tiles, max_num_rd_tiles,
                                    CgraPayloadType)
 
     s.num_mesh_ports = 8
+    # tile number of the current cgra.
     s.num_tiles = len(TileList)
     num_cgras = multi_cgra_rows * multi_cgra_columns
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
-    CtrlRingPos = mk_ring_pos(s.num_tiles + 1)
+    CtrlRingPos = mk_ring_pos(max_num_tiles + 1)
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     DataAddrType = mk_bits(clog2(data_mem_size_global))
+    DmaTagType = DmaCmdType.get_field_type(kAttrDmaTag)
+    DmaSpmDataType = DmaDataType.get_field_type(kAttrSpmData)
+    DmaSpmAddrType = DmaCmdType.get_field_type(kAttrSpmAddr)
+    DmaDoneType = mk_dma_done(DmaTagType.nbits)
+    DmaSpmWriteReqType = mk_dma_spm_write_req(DmaSpmAddrType.nbits,
+                                              DmaSpmDataType.nbits)
+    DmaSpmReadReqType = mk_dma_spm_read_req(DmaSpmAddrType.nbits)
+    DmaSpmReadRespType = mk_dma_spm_read_resp(DmaSpmDataType.nbits)
     assert(data_mem_size_per_bank * num_banks_per_cgra <= \
            data_mem_size_global)
 
@@ -116,15 +146,33 @@ class CgraTemplateRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
 
+    # Optional DMA engine-facing ports. The controller owns command decode and
+    # forwards DMA SPM access to the data memory.
+    if has_dma_ports:
+      s.dma_cmd = SendIfcRTL(DmaCmdType)
+
+      s.dma_done = RecvIfcRTL(DmaDoneType)
+
+      # Receive the request of writing into SPM from the DMA.
+      s.recv_from_dma_spm_wr_req = RecvIfcRTL(DmaSpmWriteReqType)
+      # Receive the request of reading from SPM from the DMA.
+      s.recv_from_dma_spm_rd_req  = RecvIfcRTL(DmaSpmReadReqType)
+      # Send the response of reading from SPM to the DMA.
+      s.send_to_dma_spm_rd_resp   = SendIfcRTL(DmaSpmReadRespType)
+
+
     if is_multi_cgra:
-      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(per_cgra_columns)]
-      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(per_cgra_rows)]
-      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(per_cgra_rows)]
+      # Use the largest CGRA shape to set the boundary ports for compatibility in the case of heterogeneous multi-cgra.
+      # Remember to ground the remaining boundary ports of the current CGRA when the current CGRA has fewer rows or columns than the largest CGRA.
+      # See also: 
+      s.recv_data_on_boundary_north = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.send_data_on_boundary_north = [SendIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.send_data_on_boundary_south = [SendIfcRTL(DataType) for _ in range(max_per_cgra_cols)]
+      s.recv_data_on_boundary_west  = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.send_data_on_boundary_west  = [SendIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.recv_data_on_boundary_east  = [RecvIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
+      s.send_data_on_boundary_east  = [SendIfcRTL(DataType) for _ in range(max_per_cgra_rows)]
 
     # Components
     s.tile = [TileRTL(CtrlPktType,
@@ -140,22 +188,28 @@ class CgraTemplateRTL(Component):
                                       data_mem_size_global,
                                       data_mem_size_per_bank,
                                       num_banks_per_cgra,
-                                      dataSPM.getNumOfValidReadPorts(),
-                                      dataSPM.getNumOfValidWritePorts(),
+                                      max_num_rd_tiles,
+                                      max_num_wr_tiles,
                                       multi_cgra_rows,
                                       multi_cgra_columns,
-                                      s.num_tiles,
+                                      max_num_tiles,
                                       mem_access_is_combinational,
-                                      idTo2d_map)
+                                      idTo2d_map,
+                                      has_dma_ports,
+                                      DmaCmdType,
+                                      DmaDataType)
     s.cgra_id = InPort(CgraIdType)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
-                                  s.num_tiles, controller2addr_map, idTo2d_map)
+                                  max_num_tiles, controller2addr_map, idTo2d_map,
+                                  has_dma_ports,
+                                  DmaDataType,
+                                  DmaCmdType)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
-    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, s.num_tiles + 1, 1)
+    s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, max_num_tiles + 1, 1)
 
     # Address lower and upper bound.
     s.address_lower = InPort(DataAddrType)
@@ -168,9 +222,35 @@ class CgraTemplateRTL(Component):
     s.data_mem.address_lower //= s.address_lower
     s.data_mem.address_upper //= s.address_upper
 
+    if has_dma_ports:
+      # CPU packets are decoded by the controller before becoming DMA commands.
+      s.dma_cmd  //= s.controller.dma_cmd
+      s.dma_done //= s.controller.dma_done
+
+      s.recv_from_dma_spm_wr_req //= s.controller.recv_from_dma_spm_wr_req
+      s.recv_from_dma_spm_rd_req  //= s.controller.recv_from_dma_spm_rd_req
+      s.send_to_dma_spm_rd_resp   //= s.controller.send_to_dma_spm_rd_resp
+
+    else:
+      # Grounds the DMA ports when no DMA engine is attached.
+      s.controller.dma_cmd.rdy //= 0
+      s.controller.dma_done.val //= 0
+      s.controller.dma_done.msg //= DmaDoneType()
+
+      s.controller.recv_from_dma_spm_wr_req.val //= 0
+      s.controller.recv_from_dma_spm_wr_req.msg //= DmaSpmWriteReqType()
+      s.controller.recv_from_dma_spm_rd_req.val //= 0
+      s.controller.recv_from_dma_spm_rd_req.msg //= DmaSpmReadReqType()
+      s.controller.send_to_dma_spm_rd_resp.rdy //= 0
+
+    # Controller <-> SPM/data_mem
+    s.controller.send_to_sram_store_request_from_dma   //= s.data_mem.recv_from_controller_spm_wr_req
+    s.controller.send_to_sram_load_request_from_dma    //= s.data_mem.recv_from_controller_spm_rd_req
+    s.controller.recv_from_sram_load_response //= s.data_mem.send_to_controller_spm_rd_resp
+    
     # Connects data memory with controller.
-    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_mem_load_request
-    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_mem_store_request
+    s.data_mem.recv_from_noc_load_request //= s.controller.send_to_sram_load_request_from_noc
+    s.data_mem.recv_from_noc_store_request //= s.controller.send_to_sram_store_request_from_noc
     s.data_mem.recv_from_noc_load_response_pkt //= s.controller.send_to_tile_load_response
     s.data_mem.send_to_noc_load_request_pkt //= s.controller.recv_from_tile_load_request_pkt
     s.data_mem.send_to_noc_load_response_pkt //= s.controller.recv_from_tile_load_response_pkt
@@ -196,10 +276,21 @@ class CgraTemplateRTL(Component):
     # Connects ring with each control memory.
     for i in range(s.num_tiles):
       s.ctrl_ring.send[i] //= s.tile[i].recv_from_controller_pkt
-    for i in range(s.num_tiles):
       s.ctrl_ring.recv[i] //= s.tile[i].send_to_controller_pkt
+
     s.ctrl_ring.recv[s.num_tiles] //= s.controller.send_to_ctrl_ring_pkt
     s.ctrl_ring.send[s.num_tiles] //= s.controller.recv_from_ctrl_ring_pkt
+
+    # Grounds the remaining ports of the ring.
+    for i in range(s.num_tiles + 1, max_num_tiles + 1):
+      s.ctrl_ring.send[i].rdy //= 0
+      s.ctrl_ring.recv[i].val //= 0
+      s.ctrl_ring.recv[i].msg //= CtrlPktType()
+
+    # Records the tile indices and ports that have been grounded for from_mem and to_mem,
+    # to avoid PyMTL3 MultiWriterError.
+    recv_data_grounded_for_from_mem = set()
+    send_data_rdy_grounded_for_to_mem = set()
 
     for link in LinkList:
 
@@ -211,9 +302,12 @@ class CgraTemplateRTL(Component):
           s.data_mem.send_rdata[memPort] //= s.tile[dstTileIndex].from_mem_rdata
 
         # Grounds the generic routing port since it is unused for memory links when in single-CGRA mode.
+        # NOTE `recv_data` is used to receive data between multiple CGRAs.
         if not link.disabled and not is_multi_cgra:
             s.tile[dstTileIndex].recv_data[link.dstPort].val //= 0
             s.tile[dstTileIndex].recv_data[link.dstPort].msg //= DataType(0, 0)
+            # Records the tile indices and ports that have been grounded.
+            recv_data_grounded_for_from_mem.add((dstTileIndex, link.dstPort))
 
       elif link.isToMem():
         memPort = link.getMemWritePort()
@@ -223,8 +317,11 @@ class CgraTemplateRTL(Component):
           s.tile[srcTileIndex].to_mem_wdata //= s.data_mem.recv_wdata[memPort]
 
         # Grounds the generic routing port ready signal when in single-CGRA mode.
+        # NOTE `send_data` is used to send data between multiple CGRAs.
         if not link.disabled and not is_multi_cgra:
             s.tile[srcTileIndex].send_data[link.srcPort].rdy //= 0
+            # Records the tile indices and ports that have been grounded.
+            send_data_rdy_grounded_for_to_mem.add((srcTileIndex, link.srcPort))
 
       else:
         srcTileIndex = link.srcTile.getIndex(TileList)
@@ -233,61 +330,72 @@ class CgraTemplateRTL(Component):
           s.tile[srcTileIndex].send_data[link.srcPort] //= s.tile[dstTileIndex].recv_data[link.dstPort]
 
     # (cgra_idx_x, cgra_idx_y) is the coordinate of the current cgra in multi-cgra(Cartesian coordinate system).
-    cgra_idx_x = cgra_id % multi_cgra_columns
-    cgra_idx_y = cgra_id // multi_cgra_rows
+    """
+    ^ y
+    |
+    |  cgra2   cgra3
+    |  cgra0   cgra1
+    +---------------> x
+    See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png
 
     """
-    row ^
+    cgra_idx_x = cgra_id % multi_cgra_columns
+    cgra_idx_y = cgra_id // multi_cgra_columns
+
+    """
+    y   ^
         | tile12  tile13 tile14   tile15
         | tile8   tile9  tile10   tile11
         | tile4   tile5  tile6    tile7
         | tile0   tile1  tile2    tile3
-        |--------------------------> column
+        |--------------------------> x
+    
+    See also https://github.com/tancheng/VectorCGRA/blob/master/doc/figures/multi_cgra_coordinate_and_storage_way.png  
     """
     if is_multi_cgra:
-      for row in range(per_cgra_rows):
-        for col in range(per_cgra_columns):
-          tile_id = row * per_cgra_columns + col
+      for tile_idx_y in range(per_cgra_rows):
+        for tile_idx_x in range(per_cgra_columns):
+          tile_id = tile_idx_y * per_cgra_columns + tile_idx_x
           # Only connects if the port is valid
-          if row == per_cgra_rows - 1:
+          if tile_idx_y == per_cgra_rows - 1:
             if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[col]
+              s.tile[tile_id].send_data[PORT_INDEX_NORTH] //= s.send_data_on_boundary_north[tile_idx_x]
             if PORT_INDEX_NORTH not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[col]
+              s.tile[tile_id].recv_data[PORT_INDEX_NORTH] //= s.recv_data_on_boundary_north[tile_idx_x]
 
-          if row == 0:
+          if tile_idx_y == 0:
             # Corner case: In multi-cgra, for each row of CGRAs except the bottom row,
             # the south port of the bottom row tiles must be connected to the adjacent/south cgra.
             if cgra_idx_y > 0:
-              s.tile[tile_id].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[col]
-              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[col]
+              s.tile[tile_id].send_data[PORT_INDEX_SOUTH] //= s.send_data_on_boundary_south[tile_idx_x]
+              s.tile[tile_id].recv_data[PORT_INDEX_SOUTH] //= s.recv_data_on_boundary_south[tile_idx_x]
             else: #cgra_idx_y == 0
               # In multi-cgra, for the bottom row CGRAs, the south ports of the bottom row tiles should be grounded.
               s.tile[tile_id].send_data[PORT_INDEX_SOUTH].rdy //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].val //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_SOUTH].msg //= DataType(0, 0)
 
-          if col == 0:
+          if tile_idx_x == 0:
             # Corner case: In multi-cgra, for each column of CGRAs except the first column,
             # the west port of the first column tiles must be connected to the adjacent/west cgra.
             if cgra_idx_x > 0:
-              s.tile[tile_id].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[row]
-              s.tile[tile_id].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[row]
+              s.tile[tile_id].send_data[PORT_INDEX_WEST] //= s.send_data_on_boundary_west[tile_idx_y]
+              s.tile[tile_id].recv_data[PORT_INDEX_WEST] //= s.recv_data_on_boundary_west[tile_idx_y]
             else: #cgra_idx_x == 0
               # In multi-cgra, for the first column CGRAs, the west ports of the first column tiles should be grounded.
               s.tile[tile_id].send_data[PORT_INDEX_WEST].rdy //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_WEST].val //= 0
               s.tile[tile_id].recv_data[PORT_INDEX_WEST].msg //= DataType(0, 0)
 
-          if col == per_cgra_columns - 1:
+          if tile_idx_x == per_cgra_columns - 1:
             if PORT_INDEX_EAST not in TileList[tile_id].getInvalidOutPorts():
-              s.tile[tile_id].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[row]
+              s.tile[tile_id].send_data[PORT_INDEX_EAST] //= s.send_data_on_boundary_east[tile_idx_y]
             if PORT_INDEX_EAST not in TileList[tile_id].getInvalidInPorts():
-              s.tile[tile_id].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[row]
+              s.tile[tile_id].recv_data[PORT_INDEX_EAST] //= s.recv_data_on_boundary_east[tile_idx_y]
 
-    for row in range(per_cgra_rows):
-      for col in range(per_cgra_columns):
-        i = row * per_cgra_columns + col
+    for tile_idx_y in range(per_cgra_rows):
+      for tile_idx_x in range(per_cgra_columns):
+        i = tile_idx_y * per_cgra_columns + tile_idx_x
 
         for invalidInPort in TileList[i].getInvalidInPorts():
           """
@@ -299,12 +407,18 @@ class CgraTemplateRTL(Component):
               When the links between the dataSPM and the bottom tiles are disabled, the PORT_INDEX_SOUTH status becomes invalid.
               In this case, if the current CGRA needs to connect to the CGRA below it, then the recv_data/send_data signals must not be tied to ground.
           """
-          if not ((is_multi_cgra and col == 0 and invalidInPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidInPort == PORT_INDEX_SOUTH)):
+          skip_multi = (is_multi_cgra and tile_idx_x == 0 and invalidInPort == PORT_INDEX_WEST) or \
+              (is_multi_cgra and tile_idx_y == 0 and invalidInPort == PORT_INDEX_SOUTH)
+          skip_from_mem_dup = (not is_multi_cgra) and ((i, invalidInPort) in recv_data_grounded_for_from_mem)
+          if not skip_multi and not skip_from_mem_dup:
             s.tile[i].recv_data[invalidInPort].val //= 0
             s.tile[i].recv_data[invalidInPort].msg //= DataType(0, 0)
 
         for invalidOutPort in TileList[i].getInvalidOutPorts():
-          if not ((is_multi_cgra and col == 0 and invalidOutPort == PORT_INDEX_WEST) or (is_multi_cgra and row == 0 and invalidOutPort == PORT_INDEX_SOUTH)):
+          skip_multi = (is_multi_cgra and tile_idx_x == 0 and invalidOutPort == PORT_INDEX_WEST) or \
+              (is_multi_cgra and tile_idx_y == 0 and invalidOutPort == PORT_INDEX_SOUTH)
+          skip_to_mem_dup = (not is_multi_cgra) and ((i, invalidOutPort) in send_data_rdy_grounded_for_to_mem)
+          if not skip_multi and not skip_to_mem_dup:
             s.tile[i].send_data[invalidOutPort].rdy //= 0
 
         if not TileList[i].hasFromMem():
