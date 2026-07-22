@@ -71,6 +71,7 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
+    s.drain_steps_remaining = Wire(PCType)
     s.ctrl_count_per_iter_val = Wire(PCType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
     s.ctrl_count_upper_bound = Wire(UpperBoundType)
@@ -196,9 +197,10 @@ class CtrlMemDynamicRTL(Component):
     def update_send_ctrl_val():
       s.send_ctrl.val @= 0
       if s.start_iterate_ctrl == b1(1):
-        if s.sent_complete:
-          s.send_ctrl.val @= 0
-        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
+        # A return can become true before the modulo-scheduled epilogue has
+        # retired. Issue one final II after CMD_COMPLETE, then stop.
+        if (s.sent_complete & (s.drain_steps_remaining == 0)) | \
+           ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
           s.send_ctrl.val @= b1(0)
         else:
@@ -245,14 +247,25 @@ class CtrlMemDynamicRTL(Component):
     def issue_complete():
       if s.reset:
         s.sent_complete <<= 0
+        s.drain_steps_remaining <<= 0
       else:
         if s.send_pkt_to_controller.val & \
            s.send_pkt_to_controller.rdy & \
            (s.send_pkt_to_controller.msg.payload.cmd == CMD_COMPLETE):
           s.sent_complete <<= 1
+          # The element response is queued, so one post-return control can be
+          # accepted in the same cycle that COMPLETE reaches the controller.
+          if s.send_ctrl.val & s.send_ctrl.rdy & (s.ctrl_count_per_iter_val > 0):
+            s.drain_steps_remaining <<= s.ctrl_count_per_iter_val - PCType(1)
+          else:
+            s.drain_steps_remaining <<= s.ctrl_count_per_iter_val
         elif s.recv_pkt_from_controller_queue.send.val & ( (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_LAUNCH) | \
                 (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESUME) ):
           s.sent_complete <<= 0
+          s.drain_steps_remaining <<= 0
+        elif s.sent_complete & (s.drain_steps_remaining > 0) & \
+             s.send_ctrl.val & s.send_ctrl.rdy:
+          s.drain_steps_remaining <<= s.drain_steps_remaining - PCType(1)
 
     @update_ff
     def update_raddr_and_fu_prologue():
@@ -345,4 +358,3 @@ class CtrlMemDynamicRTL(Component):
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
     return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
-

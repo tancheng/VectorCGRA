@@ -64,6 +64,7 @@ class TestHarness(Component):
                                        num_registers)
 
     s.src_opt //= src_opt
+    s.reg_cluster.inport_ctrl_proceed //= 1
     for i in range(num_reg_banks):
       s.reg_cluster.inport_opt //= s.src_opt
       s.reg_cluster.recv_data_from_routing_crossbar[i] //= \
@@ -201,6 +202,7 @@ class TestHarnessWithXbarSink(Component):
                                        num_registers)
 
     s.src_opt //= src_opt
+    s.reg_cluster.inport_ctrl_proceed //= 1
     for i in range(num_reg_banks):
       s.reg_cluster.inport_opt //= s.src_opt
       s.reg_cluster.recv_data_from_routing_crossbar[i] //= \
@@ -373,4 +375,3 @@ def test_reg_cluster_read_towards_fu_no_xbar_output():
       sink_msgs_fu,
       sink_msgs_xbar)
   run_sim(th, max_cycles = 15)
-

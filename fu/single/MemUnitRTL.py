@@ -114,11 +114,14 @@ class MemUnitRTL(Component):
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_LD:
           s.recv_all_val @= s.recv_in[s.in0_idx].val
-          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & \
+                                      s.to_mem_raddr.rdy & \
+                                      ~s.already_sent_raddr
           s.to_mem_raddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
           # Do not access memory by setting raddr.val=0 if the raddr has predicate=0.
           # Note that this only happends "once" when all the required inputs are arrived.
-          if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
+          if s.recv_all_val & ~s.already_sent_raddr & \
+             (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.to_mem_raddr.val @= 0
           else:
             s.to_mem_raddr.val @= s.recv_all_val & ~s.already_sent_raddr
@@ -129,7 +132,8 @@ class MemUnitRTL(Component):
           # Then all initiated iterations can be normally drained.
           # Note that this only happends "after" all the required inputs are arrived.
           # Otherwise, the recv_opt's opcode would be consumed at the wrong timing.
-          if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
+          if s.recv_all_val & ~s.already_sent_raddr & \
+             (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
             s.recv_opt.rdy @= s.send_out[0].rdy
@@ -145,7 +149,9 @@ class MemUnitRTL(Component):
         # ADD_CONST_LD indicates the address is added on a const, then perform load.
         elif s.recv_opt.msg.operation == OPT_ADD_CONST_LD:
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
-          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_raddr.rdy
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & \
+                                      s.to_mem_raddr.rdy & \
+                                      ~s.already_sent_raddr
           # It is okay to always set recv_const.rdy=1 here, because the const queue
           # would only proceed once the operation is done executing.
           s.recv_const.rdy @= 1
@@ -153,7 +159,8 @@ class MemUnitRTL(Component):
                                          s.recv_const.msg.payload[0:AddrType.nbits])
           # Do not access memory by setting raddr.val=0 if the raddr has predicate=0.
           # Note that this only happends "once" when all the required inputs are arrived.
-          if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
+          if s.recv_all_val & ~s.already_sent_raddr & \
+             (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.to_mem_raddr.val @= 0
           else:
             s.to_mem_raddr.val @= s.recv_all_val & ~s.already_sent_raddr
@@ -164,7 +171,8 @@ class MemUnitRTL(Component):
           # Then all initiated iterations can be normally drained.
           # Note that this only happends "after" all the required inputs are arrived.
           # Otherwise, the recv_opt's opcode would be consumed at the wrong timing.
-          if s.recv_all_val & (s.recv_in[s.in0_idx].msg.predicate == 0):
+          if s.recv_all_val & ~s.already_sent_raddr & \
+             (s.recv_in[s.in0_idx].msg.predicate == 0):
             s.send_out[0].val @= s.recv_all_val
             s.send_out[0].msg.predicate @= 0
             s.recv_opt.rdy @= s.send_out[0].rdy
@@ -199,12 +207,16 @@ class MemUnitRTL(Component):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.to_mem_waddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
-          s.to_mem_waddr.val @= s.recv_all_val
+          s.to_mem_waddr.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_in[s.in1_idx].msg.predicate
           s.to_mem_wdata.msg @= s.recv_in[s.in1_idx].msg
           s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                           s.recv_in[s.in1_idx].msg.predicate & \
                                           s.reached_vector_factor
-          s.to_mem_wdata.val @= s.recv_all_val
+          s.to_mem_wdata.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_in[s.in1_idx].msg.predicate
 
           # `send_out` is meaningless for store operation.
           s.send_out[0].val @= b1(0)
@@ -290,4 +302,3 @@ class MemUnitRTL(Component):
     out_str = ",".join([str(x.msg) for x in s.send_out])
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
     return f'[recv: {recv_str}] {opt_str} (const: {s.recv_const.msg}) ] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) <{s.recv_const.val}|{s.recv_const.msg}>'
-

@@ -56,6 +56,17 @@ class CgraTraceLogger:
     except:
       return {"payload": 0, "predicate": 0, "val": 0, "rdy": 0}
 
+  def _extract_addr_msg(self, ifc):
+    """Extract an address val/rdy interface."""
+    try:
+      return {
+        "addr": self._safe_int(ifc.msg),
+        "val": self._safe_int(ifc.val),
+        "rdy": self._safe_int(ifc.rdy),
+      }
+    except:
+      return {"addr": 0, "val": 0, "rdy": 0}
+
   def _extract_tile(self, tile, tile_idx):
     """Extract all relevant signals from a single tile."""
     w = self.width
@@ -110,11 +121,13 @@ class CgraTraceLogger:
     # Prologue state
     prologue_fu_count = self._safe_int(tile.ctrl_mem.prologue_count_outport_fu)
     try:
-      prologue_routing_xbar = self._safe_int(tile.routing_crossbar.prologue_allowing_vector)
+      prologue_routing_xbar = self._safe_int(
+          tile.routing_crossbar.during_prologue_allowing_vector)
     except:
       prologue_routing_xbar = 0
     try:
-      prologue_fu_xbar = self._safe_int(tile.fu_crossbar.prologue_allowing_vector)
+      prologue_fu_xbar = self._safe_int(
+          tile.fu_crossbar.during_prologue_allowing_vector)
     except:
       prologue_fu_xbar = 0
 
@@ -124,8 +137,8 @@ class CgraTraceLogger:
     routing_xbar_done = self._safe_int(tile.routing_crossbar_done)
 
     # Memory access
-    mem_raddr = self._extract_data_msg(tile.to_mem_raddr) if hasattr(tile.to_mem_raddr, 'val') else None
-    mem_waddr = self._extract_data_msg(tile.to_mem_waddr) if hasattr(tile.to_mem_waddr, 'val') else None
+    mem_raddr = self._extract_addr_msg(tile.to_mem_raddr) if hasattr(tile.to_mem_raddr, 'val') else None
+    mem_waddr = self._extract_addr_msg(tile.to_mem_waddr) if hasattr(tile.to_mem_waddr, 'val') else None
     mem_rdata = self._extract_data_msg(tile.from_mem_rdata) if hasattr(tile.from_mem_rdata, 'val') else None
     mem_wdata = self._extract_data_msg(tile.to_mem_wdata) if hasattr(tile.to_mem_wdata, 'val') else None
 
@@ -260,14 +273,14 @@ class CgraTraceLogger:
       tile_reads = []
       for i in range(data_mem.num_rd_tiles):
         tile_reads.append({
-          "addr": self._extract_data_msg(data_mem.recv_raddr[i]),
+          "addr": self._extract_addr_msg(data_mem.recv_raddr[i]),
           "data": self._extract_data_msg(data_mem.send_rdata[i]),
         })
 
       tile_writes = []
       for i in range(data_mem.num_wr_tiles):
         tile_writes.append({
-          "addr": self._extract_data_msg(data_mem.recv_waddr[i]),
+          "addr": self._extract_addr_msg(data_mem.recv_waddr[i]),
           "data": self._extract_data_msg(data_mem.recv_wdata[i]),
         })
 

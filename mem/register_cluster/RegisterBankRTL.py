@@ -41,10 +41,15 @@ class RegisterBankRTL(Component):
     # the design and handshake.
     s.inport_wdata = [InPort(DataType) for _ in range(3)]
     s.inport_valid = [InPort(mk_bits(1)) for _ in range(3)]
+    s.inport_ctrl_proceed = InPort(mk_bits(1))
 
     # Component
     s.reg_file = RegisterFile(DataType, num_registers, rd_ports = 1,
                               wr_ports = 1)
+    s.held_read_data = Wire(DataType)
+    s.held_read_valid = Wire(1)
+    s.same_addr_read_write = Wire(1)
+    s.selected_write_valid = Wire(1)
 
     @update
     def access_registers():
@@ -59,14 +64,41 @@ class RegisterBankRTL(Component):
       # Reads from register if towards FU (1), routing_xbar (2), or both (3)
       if read_towards > 0:
         s.reg_file.raddr[0] @= s.inport_opt.read_reg_idx[reg_bank_id]
-        s.send_data.msg @= s.reg_file.rdata[0]
+        if s.held_read_valid:
+          s.send_data.msg @= s.held_read_data
+        else:
+          s.send_data.msg @= s.reg_file.rdata[0]
 
       write_reg_from = s.inport_opt.write_reg_from[reg_bank_id]
+      s.selected_write_valid @= 0
+      for i in range(3):
+        if write_reg_from == i + 1:
+          s.selected_write_valid @= s.inport_valid[i]
       if ~s.reset & (write_reg_from > 0):
         if s.inport_valid[write_reg_from - 1]:
           s.reg_file.waddr[0] @= s.inport_opt.write_reg_idx[reg_bank_id]
           s.reg_file.wdata[0] @= s.inport_wdata[write_reg_from - 1]
           s.reg_file.wen[0] @= 1
+
+      s.same_addr_read_write @= \
+          (read_towards > READ_TOWARDS_NOTHING) & \
+          (write_reg_from > 0) & \
+          (s.inport_opt.read_reg_idx[reg_bank_id] == \
+           s.inport_opt.write_reg_idx[reg_bank_id]) & \
+          s.selected_write_valid
+
+    @update_ff
+    def preserve_read_before_write():
+      if (s.reset | s.inport_ctrl_proceed | \
+          (s.held_read_valid & s.send_data.val & s.send_data.rdy)):
+        s.held_read_data <<= DataType()
+        s.held_read_valid <<= 0
+      elif (~s.held_read_valid & s.same_addr_read_write &
+            ~(s.send_data.val & s.send_data.rdy)):
+        # A control word can remain active for several cycles. Preserve the
+        # old value while its same-address write updates the register file.
+        s.held_read_data <<= s.reg_file.rdata[0]
+        s.held_read_valid <<= 1
 
     @update
     def update_send_val():
@@ -82,4 +114,3 @@ class RegisterBankRTL(Component):
     content_str = "content: " + "|".join([str(data) for data in s.reg_file.regs])
     send_data_str = "send_data: " + str(s.send_data.msg)
     return f'reg_bank_id: {s.reg_bank_id} || {inport_wdata_str} || {inport_opt_str} || [{content_str}] || {send_data_str}'
-

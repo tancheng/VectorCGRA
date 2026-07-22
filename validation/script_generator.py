@@ -99,7 +99,7 @@ yaml_to_VectorCGRA_map = {
     "LOOP_CONTROL": None, #?
     "PHI_CONST": OPT_PHI_CONST, 
     "PHI_START": OPT_PHI_START,
-    
+
     "GEP": OPT_ADD, # base + index; with base=#0 this reduces to index (no GepRTL in FuList)
     
     "ICMP_ULT": OPT_LT, # unsigned less-than: in0 < in1
@@ -176,7 +176,7 @@ def _is_take_up_fu_operation(operation):
             return True
     else:
         return True
-    
+
 def _take_up_fu_operation_idx_of(operations: list):
     # check if there is only < 1 take up fu operation, if 1, return the idx, if > 1, raise error, if 0, return -1
     take_up_fu_operation_idx = -1
@@ -309,7 +309,7 @@ class InstructionSignals:
                 self.operations,
                 key=lambda op: 0 if not _is_take_up_fu_operation(op) else 1)
 
-            for operation in ordered_operations: # for each operation in the instruction
+            for operation_order, operation in enumerate(ordered_operations): # for each operation in the instruction
 
                 print("\n Operation: ", operation)
 
@@ -329,7 +329,13 @@ class InstructionSignals:
                 # find all the const
                 for index, src_operand in enumerate(src_operands):
                     if _type(src_operand) == 'IMM':
-                        const_operands.append(src_operand)
+                        const_operands.append({
+                            'operand': src_operand['operand'],
+                            'time_step': operation['time_step'],
+                            'invalid_iterations': operation['invalid_iterations'],
+                            'operation_order': operation_order,
+                            'operand_order': index,
+                        })
                         # delete it from the src_operands since it is implicit in vectorCGRA
                         del src_operands[index]
 
@@ -650,6 +656,26 @@ class TileSignals:
         routing_xbar_ports_if_prologued = {}
         for operation in instruction['operations']:
             invalid_cycle = operation['invalid_iterations']
+
+            # REG -> PORT moves bypass the FU and enter the routing crossbar
+            # through one of its register-cluster inputs. Those inputs need the
+            # same prologue treatment as directional tile inputs.
+            if not _is_take_up_fu_operation(operation):
+                src_operands = operation.get('src_operands', [])
+                if len(src_operands) != 1:
+                    raise ValueError(
+                        "Not take up fu operation must have exactly one source "
+                        f"operand: {operation}")
+                src_operand = src_operands[0]
+                if _type(src_operand) == 'REG':
+                    port_name = f"R{_reg_cluster_no_of(src_operand)}"
+                    if (port_name in routing_xbar_ports_if_prologued and
+                        routing_xbar_ports_if_prologued[port_name] != invalid_cycle):
+                        raise ValueError(
+                            "Routing crossbar ports must use a consistent "
+                            f"prologue count: {instruction}")
+                    routing_xbar_ports_if_prologued[port_name] = invalid_cycle
+
             for src_operand in operation['src_operands']:
                 if _type(src_operand) == 'PORT':
                     if src_operand['operand'] in routing_xbar_ports_if_prologued:
@@ -685,6 +711,7 @@ class TileSignals:
                                                                      ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
                                                                      # WARN:by now, only support one result for each operation
                                                                      data = self.DataType(prologue_count, 1)))
+
     def makeTileSignals(self):
         consts = []
         all_signals = []
@@ -741,7 +768,10 @@ class TileSignals:
             # add all routing crossbar prologues for all the operations (can not be op by op to avoid repetition)
             for port_name, cycles in prologued_ports.items():
                 if cycles > 0:
-                    routing_xbar_idx = direction_to_idx(port_name)
+                    if port_name.startswith('R'):
+                        routing_xbar_idx = _NUM_TILE_INPORTS + int(port_name[1:]) - 1
+                    else:
+                        routing_xbar_idx = direction_to_idx(port_name)
                     prologue_signals.append(self.makePrologueRoutingCrossbarPackets(instruction['index_per_ii'], routing_xbar_idx + 1, cycles))
                 
             # add an addtional prologue packet for PHI_CONST / PHI_START operation
@@ -780,6 +810,16 @@ class TileSignals:
             const = instruction_signals.buildCtrlPkt()
             if const is not None:
                 consts.extend(const)
+
+        # ConstQueueDynamicRTL is a circular FIFO. Constants must be written in
+        # the order they are first consumed by the running schedule, not in YAML
+        # control-address order. Operations with invalid_iterations are skipped
+        # by the FU prologue and therefore consume their first constant later.
+        consts.sort(key=lambda const_operand: (
+            const_operand['time_step'] +
+            const_operand['invalid_iterations'] * self.ii,
+            const_operand['operation_order'],
+            const_operand['operand_order']))
         
         # make the const signals
         for idx, const_operand in enumerate(consts):
@@ -987,4 +1027,3 @@ if __name__ == "__main__":
         for pkt in pkts[(x, y)]:
             print(pkt)
             print("--------------------------------")
-    

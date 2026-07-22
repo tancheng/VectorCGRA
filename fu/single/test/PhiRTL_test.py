@@ -127,7 +127,9 @@ def test_Phi_start():
                CtrlType(OPT_PHI_START, pickRegister),
                CtrlType(OPT_PHI_START, pickRegister)]
   src_ctrl_addr = [CtrlAddrType(0), CtrlAddrType(1), CtrlAddrType(0), CtrlAddrType(1)]
-  sink_out = [DataType(2, 1), DataType(3, 1), DataType(8, 1), DataType(3, 1)]
+  # PHI_START selects input zero on first execution without changing its
+  # predicate. This matches the dataflow simulator's PHI semantics.
+  sink_out = [DataType(2, 1), DataType(3, 0), DataType(8, 1), DataType(3, 1)]
   th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, num_inports,
                    num_outports, data_mem_size, src_in0, src_in1,
                    src_const, src_opt, sink_out, src_ctrl_addr)
