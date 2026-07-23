@@ -24,6 +24,7 @@ from ..fu.single.PhiRTL import PhiRTL
 from ..lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ..lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
 from ..lib.cmd_type import *
+from ..lib.opt_type import OPT_RET
 from ..lib.util.common import *
 from ..mem.const.ConstQueueDynamicRTL import ConstQueueDynamicRTL
 from ..mem.ctrl.CtrlMemDynamicRTL import CtrlMemDynamicRTL
@@ -128,6 +129,7 @@ class TileRTL(Component):
     s.element_done = Wire(1)
     s.fu_crossbar_done = Wire(1)
     s.routing_crossbar_done = Wire(1)
+    s.routing_write_fire = [Wire(b1) for _ in range(num_fu_inports)]
 
     s.cgra_id = InPort(mk_bits(max(1, clog2(num_cgras))))
     s.tile_id = InPort(mk_bits(clog2(num_tiles + 1)))
@@ -221,6 +223,10 @@ class TileRTL(Component):
     for i in range(num_fu_inports):
       s.routing_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_routing_crossbar[i]
+      s.register_cluster.write_data_from_routing_crossbar[i] //= \
+          s.routing_crossbar.send_data[num_tile_outports + i].msg
+      s.register_cluster.write_valid_from_routing_crossbar[i] //= \
+          s.routing_write_fire[i]
       s.fu_crossbar.send_data[num_tile_outports + i] //= \
           s.register_cluster.recv_data_from_fu_crossbar[i]
 
@@ -230,6 +236,17 @@ class TileRTL(Component):
       s.register_cluster.send_data_to_fu[i] //= \
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
+
+
+    @update
+    def update_routing_write_fire():
+      for i in range(num_fu_inports):
+        s.routing_write_fire[i] @= \
+            s.ctrl_mem.send_ctrl.val & \
+            (s.ctrl_mem.send_ctrl.msg.operation == OPT_RET) & \
+            (s.ctrl_mem.send_ctrl.msg.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
+            s.routing_crossbar.send_data[num_tile_outports + i].val & \
+            s.routing_crossbar.send_data[num_tile_outports + i].rdy
 
     # Clear ports are only useful during context switching.
     # We connect to 0 to make sure they have drivers.

@@ -39,6 +39,9 @@ class RegisterClusterRTL(Component):
     s.recv_data_from_routing_crossbar = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
     s.recv_data_from_fu_crossbar = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
     s.recv_data_from_const = [RecvIfcRTL(DataType) for _ in range(num_reg_banks)]
+    s.write_data_from_routing_crossbar = [InPort(DataType) for _ in range(num_reg_banks)]
+    s.write_valid_from_routing_crossbar = [InPort(b1) for _ in range(num_reg_banks)]
+    s.routing_write_valid = [Wire(b1) for _ in range(num_reg_banks)]
     s.send_data_to_fu = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
     # Direct output from register banks towards routing crossbar (bypasses FU).
     s.send_data_to_routing_crossbar = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
@@ -50,12 +53,18 @@ class RegisterClusterRTL(Component):
     # Connections.
     for i in range(num_reg_banks):
       s.reg_bank[i].inport_opt //= s.inport_opt
-      s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].msg
+      s.reg_bank[i].inport_wdata[PORT_INDEX_ROUTING_CROSSBAR] //= s.write_data_from_routing_crossbar[i]
       s.reg_bank[i].inport_wdata[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].msg
       s.reg_bank[i].inport_wdata[PORT_INDEX_CONST] //= s.recv_data_from_const[i].msg
-      s.reg_bank[i].inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= s.recv_data_from_routing_crossbar[i].val
+      s.reg_bank[i].inport_valid[PORT_INDEX_ROUTING_CROSSBAR] //= s.routing_write_valid[i]
       s.reg_bank[i].inport_valid[PORT_INDEX_FU_CROSSBAR] //= s.recv_data_from_fu_crossbar[i].val
       s.reg_bank[i].inport_valid[PORT_INDEX_CONST] //= s.recv_data_from_const[i].val
+
+    @update
+    def update_routing_write_valid():
+      for i in range(num_reg_banks):
+        s.routing_write_valid[i] @= s.recv_data_from_routing_crossbar[i].val | \
+                                    s.write_valid_from_routing_crossbar[i]
 
     @update
     def update_msgs_signals():
@@ -70,28 +79,52 @@ class RegisterClusterRTL(Component):
         s.send_data_to_routing_crossbar[i].val @= 0
 
       for i in range(num_reg_banks):
+        active_ctrl = s.inport_opt.operation != OPT_START
         read_towards = s.inport_opt.read_reg_towards[i]
         # Checks if data should go towards FU (1 or 3)
-        reg_towards_fu = (read_towards == kReadTowardsFu) | (read_towards == kReadTowardsBoth)
+        reg_towards_fu = active_ctrl & \
+                          ((read_towards == kReadTowardsFu) | (read_towards == kReadTowardsBoth))
         # Checks if data should go towards routing_xbar (2 or 3)
-        reg_towards_routing_xbar = (read_towards == kReadTowardsRoutingXbar) | (read_towards == kReadTowardsBoth)
+        reg_towards_routing_xbar = active_ctrl & \
+                                    ((read_towards == kReadTowardsRoutingXbar) | (read_towards == kReadTowardsBoth))
+        # Same ctrl slot can both write a routing value into a register and
+        # read that register for the FU. The register file would expose the old
+        # value for that cycle, so bypass the routing write when the read/write
+        # indices match. Example: routing_xbar writes r3=99 while RET reads r3.
+        routing_write_to_fu_bypass = active_ctrl & \
+            reg_towards_fu & \
+            (s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
+            (s.inport_opt.write_reg_idx[i] == s.inport_opt.read_reg_idx[i]) & \
+            s.write_valid_from_routing_crossbar[i] & \
+            ((s.inport_opt.operation != OPT_RET) | \
+             s.write_data_from_routing_crossbar[i].predicate)
 
-        # Data from register bank has priority over routing crossbar data for FU path.
-        # Note: reg_bank[i].send_data.val is set based on read_reg_towards in RegisterBankRTL.
-        if s.reg_bank[i].send_data.val & reg_towards_fu:
+        # Same-slot routing write/read should be visible to the FU immediately.
+        # Example: a final RET can write reg3 from the routing xbar and read
+        # reg3 for the FU in the same control step. Use the routing value only
+        # when the write is valid; a predicated-off RET write must not hide the
+        # register bank's last valid value.
+        if routing_write_to_fu_bypass:
+          s.send_data_to_fu[i].msg @= s.write_data_from_routing_crossbar[i]
+        elif s.reg_bank[i].send_data.val & reg_towards_fu:
           s.send_data_to_fu[i].msg @= \
             s.reg_bank[i].send_data.msg
         elif s.recv_data_from_routing_crossbar[i].val:
           s.send_data_to_fu[i].msg @= \
             s.recv_data_from_routing_crossbar[i].msg
 
-        s.send_data_to_fu[i].val @= \
-            s.recv_data_from_routing_crossbar[i].val | \
-            (s.reg_bank[i].send_data.val & reg_towards_fu)
+        s.send_data_to_fu[i].val @= active_ctrl & \
+            (routing_write_to_fu_bypass | \
+             s.recv_data_from_routing_crossbar[i].val | \
+             (s.reg_bank[i].send_data.val & reg_towards_fu))
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
-        s.recv_data_from_routing_crossbar[i].rdy @= ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) \
-                & (s.inport_opt.operation == OPT_NAH)) | s.send_data_to_fu[i].rdy
+        # A routing token may be retired when this control does not select
+        # the FU input; this keeps prologue/NAH tokens from shifting the
+        # following active step.
+        s.recv_data_from_routing_crossbar[i].rdy @= \
+            (s.inport_opt.operation == OPT_NAH) | \
+            (s.inport_opt.fu_in[i] == 0) | s.send_data_to_fu[i].rdy
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
 
