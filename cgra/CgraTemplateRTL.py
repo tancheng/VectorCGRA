@@ -207,6 +207,10 @@ class CgraTemplateRTL(Component):
                                   DmaCmdType)
     # Connects controller id.
     s.controller.cgra_id //= s.cgra_id
+    # Tie off the controller's im2col ports (no engine attached here).
+    s.controller.send_to_im2col_engine_pkt.rdy //= 0
+    s.controller.recv_from_im2col_pkt.val      //= 0
+    s.controller.recv_from_im2col_pkt.msg      //= CtrlPktType()
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     s.ctrl_ring = RingNetworkRTL(CtrlPktType, CtrlRingPos, max_num_tiles + 1, 1)
