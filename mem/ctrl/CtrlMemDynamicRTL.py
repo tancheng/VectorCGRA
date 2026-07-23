@@ -71,7 +71,6 @@ class CtrlMemDynamicRTL(Component):
     s.times = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
-    s.has_ret_ctrl = Wire(b1)
     s.ctrl_count_per_iter_val = Wire(PCType)
     s.ctrl_count_lower_bound = Wire(CtrlAddrType)
     s.ctrl_count_upper_bound = Wire(UpperBoundType)
@@ -182,7 +181,9 @@ class CtrlMemDynamicRTL(Component):
       s.recv_from_element_queue.send.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
         # Only a real, predicated RET/RET_VOID is allowed to complete a
-        # dynamic kernel. The RET payload is wrapped in CMD_COMPLETE and sent
+        # dynamic kernel. A per-tile total-step fallback can race the RET
+        # from another tile, so it is intentionally not used here. The RET
+        # payload is wrapped in CMD_COMPLETE and sent
         # to the controller, which is the path back to the CPU. Other element
         # messages can share this queue, so forwarding them as COMPLETE would
         # terminate the kernel early.
@@ -199,16 +200,6 @@ class CtrlMemDynamicRTL(Component):
         elif s.recv_from_element_queue.send.val:
           # Non-RET or predicated-off element responses are not kernel returns.
           s.recv_from_element_queue.send.rdy @= 1
-        # Kernels without RET still need the legacy total-step completion
-        # path. Example: systolic/debug kernels may never enqueue a RET, so
-        # the controller must finish once the configured step count retires.
-        elif (((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
-              (s.reg_file.rdata[0].operation == OPT_START)) & ~s.has_ret_ctrl:
-          if ~s.sent_complete:
-            s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
-                                 CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
-            s.send_pkt_to_controller.val @= 1
 
     @update
     def update_send_ctrl_val():
@@ -247,7 +238,10 @@ class CtrlMemDynamicRTL(Component):
             zext(s.ctrl_count_per_iter_val, TimeType)) & \
            ((s.reg_file.rdata[0].operation == OPT_RET) | \
             (s.reg_file.rdata[0].operation == OPT_RET_VOID)))
-      s.send_ctrl.msg.operation           @= s.reg_file.rdata[0].operation
+      if s.prologue_count_outport_fu != 0:
+        s.send_ctrl.msg.operation @= OPT_NAH
+      else:
+        s.send_ctrl.msg.operation @= s.reg_file.rdata[0].operation
 
     @update_ff
     def update_whether_we_can_iterate_ctrl():
