@@ -41,7 +41,7 @@ class CtrlMemDynamicRTL(Component):
     CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
     PCType = mk_bits(clog2(ctrl_count_per_iter + 1))
     UpperBoundType = mk_bits(clog2(ctrl_mem_size + 1))
-    TimeType = mk_bits(clog2(MAX_CTRL_COUNT + 1))
+    TimeType = mk_bits(clog2(max(MAX_CTRL_COUNT, total_ctrl_steps) + 1))
     PrologueCountType = mk_bits(clog2(PROLOGUE_MAX_COUNT + 1))
     num_routing_xbar_inports = num_tile_inports + num_fu_inports
     TileInPortType = mk_bits(clog2(num_routing_xbar_inports))
@@ -69,6 +69,7 @@ class CtrlMemDynamicRTL(Component):
     s.recv_pkt_from_controller_queue = NormalQueueRTL(IntraCgraPktType)
     s.recv_from_element_queue = NormalQueueRTL(CgraPayloadType)
     s.times = Wire(TimeType)
+    s.completion_wait = Wire(TimeType)
     s.start_iterate_ctrl = Wire(b1)
     s.sent_complete = Wire(b1)
     s.ctrl_count_per_iter_val = Wire(PCType)
@@ -135,6 +136,7 @@ class CtrlMemDynamicRTL(Component):
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER)):
         s.send_to_element.msg @= s.recv_pkt_from_controller_queue.send.msg.payload
@@ -161,6 +163,7 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER):
         s.recv_pkt_from_controller_queue.send.rdy @= 1
@@ -178,19 +181,33 @@ class CtrlMemDynamicRTL(Component):
       s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
       s.recv_from_element_queue.send.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
-        if s.recv_from_element_queue.send.val & (~s.sent_complete):
+        # Only a real, predicated RET/RET_VOID is allowed to complete a
+        # dynamic kernel. Delay the per-tile total-step fallback so a RET
+        # from another tile can reach the CPU first. The RET
+        # payload is wrapped in CMD_COMPLETE and sent
+        # to the controller, which is the path back to the CPU. Other element
+        # messages can share this queue, so forwarding them as COMPLETE would
+        # terminate the kernel early.
+        is_active_ret = s.recv_from_element_queue.send.val & \
+                        ((s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET) | \
+                         (s.recv_from_element_queue.send.msg.ctrl.operation == OPT_RET_VOID)) & \
+                        s.recv_from_element_queue.send.msg.data.predicate
+        if is_active_ret & (~s.sent_complete):
           s.send_pkt_to_controller.msg @= \
-              IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+              IntraCgraPktType(s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
                                s.recv_from_element_queue.send.msg)
           s.send_pkt_to_controller.val @= 1
           s.recv_from_element_queue.send.rdy @= s.send_pkt_to_controller.rdy
-        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
-           (s.reg_file.rdata[0].operation == OPT_START):
-          # Sends COMPLETE signal to Controller when the last ctrl signal is done.
-          if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
-            s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
-            s.send_pkt_to_controller.val @= 1
+        elif s.recv_from_element_queue.send.val:
+          # Non-RET or predicated-off element responses are not kernel returns.
+          s.recv_from_element_queue.send.rdy @= 1
+        elif (s.total_ctrl_steps_val > 0) & \
+             (s.completion_wait == TimeType(512)) & \
+             (~s.sent_complete):
+          s.send_pkt_to_controller.msg @= IntraCgraPktType(
+              s.tile_id, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0,
+              CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+          s.send_pkt_to_controller.val @= 1
 
     @update
     def update_send_ctrl_val():
@@ -198,7 +215,7 @@ class CtrlMemDynamicRTL(Component):
       if s.start_iterate_ctrl == b1(1):
         if s.sent_complete:
           s.send_ctrl.val @= 0
-        elif ((s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val)) | \
+        elif ((s.total_ctrl_steps_val > 0) & (s.times >= s.total_ctrl_steps_val)) | \
            (s.reg_file.rdata[0].operation == OPT_START):
           s.send_ctrl.val @= b1(0)
         else:
@@ -219,9 +236,16 @@ class CtrlMemDynamicRTL(Component):
         s.send_ctrl.msg.routing_xbar_outport[i] @= s.reg_file.rdata[0].routing_xbar_outport[i]
         s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
       s.send_ctrl.msg.vector_factor_power @= s.reg_file.rdata[0].vector_factor_power
-      s.send_ctrl.msg.is_last_ctrl        @= s.reg_file.rdata[0].is_last_ctrl
-      # Sets each FU's op code as NAH when prologue execution has not completed.
-      # As FU is supposed to do nothing during prologue.
+      # Some generated configs do not mark the final dynamic RET statically.
+      # Preserve the configured bit, and also mark RET/RET_VOID controls in
+      # the final dynamic iteration so a return can complete there.
+      s.send_ctrl.msg.is_last_ctrl        @= \
+          s.reg_file.rdata[0].is_last_ctrl | \
+          ((s.total_ctrl_steps_val > 0) & \
+           (s.times >= s.total_ctrl_steps_val - \
+            zext(s.ctrl_count_per_iter_val, TimeType)) & \
+           ((s.reg_file.rdata[0].operation == OPT_RET) | \
+            (s.reg_file.rdata[0].operation == OPT_RET_VOID)))
       if s.prologue_count_outport_fu != 0:
         s.send_ctrl.msg.operation @= OPT_NAH
       else:
@@ -258,6 +282,7 @@ class CtrlMemDynamicRTL(Component):
     def update_raddr_and_fu_prologue():
       if s.reset:
         s.times <<= 0
+        s.completion_wait <<= 0
         s.reg_file.raddr[0] <<= 0
         for i in range(ctrl_mem_size):
           s.prologue_count_reg_fu[i] <<= 0
@@ -276,6 +301,9 @@ class CtrlMemDynamicRTL(Component):
               (s.times < s.total_ctrl_steps_val)) & \
              s.send_ctrl.rdy & s.send_ctrl.val:
             s.times <<= s.times + TimeType(1)
+          elif (s.total_ctrl_steps_val > 0) & \
+               (s.times == s.total_ctrl_steps_val):
+            s.completion_wait <<= s.completion_wait + TimeType(1)
 
           # Reads the next ctrl signal only when the current one is done.
           if s.send_ctrl.rdy & s.send_ctrl.val:

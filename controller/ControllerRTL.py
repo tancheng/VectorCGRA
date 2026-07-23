@@ -544,7 +544,11 @@ class ControllerRTL(Component):
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LAUNCH) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
              (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) :
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) :
+          # These packets are tile-local configuration, including GEP stride.
+          # Forward them on the control ring; treating them as controller-local
+          # commands would leave the target tile running GEP with a stale stride.
           s.recv_from_inter_cgra_noc.rdy @= s.send_to_ctrl_ring_pkt.rdy
           s.send_to_ctrl_ring_pkt.val @= s.recv_from_inter_cgra_noc.val
           s.send_to_ctrl_ring_pkt.msg @= \

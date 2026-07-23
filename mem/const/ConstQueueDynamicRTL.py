@@ -34,6 +34,12 @@ class ConstQueueDynamicRTL(Component):
     # write cursor and read cursor
     s.wr_cur = Wire(WrCurType)
     s.rd_cur = Wire(AddrType)
+    # Latch for a consumption whose val/rdy handshake already completed but
+    # whose ctrl_proceed has not yet pulsed. Without this, the queue advance
+    # is lost when the reader asserts rdy one cycle but ctrl_proceed only
+    # fires later (e.g., at an iteration boundary where some sub-module of
+    # the tile delays ctrl_mem.send_ctrl.rdy).
+    s.consume_pending = Wire(1)
 
     # Interface
     s.send_const = SendIfcRTL(DataType)
@@ -93,14 +99,25 @@ class ConstQueueDynamicRTL(Component):
     def update_rd_cur():
       if s.reset | s.clear:
         s.rd_cur <<= 0
+        s.consume_pending <<= 0
       else:
-        # Checks whether the "reader" successfully read the data at rd_cur,
-        # and proceed rd_cur accordingly.
-        if s.send_const.rdy & s.ctrl_proceed:
-          if zext((s.rd_cur), WrCurType) < (s.wr_cur - 1):
+        # A const read is retired only when both sides of the tile control step
+        # agree. Example: cycle N has send_const.rdy=1 but routing_xbar keeps
+        # ctrl_proceed=0; remember that owed consume, then advance rd_cur when
+        # ctrl_proceed pulses at cycle N+1. Without consume_pending, const[0]
+        # would be presented again and all later const operands would shift.
+        handshake_now = s.send_const.rdy
+        consume_retire = (s.consume_pending | handshake_now) & s.ctrl_proceed
+        if consume_retire:
+          if zext(s.rd_cur, WrCurType) < (s.wr_cur - 1):
             s.rd_cur <<= s.rd_cur + 1
           else:
             s.rd_cur <<= 0
+          s.consume_pending <<= 0
+        else:
+          # Remember an in-flight handshake whose ctrl_proceed has not yet
+          # pulsed, so a later ctrl_proceed still advances the queue.
+          s.consume_pending <<= s.consume_pending | handshake_now
 
 
   def line_trace(s, verbosity = 0):

@@ -37,6 +37,8 @@ class RetRTL(Fu):
     s.recv_all_val = Wire(1)
     # Per-ctrl already_done to support multiple returns on the same tile.
     s.already_done = [Wire(1) for _ in range(ctrl_mem_size)]
+    s.last_ret_data = [Wire(s.DataType) for _ in range(ctrl_mem_size)]
+    s.last_ret_valid = [Wire(1) for _ in range(ctrl_mem_size)]
 
     # Connections.
     s.in0_idx //= s.in0[0:idx_nbits]
@@ -73,14 +75,22 @@ class RetRTL(Fu):
           if s.already_done[s.ctrl_addr_inport]:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val
             s.recv_opt.rdy @= s.recv_all_val
-          elif s.recv_in[s.in0_idx].msg.predicate:
-            # Only when the predicate is true, the value will be sent back to CPU.
+          elif s.recv_opt.msg.is_last_ctrl & \
+               (s.recv_in[s.in0_idx].msg.predicate | s.last_ret_valid[s.ctrl_addr_inport]):
+            # Emit the last predicated return value at the terminal control step.
+            # Some schedules have invalid tail RETURN instances; those carry
+            # predicate=0, so the FU keeps the latest valid value seen earlier.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
-            # s.send_to_ctrl_mem.msg @= s.recv_in[s.in0_idx].msg
-            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
+            if s.recv_in[s.in0_idx].msg.predicate:
+              s.send_to_ctrl_mem.msg @= \
+                  s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
+            else:
+              s.send_to_ctrl_mem.msg @= \
+                  s.CgraPayloadType(CMD_COMPLETE, s.last_ret_data[s.ctrl_addr_inport], 0, s.recv_opt.msg, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:
+            # Non-final and predicated-off returns only consume the input.
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
         elif s.recv_opt.msg.operation == OPT_RET_VOID:
@@ -88,15 +98,16 @@ class RetRTL(Fu):
           if s.already_done[s.ctrl_addr_inport]:
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val
             s.recv_opt.rdy @= s.recv_all_val
-          elif s.recv_in[s.in0_idx].msg.predicate:
-            # RET_VOID: only notifies the ctrl mem to send CMD_COMPLETE without data.
+          elif s.recv_opt.msg.is_last_ctrl & \
+               (s.recv_in[s.in0_idx].msg.predicate | s.last_ret_valid[s.ctrl_addr_inport]):
+            # RET_VOID emits completion at the terminal control step if any
+            # valid return predicate has been observed.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
-            # Sends 0 as data (controller is supposed to know it's RET_VOID based on the operation and data type).
             s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, 0, 0, s.recv_opt.msg, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:
-            # Predicate is false, just consumes the input.
+            # Non-final and predicated-off returns only consume the input.
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor
 
@@ -107,12 +118,26 @@ class RetRTL(Fu):
       if s.reset | s.clear:
         for i in range(ctrl_mem_size):
           s.already_done[i] <<= 0
+          s.last_ret_data[i] <<= s.DataType()
+          s.last_ret_valid[i] <<= 0
       else:
+        for i in range(ctrl_mem_size):
+          s.last_ret_data[i] <<= s.last_ret_data[i]
+          s.last_ret_valid[i] <<= s.last_ret_valid[i]
+        if s.recv_opt.val & \
+           ((s.recv_opt.msg.operation == OPT_RET) | (s.recv_opt.msg.operation == OPT_RET_VOID)) & \
+           s.recv_all_val & s.reached_vector_factor & \
+           s.recv_in[s.in0_idx].msg.predicate:
+          for i in range(ctrl_mem_size):
+            if i == s.ctrl_addr_inport:
+              s.last_ret_data[i] <<= s.recv_in[s.in0_idx].msg
+              s.last_ret_valid[i] <<= 1
         if s.recv_opt.val & \
            ((s.recv_opt.msg.operation == OPT_RET) | (s.recv_opt.msg.operation == OPT_RET_VOID)) & \
             ~s.already_done[s.ctrl_addr_inport] & \
             s.recv_all_val & \
-            s.recv_in[s.in0_idx].msg.predicate & \
+            (s.recv_in[s.in0_idx].msg.predicate | s.last_ret_valid[s.ctrl_addr_inport]) & \
+            s.recv_opt.msg.is_last_ctrl & \
             s.send_to_ctrl_mem.val & \
             s.send_to_ctrl_mem.rdy:
           for i in range(ctrl_mem_size):

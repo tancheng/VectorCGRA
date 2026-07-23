@@ -11,6 +11,7 @@ Author : Jiajun Qin
 from pymtl3 import *
 from ..basic.Fu import Fu
 from ...lib.opt_type import *
+from ...lib.util.data_struct_attr import kAttrPayload
 
 class DivRTL(Fu):
 
@@ -34,6 +35,33 @@ class DivRTL(Fu):
 
     s.recv_all_val = Wire(1)
 
+    DataPayloadType = s.DataType.get_field_type(kAttrPayload)
+    data_bitwidth = DataPayloadType.nbits
+    RemType = mk_bits(data_bitwidth + 1)
+
+    s.dividend = Wire(DataPayloadType)
+    s.divisor = Wire(DataPayloadType)
+    s.div_quotient = Wire(DataPayloadType)
+    s.div_remainder = Wire(DataPayloadType)
+
+    # Compute quotient and remainder with shift/subtract logic instead of
+    # Python percent/modulo so Verilator translation sees only fixed-width RTL
+    # operations. Divisor zero is defined as quotient=0 and remainder=0,
+    # matching the deterministic zero-divisor behavior used by the tests.
+    @update
+    def div_comb():
+      quotient = DataPayloadType(0)
+      remainder = RemType(0)
+      divisor_ext = zext(s.divisor, RemType)
+      for i in range(data_bitwidth):
+        bit = data_bitwidth - 1 - i
+        remainder = (remainder << 1) | zext(s.dividend[bit], RemType)
+        if (s.divisor != 0) & (remainder >= divisor_ext):
+          remainder = remainder - divisor_ext
+          quotient = quotient | (DataPayloadType(1) << bit)
+      s.div_quotient @= quotient
+      s.div_remainder @= remainder[0:data_bitwidth]
+
     @update
     def comb_logic():
 
@@ -53,6 +81,8 @@ class DivRTL(Fu):
       s.send_to_ctrl_mem.val @= 0
       s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
+      s.dividend @= DataPayloadType(0)
+      s.divisor @= DataPayloadType(0)
 
       if s.recv_opt.val:
         if s.recv_opt.msg.fu_in[0] != 0:
@@ -62,7 +92,10 @@ class DivRTL(Fu):
 
       if s.recv_opt.val:
         if s.recv_opt.msg.operation == OPT_DIV:
-          s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload // s.recv_in[s.in1_idx].msg.payload
+          s.dividend @= s.recv_in[s.in0_idx].msg.payload
+          s.divisor @= s.recv_in[s.in1_idx].msg.payload
+          if s.recv_in[s.in1_idx].msg.payload != 0:
+            s.send_out[0].msg.payload @= s.div_quotient
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.recv_in[s.in1_idx].msg.predicate & \
                                          s.reached_vector_factor
@@ -73,7 +106,37 @@ class DivRTL(Fu):
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
 
         elif s.recv_opt.msg.operation == OPT_DIV_CONST:
-          s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload // s.recv_const.msg.payload
+          s.dividend @= s.recv_in[s.in0_idx].msg.payload
+          s.divisor @= s.recv_const.msg.payload
+          if s.recv_const.msg.payload != 0:
+            s.send_out[0].msg.payload @= s.div_quotient
+          s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_const.rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+        elif s.recv_opt.msg.operation == OPT_REM:
+          s.dividend @= s.recv_in[s.in0_idx].msg.payload
+          s.divisor @= s.recv_in[s.in1_idx].msg.payload
+          if s.recv_in[s.in1_idx].msg.payload != 0:
+            s.send_out[0].msg.payload @= s.div_remainder
+          s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
+                                         s.recv_in[s.in1_idx].msg.predicate & \
+                                         s.reached_vector_factor
+          s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val
+          s.send_out[0].val @= s.recv_all_val
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
+          s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
+
+        elif s.recv_opt.msg.operation == OPT_REM_CONST:
+          s.dividend @= s.recv_in[s.in0_idx].msg.payload
+          s.divisor @= s.recv_const.msg.payload
+          if s.recv_const.msg.payload != 0:
+            s.send_out[0].msg.payload @= s.div_remainder
           s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                          s.reached_vector_factor
           s.recv_all_val @= s.recv_in[s.in0_idx].val & s.recv_const.val
