@@ -90,8 +90,21 @@ class RegisterClusterRTL(Component):
             (s.reg_bank[i].send_data.val & reg_towards_fu)
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
-        s.recv_data_from_routing_crossbar[i].rdy @= ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) \
-                & (s.inport_opt.operation == OPT_NAH)) | s.send_data_to_fu[i].rdy
+        # Consume routing-crossbar data whenever the FU does not need this
+        # lane, the register bank supplies the FU, or the FU is ready.
+        s.recv_data_from_routing_crossbar[i].rdy @= \
+            (s.inport_opt.operation == OPT_NAH) | \
+            (s.inport_opt.fu_in[i] == 0) | \
+            reg_towards_fu | \
+            s.send_data_to_fu[i].rdy
+
+        # The master branch uses the more conservative condition below,
+        # which drains during OPT_NAH only when the routing-crossbar value is
+        # configured to be written into this register bank:
+        # s.recv_data_from_routing_crossbar[i].rdy @= \
+        #     ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
+        #      (s.inport_opt.operation == OPT_NAH)) | \
+        #     s.send_data_to_fu[i].rdy
         s.recv_data_from_fu_crossbar[i].rdy @= 1
         s.recv_data_from_const[i].rdy @= 1
 

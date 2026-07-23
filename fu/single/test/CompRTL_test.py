@@ -163,7 +163,6 @@ def test_Comp_const_terminal_predicate():
       [CtrlType(OPT_EQ_CONST, pick_register)], [DataType(1, 0)],
   )
   run_sim(th)
-
 def test_Comp_const_predicate_depends_on_const():
   FU = CompRTL
   DataType = mk_data(32, 1)
@@ -184,4 +183,3 @@ def test_Comp_const_predicate_depends_on_const():
       [CtrlType(OPT_GTE_CONST, pick_register)], [DataType(1, 0)],
   )
   run_sim(th)
-

@@ -120,7 +120,7 @@ class PhiRTL(Fu):
           else:
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.reached_vector_factor
- 
+
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)
@@ -145,4 +145,3 @@ class PhiRTL(Fu):
     recv_str = ",".join([str(x.msg) for x in s.recv_in])
     first_str = ",".join([str(x) for x in s.first])
     return f'[recv: {recv_str}] {opt_str} (const_reg: {s.recv_const.msg}) (first: {first_str})] = [out: {out_str}] (s.recv_opt.rdy: {s.recv_opt.rdy}, {OPT_SYMBOL_DICT[s.recv_opt.msg.operation]}, send[0].val: {s.send_out[0].val}) reached_vector_factor: {s.reached_vector_factor}; vector_factor_counter: {s.vector_factor_counter}; ctrl_addr_inport: {s.ctrl_addr_inport}'
-
