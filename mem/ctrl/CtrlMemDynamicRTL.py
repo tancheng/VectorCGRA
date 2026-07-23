@@ -271,18 +271,6 @@ class CtrlMemDynamicRTL(Component):
           s.sent_complete <<= 0
 
     @update_ff
-    def record_ret_ctrl():
-      # Once any configured control word is RET/RET_VOID, suppress the
-      # total_ctrl_steps fallback so the returned data must come from RET.
-      if s.reset:
-        s.has_ret_ctrl <<= 0
-      elif s.recv_pkt_from_controller_queue.send.val & \
-           (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG) & \
-           ((s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.operation == OPT_RET) | \
-            (s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.operation == OPT_RET_VOID)):
-        s.has_ret_ctrl <<= 1
-
-    @update_ff
     def update_raddr_and_fu_prologue():
       if s.reset:
         s.times <<= 0
