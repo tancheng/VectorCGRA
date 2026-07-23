@@ -115,9 +115,9 @@ def test_Phi_start():
   IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
   FuInType = mk_bits(clog2(num_inports + 1))
   pickRegister = [FuInType(x + 1) for x in range(num_inports)]
-               # Each PHI_START mapped on the same tile has its own s.first, 
-               # s.first[0] becomes 0 after receiving DataType(2, 1), but first[1] still 1, which is why 
-               # the output at clock cycle 2 is DataType(3, 1), rather than the pending DataType(8, 1).
+               # Each PHI_START mapped on the same tile has its own s.first.
+               # The first dynamic execution takes src0; later executions
+               # select whichever predecessor has predicate=1.
   src_in0 =   [DataType(2, 1), DataType(3, 0), DataType(6, 0), DataType(3, 1)]
   src_in1 =   [                                DataType(8, 1), DataType(5, 0)]
   src_const = []
