@@ -307,14 +307,19 @@ def initialize_test_harness(cmdline_opts,
   kCtrlCountPerIter = 3
   kCtrlCountPerIter_migration = 2
   ctrl_steps_per_iter = kCtrlCountPerIter
-  # Though kTotalCtrlSteps is way more than required loop iteration count,
-  # the stored result should still be correct thanks to the grant predicate.
+  # Keep a bounded drain window after the final loop iteration. The RET
+  # complete is now tied to the final control step rather than an early
+  # predicate-only value.
   kTotalCtrlSteps = kCtrlCountPerIter * \
                     (kLoopUpperBound - kLoopLowerBound) + \
-                    100
+                    13
   kTotalCtrlSteps_migration = kCtrlCountPerIter_migration * \
                           (kLoopUpperBound - kLoopLowerBound) + \
-                          100
+                          13
+  # The migrated RET tile issues one RET control per arriving granted value,
+  # not the full local CGRA schedule. It sees the loop trip count plus the
+  # remote pipeline drain.
+  kRetTotalCtrlSteps = (kLoopUpperBound - kLoopLowerBound) + 2
   ctrl_steps_total = kTotalCtrlSteps
   kExpectedOutput = 2215
   support_task_switching = False
@@ -1027,7 +1032,7 @@ def initialize_test_harness(cmdline_opts,
             IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
             # Pre-configure per-tile total config count.
-            IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps, 1))),
+            IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kRetTotalCtrlSteps, 1))),
 
             # RET.
             IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y,
@@ -1686,7 +1691,7 @@ def initialize_test_harness(cmdline_opts,
         IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(1, 1))),
 
         # Pre-configure per-tile total config count.
-        IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kTotalCtrlSteps_migration, 1))),
+        IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kRetTotalCtrlSteps, 1))),
         # Launch the tile.
         IntraCgraPktType(0, 1, 0, cgra_2_id, 0, 0, cgra_2_x, cgra_2_y, payload = CgraPayloadType(CMD_LAUNCH))
       ],

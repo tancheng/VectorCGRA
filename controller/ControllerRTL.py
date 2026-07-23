@@ -201,6 +201,7 @@ class ControllerRTL(Component):
     s.dma_spm_addr     = Wire(DmaSpmAddrType)
     s.dma_bytes        = Wire(DmaBytesType)
     s.dma_tag          = Wire(DmaTagType)
+    s.has_ret_kernel   = Wire(b1)
 
     # Connections.
     # Requests towards others, 1 cycle delay to improve timing.
@@ -230,6 +231,20 @@ class ControllerRTL(Component):
     else:
       s.recv_from_im2col_pkt_queue.recv.val //= 0
       s.recv_from_im2col_pkt_queue.recv.msg //= IntraCgraPktType()
+
+    @update_ff
+    def update_has_ret_kernel():
+      if s.reset:
+        s.has_ret_kernel <<= 0
+      else:
+        cpu_payload = s.recv_from_cpu_pkt_queue.send.msg.payload
+        is_ret_config = (cpu_payload.cmd == CMD_CONFIG) & (
+            (cpu_payload.ctrl.operation == OPT_RET) |
+            (cpu_payload.ctrl.operation == OPT_RET_VOID))
+        config_accepted = (s.recv_from_cpu_pkt_queue.send.val &
+                           s.recv_from_cpu_pkt_queue.send.rdy)
+        if config_accepted & is_ret_config:
+          s.has_ret_kernel <<= 1
 
     @update_ff
     def update_dma_cmd_regs():
@@ -451,6 +466,7 @@ class ControllerRTL(Component):
 
       # For the load request from NoC.
       received_pkt = s.recv_from_inter_cgra_noc.msg
+      is_empty_ret_complete = b1(0)
       if s.recv_from_inter_cgra_noc.val:
         if s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LOAD_REQUEST:
           s.send_to_mem_load_request_queue.recv.val @= 1
@@ -493,20 +509,25 @@ class ControllerRTL(Component):
             s.send_to_tile_load_response_queue.recv.val @= 1
 
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_COMPLETE:
-          s.recv_from_inter_cgra_noc.rdy @= s.send_to_cpu_pkt_queue.recv.rdy
-          s.send_to_cpu_pkt_queue.recv.val @= 1
-          s.send_to_cpu_pkt_queue.recv.msg @= \
-              IntraCgraPktType(s.recv_from_inter_cgra_noc.msg.src_tile_id, # src
-                               s.recv_from_inter_cgra_noc.msg.dst_tile_id, # dst
-                               s.recv_from_inter_cgra_noc.msg.src, # src_cgra_id
-                               s.recv_from_inter_cgra_noc.msg.dst, # src_cgra_id
-                               s.recv_from_inter_cgra_noc.msg.src_x, # src_cgra_x
-                               s.recv_from_inter_cgra_noc.msg.src_y, # src_cgra_y
-                               s.recv_from_inter_cgra_noc.msg.dst_x, # dst_cgra_x
-                               s.recv_from_inter_cgra_noc.msg.dst_y, # dst_cgra_y
-                               0, # opaque
-                               0, # vc_id
-                               s.recv_from_inter_cgra_noc.msg.payload)
+          is_empty_ret_complete = (s.has_ret_kernel &
+              ~s.recv_from_inter_cgra_noc.msg.payload.data.predicate)
+          if is_empty_ret_complete:
+            s.recv_from_inter_cgra_noc.rdy @= 1
+          else:
+            s.recv_from_inter_cgra_noc.rdy @= s.send_to_cpu_pkt_queue.recv.rdy
+            s.send_to_cpu_pkt_queue.recv.val @= 1
+            s.send_to_cpu_pkt_queue.recv.msg @= IntraCgraPktType(
+                s.recv_from_inter_cgra_noc.msg.src_tile_id, # src
+                s.recv_from_inter_cgra_noc.msg.dst_tile_id, # dst
+                s.recv_from_inter_cgra_noc.msg.src, # src_cgra_id
+                s.recv_from_inter_cgra_noc.msg.dst, # src_cgra_id
+                s.recv_from_inter_cgra_noc.msg.src_x, # src_cgra_x
+                s.recv_from_inter_cgra_noc.msg.src_y, # src_cgra_y
+                s.recv_from_inter_cgra_noc.msg.dst_x, # dst_cgra_x
+                s.recv_from_inter_cgra_noc.msg.dst_y, # dst_cgra_y
+                0, # opaque
+                0, # vc_id
+                s.recv_from_inter_cgra_noc.msg.payload)
 
         # Consume and discard the leaf counter complete signal (loop termination
         # notification from LoopCounter FU) to avoid blocking the NoC.
