@@ -158,15 +158,15 @@ def test_multi_cast():
                    num_routing_outports, src_data, src_opt, sink_out)
   run_sim(th)
 
-def test_prologue_consumes_without_routing():
+def test_prologue_skips_routing():
   src_opt  = [CtrlType(OPT_ADD, pickRegister,
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)]),
               CtrlType(OPT_ADD, pickRegister,
                        [TileInType(1), TileInType(0), TileInType(0)],
                        [FuOutType(0),  FuOutType(0),  FuOutType(0)])]
-  src_data = [[DataType(7, 1), DataType(7, 1)], [], []]
-  # The prologue consumes the first token without sending it downstream.
+  src_data = [[DataType(7, 1)], [], []]
+  # The prologue neither routes nor dequeues the token.
   sink_out = [[DataType(7, 1)], [], []]
   th = TestHarness(FU, DataType, CtrlType, num_tile_inports,
                    num_routing_outports, src_data, src_opt, sink_out,

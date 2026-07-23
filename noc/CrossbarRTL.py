@@ -260,9 +260,9 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         if s.in_dir[i] > 0:
-          # A prologue acknowledges an available input but does not route it.
-          # This keeps the input stream aligned with the control schedule.
-          s.recv_required_vector[s.in_dir_local[i]] @= 1
+          # A prologue advances control without routing or dequeuing its input.
+          s.recv_required_vector[s.in_dir_local[i]] @= \
+              ~s.during_prologue_allowing_vector[i]
 
     @update
     def update_send_required_vector():
