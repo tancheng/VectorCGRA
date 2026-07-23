@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 52
+NUM_CMDS = 53
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -80,6 +80,9 @@ CMD_DMA_MVIN                         = 49  # Issues a DMA_MVIN command
 CMD_DMA_MVOUT                        = 50  # Issues a DMA_MVOUT command
 CMD_DMA_DONE                         = 51  # Signals that the DMA command is complete
 
+# Im2col Engine Command.
+CMD_IM2COL_LAUNCH                    = 52  # CPU -> Controller -> Im2col engine: trigger DMA-style preload
+
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
   CMD_PAUSE:                            "(PAUSE_EXECUTION)",
@@ -133,5 +136,6 @@ CMD_SYMBOL_DICT = {
   CMD_DMA_MVIN:                         "(DMA_MVIN)",
   CMD_DMA_MVOUT:                        "(DMA_MVOUT)",
   CMD_DMA_DONE:                         "(DMA_DONE)",
+  CMD_IM2COL_LAUNCH:                    "(IM2COL_LAUNCH)",
 }
 
