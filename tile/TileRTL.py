@@ -211,18 +211,28 @@ class TileRTL(Component):
     # the FUs (via `fu_crossbar`) with the outports of the
     # `routing_crossbar` through the corresponding channels.
     for i in range(num_tile_outports):
-      s.fu_crossbar.send_data[i] //= s.tile_out_or_link[i].recv_fu
-      s.routing_crossbar.send_data[i] //= s.tile_out_or_link[i].recv_xbar
-      s.tile_out_or_link[i].send //= s.send_data[i]
+      s.tile_out_or_link[i].recv_fu.msg //= s.fu_crossbar.send_data[i].msg
+      s.tile_out_or_link[i].recv_fu.val //= s.fu_crossbar.send_data[i].val
+      s.tile_out_or_link[i].recv_xbar.msg //= \
+          s.routing_crossbar.send_data[i].msg
+      s.tile_out_or_link[i].recv_xbar.val //= \
+          s.routing_crossbar.send_data[i].val
+      s.send_data[i].msg //= s.tile_out_or_link[i].send.msg
+      s.send_data[i].val //= s.tile_out_or_link[i].send.val
+      s.tile_out_or_link[i].send.rdy //= s.send_data[i].rdy
 
     # Crossbars outputs are integrated with the "register_cluster".
     # Whether the required operands for FU are from the "routing_crossbar"
     # or from the "register_cluster" depends on the control signals.
     for i in range(num_fu_inports):
-      s.routing_crossbar.send_data[num_tile_outports + i] //= \
-          s.register_cluster.recv_data_from_routing_crossbar[i]
-      s.fu_crossbar.send_data[num_tile_outports + i] //= \
-          s.register_cluster.recv_data_from_fu_crossbar[i]
+      s.register_cluster.recv_data_from_routing_crossbar[i].msg //= \
+          s.routing_crossbar.send_data[num_tile_outports + i].msg
+      s.register_cluster.write_data_from_routing_crossbar[i] //= \
+          s.routing_crossbar.send_data[num_tile_outports + i].msg
+      s.register_cluster.recv_data_from_fu_crossbar[i].msg //= \
+          s.fu_crossbar.send_data[num_tile_outports + i].msg
+      s.register_cluster.recv_data_from_fu_crossbar[i].val //= \
+          s.fu_crossbar.send_data[num_tile_outports + i].val
 
       s.register_cluster.recv_data_from_const[i].msg //= DataType()
       s.register_cluster.recv_data_from_const[i].val //= 0
@@ -230,6 +240,37 @@ class TileRTL(Component):
       s.register_cluster.send_data_to_fu[i] //= \
           s.element.recv_in[i]
       s.register_cluster.inport_opt //= s.ctrl_mem.send_ctrl.msg
+
+    @update
+    def update_routing_to_reg_inputs():
+      for i in range(num_tile_outports):
+        s.routing_crossbar.send_data[i].rdy @= s.send_data[i].rdy
+      for i in range(num_fu_inports):
+        # A local routing-crossbar output is either an operand for the FU or a
+        # register write, never both in this interface. Split val/rdy so a
+        # register write can complete without waiting for the FU input port.
+        # Example: DATA_MOV writes r2 from routing_xbar; recv_data_to_fu stays
+        # invalid, write_valid_from_routing_crossbar carries the token.
+        is_reg_write = \
+            s.ctrl_mem.send_ctrl.msg.write_reg_from[i] == PORT_ROUTING_CROSSBAR
+
+        s.register_cluster.recv_data_from_routing_crossbar[i].val @= \
+            s.routing_crossbar.send_data[num_tile_outports + i].val & \
+            ~is_reg_write
+        s.register_cluster.write_valid_from_routing_crossbar[i] @= \
+            s.routing_crossbar.send_data[num_tile_outports + i].val & \
+            is_reg_write
+        s.routing_crossbar.send_data[num_tile_outports + i].rdy @= \
+            is_reg_write | \
+            s.register_cluster.recv_data_from_routing_crossbar[i].rdy
+
+    @update
+    def update_reg_cluster_input_rdy():
+      for i in range(num_tile_outports):
+        s.fu_crossbar.send_data[i].rdy @= s.send_data[i].rdy
+      for i in range(num_fu_inports):
+        s.fu_crossbar.send_data[num_tile_outports + i].rdy @= \
+            s.register_cluster.recv_data_from_fu_crossbar[i].rdy
 
     # Clear ports are only useful during context switching.
     # We connect to 0 to make sure they have drivers.
@@ -258,7 +299,8 @@ class TileRTL(Component):
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_LAUNCH) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
-            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP)):
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_from_controller_pkt.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE)):
             s.ctrl_mem.recv_pkt_from_controller.val @= 1
             s.ctrl_mem.recv_pkt_from_controller.msg @= s.recv_from_controller_pkt.msg
             s.recv_from_controller_pkt.rdy @= s.ctrl_mem.recv_pkt_from_controller.rdy
@@ -285,7 +327,12 @@ class TileRTL(Component):
 
       # FIXME: Do we still need separate element and routing_xbar?
       # FIXME: Do we need to consider reg bank here?
-      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.element_done
+      # Keep FU-side control live until the FU crossbar has also consumed the
+      # result. Example: the element produces a MUL result this cycle, but the
+      # FU crossbar output is backpressured; advancing ctrl now would let the
+      # element overwrite/drop that result before the crossbar accepts it.
+      s.element.recv_opt.val @= s.ctrl_mem.send_ctrl.val & \
+                                ~(s.element_done & s.fu_crossbar_done)
       s.routing_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.routing_crossbar_done
       s.fu_crossbar.recv_opt.val @= s.ctrl_mem.send_ctrl.val & ~s.fu_crossbar_done
 
