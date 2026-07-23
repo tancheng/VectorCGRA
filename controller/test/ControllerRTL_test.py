@@ -91,6 +91,10 @@ class TestHarness(Component):
     s.dut.send_to_cpu_pkt.rdy //= 0
     s.dut.recv_from_ctrl_ring_pkt.val //= 0
     s.dut.recv_from_ctrl_ring_pkt.msg //= CpuPktType()
+    # Im2col engine ports are unused in this test.
+    s.dut.send_to_im2col_engine_pkt.rdy //= 0
+    s.dut.recv_from_im2col_pkt.val      //= 0
+    s.dut.recv_from_im2col_pkt.msg      //= CpuPktType()
 
   def done(s):
     return s.src_from_tile_load_request_pkt.done()  and \
