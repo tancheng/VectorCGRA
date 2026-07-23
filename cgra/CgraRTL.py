@@ -34,7 +34,8 @@ class CgraRTL(Component):
                 FunctionUnit, FuList, cgra_topology,
                 controller2addr_map, idTo2d_map,
                 is_multi_cgra = True,
-                has_ctrl_ring = True):
+                has_ctrl_ring = True,
+                has_im2col_engine = False):
 
     # Derives all types from CgraPayloadType.
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -83,6 +84,12 @@ class CgraRTL(Component):
     s.recv_from_inter_cgra_noc = RecvIfcRTL(NocPktType)
     s.send_to_inter_cgra_noc = SendIfcRTL(NocPktType)
     s.send_to_cpu_pkt = SendIfcRTL(CtrlPktType)
+    # DMA-style bidirectional interface with an Im2col engine. Only
+    # exposed on the CGRA when has_im2col_engine=True; existing tests
+    # use the default False.
+    if has_im2col_engine:
+      s.send_to_im2col_engine_pkt = SendIfcRTL(CtrlPktType)
+      s.recv_from_im2col_pkt      = RecvIfcRTL(CtrlPktType)
 
     # Interfaces on the boundary of the CGRA.
     s.recv_data_on_boundary_south = [RecvIfcRTL(DataType) for _ in range(width )]
@@ -117,7 +124,8 @@ class CgraRTL(Component):
                                       idTo2d_map)
     s.controller = ControllerRTL(NocPktType,
                                   multi_cgra_rows, multi_cgra_columns,
-                                  s.num_tiles, controller2addr_map, idTo2d_map)
+                                  s.num_tiles, controller2addr_map, idTo2d_map,
+                                  has_im2col_engine = has_im2col_engine)
     # An additional router for controller to receive CMD_COMPLETE signal from Ring to CPU.
     # The last argument of 1 is for the latency per hop.
     if has_ctrl_ring:
@@ -156,6 +164,17 @@ class CgraRTL(Component):
     # Connects the ctrl interface between CPU and controller.
     s.recv_from_cpu_pkt //= s.controller.recv_from_cpu_pkt
     s.send_to_cpu_pkt //=  s.controller.send_to_cpu_pkt
+    # The controller unconditionally declares its im2col ports for
+    # pymtl3 AST reasons. When has_im2col_engine=True, expose them on
+    # the CGRA boundary; when False, tie them off internally here so
+    # existing CGRA tests (that don't wire them) still elaborate.
+    if has_im2col_engine:
+      s.send_to_im2col_engine_pkt //= s.controller.send_to_im2col_engine_pkt
+      s.recv_from_im2col_pkt      //= s.controller.recv_from_im2col_pkt
+    else:
+      s.controller.send_to_im2col_engine_pkt.rdy //= 0
+      s.controller.recv_from_im2col_pkt.val      //= 0
+      s.controller.recv_from_im2col_pkt.msg      //= CtrlPktType()
 
     # Assigns tile id.
     for i in range(s.num_tiles):
