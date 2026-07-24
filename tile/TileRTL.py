@@ -236,6 +236,7 @@ class TileRTL(Component):
     for i in range(len(FuList)):
       s.element.clear[i] //= 0
     s.fu_crossbar.clear //= 0
+    s.register_cluster.clear //= 0
     s.routing_crossbar.clear //= 0
 
     @update
@@ -300,6 +301,7 @@ class TileRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
+      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
 
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
