@@ -94,11 +94,22 @@ class PhiRTL(Fu):
           else: # No predecessor is active.
             s.send_out[0].msg.payload @= s.recv_in[s.in0_idx].msg.payload
             s.send_out[0].msg.predicate @= 0
-          s.recv_all_val @= ((s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val) | \
-                             (~s.first[s.ctrl_addr_inport] & s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val))
+
+          # After the first PHI_START execution, the selected predecessor is
+          # identified by its predicate.  Do not stall the selected true token
+          # behind a later predicated-off token from the other predecessor.
+          if s.first[s.ctrl_addr_inport]:
+            s.recv_all_val @= s.recv_in[s.in0_idx].val
+          else:
+            s.recv_all_val @= \
+                (s.recv_in[s.in0_idx].val & s.recv_in[s.in0_idx].msg.predicate) | \
+                (s.recv_in[s.in1_idx].val & s.recv_in[s.in1_idx].msg.predicate) | \
+                (s.recv_in[s.in0_idx].val & s.recv_in[s.in1_idx].val)
           s.send_out[0].val @= s.recv_all_val
-          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy
-          s.recv_in[s.in1_idx].rdy @= ~s.first[s.ctrl_addr_inport] & s.recv_all_val & s.send_out[0].rdy
+          s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.send_out[0].rdy & \
+              (s.first[s.ctrl_addr_inport] | s.recv_in[s.in0_idx].val)
+          s.recv_in[s.in1_idx].rdy @= ~s.first[s.ctrl_addr_inport] & \
+              s.recv_all_val & s.send_out[0].rdy & s.recv_in[s.in1_idx].val
           s.recv_opt.rdy @= s.recv_all_val & s.send_out[0].rdy
  
         elif s.recv_opt.msg.operation == OPT_PHI_CONST:

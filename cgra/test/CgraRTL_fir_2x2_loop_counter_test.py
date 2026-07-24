@@ -351,7 +351,7 @@ def sim_fir_with_loop_counter(cmdline_opts, mem_access_is_combinational, has_ctr
   # the stored result should still be correct thanks to the grant predicate.
   kTotalCtrlSteps = kCtrlCountPerIter * \
                     (kLoopUpperBound - kLoopLowerBound) + \
-                    10
+                    13
   kExpectedOutput = 2215
 
   # Corresponding DFG:
