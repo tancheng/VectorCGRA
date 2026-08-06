@@ -49,8 +49,8 @@ class CrossbarRTL(Component):
 
     s.in_dir = [Wire(InType) for _ in range(num_outports)]
     s.in_dir_local = [Wire(NumInportType) for _ in range(num_outports)]
-    s.send_rdy_vector = Wire(num_outports)
-    s.recv_valid_vector = Wire(num_outports)
+    s.send_rdy_or_during_prologue_vector = Wire(num_outports)
+    s.recv_valid_excluding_prologue_vector = Wire(num_outports)
     s.recv_required_vector = Wire(num_inports)
     s.send_required_vector = Wire(num_outports)
 
@@ -84,7 +84,7 @@ class CrossbarRTL(Component):
     s.send_accepted_next = Wire(num_outports)
     # Whether all required multicast outputs have been committed (either
     # accepted in a previous cycle via send_accepted, or being accepted
-    # in the current cycle via send_rdy_vector).
+    # in the current cycle via send_rdy_or_during_prologue_vector).
     s.all_send_accepted = Wire(b1)
 
     # Prologue-related wires and registers, which are used to indicate
@@ -117,11 +117,13 @@ class CrossbarRTL(Component):
 
         # Determine whether all required outputs have been satisfied,
         # either accepted in a previous cycle (send_accepted) or being
-        # accepted right now (send_rdy_vector). This is used for input
+        # accepted right now (send_rdy_or_during_prologue_vector). This is
+        # used for input
         # dequeue and recv_opt.rdy.
         s.all_send_accepted @= 1
         for i in range(num_outports):
-          if s.send_required_vector[i] & ~s.send_accepted[i] & ~s.send_rdy_vector[i]:
+          if s.send_required_vector[i] & ~s.send_accepted[i] & \
+             ~s.send_rdy_or_during_prologue_vector[i]:
             s.all_send_accepted @= 0
 
         for i in range(num_inports):
@@ -225,7 +227,8 @@ class CrossbarRTL(Component):
       s.recv_valid_or_during_prologue_allowing_vector @= 0
       for i in range(num_outports):
         s.recv_valid_or_during_prologue_allowing_vector[i] @= \
-            s.recv_valid_vector[i] | s.during_prologue_allowing_vector[i]
+            s.recv_valid_excluding_prologue_vector[i] | \
+            s.during_prologue_allowing_vector[i]
 
     @update
     def update_in_dir_vector():
@@ -241,11 +244,11 @@ class CrossbarRTL(Component):
 
     @update
     def update_rdy_vector():
-      s.send_rdy_vector @= 0
+      s.send_rdy_or_during_prologue_vector @= 0
       for i in range(num_outports):
-        # The `num_inports` indicates the number of outports that go to other tiles.
+        # The `outport_towards_local_base_id` indicates the number of outports that go to other tiles.
         # Specifically, if the compute already done, we shouldn't care the ones
-        # (i.e., i >= num_inports) go to the FU's inports. In other words, we skip
+        # (i.e., i >= outport_towards_local_base_id) go to the FU's inports. In other words, we skip
         # the rdy checking on the FU's inports (connecting from crossbar_outport) if
         # the compute is already completed.
         if (s.in_dir[i] > 0) & \
@@ -253,14 +256,15 @@ class CrossbarRTL(Component):
           # When prologue is active for this output's input, don't
           # require the downstream channel to be ready -- we won't be
           # sending any data through it during prologue anyway.
-          s.send_rdy_vector[i] @= s.send_data[i].rdy | \
-                                   s.during_prologue_allowing_vector[i]
+          s.send_rdy_or_during_prologue_vector[i] @= \
+              s.send_data[i].rdy | \
+              s.during_prologue_allowing_vector[i]
         else:
-          s.send_rdy_vector[i] @= 1
+          s.send_rdy_or_during_prologue_vector[i] @= 1
 
     @update
     def update_valid_vector():
-      s.recv_valid_vector @= 0
+      s.recv_valid_excluding_prologue_vector @= 0
       for i in range(num_outports):
         if s.in_dir[i] > 0:
           # When prologue is active for this output's input, treat the
@@ -272,10 +276,11 @@ class CrossbarRTL(Component):
           # trick the crossbar into attempting a send, and if the
           # destination channel is full the all-or-nothing semantics
           # cause a deadlock.
-          s.recv_valid_vector[i] @= s.recv_data_val[s.in_dir_local[i]] & \
-                                     ~s.during_prologue_allowing_vector[i]
+          s.recv_valid_excluding_prologue_vector[i] @= \
+              s.recv_data_val[s.in_dir_local[i]] & \
+              ~s.during_prologue_allowing_vector[i]
         else:
-          s.recv_valid_vector[i] @= 1
+          s.recv_valid_excluding_prologue_vector[i] @= 1
 
     @update
     def update_recv_required_vector():
