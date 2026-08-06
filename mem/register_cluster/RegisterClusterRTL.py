@@ -90,11 +90,19 @@ class RegisterClusterRTL(Component):
             (s.reg_bank[i].send_data.val & reg_towards_fu)
         s.reg_bank[i].send_data.rdy @= s.send_data_to_fu[i].rdy
 
+        # fu_in[] is indexed by operand slot, and each non-zero value is a
+        # one-based physical FU-input lane. Check every operand slot instead
+        # of assuming operand slot i always selects physical lane i.
+        lane_used_by_fu = (s.inport_opt.fu_in[0] == (i + 1))
+        for operand_slot in range(1, num_reg_banks):
+          lane_used_by_fu |= \
+              (s.inport_opt.fu_in[operand_slot] == (i + 1))
+
         # Consume routing-crossbar data whenever the FU does not need this
         # lane, the register bank supplies the FU, or the FU is ready.
         s.recv_data_from_routing_crossbar[i].rdy @= \
             (s.inport_opt.operation == OPT_NAH) | \
-            (s.inport_opt.fu_in[i] == 0) | \
+            ~lane_used_by_fu | \
             reg_towards_fu | \
             s.send_data_to_fu[i].rdy
 
