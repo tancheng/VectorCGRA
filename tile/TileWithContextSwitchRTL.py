@@ -199,6 +199,7 @@ class TileWithContextSwitchRTL(Component):
       else:
         s.element.clear[i] //= 0
     s.fu_crossbar.clear //= s.clear
+    s.register_cluster.clear //= s.clear
     s.routing_crossbar.clear //= s.clear
     s.const_mem.clear //= s.clear
 
@@ -334,6 +335,7 @@ class TileWithContextSwitchRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
+      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
     
     @update
     def overwrite_fu_outport():

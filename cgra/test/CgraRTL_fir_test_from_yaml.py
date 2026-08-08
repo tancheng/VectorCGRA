@@ -73,7 +73,8 @@ class TestHarness(Component):
                 mem_access_is_combinational,
                 FunctionUnit, FuList, "Mesh",
                 controller2addr_map, idTo2d_map,
-                is_multi_cgra = False)
+                is_multi_cgra = False,
+                enable_token_discipline = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)
@@ -174,7 +175,8 @@ num_cgra_rows = 1
 num_cgras = num_cgra_columns * num_cgra_rows
 num_ctrl_operations = 64
 num_registers_per_reg_bank = 8
-TileInType = mk_bits(clog2(num_tile_inports + 1))
+# Routing-crossbar inputs include both tile ports and register-bank outputs.
+TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
 FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
 addr_nbits = clog2(data_mem_size_global)
@@ -470,6 +472,9 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
+
+  for tile_pkts in src_opt_pkt0:
+      src_ctrl_pkt.extend(tile_pkts)
 
   complete_signal_sink_out.extend(expected_complete_sink_out_pkg)
   complete_signal_sink_out.extend(expected_mem_sink_out_pkt)

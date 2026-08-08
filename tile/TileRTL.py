@@ -43,7 +43,8 @@ class TileRTL(Component):
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL],
+                enable_token_discipline = True):
 
     # Derives types from IntraCgraPktType.
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
@@ -102,7 +103,8 @@ class TileRTL(Component):
                                 num_tile_outports)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
-                           num_registers_per_reg_bank)
+                           num_registers_per_reg_bank,
+                           enable_token_discipline)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    ctrl_mem_size,
                                    num_fu_inports,
@@ -236,6 +238,7 @@ class TileRTL(Component):
     for i in range(len(FuList)):
       s.element.clear[i] //= 0
     s.fu_crossbar.clear //= 0
+    s.register_cluster.clear //= 0
     s.routing_crossbar.clear //= 0
 
     @update
@@ -301,6 +304,7 @@ class TileRTL(Component):
     @update
     def notify_const_mem():
       s.const_mem.ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
+      s.register_cluster.inport_ctrl_proceed @= s.ctrl_mem.send_ctrl.rdy & s.ctrl_mem.send_ctrl.val
 
     # Updates the signals indicating whether certain modules already done their jobs.
     @update_ff
