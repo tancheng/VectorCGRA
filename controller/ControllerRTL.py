@@ -399,9 +399,16 @@ class ControllerRTL(Component):
             s.dma_tag)
         s.recv_from_cpu_pkt_queue.send.rdy @= s.dma_cmd.rdy
 
-      elif has_im2col_engine & (cpu_cmd == CMD_IM2COL_LAUNCH):
-        # Fork the launch packet to the Im2col engine outport (DMA-style)
-        # instead of feeding it into the crossbar.
+      elif has_im2col_engine & (
+          (cpu_cmd == CMD_IM2COL_LAUNCH) |
+          (cpu_cmd == CMD_IM2COL_H) |
+          (cpu_cmd == CMD_IM2COL_W) |
+          (cpu_cmd == CMD_IM2COL_KH) |
+          (cpu_cmd == CMD_IM2COL_KW) |
+          (cpu_cmd == CMD_IM2COL_LOG2_STRIDE) |
+          (cpu_cmd == CMD_IM2COL_DST_SRAM_BASE)):
+        # Fork any im2col config/launch packet to the engine outport
+        # (DMA-style) instead of feeding it into the crossbar.
         s.send_to_im2col_engine_pkt.val @= s.recv_from_cpu_pkt_queue.send.val
         s.send_to_im2col_engine_pkt.msg @= s.recv_from_cpu_pkt_queue.send.msg
         s.recv_from_cpu_pkt_queue.send.rdy @= s.send_to_im2col_engine_pkt.rdy

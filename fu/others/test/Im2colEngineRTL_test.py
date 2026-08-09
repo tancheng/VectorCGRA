@@ -2,10 +2,11 @@
 ==========================================================================
 Im2colEngineRTL_test.py
 ==========================================================================
-Standalone unit test for the merged Im2colEngineRTL. Feeds a preloaded
-image into the engine's internal in_mem scratchpad and sinks the emitted
-CMD_STORE_REQUEST packets on send_pkt, comparing them against a Python
-golden im2col.
+Standalone unit test for the runtime-programmable Im2colEngineRTL. Feeds
+a preloaded image into the engine's in_mem, sends the CMD_IM2COL_*
+CONFIG packets followed by CMD_IM2COL_LAUNCH, and sinks the emitted
+CMD_STORE_REQUEST packets on send_pkt to check them against a Python
+golden.
 """
 
 from pymtl3 import *
@@ -14,7 +15,11 @@ from pymtl3.stdlib.test_utils import (config_model_with_cmdline_opts,
 
 from ..Im2colEngineRTL import Im2colEngineRTL
 from ....lib.basic.val_rdy.SinkRTL import SinkRTL as TestSinkRTL
-from ....lib.cmd_type import CMD_STORE_REQUEST
+from ....lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
+from ....lib.cmd_type import (CMD_IM2COL_DST_SRAM_BASE, CMD_IM2COL_H,
+                                CMD_IM2COL_KH, CMD_IM2COL_KW,
+                                CMD_IM2COL_LAUNCH, CMD_IM2COL_LOG2_STRIDE,
+                                CMD_IM2COL_W, CMD_STORE_REQUEST)
 from ....lib.messages import (mk_cgra_payload, mk_ctrl, mk_data,
                                 mk_intra_cgra_pkt)
 
@@ -70,37 +75,59 @@ def golden_im2col(image, H, W, kH, kW, stride):
 
 
 #-------------------------------------------------------------------------
-# Test harness: engine + a TestSinkRTL that consumes send_pkt.
+# Build the CONFIG + LAUNCH packet sequence for the engine.
+#-------------------------------------------------------------------------
+
+def _make_cmd_pkts(H, W, kH, kW, stride, dst_sram_base_addr):
+  log2_stride = stride.bit_length() - 1
+  assert (1 << log2_stride) == stride, \
+      f"stride={stride} must be a power of two"
+
+  def cfg_data(cmd, value):
+    return IntraCgraPktType(payload = CgraPayloadType(
+        cmd, data = DataType(value, 1)))
+
+  def cfg_addr(cmd, value):
+    return IntraCgraPktType(payload = CgraPayloadType(
+        cmd, data_addr = value))
+
+  return [
+      cfg_data(CMD_IM2COL_H,             H),
+      cfg_data(CMD_IM2COL_W,             W),
+      cfg_data(CMD_IM2COL_KH,            kH),
+      cfg_data(CMD_IM2COL_KW,            kW),
+      cfg_data(CMD_IM2COL_LOG2_STRIDE,   log2_stride),
+      cfg_addr(CMD_IM2COL_DST_SRAM_BASE, dst_sram_base_addr),
+      IntraCgraPktType(payload = CgraPayloadType(CMD_IM2COL_LAUNCH)),
+  ]
+
+
+#-------------------------------------------------------------------------
+# Test harness: engine + TestSrcRTL feeding CONFIG/LAUNCH + TestSinkRTL
+# for outputs.
 #-------------------------------------------------------------------------
 
 class TestHarness(Component):
 
-  def construct(s, scratch_mem_size,
-                in_base, H, W, kH, kW, stride,
+  def construct(s, scratch_mem_size, cmd_pkts,
                 preload_image, expected_packets):
 
     s.dut = Im2colEngineRTL(DataType, IntraCgraPktType, CgraPayloadType,
-                            scratch_mem_size,
-                            in_base, H, W, kH, kW, stride,
-                            preload_image)
+                            scratch_mem_size, preload_image)
 
-    # Compare only the fields the engine actually populates: cmd, data,
-    # data_addr. The dst field is always 0 (STORE_REQUEST is routed by
-    # the controller via data_addr, so dst is a don't-care on this
-    # path); every other field is also a don't-care.
-    cmp_fn = lambda a, b: (a.payload.cmd      == b.payload.cmd and
-                           a.payload.data     == b.payload.data and
+    s.cmd_src = TestSrcRTL(IntraCgraPktType, cmd_pkts)
+    s.cmd_src.send //= s.dut.recv_cmd_pkt
+
+    # Compare only the fields the engine actually populates.
+    cmp_fn = lambda a, b: (a.payload.cmd       == b.payload.cmd and
+                           a.payload.data      == b.payload.data and
                            a.payload.data_addr == b.payload.data_addr)
     s.sink = TestSinkRTL(IntraCgraPktType, expected_packets,
-                          cmp_fn = cmp_fn)
-
+                         cmp_fn = cmp_fn)
     s.dut.send_pkt //= s.sink.recv
-    # Start is asserted high; the engine's FSM only samples it in S_IDLE
-    # (a single cycle after reset), so leaving it high is safe.
-    s.dut.start //= b1(1)
 
   def done(s):
-    return s.sink.done()
+    return s.cmd_src.done() and s.sink.done()
 
   def line_trace(s):
     return f"{s.dut.line_trace()} || sink[{s.sink.line_trace()}]"
@@ -110,8 +137,7 @@ class TestHarness(Component):
 # Driver
 #-------------------------------------------------------------------------
 
-def _build_expected_packets(image, H, W, kH, kW, stride):
-  # Engine emits output i to SRAM addr i (0-based, contiguous).
+def _build_expected_packets(image, H, W, kH, kW, stride, dst_sram_base_addr):
   values, _, _ = golden_im2col(image, H, W, kH, kW, stride)
   pkts = []
   for i, v in enumerate(values):
@@ -121,17 +147,18 @@ def _build_expected_packets(image, H, W, kH, kW, stride):
         0, 0,                      # opaque, vc_id
         CgraPayloadType(cmd = CMD_STORE_REQUEST,
                         data = DataType(v, 1),
-                        data_addr = i)))
+                        data_addr = dst_sram_base_addr + i)))
   return pkts
 
 
-def run_engine(image, H, W, kH, kW, stride, in_base,
+def run_engine(image, H, W, kH, kW, stride,
+               dst_sram_base_addr = 0,
                scratch_mem_size = 64, cmdline_opts = None):
 
-  expected = _build_expected_packets(image, H, W, kH, kW, stride)
-  th = TestHarness(scratch_mem_size,
-                   in_base, H, W, kH, kW, stride,
-                   image, expected)
+  cmd_pkts = _make_cmd_pkts(H, W, kH, kW, stride, dst_sram_base_addr)
+  expected = _build_expected_packets(image, H, W, kH, kW, stride,
+                                     dst_sram_base_addr)
+  th = TestHarness(scratch_mem_size, cmd_pkts, image, expected)
   th.elaborate()
   if cmdline_opts is not None:
     th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
@@ -146,21 +173,21 @@ def test_engine_4x4_k2_s1(cmdline_opts):
   # 4x4 image, 2x2 kernel, stride 1 -> 3x3 output grid, 4x9 lowered.
   image = list(range(16))
   run_engine(image, H = 4, W = 4, kH = 2, kW = 2, stride = 1,
-             in_base = 0, cmdline_opts = cmdline_opts)
+             cmdline_opts = cmdline_opts)
 
 
 def test_engine_4x4_k2_s2(cmdline_opts):
   # Stride-2: 4x4 / 2x2 / s2 -> 2x2 output grid, 4x4 lowered.
   image = [i * 2 + 1 for i in range(16)]
   run_engine(image, H = 4, W = 4, kH = 2, kW = 2, stride = 2,
-             in_base = 0, cmdline_opts = cmdline_opts)
+             cmdline_opts = cmdline_opts)
 
 
 def test_engine_5x5_k3_s1(cmdline_opts):
   # 5x5 / 3x3 / s1 -> 3x3 output grid, 9x9 lowered (81 outputs).
   image = list(range(25))
   run_engine(image, H = 5, W = 5, kH = 3, kW = 3, stride = 1,
-             in_base = 0, scratch_mem_size = 128,
+             scratch_mem_size = 128,
              cmdline_opts = cmdline_opts)
 
 
@@ -169,5 +196,14 @@ def test_engine_smoke_matches_e2e_layout(cmdline_opts):
   # test (image [1,3,2,4], 1x4 / 1x2 / s2 -> lowered [1,2,3,4] stored
   # to SRAM addr 0..3).
   image = [1, 3, 2, 4]
-  run_engine(image, H = 1, W = 4, kH = 1, kW = 2, stride = 2, in_base = 0,
+  run_engine(image, H = 1, W = 4, kH = 1, kW = 2, stride = 2,
+             cmdline_opts = cmdline_opts)
+
+
+def test_engine_nonzero_dst_sram_base(cmdline_opts):
+  # Verifies that dst_sram_base_addr actually offsets the store address.
+  # Same image geometry as test_engine_4x4_k2_s2 but write to addr 16..19.
+  image = [i * 2 + 1 for i in range(16)]
+  run_engine(image, H = 4, W = 4, kH = 2, kW = 2, stride = 2,
+             dst_sram_base_addr = 16,
              cmdline_opts = cmdline_opts)

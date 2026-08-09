@@ -14,7 +14,7 @@ from pymtl3 import *
 
 # Total number of commands that are supported/recognized by controller.
 # Needs to be updated once more commands are added/supported.
-NUM_CMDS = 53
+NUM_CMDS = 59
 
 CMD_LAUNCH                           = 0
 CMD_PAUSE                            = 1
@@ -80,8 +80,16 @@ CMD_DMA_MVIN                         = 49  # Issues a DMA_MVIN command
 CMD_DMA_MVOUT                        = 50  # Issues a DMA_MVOUT command
 CMD_DMA_DONE                         = 51  # Signals that the DMA command is complete
 
-# Im2col Engine Command.
-CMD_IM2COL_LAUNCH                    = 52  # CPU -> Controller -> Im2col engine: trigger DMA-style preload
+# Im2col Engine Commands. Each geometry parameter is configured by its
+# own command (mirroring the CMD_DMA_CONFIG_* convention). The CPU sends
+# any subset of these config commands before firing CMD_IM2COL_LAUNCH.
+CMD_IM2COL_LAUNCH                    = 52  # CPU -> Im2col engine: start processing with latched config
+CMD_IM2COL_H                         = 53  # config: image height H            (data)
+CMD_IM2COL_W                         = 54  # config: image width W             (data)
+CMD_IM2COL_KH                        = 55  # config: kernel height kH          (data)
+CMD_IM2COL_KW                        = 56  # config: kernel width kW           (data)
+CMD_IM2COL_LOG2_STRIDE               = 57  # config: log2(stride)              (data)
+CMD_IM2COL_DST_SRAM_BASE             = 58  # config: output base in CGRA SRAM  (data_addr)
 
 CMD_SYMBOL_DICT = {
   CMD_LAUNCH:                           "(LAUNCH_KERNEL)",
@@ -137,5 +145,11 @@ CMD_SYMBOL_DICT = {
   CMD_DMA_MVOUT:                        "(DMA_MVOUT)",
   CMD_DMA_DONE:                         "(DMA_DONE)",
   CMD_IM2COL_LAUNCH:                    "(IM2COL_LAUNCH)",
+  CMD_IM2COL_H:                         "(IM2COL_H)",
+  CMD_IM2COL_W:                         "(IM2COL_W)",
+  CMD_IM2COL_KH:                        "(IM2COL_KH)",
+  CMD_IM2COL_KW:                        "(IM2COL_KW)",
+  CMD_IM2COL_LOG2_STRIDE:               "(IM2COL_LOG2_STRIDE)",
+  CMD_IM2COL_DST_SRAM_BASE:             "(IM2COL_DST_SRAM_BASE)",
 }
 

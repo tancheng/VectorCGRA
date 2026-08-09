@@ -2,55 +2,60 @@
 ==========================================================================
 Im2colEngineRTL.py
 ==========================================================================
-Merged im2col (image-to-column) engine. Reads an HxW single-channel input
-image from a local input scratchpad and streams the lowered
-(kH*kW) x (Hout*Wout) column matrix into the enclosing CGRA's shared
-data memory as a sequence of CMD_STORE_REQUEST packets on `send_pkt`.
-The engine writes output i to CGRA data_mem addr i (i.e. the lowered
-matrix occupies data_mem[0 .. num_outputs)); the consumer configures
-its LD_CONST addresses accordingly.
+Runtime-programmable im2col (image-to-column) engine. Reads a
+single-channel input image resident in a local input scratchpad and
+streams the lowered (kH*kW) x (Hout*Wout) column matrix into the
+enclosing CGRA's shared data memory as a sequence of CMD_STORE_REQUEST
+packets on `send_pkt`.
+
+Configuration model (mirrors CMD_DMA_CONFIG_* convention): the CPU
+sends one CMD per geometry parameter before firing CMD_IM2COL_LAUNCH.
+Each config CMD is consumed by the engine while it sits in S_IDLE and
+latched into the corresponding register. CMD_IM2COL_LAUNCH triggers the
+IDLE -> READ transition, at which point Hout / Wout are precomputed.
+
+  CMD_IM2COL_H                (data)      -> cfg_H
+  CMD_IM2COL_W                (data)      -> cfg_W
+  CMD_IM2COL_KH               (data)      -> cfg_kH
+  CMD_IM2COL_KW               (data)      -> cfg_kW
+  CMD_IM2COL_LOG2_STRIDE      (data)      -> cfg_log2_stride
+  CMD_IM2COL_DST_SRAM_BASE    (data_addr) -> cfg_dst_sram_base_addr
+  CMD_IM2COL_LAUNCH                        -> start processing
+
+The image always sits at offset 0 of the engine's private in_mem
+scratchpad -- since nothing outside the engine addresses in_mem, there
+is no benefit to exposing an input base address.
+
+Stride is passed as log2(stride) so that (H - kH) / stride can be
+implemented as `>> log2_stride`; pymtl3's Verilog translator does not
+support integer `//`. This restricts stride to powers of two (1, 2,
+4, ...).
+
+Emit convention: output i (0-based, ox innermost -> oy -> kx -> ky) is
+stored to shared data_mem addr (dst_sram_base_addr + i).
 
 Note on packet dst_tile: CMD_STORE_REQUEST packets are routed by the
 CGRA controller using the payload.data_addr field alone (see
 ControllerRTL.update_sending_to_noc_msg); the packet's dst_tile is
-ignored on this path. The engine therefore emits dst=0 unconditionally,
-and does not take a dst_tiles list.
-
-Relative to the previous split:
-  Im2colRTL       = stand-alone im2col data mover, wrote its output to
-                    a caller-supplied output scratchpad memory port.
-  Im2colEngineRTL = wrapped that data mover in a private in_mem /
-                    out_mem scratchpad pair plus a follow-on emit FSM
-                    that drained out_mem into CMD_STORE_REQUEST packets.
-
-This file collapses both into one component: on each S_READ we compute
-the current in_mem address, and on the returned data we form the store
-packet directly. There is no output scratchpad -- values are computed
-and emitted in lock-step so the CGRA's shared data_mem is the only
-buffer needed.
-
-The input scratchpad is kept: the caller preloads the image into it at
-construct time so the engine has a stable local buffer to walk during
-im2col (modeling the "image already resident in a nearby SPM" boundary
-condition).
+ignored on this path. The engine emits dst=0 for its store packets.
 
 State machine: IDLE -> READ -> EMIT -> DONE
-  IDLE: wait for `start`.
-  READ: assert the read on in_mem at in_addr(ky, kx, oy, ox).
-  EMIT: hold the incoming data, drive send_pkt with
-        (data_addr = emit_idx, data). On send_pkt fire, advance the
-        nested loop counters (ox innermost, then oy, kx, ky) and
-        either loop back to READ or transition to DONE. The loop order
-        is chosen so emit_idx (the flat output counter) monotonically
-        walks 0 -> num_outputs, which is why we can use emit_idx as
-        the SRAM address directly.
+  IDLE: hold rdy=1; latch config on each CONFIG cmd, transition on LAUNCH.
+  READ: assert the read on in_mem at in_addr(oy, ox, ky, kx).
+  EMIT: hold the incoming data, drive send_pkt. On send_pkt fire,
+        advance the nested loop counters and either loop back to READ
+        or transition to DONE.
   DONE: assert `done` and stay here until reset.
 """
 
 from pymtl3 import *
 
+from ...lib.basic.val_rdy.ifcs import ValRdyRecvIfcRTL as RecvIfcRTL
 from ...lib.basic.val_rdy.ifcs import ValRdySendIfcRTL as SendIfcRTL
-from ...lib.cmd_type import CMD_STORE_REQUEST
+from ...lib.cmd_type import (CMD_IM2COL_DST_SRAM_BASE, CMD_IM2COL_H,
+                              CMD_IM2COL_KH, CMD_IM2COL_KW,
+                              CMD_IM2COL_LAUNCH, CMD_IM2COL_LOG2_STRIDE,
+                              CMD_IM2COL_W, CMD_STORE_REQUEST)
 from ...lib.util.data_struct_attr import kAttrCmd, kAttrDataAddr, kAttrPayload
 from ...mem.data.DataMemRTL import DataMemRTL
 
@@ -59,12 +64,7 @@ class Im2colEngineRTL(Component):
 
   def construct(s, DataType, IntraCgraPktType, CgraPayloadType,
                 scratch_mem_size,
-                in_base, H, W, kH, kW, stride,
                 preload_image):
-
-    Hout = (H - kH) // stride + 1
-    Wout = (W - kW) // stride + 1
-    num_outputs = kH * kW * Hout * Wout
 
     # Derive widths from the passed-in packet types so the engine stays
     # generic across CGRA configurations.
@@ -73,7 +73,8 @@ class Im2colEngineRTL(Component):
     CmdType         = PayloadType.get_field_type(kAttrCmd)
     DataAddrType    = PayloadType.get_field_type(kAttrDataAddr)
 
-    IdxType   = mk_bits(max(1, clog2(num_outputs + 1)))
+    # emit_idx must fit any valid destination offset within data_mem.
+    IdxType   = DataAddrType
     StateType = mk_bits(2)
 
     S_IDLE = StateType(0)
@@ -82,14 +83,16 @@ class Im2colEngineRTL(Component):
     S_DONE = StateType(3)
 
     # Public I/O.
-    s.start    = InPort(b1)
-    s.done     = OutPort(b1)
-    s.send_pkt = SendIfcRTL(IntraCgraPktType)
+    s.recv_cmd_pkt = RecvIfcRTL(IntraCgraPktType)
+    s.done         = OutPort(b1)
+    s.send_pkt     = SendIfcRTL(IntraCgraPktType)
 
-    # Pre-build the input scratchpad preload (image at [in_base, in_base+H*W)).
+    # Input scratchpad: image preloaded starting at addr 0. Real deploys
+    # would fill this via DMA/CPU writes prior to LAUNCH; the preload is
+    # a modeling convenience for tests.
     preload_full = [DataType(0, 1) for _ in range(scratch_mem_size)]
     for i, v in enumerate(preload_image):
-      preload_full[in_base + i] = DataType(v, 1)
+      preload_full[i] = DataType(v, 1)
 
     s.in_mem = DataMemRTL(DataType, scratch_mem_size,
                           rd_ports = 1, wr_ports = 1,
@@ -104,17 +107,33 @@ class Im2colEngineRTL(Component):
     s.emit_idx = Wire(IdxType)
     s.data_reg = Wire(DataType)
 
-    # Combinational address computation. Narrowing casts (ScratchAddrType(...))
-    # prevent pymtl3's AST analyzer from tripping on binop-result slices.
+    # Runtime config registers, latched by the corresponding CMD.
+    s.cfg_H                    = Wire(ScratchAddrType)
+    s.cfg_W                    = Wire(ScratchAddrType)
+    s.cfg_kH                   = Wire(ScratchAddrType)
+    s.cfg_kW                   = Wire(ScratchAddrType)
+    s.cfg_log2_stride          = Wire(ScratchAddrType)
+    s.cfg_dst_sram_base_addr   = Wire(DataAddrType)
+    # Precomputed on LAUNCH so the S_EMIT loop-advance can compare
+    # against a plain register instead of redoing (H-kH)>>log2_stride
+    # each cycle.
+    s.cfg_Hout = Wire(ScratchAddrType)
+    s.cfg_Wout = Wire(ScratchAddrType)
+
+    # Combinational address computation. Narrowing casts keep pymtl3's
+    # AST analyzer happy on binop-result narrowing.
     s.in_row  = Wire(ScratchAddrType)
     s.in_col  = Wire(ScratchAddrType)
     s.in_addr = Wire(ScratchAddrType)
 
     @update
     def comb_in_addr():
-      s.in_row  @= ScratchAddrType(s.oy * stride + s.ky)
-      s.in_col  @= ScratchAddrType(s.ox * stride + s.kx)
-      s.in_addr @= ScratchAddrType(in_base + s.in_row * W + s.in_col)
+      # ox*stride and oy*stride are shifts because stride is stored as
+      # its log2 (Verilog translator has no `//` but supports `>>`/`<<`).
+      # Image is assumed to live at in_mem[0..); no base offset.
+      s.in_row  @= ScratchAddrType((s.oy << s.cfg_log2_stride) + s.ky)
+      s.in_col  @= ScratchAddrType((s.ox << s.cfg_log2_stride) + s.kx)
+      s.in_addr @= ScratchAddrType(s.in_row * s.cfg_W + s.in_col)
 
     # Tie off the unused write port on the input scratchpad.
     @update
@@ -134,6 +153,9 @@ class Im2colEngineRTL(Component):
       s.in_mem.recv_raddr[0].val @= b1(0)
       s.in_mem.recv_raddr[0].msg @= ScratchAddrType(0)
       s.in_mem.send_rdata[0].rdy @= b1(0)
+
+      # Config/launch cmds are accepted only while idle.
+      s.recv_cmd_pkt.rdy @= (s.state == S_IDLE)
 
       s.send_pkt.val @= b1(0)
       s.done         @= b1(0)
@@ -157,7 +179,7 @@ class Im2colEngineRTL(Component):
             PayloadType(
                 CmdType(CMD_STORE_REQUEST),
                 s.data_reg,
-                zext(s.emit_idx, DataAddrType),   # SRAM addr = emit_idx
+                s.cfg_dst_sram_base_addr + zext(s.emit_idx, DataAddrType),
                 0,         # ctrl (zero)
                 0,         # ctrl_addr
             ),
@@ -184,13 +206,39 @@ class Im2colEngineRTL(Component):
         s.data_reg <<= DataType()
       else:
         if s.state == S_IDLE:
-          if s.start:
-            s.state    <<= S_READ
-            s.oy       <<= ScratchAddrType(0)
-            s.ox       <<= ScratchAddrType(0)
-            s.ky       <<= ScratchAddrType(0)
-            s.kx       <<= ScratchAddrType(0)
-            s.emit_idx <<= IdxType(0)
+          if s.recv_cmd_pkt.val:
+            cmd = s.recv_cmd_pkt.msg.payload.cmd
+            # data field carries numeric config values; take the low
+            # ScratchAddrType.nbits bits.
+            data_lo = trunc(s.recv_cmd_pkt.msg.payload.data.payload,
+                            ScratchAddrType)
+            # data_addr field carries SRAM offsets directly.
+            data_addr = s.recv_cmd_pkt.msg.payload.data_addr
+
+            if   cmd == CmdType(CMD_IM2COL_H):
+              s.cfg_H            <<= data_lo
+            elif cmd == CmdType(CMD_IM2COL_W):
+              s.cfg_W            <<= data_lo
+            elif cmd == CmdType(CMD_IM2COL_KH):
+              s.cfg_kH           <<= data_lo
+            elif cmd == CmdType(CMD_IM2COL_KW):
+              s.cfg_kW           <<= data_lo
+            elif cmd == CmdType(CMD_IM2COL_LOG2_STRIDE):
+              s.cfg_log2_stride  <<= data_lo
+            elif cmd == CmdType(CMD_IM2COL_DST_SRAM_BASE):
+              s.cfg_dst_sram_base_addr <<= data_addr
+            elif cmd == CmdType(CMD_IM2COL_LAUNCH):
+              # Precompute Hout/Wout from the currently-latched config.
+              s.cfg_Hout <<= ScratchAddrType(
+                  ((s.cfg_H - s.cfg_kH) >> s.cfg_log2_stride) + 1)
+              s.cfg_Wout <<= ScratchAddrType(
+                  ((s.cfg_W - s.cfg_kW) >> s.cfg_log2_stride) + 1)
+              s.state    <<= S_READ
+              s.oy       <<= ScratchAddrType(0)
+              s.ox       <<= ScratchAddrType(0)
+              s.ky       <<= ScratchAddrType(0)
+              s.kx       <<= ScratchAddrType(0)
+              s.emit_idx <<= IdxType(0)
 
         elif s.state == S_READ:
           if s.in_mem.recv_raddr[0].rdy & s.in_mem.send_rdata[0].val:
@@ -200,23 +248,21 @@ class Im2colEngineRTL(Component):
         elif s.state == S_EMIT:
           if s.send_pkt.val & s.send_pkt.rdy:
             # Loop order (ox -> oy -> kx -> ky, ox innermost) so emit_idx
-            # walks the flat output index (row = ky*kW+kx, col =
-            # oy*Wout+ox, flat = row*Hout*Wout + col) monotonically.
-            # This lets data_addr_const be indexed by emit_idx directly
-            # without an intermediate LUT.
-            if s.ox + ScratchAddrType(1) < ScratchAddrType(Wout):
+            # walks the flat output index monotonically. This lets the
+            # store addr be a simple dst_sram_base_addr + emit_idx sum.
+            if s.ox + ScratchAddrType(1) < s.cfg_Wout:
               s.ox    <<= s.ox + ScratchAddrType(1)
               s.state <<= S_READ
-            elif s.oy + ScratchAddrType(1) < ScratchAddrType(Hout):
+            elif s.oy + ScratchAddrType(1) < s.cfg_Hout:
               s.ox    <<= ScratchAddrType(0)
               s.oy    <<= s.oy + ScratchAddrType(1)
               s.state <<= S_READ
-            elif s.kx + ScratchAddrType(1) < ScratchAddrType(kW):
+            elif s.kx + ScratchAddrType(1) < s.cfg_kW:
               s.ox    <<= ScratchAddrType(0)
               s.oy    <<= ScratchAddrType(0)
               s.kx    <<= s.kx + ScratchAddrType(1)
               s.state <<= S_READ
-            elif s.ky + ScratchAddrType(1) < ScratchAddrType(kH):
+            elif s.ky + ScratchAddrType(1) < s.cfg_kH:
               s.ox    <<= ScratchAddrType(0)
               s.oy    <<= ScratchAddrType(0)
               s.kx    <<= ScratchAddrType(0)
