@@ -97,7 +97,7 @@ class RegisterClusterRTL(Component):
         # of assuming operand slot i always selects physical lane i.
         lane_used_by_fu = (s.inport_opt.fu_in[0] == (i + 1))
         for operand_slot in range(1, num_reg_banks):
-          lane_used_by_fu |= \
+          lane_used_by_fu = lane_used_by_fu | \
               (s.inport_opt.fu_in[operand_slot] == (i + 1))
 
         read_towards = s.inport_opt.read_reg_towards[i]
