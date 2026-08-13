@@ -77,8 +77,35 @@ class TestHarness(Component):
       # The routing-crossbar read path is unused in this harness.
       s.reg_cluster.send_data_to_routing_crossbar[i].rdy //= 0
     s.reg_cluster.clear //= 0
-    # No ctrl stepping in this harness; tokens are held (level reads).
-    s.reg_cluster.inport_ctrl_proceed //= 0
+
+    # Mimics the tile's per-step done-tracking: a configured FU read
+    # path is "done" once it accepted this step's data, and the step
+    # completes (ctrl_proceed pulses) once every configured read path
+    # is done. This drives token consumption and skid commits, like
+    # ctrl_mem.send_ctrl.val & rdy does in the tile.
+    s.fu_path_done = [Wire(1) for _ in range(num_reg_banks)]
+    s.ctrl_proceed = Wire(1)
+    s.reg_cluster.inport_ctrl_proceed //= s.ctrl_proceed
+
+    @update
+    def emulate_step_completion():
+      s.ctrl_proceed @= 1
+      for i in range(num_reg_banks):
+        read_towards = s.src_opt.read_reg_towards[i]
+        towards_fu = (read_towards == READ_TOWARDS_FU) | \
+                     (read_towards == READ_TOWARDS_BOTH)
+        if towards_fu & ~s.fu_path_done[i] & \
+           ~(s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy):
+          s.ctrl_proceed @= 0
+
+    @update_ff
+    def latch_path_done():
+      for i in range(num_reg_banks):
+        if s.reset | s.ctrl_proceed:
+          s.fu_path_done[i] <<= 0
+        else:
+          s.fu_path_done[i] <<= s.fu_path_done[i] | \
+              (s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy)
 
   def done(s):
     for i in range(s.num_reg_banks):
@@ -188,19 +215,18 @@ def test_reg_bank():
 
 class TestHarnessWithXbarSink(Component):
   """
-  When `emulate_ctrl_proceed` is set, the harness mimics the tile's
-  per-ctrl-step done-tracking: `inport_ctrl_proceed` pulses once every
-  configured read path of every bank has been accepted at least once
-  (with sticky per-path done bits, as the tile latches element/crossbar
-  doneness), consuming the tokens of the completing "step". Otherwise
-  `inport_ctrl_proceed` is tied low and tokens are held (level reads).
+  The harness mimics the tile's per-ctrl-step done-tracking:
+  `inport_ctrl_proceed` pulses once every configured read path of every
+  bank has been accepted at least once (with sticky per-path done bits,
+  as the tile latches element/crossbar doneness), consuming the tokens
+  of the completing "step" and committing parked skid-buffer writes.
   """
 
   def construct(s, DataType, ConfigType, num_reg_banks, num_registers,
                 src_opt, src_msgs_routing_xbar, src_msgs_fu_xbar,
                 src_msgs_const, sink_msgs_fu, sink_msgs_xbar,
                 sink_fu_initial_delay = 0, sink_xbar_initial_delay = 0,
-                sink_fu_interval_delay = 0, emulate_ctrl_proceed = False):
+                sink_fu_interval_delay = 0, sink_xbar_interval_delay = 0):
 
     s.num_reg_banks = num_reg_banks
     s.src_opt = Wire(ConfigType)
@@ -217,7 +243,8 @@ class TestHarnessWithXbarSink(Component):
                                interval_delay = sink_fu_interval_delay)
                    for i in range(num_reg_banks)]
     s.sink_xbar = [TestSinkRTL(DataType, sink_msgs_xbar[i],
-                               initial_delay = sink_xbar_initial_delay)
+                               initial_delay = sink_xbar_initial_delay,
+                               interval_delay = sink_xbar_interval_delay)
                    for i in range(num_reg_banks)]
 
     s.reg_cluster = RegisterClusterRTL(DataType, ConfigType, num_reg_banks,
@@ -236,46 +263,43 @@ class TestHarnessWithXbarSink(Component):
       s.reg_cluster.send_data_to_routing_crossbar[i] //= s.sink_xbar[i].recv
     s.reg_cluster.clear //= 0
 
-    if not emulate_ctrl_proceed:
-      s.reg_cluster.inport_ctrl_proceed //= 0
-    else:
-      # Mimics the tile's per-step done-tracking (element_done /
-      # routing_crossbar_done): a path is "done" once it accepted this
-      # step's data; the step completes (ctrl_proceed pulses) once every
-      # configured read path of every bank is done.
-      s.fu_path_done = [Wire(1) for _ in range(num_reg_banks)]
-      s.xbar_path_done = [Wire(1) for _ in range(num_reg_banks)]
-      s.ctrl_proceed = Wire(1)
+    # Mimics the tile's per-step done-tracking (element_done /
+    # routing_crossbar_done): a path is "done" once it accepted this
+    # step's data; the step completes (ctrl_proceed pulses) once every
+    # configured read path of every bank is done.
+    s.fu_path_done = [Wire(1) for _ in range(num_reg_banks)]
+    s.xbar_path_done = [Wire(1) for _ in range(num_reg_banks)]
+    s.ctrl_proceed = Wire(1)
 
-      s.reg_cluster.inport_ctrl_proceed //= s.ctrl_proceed
+    s.reg_cluster.inport_ctrl_proceed //= s.ctrl_proceed
 
-      @update
-      def emulate_step_completion():
-        s.ctrl_proceed @= 1
-        for i in range(num_reg_banks):
-          read_towards = s.src_opt.read_reg_towards[i]
-          towards_fu = (read_towards == READ_TOWARDS_FU) | \
+    @update
+    def emulate_step_completion():
+      s.ctrl_proceed @= 1
+      for i in range(num_reg_banks):
+        read_towards = s.src_opt.read_reg_towards[i]
+        towards_fu = (read_towards == READ_TOWARDS_FU) | \
+                     (read_towards == READ_TOWARDS_BOTH)
+        towards_xbar = (read_towards == READ_TOWARDS_ROUTING_XBAR) | \
                        (read_towards == READ_TOWARDS_BOTH)
-          towards_xbar = (read_towards == READ_TOWARDS_ROUTING_XBAR) | \
-                         (read_towards == READ_TOWARDS_BOTH)
-          if towards_fu & ~s.fu_path_done[i] & \
-             ~(s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy):
-            s.ctrl_proceed @= 0
-          if towards_xbar & ~s.xbar_path_done[i] & \
-             ~(s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy):
-            s.ctrl_proceed @= 0
+        if towards_fu & ~s.fu_path_done[i] & \
+           ~(s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy):
+          s.ctrl_proceed @= 0
+        if towards_xbar & ~s.xbar_path_done[i] & \
+           ~(s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy):
+          s.ctrl_proceed @= 0
 
-      @update_ff
-      def latch_path_done():
-        for i in range(num_reg_banks):
-          if s.reset | s.ctrl_proceed:
-            s.fu_path_done[i] <<= 0
-            s.xbar_path_done[i] <<= 0
-          else:
-            s.fu_path_done[i] <<= s.fu_path_done[i] | \
-                (s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy)
-            s.xbar_path_done[i] <<= s.xbar_path_done[i] | \
-                (s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy)
+    @update_ff
+    def latch_path_done():
+      for i in range(num_reg_banks):
+        if s.reset | s.ctrl_proceed:
+          s.fu_path_done[i] <<= 0
+          s.xbar_path_done[i] <<= 0
+        else:
+          s.fu_path_done[i] <<= s.fu_path_done[i] | \
+              (s.reg_cluster.send_data_to_fu[i].val & s.reg_cluster.send_data_to_fu[i].rdy)
+          s.xbar_path_done[i] <<= s.xbar_path_done[i] | \
+              (s.reg_cluster.send_data_to_routing_crossbar[i].val & s.reg_cluster.send_data_to_routing_crossbar[i].rdy)
 
   def done(s):
     for i in range(s.num_reg_banks):
@@ -486,7 +510,9 @@ def test_reg_cluster_token_not_overwritten():
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
   # Both tokens must arrive, in order, despite the stalled consumer.
-  sink_msgs_fu   = [[DataType(100, 1), DataType(200, 1)], [], [], []]
+  # The stalled sink's first acceptance is the legacy read of the
+  # not-yet-committed ("unarmed") register.
+  sink_msgs_fu   = [[DataType(0, 0), DataType(100, 1), DataType(200, 1)], [], [], []]
   sink_msgs_xbar = [[] for _ in range(num_reg_banks)]
 
   th = TestHarnessWithXbarSink(
@@ -497,8 +523,7 @@ def test_reg_cluster_token_not_overwritten():
       src_data_from_const,
       sink_msgs_fu,
       sink_msgs_xbar,
-      sink_fu_initial_delay = 5,
-      emulate_ctrl_proceed = True)
+      sink_fu_initial_delay = 5)
   run_sim(th, max_cycles = 25)
 
 #-------------------------------------------------------------------------
@@ -541,8 +566,11 @@ def test_reg_cluster_both_paths_skewed_acceptance():
   src_data_from_fu_xbar      = [[], [], [DataType(55, 1), DataType(66, 1)], []]
   src_data_from_const        = [[] for _ in range(num_reg_banks)]
 
-  sink_msgs_fu   = [[], [], [DataType(55, 1), DataType(66, 1)], []]
-  sink_msgs_xbar = [[], [], [DataType(55, 1), DataType(66, 1)], []]
+  # Both sinks first observe the legacy read of the not-yet-committed
+  # ("unarmed") register (55 parks in the skid until that first
+  # pseudo-step completes), then the two real tokens, in order.
+  sink_msgs_fu   = [[], [], [DataType(0, 0), DataType(55, 1), DataType(66, 1)], []]
+  sink_msgs_xbar = [[], [], [DataType(0, 0), DataType(55, 1), DataType(66, 1)], []]
 
   th = TestHarnessWithXbarSink(
       DataType, ConfigType, num_reg_banks, num_registers_per_reg_bank,
@@ -555,5 +583,62 @@ def test_reg_cluster_both_paths_skewed_acceptance():
       sink_fu_initial_delay = 3,
       sink_xbar_initial_delay = 6,
       sink_fu_interval_delay = 5,
-      emulate_ctrl_proceed = True)
+      # Both sinks pace themselves so neither re-accepts a token that is
+      # held for the other (slower) path within the same pseudo-step.
+      sink_xbar_interval_delay = 4)
+  run_sim(th, max_cycles = 30)
+#-------------------------------------------------------------------------
+# test: the write skid buffer parks a blocked write and commits it once
+# the target register's token is consumed
+#-------------------------------------------------------------------------
+
+def test_reg_cluster_write_skid_buffer():
+  """
+  Sends three values (100, 200, 300) back-to-back into reg[5] of bank 0
+  via the FU-crossbar path while the FU sink stalls for several cycles.
+  100 lands directly (register free). 200 arrives while 100's token is
+  unconsumed: it is accepted into the skid buffer (the producer's
+  handshake completes) and committed into the register once 100's token
+  is consumed. 300 is backpressured until the skid frees up, then parks
+  and commits in turn. The FU receives all three values, in order —
+  nothing is lost, nothing overwritten (issues #321/#281).
+  """
+  DataType   = mk_data(16, 1)
+  num_fu_inports             = 4
+  num_fu_outports            = 2
+  num_tile_inports           = 4
+  num_tile_outports          = 4
+  num_registers_per_reg_bank = 16
+  num_reg_banks              = 4
+
+  ConfigType = mk_ctrl(num_fu_inports, num_fu_outports,
+                       num_tile_inports, num_tile_outports,
+                       num_registers_per_reg_bank)
+  FuInType   = mk_bits(clog2(num_fu_inports + 1))
+
+  src_opt = ConfigType(OPT_ADD_CONST, [FuInType(x + 1) for x in range(num_fu_inports)])
+  src_opt.write_reg_from[0]   = b2(PORT_FU_CROSSBAR)
+  src_opt.write_reg_idx[0]    = b4(5)
+  src_opt.read_reg_towards[0] = b2(READ_TOWARDS_FU)
+  src_opt.read_reg_idx[0]     = b4(5)
+
+  src_data_from_routing_xbar = [[] for _ in range(num_reg_banks)]
+  src_data_from_fu_xbar      = [[DataType(100, 1), DataType(200, 1), DataType(300, 1)], [], [], []]
+  src_data_from_const        = [[] for _ in range(num_reg_banks)]
+
+  # The stalled sink's first acceptance is the legacy read of the
+  # not-yet-committed ("unarmed") register; the three writes then flow
+  # through park/commit in order.
+  sink_msgs_fu   = [[DataType(0, 0), DataType(100, 1), DataType(200, 1), DataType(300, 1)], [], [], []]
+  sink_msgs_xbar = [[] for _ in range(num_reg_banks)]
+
+  th = TestHarnessWithXbarSink(
+      DataType, ConfigType, num_reg_banks, num_registers_per_reg_bank,
+      src_opt,
+      src_data_from_routing_xbar,
+      src_data_from_fu_xbar,
+      src_data_from_const,
+      sink_msgs_fu,
+      sink_msgs_xbar,
+      sink_fu_initial_delay = 5)
   run_sim(th, max_cycles = 30)

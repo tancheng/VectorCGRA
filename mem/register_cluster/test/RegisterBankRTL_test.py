@@ -41,8 +41,16 @@ class TestHarness(Component):
     # The routing-crossbar read path is unused in this test.
     s.reg_bank.send_data_to_xbar.rdy //= 0
     s.reg_bank.clear //= 0
-    # No ctrl stepping in this harness; tokens are held (level reads).
-    s.reg_bank.inport_ctrl_proceed //= 0
+
+    # Mimics the tile's per-step completion for this FU-only read
+    # config: the step completes as soon as the FU path accepts,
+    # consuming the token and committing any parked skid-buffer write.
+    s.ctrl_proceed = Wire(1)
+    s.reg_bank.inport_ctrl_proceed //= s.ctrl_proceed
+
+    @update
+    def emulate_step_completion():
+      s.ctrl_proceed @= s.reg_bank.send_data_to_fu.val & s.reg_bank.send_data_to_fu.rdy
 
   def done(s):
     return s.sink.done()
@@ -215,12 +223,12 @@ def test_conditional_feedback_preserves_or_replaces_version():
   dut.inport_valid[PORT_INDEX_FU_CROSSBAR] @= 1
   dut.inport_wdata[PORT_INDEX_FU_CROSSBAR] @= DataType(99, 1)
   dut.sim_tick()
-  assert dut.pending_valid
+  assert dut.skid_valid
   dut.inport_valid[PORT_INDEX_FU_CROSSBAR] @= 0
   dut.inport_ctrl_proceed @= 1
   dut.sim_tick()
   dut.inport_ctrl_proceed @= 0
   dut.sim_eval_combinational()
-  assert not dut.pending_valid
+  assert not dut.skid_valid
   assert dut.send_data_to_fu.val
   assert dut.send_data_to_fu.msg == DataType(99, 1)
