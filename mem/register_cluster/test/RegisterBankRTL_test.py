@@ -116,3 +116,111 @@ def test_reg_bank():
                    src_opt, write_data, expected_read_data)
   run_sim(th)
 
+
+def test_retain_register_version_until_final_read():
+  DataType = mk_data(16, 1)
+  ConfigType = mk_ctrl(4, 2, 4, 4, 16)
+  reg_bank_id = 0
+  dut = RegisterBankRTL(DataType, ConfigType, reg_bank_id, 16)
+  dut.elaborate()
+  dut.apply(DefaultPassGroup())
+  dut.sim_reset()
+
+  dut.clear @= 0
+  dut.inport_ctrl_proceed @= 0
+  dut.send_data_to_fu.rdy @= 1
+  dut.send_data_to_xbar.rdy @= 1
+  for port in range(3):
+    dut.inport_valid[port] @= 0
+    dut.inport_wdata[port] @= DataType()
+
+  # Produce version 42 in register zero.
+  write_ctrl = ConfigType()
+  write_ctrl.write_reg_from[reg_bank_id] = PORT_CONST
+  write_ctrl.write_reg_idx[reg_bank_id] = 0
+  dut.inport_opt @= write_ctrl
+  dut.inport_valid[PORT_INDEX_CONST] @= 1
+  dut.inport_wdata[PORT_INDEX_CONST] @= DataType(42, 1)
+  dut.sim_tick()
+
+  # A non-final read completes but explicitly keeps the same version live.
+  read_ctrl = ConfigType()
+  read_ctrl.read_reg_towards[reg_bank_id] = READ_TOWARDS_FU
+  read_ctrl.read_reg_idx[reg_bank_id] = 0
+  read_ctrl.read_reg_retain[reg_bank_id] = 1
+  dut.inport_opt @= read_ctrl
+  dut.inport_valid[PORT_INDEX_CONST] @= 0
+  dut.inport_ctrl_proceed @= 1
+  dut.sim_eval_combinational()
+  assert dut.send_data_to_fu.val
+  assert dut.send_data_to_fu.msg == DataType(42, 1)
+  dut.sim_tick()
+
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert dut.send_data_to_fu.val
+  assert dut.send_data_to_fu.msg == DataType(42, 1)
+
+  # The final read releases the version; a later read cannot replay it.
+  read_ctrl.read_reg_retain[reg_bank_id] = 0
+  dut.inport_opt @= read_ctrl
+  dut.inport_ctrl_proceed @= 1
+  dut.sim_tick()
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert not dut.send_data_to_fu.val
+
+
+def test_conditional_feedback_preserves_or_replaces_version():
+  DataType = mk_data(16, 1)
+  ConfigType = mk_ctrl(4, 2, 4, 4, 16)
+  dut = RegisterBankRTL(DataType, ConfigType, 0, 16)
+  dut.elaborate()
+  dut.apply(DefaultPassGroup())
+  dut.sim_reset()
+
+  dut.clear @= 0
+  dut.inport_ctrl_proceed @= 0
+  dut.send_data_to_fu.rdy @= 1
+  dut.send_data_to_xbar.rdy @= 1
+  for port in range(3):
+    dut.inport_valid[port] @= 0
+    dut.inport_wdata[port] @= DataType()
+
+  write_ctrl = ConfigType()
+  write_ctrl.write_reg_from[0] = PORT_CONST
+  dut.inport_opt @= write_ctrl
+  dut.inport_valid[PORT_INDEX_CONST] @= 1
+  dut.inport_wdata[PORT_INDEX_CONST] @= DataType(42, 1)
+  dut.sim_tick()
+
+  feedback_ctrl = ConfigType()
+  feedback_ctrl.read_reg_towards[0] = READ_TOWARDS_FU
+  feedback_ctrl.read_reg_retain[0] = 1
+  feedback_ctrl.write_reg_from[0] = PORT_FU_CROSSBAR
+  dut.inport_opt @= feedback_ctrl
+  dut.inport_valid[PORT_INDEX_CONST] @= 0
+
+  # A predicated-away feedback write has no val. Completing the step must
+  # preserve the old version for its next scheduled user.
+  dut.inport_ctrl_proceed @= 1
+  dut.sim_tick()
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert dut.send_data_to_fu.val
+  assert dut.send_data_to_fu.msg == DataType(42, 1)
+
+  # If feedback arrives before the rest of the ctrl step completes, it waits
+  # in the pending slot and atomically becomes the live version on proceed.
+  dut.inport_valid[PORT_INDEX_FU_CROSSBAR] @= 1
+  dut.inport_wdata[PORT_INDEX_FU_CROSSBAR] @= DataType(99, 1)
+  dut.sim_tick()
+  assert dut.pending_valid
+  dut.inport_valid[PORT_INDEX_FU_CROSSBAR] @= 0
+  dut.inport_ctrl_proceed @= 1
+  dut.sim_tick()
+  dut.inport_ctrl_proceed @= 0
+  dut.sim_eval_combinational()
+  assert not dut.pending_valid
+  assert dut.send_data_to_fu.val
+  assert dut.send_data_to_fu.msg == DataType(99, 1)

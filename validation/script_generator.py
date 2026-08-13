@@ -254,6 +254,7 @@ class InstructionSignals:
         self.FuOutParams = [-1, -1, -1, -1, -1, -1, -1, -1]
         self.read_reg_towards_fu = [-1, -1, -1, -1]
         self.read_reg_towards_xbar = [-1, -1, -1, -1]
+        self.read_reg_retain = [0, 0, 0, 0]
         self.operand_from = [-1, -1, -1, -1]
         self.read_towards_reg_idx = [-1, -1, -1, -1]
         self.write_to_reg = [-1, -1, -1, -1]
@@ -552,6 +553,7 @@ class InstructionSignals:
 
         # read_reg_towards uses 2-bit type (RegFromType): 0=nothing, 1=FU, 2=routing_xbar, 3=both
         read_reg_towards_made = [self.B2Type(x) for x in read_towards]
+        read_reg_retain_made = [self.B1Type(x) for x in self.read_reg_retain]
         
         for idx, read_towards_reg_idx in enumerate(self.read_towards_reg_idx):
             if read_towards_reg_idx == -1:
@@ -574,6 +576,7 @@ class InstructionSignals:
                                                                                         write_reg_idx = write_reg_idx_made,
                                                                                         read_reg_towards = read_reg_towards_made,
                                                                                         read_reg_idx = read_reg_idx_made,
+                                                                                        read_reg_retain = read_reg_retain_made,
                                                                                         )))
         return pkt
 
@@ -690,6 +693,56 @@ class TileSignals:
                                                                      ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
                                                                      # WARN:by now, only support one result for each operation
                                                                      data = self.DataType(prologue_count, 1)))
+
+    def mark_nonfinal_register_reads(self, instruction_signals):
+        """Mark reads whose current register version has a later user.
+
+        Control memory executes cyclically. For each read, the next event for
+        the same physical register determines its lifetime: another read means
+        a value must remain live, while a write-only step begins a new version
+        and therefore makes this read the final user of the old one. A later
+        read-modify-write reads first and may predicate its replacement away.
+        """
+        ordered_signals = sorted(instruction_signals,
+                                 key=lambda signal: signal.ctrl_addr)
+        num_signals = len(ordered_signals)
+
+        for signal_index, signal in enumerate(ordered_signals):
+            for bank_index in range(len(signal.read_towards_reg_idx)):
+                reads_register = \
+                    signal.read_reg_towards_fu[bank_index] == 1 or \
+                    signal.read_reg_towards_xbar[bank_index] == 1
+                if not reads_register:
+                    continue
+
+                register_index = signal.read_towards_reg_idx[bank_index]
+                signal.read_reg_retain[bank_index] = 0
+
+                # Reads occur before writes within a ctrl step. A configured
+                # feedback write can also be predicated away, so it cannot by
+                # itself end the old version's lifetime. Search through one
+                # complete loop and let the next actual user decide whether a
+                # live version must remain after this step.
+                for distance in range(1, num_signals + 1):
+                    later_signal = ordered_signals[
+                        (signal_index + distance) % num_signals]
+
+                    reads_register = \
+                        (later_signal.read_reg_towards_fu[bank_index] == 1 or
+                         later_signal.read_reg_towards_xbar[bank_index] == 1) and \
+                        later_signal.read_towards_reg_idx[bank_index] == \
+                        register_index
+                    if reads_register:
+                        signal.read_reg_retain[bank_index] = 1
+                        break
+
+                    writes_register = \
+                        later_signal.write_to_reg[bank_index] != -1 and \
+                        later_signal.write_to_reg_idx[bank_index] == \
+                        register_index
+                    if writes_register:
+                        break
+
     def makeTileSignals(self):
         consts = []
         all_signals = []
@@ -790,6 +843,11 @@ class TileSignals:
             const = instruction_signals.buildCtrlPkt()
             if const is not None:
                 consts.extend(const)
+
+        # Resolve register-version lifetimes only after every ctrl slot has
+        # exposed its reads and writes. This preserves one hardware protocol
+        # while supporting values intentionally reused by later ctrl slots.
+        self.mark_nonfinal_register_reads(all_instruction_signals)
         
         # make the const signals
         # sort the consts according to the usage order

@@ -107,6 +107,7 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_idx[i]
         s.reg_file.wdata[0].read_reg_towards[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_towards[i]
         s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_idx[i]
+        s.reg_file.wdata[0].read_reg_retain[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_retain[i]
       for i in range(num_routing_outports):
         s.reg_file.wdata[0].routing_xbar_outport[i] @= 0
         s.reg_file.wdata[0].fu_xbar_outport[i] @= 0
@@ -124,6 +125,7 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].write_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.write_reg_idx[i]
           s.reg_file.wdata[0].read_reg_towards[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_towards[i]
           s.reg_file.wdata[0].read_reg_idx[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_idx[i]
+          s.reg_file.wdata[0].read_reg_retain[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.read_reg_retain[i]
         for i in range(num_routing_outports):
           s.reg_file.wdata[0].routing_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.routing_xbar_outport[i]
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
@@ -217,6 +219,7 @@ class CtrlMemDynamicRTL(Component):
         s.send_ctrl.msg.write_reg_idx[i]    @= s.reg_file.rdata[0].write_reg_idx[i]
         s.send_ctrl.msg.read_reg_towards[i] @= s.reg_file.rdata[0].read_reg_towards[i]
         s.send_ctrl.msg.read_reg_idx[i]     @= s.reg_file.rdata[0].read_reg_idx[i]
+        s.send_ctrl.msg.read_reg_retain[i]  @= s.reg_file.rdata[0].read_reg_retain[i]
       for i in range(num_routing_outports):
         s.send_ctrl.msg.routing_xbar_outport[i] @= s.reg_file.rdata[0].routing_xbar_outport[i]
         s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
@@ -347,4 +350,3 @@ class CtrlMemDynamicRTL(Component):
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
     return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
-

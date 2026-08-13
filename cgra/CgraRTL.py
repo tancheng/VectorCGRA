@@ -35,8 +35,7 @@ class CgraRTL(Component):
                 controller2addr_map, idTo2d_map,
                 is_multi_cgra = True,
                 has_ctrl_ring = True,
-                has_im2col_engine = False,
-                enable_token_discipline = True):
+                has_im2col_engine = False):
 
     # Derives all types from CgraPayloadType.
     DataType = CgraPayloadType.get_field_type(kAttrData)
@@ -110,8 +109,7 @@ class CgraRTL(Component):
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,
                       num_registers_per_reg_bank,
-                      FuList = FuList,
-                      enable_token_discipline = enable_token_discipline)
+                      FuList = FuList)
               for i in range(s.num_tiles)]
     s.data_mem = DataMemControllerRTL(NocPktType,
                                       data_mem_size_global,
@@ -293,6 +291,5 @@ class CgraRTL(Component):
       res += "\n :: [" + s.ctrl_ring.line_trace() + "]    \n"
     res += "\n :: [" + s.data_mem.line_trace() + "]    \n"
     return res
-
 
 

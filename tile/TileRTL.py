@@ -43,8 +43,7 @@ class TileRTL(Component):
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
                 Fu = FlexibleFuRTL,
-                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL],
-                enable_token_discipline = True):
+                FuList = [PhiRTL, AdderRTL, CompRTL, MulRTL, GrantRTL, MemUnitRTL]):
 
     # Derives types from IntraCgraPktType.
     CgraPayloadType = IntraCgraPktType.get_field_type(kAttrPayload)
@@ -103,8 +102,7 @@ class TileRTL(Component):
                                 num_tile_outports)
     s.register_cluster = \
         RegisterClusterRTL(DataType, CtrlSignalType, num_fu_inports,
-                           num_registers_per_reg_bank,
-                           enable_token_discipline)
+                           num_registers_per_reg_bank)
     s.ctrl_mem = CtrlMemDynamicRTL(CtrlPktType,
                                    ctrl_mem_size,
                                    num_fu_inports,

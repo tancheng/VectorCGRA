@@ -79,8 +79,7 @@ class TestHarness(Component):
                 mem_access_is_combinational,
                 FunctionUnit, FuList, "Mesh",
                 controller2addr_map, idTo2d_map,
-                is_multi_cgra = False,
-                enable_token_discipline = False)
+                is_multi_cgra = False)
 
     cmp_fn = lambda a, b : a.payload.data == b.payload.data and a.payload.cmd == b.payload.cmd
     s.complete_signal_sink_out = TestSinkRTL(CtrlPktType, complete_signal_sink_out, cmp_fn = cmp_fn)

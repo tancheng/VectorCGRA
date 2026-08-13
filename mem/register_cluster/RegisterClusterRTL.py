@@ -24,8 +24,7 @@ from ...lib.util.common import *
 class RegisterClusterRTL(Component):
 
   def construct(s, DataType, CtrlType, num_reg_banks,
-                num_registers_per_reg_bank = 4,
-                enable_token_discipline = True):
+                num_registers_per_reg_bank = 4):
 
     # Interface
     s.inport_opt = InPort(CtrlType)
@@ -43,8 +42,7 @@ class RegisterClusterRTL(Component):
 
     # Component
     s.reg_bank = [RegisterBankRTL(DataType, CtrlType, i,
-                                  num_registers_per_reg_bank,
-                                  enable_token_discipline)
+                                  num_registers_per_reg_bank)
                   for i in range(num_reg_banks)]
 
     # Connections.
