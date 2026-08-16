@@ -1348,11 +1348,12 @@ def initialize_test_harness(cmdline_opts,
     kLoopUpperBound = 10
     kCtrlCountPerIter = 4
     ctrl_steps_per_iter = kCtrlCountPerIter
-    # Though kTotalCtrlSteps is way more than required loop iteration count,
-    # the stored result should still be correct thanks to the grant predicate.
+    # Keep a bounded drain window after the final loop iteration. The RET
+    # complete is now tied to the final control step rather than an early
+    # predicate-only value.
     kTotalCtrlSteps = kCtrlCountPerIter * \
                       (kLoopUpperBound - kLoopLowerBound) + \
-                      100
+                      13
     ctrl_steps_total = kTotalCtrlSteps
     kExpectedOutput = 2215
 
@@ -1922,11 +1923,12 @@ def initialize_test_harness(cmdline_opts,
     kLoopUpperBound = 10
     kCtrlCountPerIter = 4
     ctrl_steps_per_iter = kCtrlCountPerIter
-    # Though kTotalCtrlSteps is way more than required loop iteration count,
-    # the stored result should still be correct thanks to the grant predicate.
+    # Keep a bounded drain window after the final loop iteration. The RET
+    # complete is now tied to the final control step rather than an early
+    # predicate-only value.
     kTotalCtrlSteps = kCtrlCountPerIter * \
                       (kLoopUpperBound - kLoopLowerBound) + \
-                      100
+                      13
     ctrl_steps_total = kTotalCtrlSteps
     kExpectedOutput = 2215
 
@@ -2524,11 +2526,12 @@ def initialize_test_harness(cmdline_opts,
     kLoopUpperBound = 4
     kCtrlCountPerIter = 4
     ctrl_steps_per_iter = kCtrlCountPerIter
-    # Though kTotalCtrlSteps is way more than required loop iteration count,
-    # the stored result should still be correct thanks to the grant predicate.
+    # Keep a bounded drain window after the final loop iteration. The RET
+    # complete is now tied to the final control step rather than an early
+    # predicate-only value.
     kTotalCtrlSteps = kCtrlCountPerIter * \
                       (kLoopUpperBound - kLoopLowerBound) + \
-                      30
+                      13
     ctrl_steps_total = kTotalCtrlSteps
     kExpectedOutput = 2215
 
@@ -3198,11 +3201,12 @@ def initialize_test_harness(cmdline_opts,
     kLoopUpperBound = 4
     kCtrlCountPerIter = 4
     ctrl_steps_per_iter = kCtrlCountPerIter
-    # Though kTotalCtrlSteps is way more than required loop iteration count,
-    # the stored result should still be correct thanks to the grant predicate.
+    # Keep a bounded drain window after the final loop iteration. The RET
+    # complete is now tied to the final control step rather than an early
+    # predicate-only value.
     kTotalCtrlSteps = kCtrlCountPerIter * \
                       (kLoopUpperBound - kLoopLowerBound) + \
-                      30
+                      13
     ctrl_steps_total = kTotalCtrlSteps
     kExpectedOutput = 2212 * 2 + kSumInitValue
 
@@ -4375,7 +4379,7 @@ def test_multi_CGRA_fir_vector_global_reduce(cmdline_opts):
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
-  run_sim(th)
+  run_sim(th, 300)
 
 def test_multi_CGRA_fir_vector_global_reduce_translation(cmdline_opts):
   th = initialize_test_harness(cmdline_opts,

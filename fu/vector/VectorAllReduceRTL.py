@@ -137,7 +137,7 @@ class VectorAllReduceRTL(Component):
       s.recv_in[1].rdy @= (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)) & \
                            s.send_out[0].rdy) | \
-                          (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL) | \
+                          (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
                            s.send_to_ctrl_mem.rdy)
       s.send_out[0].val @= (s.recv_in[0].val & \

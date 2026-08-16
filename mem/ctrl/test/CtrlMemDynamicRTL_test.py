@@ -263,10 +263,10 @@ def test_return():
   num_cgra_columns = 1
   num_cgra_rows = 1
 
-  # 1 iter has 3 ctrl signals.
-  ctrl_count_per_iter = 3
+  # 1 iter selects the two RET ctrl signals; the second RET is final.
+  ctrl_count_per_iter = 2
   # Only executes for 1 iter.
-  total_ctrl_steps_val = 3
+  total_ctrl_steps_val = 2
 
 
   CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
@@ -311,8 +311,10 @@ def test_return():
   # Though we have two RET opcodes/instructions need to be executed,
   # only the second one has the predicate as true, leadint to single
   # expected output.
+  expected_ret_ctrl = CtrlType(OPT_RET, pick_register)
+  expected_ret_ctrl.is_last_ctrl = 1
   complete_signal_sink_out = [
-      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0), ctrl = CtrlType(OPT_RET, pick_register)))]
+      IntraCgraPktType(0,  num_tiles,  0, 0, 0, 0, 0, 0, 0,  0, CgraPayloadType(CMD_COMPLETE, DataType(6, 1, 0, 0), ctrl = expected_ret_ctrl))]
 
   th = TestHarness(MemUnit,
                    IntraCgraPktType,
