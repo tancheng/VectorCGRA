@@ -87,8 +87,12 @@ class CrossbarRTL(Component):
     # in the current cycle via send_rdy_vector).
     s.all_send_accepted = Wire(b1)
 
-    # Prologue-related wires and registers, which are used to indicate
-    # whether the prologue steps have already been satisfied.
+    # Prologue-related wires and registers. A prologued input lets the
+    # current control step proceed as if that input were present, but the
+    # token is neither required nor consumed until a later non-prologue step.
+    # Example: a one-cycle routing prologue on input N skips waiting for N in
+    # this ctrl step; if token A is already sitting on N, A stays queued for
+    # the first real routed step.
     s.during_prologue_allowing_vector = Wire(num_outports)
     s.recv_valid_or_during_prologue_allowing_vector = Wire(num_outports)
     s.prologue_counter = [[Wire(PrologueCountType) for _ in range(num_inports)] for _ in range(ctrl_mem_size)]
@@ -125,7 +129,7 @@ class CrossbarRTL(Component):
             s.all_send_accepted @= 0
 
         for i in range(num_inports):
-          s.recv_data[i].rdy @= reduce_and(s.recv_valid_vector) & \
+          s.recv_data[i].rdy @= reduce_and(s.recv_valid_or_during_prologue_allowing_vector) & \
                                 s.all_send_accepted & \
                                 s.recv_required_vector[i]
 
@@ -232,11 +236,8 @@ class CrossbarRTL(Component):
     def update_rdy_vector():
       s.send_rdy_vector @= 0
       for i in range(num_outports):
-        # The `outport_towards_local_base_id` indicates the number of outports that go to other tiles.
-        # Specifically, if the compute already done, we shouldn't care the ones
-        # (i.e., i >= outport_towards_local_base_id) go to the FU's inports. In other words, we skip
-        # the rdy checking on the FU's inports (connecting from crossbar_outport) if
-        # the compute is already completed.
+        # After the FU finishes, only directions toward a local consumer still
+        # backpressure the crossbar; routed outputs may drain independently.
         if (s.in_dir[i] > 0) & \
            (~s.compute_done | (i < outport_towards_local_base_id)):
           s.send_rdy_vector[i] @= s.send_data[i].rdy
@@ -259,8 +260,9 @@ class CrossbarRTL(Component):
 
       for i in range(num_outports):
         if s.in_dir[i] > 0:
-          # Avoids crossbar mistakenly consume data during prologue.
-          s.recv_required_vector[s.in_dir_local[i]] @= ~s.during_prologue_allowing_vector[i]
+          # A prologue advances control without routing or dequeuing its input.
+          s.recv_required_vector[s.in_dir_local[i]] @= \
+              ~s.during_prologue_allowing_vector[i]
 
     @update
     def update_send_required_vector():
@@ -269,7 +271,7 @@ class CrossbarRTL(Component):
         s.send_required_vector[i] @= 0
 
       for i in range(num_outports):
-        if s.in_dir[i] > 0:
+        if (s.in_dir[i] > 0) & ~s.during_prologue_allowing_vector[i]:
           s.send_required_vector[i] @= 1
 
 
@@ -278,4 +280,3 @@ class CrossbarRTL(Component):
     recv_str = "|".join([str(x.msg) for x in s.recv_data])
     out_str  = "|".join([str(x.msg) for x in s.send_data])
     return f"{recv_str} [{s.recv_opt.msg}] {out_str}"
-
