@@ -24,9 +24,9 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload in bits (197).
+  // Packed dimension: 202-bit IntraCgraPacket_4_2x2_16_8_2_CgraPayload.
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [198-1:0] pkt_queue [$];
+  logic [202-1:0] pkt_queue [$];
 
   initial
   begin
@@ -1085,9 +1085,10 @@ module cgra_test
   begin
     recv_from_cpu_pkt__val = 0;
 
-    // Wait for reset to be de-asserted.
-    @(negedge reset); // Starts at 0 which counts as a negedge.
-    @(negedge reset); // Actual falling edge after active-high region.
+    // Wait for the complete active-high reset pulse. Do not depend on the
+    // simulator treating the initial X-to-0 transition as a negedge.
+    @(posedge reset);
+    @(negedge reset);
     @(posedge clk);
 
     forever
@@ -1310,4 +1311,3 @@ typedef struct packed {
 
 
 endmodule
-

@@ -1,4 +1,4 @@
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 make_intra_cgra_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -8,7 +8,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   input logic [6:0] data_addr,
   input logic [6:0] ctrl_operation
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -43,6 +43,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   pkt.payload.ctrl.write_reg_idx       = '{default: 4'd0};
   pkt.payload.ctrl.read_reg_towards      = '{default: 2'd0};
   pkt.payload.ctrl.read_reg_idx        = '{default: 4'd0};
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
 /*
 111103b7 lui x7
@@ -110,7 +111,7 @@ ADD 10 10 31
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_config_pkt
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 make_intra_cgra_config_pkt
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -125,7 +126,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   input logic [3:0][3:0] read_reg_idx,
   input logic [3:0] ctrl_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -154,6 +155,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
   file_handle = $fopen("hexcode.txt", "a");
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
@@ -190,7 +192,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   return pkt;
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 make_intra_cgra_config_pkt_w_data
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 make_intra_cgra_config_pkt_w_data
 (
   input logic [4:0] src,
   input logic [4:0] dst,
@@ -208,7 +210,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   input logic [0:0] pred,
   input logic [6:0] data_addr
 );
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 pkt;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 pkt;
   integer file_handle;
 
   pkt.src         = src;
@@ -236,6 +238,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
   pkt.payload.data.payload   = data;
   pkt.payload.data.predicate = pred;
@@ -277,7 +280,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 ma
   return pkt;
 endfunction
 
-function automatic logic [230-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 p);
+function automatic logic [234-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -307,18 +310,22 @@ function automatic logic [230-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
     p.payload.ctrl.write_reg_idx,
     p.payload.ctrl.read_reg_towards,
     p.payload.ctrl.read_reg_idx,
+    p.payload.ctrl.read_reg_retain,
     p.payload.ctrl_addr
   };
 endfunction
 
-function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 unpack_pkt (logic [230-1:0] v, int printHex = 1);
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 p;
+function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 unpack_pkt (logic [230-1:0] v, int printHex = 1);
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 p;
   integer file_handle;
   // Use a running index from LSB upward for clarity
   int i = 0;
   // ctrl_addr (4)
   p.payload.ctrl_addr = v[i +: 4]; i += 4;
-  // ctrl (107)
+  // The serialized fixtures predate read_reg_retain. Insert its default
+  // value without consuming bits from the legacy packet.
+  p.payload.ctrl.read_reg_retain = '{default: 1'b0};
+  // legacy ctrl (111)
   p.payload.ctrl.read_reg_idx = v[i +: 16]; i += 16;
   p.payload.ctrl.read_reg_towards = v[i +: 8]; i += 8;
   p.payload.ctrl.write_reg_idx = v[i +: 16]; i += 16;
@@ -440,4 +447,3 @@ ADD 11 11 31
 
   return p;
 endfunction
-
