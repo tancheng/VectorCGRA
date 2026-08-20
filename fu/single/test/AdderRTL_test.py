@@ -100,3 +100,31 @@ def test_alu():
                    src_const, src_opt, sink_out)
   run_sim(th)
 
+def test_add_false_predicate_zero_is_identity():
+  FU = AdderRTL
+  DataType = mk_data(16, 1)
+  num_inports = 2
+  num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
+  FuInType = mk_bits(clog2(num_inports + 1))
+
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType = mk_bits(clog2(data_mem_size))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
+  pickRegister = [FuInType(x + 1) for x in range(num_inports)]
+  src_in0 = [DataType(5, 1), DataType(5, 1), DataType(0, 0)]
+  src_in1 = [DataType(0, 0), DataType(2, 0), DataType(7, 1)]
+  src_const = [DataType(0, 0)]
+  sink_out = [DataType(5, 1), DataType(7, 0), DataType(7, 1)]
+  src_opt = [ConfigType(OPT_ADD, pickRegister),
+             ConfigType(OPT_ADD, pickRegister),
+             ConfigType(OPT_ADD, pickRegister)]
+
+  th = TestHarness(FU, IntraCgraPktType, DataType, ConfigType, num_inports,
+                   num_outports, data_mem_size, src_in0, src_in1,
+                   src_const, src_opt, sink_out)
+  run_sim(th)
