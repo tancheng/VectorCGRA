@@ -12,7 +12,7 @@ Terminology: a "ctrl step" is one dynamic execution of one ctrl word;
 it spans one or more cycles and completes on the `inport_ctrl_proceed`
 pulse (when all of the tile's consumers have been served).
 
-Each register entry tracks whether it holds a live value version
+Each register entry tracks whether it holds an unconsumed token
 (https://github.com/tancheng/VectorCGRA/issues/321). Token discipline
 applies to "armed" registers, i.e., registers that have been written at
 least once since reset; a never-written register keeps the legacy
@@ -20,13 +20,11 @@ behavior of always asserting `val` on a configured read, acting as a
 default-token source, which existing kernels rely on for liveness (e.g.,
 tiles consuming data from their own register cluster that nothing
 writes). For an armed register:
-- The token bit is set when a value is written.
-- A read only asserts `val` while the entry holds a live version.
-- The version is released when its final reading ctrl step completes.
-  A generated ctrl sets `read_reg_retain` when the next scheduled access
-  still needs a live version. If feedback arrives it replaces the old
-  version; if a conditional feedback write is predicated away, the old
-  version stays live. Within a ctrl step,
+- The token bit is set when a token is written.
+- A read only asserts `val` while the entry holds an unconsumed token.
+- The token is consumed (cleared) when the ctrl step that reads the
+  entry completes, signaled via `inport_ctrl_proceed` (the same
+  per-step signal the const queue advances on). Within a ctrl step,
   reads are repeatable: FUs may accept the operand several times (e.g.,
   vector-factor replays) or merely snoop it without a val/rdy handshake
   (e.g., VectorAllReduceRTL's base operand), and for
@@ -118,8 +116,8 @@ class RegisterBankRTL(Component):
     # That write can neither land mid-step (it would corrupt the
     # in-flight read) nor be backpressured (the step only completes once
     # it is delivered), so it is parked here: the producer's write
-    # handshake completes immediately, the step can finish, and the
-    # parked value replaces the old version at the step boundary
+    # handshake completes immediately, the step can finish and release
+    # the old token, and the parked value lands at the step boundary
     # while the register stays stable for any re-reads.
     # Every other write keeps the pre-existing behavior: land directly
     # when the target holds no unconsumed token, otherwise backpressure.
@@ -196,8 +194,8 @@ class RegisterBankRTL(Component):
       # The parked write drains into the register file as soon as this
       # cannot disturb an in-flight read: if the current step reads the
       # skid's target, the commit happens exactly when that step
-      # completes (its new token atomically replaces the version read by
-      # the step); otherwise it happens once the target holds no token.
+      # completes (its new token atomically replaces the one the step
+      # consumes); otherwise it happens once the target holds no token.
       s.skid_commit @= s.skid_valid & \
           ((s.skid_target_being_read & s.inport_ctrl_proceed) | \
            (~s.skid_target_being_read & ~s.skid_target_holds_token))
@@ -297,13 +295,11 @@ class RegisterBankRTL(Component):
         s.token_set_mask[r] @= \
             (s.wr_en & (s.inport_opt.write_reg_idx[reg_bank_id] == r)) | \
             (s.skid_commit & (s.skid_idx == r))
-        # Release the version only at its final scheduled read. If this step
-        # also commits feedback, token_set_mask installs the replacement.
+        # The completing ctrl step consumes the token it has been reading.
         s.token_clear_mask[r] @= \
             s.inport_ctrl_proceed & \
             (s.read_towards_fu | s.read_towards_xbar) & \
             (s.inport_opt.read_reg_idx[reg_bank_id] == r) & \
-            ~s.inport_opt.read_reg_retain[reg_bank_id] & \
             s.token_valid[r]
 
     @update_ff
