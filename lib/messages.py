@@ -243,18 +243,12 @@ def mk_dma_cmd(dram_addr_nbits = 64,
 # Actual mask *values* are generated independently by the DMA engine
 # FSM (see DmaEngineRTL), NOT carried in this struct:
 #
-# - dram_mask (16-bit, one bit per byte of 128-bit (16 bytes) DRAM beat):
+# - dram_mask (one bit per byte of the configured DRAM beat):
 #   Dynamically computed during MVOUT (SPM -> DRAM) based on the
-#   number of valid words in the last beat. Values range from 0x000f
-#   (1 word) to 0xffff (full beat). 
+#   number of valid words in the last beat.
 #   The SPM has a data width of 32 bits, so it can only read 32 bits per cycle.
-#   In contrast, the DRAM has a data width of 128 bits.
-#   Therefore, the amount of data transferred by the DMA from the SPM to the DRAM determines the write mask applied to the DRAM.
-#   For example:
-#   if DMA move 1 word from SPM to DRAM, the mask is 0x000f.
-#   If DMA move 2 words from SPM to DRAM, the mask is 0x00ff.
-#   If DMA move 3 words from SPM to DRAM, the mask is 0x0fff.
-#   If DMA move 4 words from SPM to DRAM, the mask is 0xffff.
+#   Therefore, the number of transferred SPM words determines the write mask
+#   applied to the DRAM beat. For example, one 32-bit word produces 0x000f.
 #
 # - spm_mask (4-bit, one bit per byte of 32-bit SPM word):
 #   SPM writes always write one full word, so the mask is
@@ -276,7 +270,7 @@ def mk_dma_data(dram_data_nbits = 128,
   
   return mk_bitstruct(new_name, {
     'dram_data': DramDataType,
-    # 16-bit byte mask for 16-bytes DRAM beat.
+    # Byte mask for the configured DRAM beat.
     'dram_mask': DramMaskType,
     'spm_data': SpmDataType,
     # 4-bit byte mask for 4-bytes SPM word.
