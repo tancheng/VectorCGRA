@@ -199,12 +199,16 @@ class MemUnitRTL(Component):
           s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.recv_in[s.in1_idx].rdy @= s.recv_all_val & s.to_mem_waddr.rdy & s.to_mem_wdata.rdy
           s.to_mem_waddr.msg @= AddrType(s.recv_in[s.in0_idx].msg.payload[0:AddrType.nbits])
-          s.to_mem_waddr.val @= s.recv_all_val
+          s.to_mem_waddr.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_in[s.in1_idx].msg.predicate
           s.to_mem_wdata.msg @= s.recv_in[s.in1_idx].msg
           s.to_mem_wdata.msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                           s.recv_in[s.in1_idx].msg.predicate & \
                                           s.reached_vector_factor
-          s.to_mem_wdata.val @= s.recv_all_val
+          s.to_mem_wdata.val @= s.recv_all_val & \
+                                s.recv_in[s.in0_idx].msg.predicate & \
+                                s.recv_in[s.in1_idx].msg.predicate
 
           # `send_out` is meaningless for store operation.
           s.send_out[0].val @= b1(0)
