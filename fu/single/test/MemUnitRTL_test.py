@@ -8,7 +8,10 @@ Author : Cheng Tan
   Date : November 27, 2019
 """
 
+import pytest
+
 from pymtl3 import *
+from pymtl3.stdlib.test_utils import run_sim as run_test_sim
 
 from ..MemUnitRTL import MemUnitRTL
 from ....lib.messages import *
@@ -107,6 +110,31 @@ def test_Mem():
                    src_in0, src_in1, src_const, src_opt,
                    sink_out)
   run_sim(th)
+
+@pytest.mark.parametrize('addr_pred, data_pred', [(0, 1), (1, 0)])
+def test_store_predicate(cmdline_opts, addr_pred, data_pred):
+  DataType = mk_data(16, 1)
+  num_inports = 2
+  num_outports = 1
+  ConfigType = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  DataAddrType = mk_bits(clog2(data_mem_size))
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  pickRegister = [FuInType(x + 1) for x in range(num_inports)]
+
+  # A predicated-off store must drain its operands without changing memory.
+  src_in0 = [DataType(0, 1), DataType(0, addr_pred), DataType(0, 1)]
+  src_in1 = [DataType(40, 1), DataType(99, data_pred)]
+  src_opt = [ConfigType(OPT_STR, pickRegister),
+             ConfigType(OPT_STR, pickRegister),
+             ConfigType(OPT_LD, pickRegister)]
+  th = TestHarness(MemUnitRTL, DataMemRTL, IntraCgraPktType, DataType,
+                   ConfigType, num_inports, num_outports, data_mem_size,
+                   src_in0, src_in1, [], src_opt, [DataType(40, 1)])
+  run_test_sim(th, cmdline_opts, duts = ['dut'])
 
 def test_PseudoMem():
   FU = MemUnitRTL
