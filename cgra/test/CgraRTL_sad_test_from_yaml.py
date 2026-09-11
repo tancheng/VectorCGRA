@@ -307,7 +307,7 @@ def sim_sad_return(cmdline_opts, mem_access_is_combinational):
   kExpectedOutput = 24
 
   from ...validation.script_generator import ScriptFactory
-  script_factory = ScriptFactory(path = "validation/test/sad/sad.yaml",
+  script_factory = ScriptFactory(path = "validation/test/sad.yaml",
                                     CtrlType = CtrlType,
                                     IntraCgraPktType = IntraCgraPktType,
                                     CgraPayloadType = CgraPayloadType,

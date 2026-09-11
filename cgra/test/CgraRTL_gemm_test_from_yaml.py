@@ -320,7 +320,7 @@ def sim_gemm(cmdline_opts, mem_access_is_combinational):
   kTotalCtrlSteps = kCtrlCountPerIter * kTotalIterations + 30
 
   from ...validation.script_generator import ScriptFactory
-  script_factory = ScriptFactory(path = "validation/test/gemm/gemm.yaml",
+  script_factory = ScriptFactory(path = "validation/test/gemm.yaml",
                                     CtrlType = CtrlType,
                                     IntraCgraPktType = IntraCgraPktType,
                                     CgraPayloadType = CgraPayloadType,
