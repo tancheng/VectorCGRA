@@ -123,6 +123,8 @@ yaml_to_VectorCGRA_map_const = {
     "ADD": OPT_ADD_CONST,
     "MUL_ADD": OPT_MUL_CONST_ADD,
     "MUL": OPT_MUL_CONST,
+    "LOAD": OPT_LD_CONST,
+    "STORE": OPT_STR_CONST,
     "SUB": OPT_SUB_CONST,
     "DIV": OPT_DIV_CONST,
     "GEP": OPT_ADD_CONST, # By now, we just support 2 op GEP and it is equivalent to ADD (base + index)
@@ -314,7 +316,8 @@ class InstructionSignals:
                 operation_opcode = operation['opcode']
                 try:
                     src_operands = operation['src_operands'].copy()
-                    if operation_opcode == 'STORE' and len(src_operands) >= 2:
+                    if (operation_opcode == 'STORE' and len(src_operands) >= 2
+                            and _type(src_operands[1]) != 'IMM'):
                         # HW expects address in0 and data in1, but YAML gives [data, addr]
                         src_operands[0], src_operands[1] = src_operands[1], src_operands[0]
                 except Exception as e:
@@ -324,13 +327,15 @@ class InstructionSignals:
                 except Exception as e:
                     dst_operands = []
 
-                # find all the const
-                for index, src_operand in enumerate(src_operands):
+                # A queue is one implicit FU operand, even when it holds many values.
+                dynamic_operands = []
+                for src_operand in src_operands:
                     if _type(src_operand) == 'IMM':
-                        # include the real timestep for future sorting
                         const_operands.append((src_operand, operation["time_step"]))
-                        # delete it from the src_operands since it is implicit in vectorCGRA
-                        del src_operands[index]
+                    else:
+                        dynamic_operands.append(src_operand)
+                has_implicit_constant = len(dynamic_operands) != len(src_operands)
+                src_operands = dynamic_operands
 
                 # for not_take_up_fu_operation
                 if not _is_take_up_fu_operation(operation):
@@ -410,11 +415,16 @@ class InstructionSignals:
                 
                 # reorder the src operands since register has high priority (cause reg can't be shuffled but port can be shuffled)
                 # TODO: not complete, actually should also take dst into account
+                # SeqMulAdder keeps the partial sum on input 2 when input 1
+                # comes from the constant queue; do not compact it to input 1.
+                fu_indices = ([0, 2] if operation_opcode == 'MUL_ADD'
+                              and has_implicit_constant and len(src_operands) == 2
+                              else range(len(src_operands)))
                 reordered_src_operands = {}
-                for index, src_operand in enumerate(src_operands):
+                for index, src_operand in zip(fu_indices, src_operands):
                     if _type(src_operand) == 'REG':
                         reordered_src_operands[index] = src_operand
-                for index, src_operand in enumerate(src_operands):
+                for index, src_operand in zip(fu_indices, src_operands):
                     if not _type(src_operand) == 'REG':
                         reordered_src_operands[index] = src_operand
                 
@@ -451,7 +461,11 @@ class InstructionSignals:
                             
                         # find an available lane
                         lane = -1
-                        for i in range(4):
+                        # SeqMulAdderRTL wires its flowing input and partial
+                        # sum to physical lanes 0 and 2, not a shuffled pair.
+                        lanes = ([index] if operation_opcode == 'MUL_ADD'
+                                 and has_implicit_constant else range(4))
+                        for i in lanes:
                             ok = self.operand_from[i] == -1 and self.TileInParams[i + 4] == -1 # The lane is completely empty
                             ok = ok or (self.operand_from[i] == OPR_FROM_PORT and self.TileInParams[i + 4] == port_in_xbar_idx) # The lane is already used by the same port, can be reused
                             ok = ok or (self.operand_from[i] == -1 and self.TileInParams[i + 4] == port_in_xbar_idx) # The lane is used by the same port to register 
@@ -854,12 +868,17 @@ class TileSignals:
         consts.sort(key=lambda x: x[1])
         #print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
         #print(consts)
-        for idx, const_operand in enumerate(consts):
-            const_pkt = self.IntraCgraPktType(0, self.id_, 
-                                              payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(int(const_operand[0]['operand'][1:] if const_operand[0]['operand'].startswith('#') else const_operand[0]['operand']), 1)))
-            all_signals.append(const_pkt)
-            
+        for const_operand, _ in consts:
+            values = const_operand.get('_constant_values')
+            if values is None:
+                text = const_operand['operand']
+                values = [int(text[1:] if text.startswith('#') else text)]
+            for value in values:
+                const_pkt = self.IntraCgraPktType(
+                    0, self.id_, payload=self.CgraPayloadType(
+                        self.CMD_CONST_, data=self.DataType(value, 1)))
+                all_signals.append(const_pkt)
+
         # make the pre-configuration
         ii_pkt = self.IntraCgraPktType(0, self.id_, 
                                        payload = self.CgraPayloadType(self.CMD_CONFIG_COUNT_PER_ITER_,
@@ -949,7 +968,8 @@ class ScriptFactory:
                  RegIdxType,
                  CtrlAddrType,
                  DataAddrType,
-                 num_registers_per_reg_bank=None):
+                 num_registers_per_reg_bank=None,
+                 kernel_inputs=None):
         # Allow overriding the default register cluster size.
         global REG_CLUSTER_SIZE
         if num_registers_per_reg_bank is not None:
@@ -992,7 +1012,48 @@ class ScriptFactory:
         self.RegIdxType = RegIdxType
         self.CtrlAddrType = CtrlAddrType
         self.DataAddrType = DataAddrType
-    
+        self.bind_kernel_inputs(kernel_inputs)
+
+    def bind_kernel_inputs(self, kernel_inputs):
+        """Resolve element offsets using runtime SRAM bases or tensor values."""
+        for core in self.yaml_struct['array_config']['cores']:
+            for entry in core['entries']:
+                for instruction in entry['instructions']:
+                    for operation in instruction['operations']:
+                        for operand in operation.get('src_operands', []):
+                            access = operand.get('access')
+                            if access is None:
+                                continue
+                            name = operand['operand']
+                            if (access not in ('address', 'value') or
+                                    not name.startswith('arg') or
+                                    not name[3:].isdigit()):
+                                raise ValueError("Invalid runtime operand binding")
+                            index = int(name[3:])
+                            if kernel_inputs is None or index >= len(kernel_inputs):
+                                raise ValueError(f"Missing runtime input {name}")
+                            binding = kernel_inputs[index]
+                            offsets = operand.get('offsets')
+                            values = binding['values']
+                            if (not isinstance(offsets, list) or not offsets or
+                                    any(type(o) is not int or o < 0 or o >= len(values)
+                                        for o in offsets)):
+                                raise ValueError(f"Invalid element offsets for {name}")
+                            if access == 'address':
+                                # VectorCGRA SRAM is addressed in data words, not bytes.
+                                if self.ii != 1 or len(offsets) != self.loop_times:
+                                    raise ValueError("Address queues require II=1 and one offset per firing")
+                                resolved = [binding['base'] + offset for offset in offsets]
+                                if any(type(v) is not int or v < 0 or
+                                       v >= (1 << self.DataAddrType.nbits) for v in resolved):
+                                    raise ValueError(f"SRAM address out of range for {name}")
+                            else:
+                                if len(offsets) != 1:
+                                    raise ValueError("Stationary binding requires one element")
+                                resolved = [values[offsets[0]]]
+                            operand['operand'] = '#' + str(resolved[0])
+                            operand['_constant_values'] = resolved
+
     def makeVectorCGRAPkts(self):
         
         pkts = {}
