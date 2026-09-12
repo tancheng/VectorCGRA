@@ -24,9 +24,9 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload in bits (197).
+  // Packed dimension: 202-bit IntraCgraPacket_4_2x2_16_8_2_CgraPayload.
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [198-1:0] pkt_queue [$];
+  logic [202-1:0] pkt_queue [$];
 
   initial
   begin
@@ -55,7 +55,7 @@ module cgra_test
     // CMD_CONFIG_COUNT_PER_ITER.
     pkt_queue.push_back( make_intra_cgra_pkt(0, 0,  8, 4, 1, 0, 0) );
     // CMD_CONFIG_TOTAL_CTRL_COUNT
-    pkt_queue.push_back( make_intra_cgra_pkt(0, 0,  7, 'd42, 1, 0, 0) );
+    pkt_queue.push_back( make_intra_cgra_pkt(0, 0,  7, 'd132, 1, 0, 0) );
     // CMD_CONFIG - OPT_ADD.
     pkt_queue.push_back( make_intra_cgra_config_pkt(0, 0, 3, 2,
       '{3'd4, 3'd3, 3'd2, 3'd1},
@@ -125,7 +125,7 @@ module cgra_test
     // CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR.
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(0, 0, 6, 0,
       '{3'd0, 3'd0, 3'd0, 3'd0},
-      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0},
+      '{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd1},
       '{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0},
       '{2'd0, 2'd0, 2'd0, 2'd0},
       '{1'd0, 1'd0, 1'd0, 1'd0},
@@ -207,7 +207,7 @@ module cgra_test
           .write_reg_idx('{default:4'd0}),
           .read_reg_idx('{default:4'd0}),
           .ctrl_addr(4'd0),
-          .data(32'd42),         // kTotalCtrlSteps = 42
+          .data(32'd132),        // kTotalCtrlSteps = 132
           .pred(1'd1),
           .data_addr(7'd0)
     ) );
@@ -317,14 +317,14 @@ module cgra_test
           .pred(1'd1),
           .data_addr(7'd0)
       ) );
-    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (all 0)
+    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (first routing = 1)
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
           .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0}),
+          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd1}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
           .read_reg_towards('{default:1'd0}),
@@ -335,14 +335,14 @@ module cgra_test
           .pred(1'd1),
           .data_addr(7'd0)
       ) );
-    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (first routing = 2)
+    // CONFIG_PROLOGUE_ROUTING_CROSSBAR (first routing = 3)
     pkt_queue.push_back( make_intra_cgra_config_pkt_w_data(
           .src(5'd0),
           .dst(5'd1),
           .cmd(6'd6),
           .operation(7'd0),
           .fu_in_code('{default:3'd0}),
-          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd2}),
+          .routing_xbar_outport('{3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd0,3'd3}),
           .fu_xbar_outport('{default:2'd0}),
           .write_reg_from('{default:2'd0}),
           .read_reg_towards('{default:1'd0}),
@@ -444,7 +444,7 @@ module cgra_test
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
-        .data(32'd42),
+        .data(32'd132),
         .pred(1'd1),
         .data_addr(7'd0)
       ) );
@@ -608,7 +608,7 @@ module cgra_test
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
-        .data(32'd42),
+        .data(32'd132),
         .pred(1'd1),
         .data_addr(7'd0)
       ) );
@@ -787,7 +787,7 @@ module cgra_test
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
-        .data(32'd42),
+        .data(32'd132),
         .pred(1'd1),
         .data_addr(7'd0)
       ) );
@@ -875,7 +875,7 @@ module cgra_test
         .data_addr(7'd0)
       ) );
     // CMD_CONFIG_PROLOGUE_ROUTING_CROSSBAR @ ctrl_addr=0, data=1 (pred=1)
-    // routing [3,0,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,0,3]
+    // routing [4,0,0,0,0,0,0,0] -> reversed -> [0,0,0,0,0,0,0,4]
     // (unspecified args default to zeros)
     pkt_queue.push_back(
       make_intra_cgra_config_pkt_w_data(
@@ -884,7 +884,7 @@ module cgra_test
         .cmd(6'd6),
         .operation(7'd0),
         .fu_in_code('{3'd0, 3'd0, 3'd0, 3'd0}),
-        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd3}),
+        .routing_xbar_outport('{3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd0, 3'd4}),
         .fu_xbar_outport('{2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0, 2'd0}),
         .write_reg_from('{2'd0, 2'd0, 2'd0, 2'd0}),
         .read_reg_towards('{1'd0, 1'd0, 1'd0, 1'd0}),
@@ -970,7 +970,7 @@ module cgra_test
         .write_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .read_reg_idx('{4'd0, 4'd0, 4'd0, 4'd0}),
         .ctrl_addr(4'd0),
-        .data(32'd42),
+        .data(32'd132),
         .pred(1'd1),
         .data_addr(7'd0)
       ) );
@@ -1085,9 +1085,10 @@ module cgra_test
   begin
     recv_from_cpu_pkt__val = 0;
 
-    // Wait for reset to be de-asserted.
-    @(negedge reset); // Starts at 0 which counts as a negedge.
-    @(negedge reset); // Actual falling edge after active-high region.
+    // Wait for the complete active-high reset pulse. Do not depend on the
+    // simulator treating the initial X-to-0 transition as a negedge.
+    @(posedge reset);
+    @(negedge reset);
     @(posedge clk);
 
     forever
@@ -1310,4 +1311,3 @@ typedef struct packed {
 
 
 endmodule
-
