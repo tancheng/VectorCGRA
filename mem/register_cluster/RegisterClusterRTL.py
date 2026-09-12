@@ -41,7 +41,8 @@ class RegisterClusterRTL(Component):
     s.send_data_to_routing_crossbar = [SendIfcRTL(DataType) for _ in range(num_reg_banks)]
 
     # Component
-    s.reg_bank = [RegisterBankRTL(DataType, CtrlType, i, num_registers_per_reg_bank)
+    s.reg_bank = [RegisterBankRTL(DataType, CtrlType, i,
+                                  num_registers_per_reg_bank)
                   for i in range(num_reg_banks)]
 
     # Connections.
@@ -89,12 +90,38 @@ class RegisterClusterRTL(Component):
             s.reg_bank[i].send_data_to_fu.val
         s.reg_bank[i].send_data_to_fu.rdy @= s.send_data_to_fu[i].rdy
 
+        # fu_in[] is indexed by operand slot, and each non-zero value is a
+        # one-based physical FU-input lane. Check every operand slot instead
+        # of assuming operand slot i always selects physical lane i.
+        lane_used_by_fu = (s.inport_opt.fu_in[0] == (i + 1))
+        for operand_slot in range(1, num_reg_banks):
+          lane_used_by_fu = lane_used_by_fu | \
+              (s.inport_opt.fu_in[operand_slot] == (i + 1))
+
+        read_towards = s.inport_opt.read_reg_towards[i]
+        reg_towards_fu = \
+            (read_towards == READ_TOWARDS_FU) | \
+            (read_towards == READ_TOWARDS_BOTH)
+
+        # A routing value can be written independently while the register
+        # bank supplies this physical lane to the FU. Treat that combined
+        # move as the selected write path as well, so it is accepted only
+        # when the destination register can take the token.
+        routing_selected_for_write = \
+            (s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) & \
+            ((s.inport_opt.operation == OPT_NAH) | reg_towards_fu)
+
         # A write source is backpressured (not ready) while the
         # destination register still holds an unconsumed token
-        # (reg_bank[i].outport_wr_rdy). Sources that are not selected as
-        # the write source keep their previous, always-ready behavior.
-        s.recv_data_from_routing_crossbar[i].rdy @= ((s.inport_opt.write_reg_from[i] == PORT_ROUTING_CROSSBAR) \
-                & (s.inport_opt.operation == OPT_NAH) & s.reg_bank[i].outport_wr_rdy) | s.send_data_to_fu[i].rdy
+        # (reg_bank[i].outport_wr_rdy). During OPT_NAH, every other routing
+        # lane must drain regardless of the otherwise-default fu_in mapping;
+        # during an FU operation, an unselected lane drains only when no
+        # operand slot selects that physical lane.
+        s.recv_data_from_routing_crossbar[i].rdy @= \
+            (routing_selected_for_write & s.reg_bank[i].outport_wr_rdy) | \
+            (~routing_selected_for_write & \
+             ((s.inport_opt.operation == OPT_NAH) | ~lane_used_by_fu | \
+              reg_towards_fu | s.send_data_to_fu[i].rdy))
         s.recv_data_from_fu_crossbar[i].rdy @= \
             (s.inport_opt.write_reg_from[i] != PORT_FU_CROSSBAR) | s.reg_bank[i].outport_wr_rdy
         s.recv_data_from_const[i].rdy @= \
@@ -103,4 +130,3 @@ class RegisterClusterRTL(Component):
   def line_trace(s):
     reg_bank_str = "reg_banks: " + "|".join([reg_bank.line_trace() for reg_bank in s.reg_bank])
     return f'{reg_bank_str}'
-

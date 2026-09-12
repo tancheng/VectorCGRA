@@ -123,4 +123,3 @@ def test_reg_bank():
   th = TestHarness(DataType, ConfigType, reg_bank_id, num_registers_per_reg_bank,
                    src_opt, write_data, expected_read_data)
   run_sim(th)
-

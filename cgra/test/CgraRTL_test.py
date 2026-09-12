@@ -14,6 +14,7 @@ from pymtl3.stdlib.test_utils import (run_sim,
                                       config_model_with_cmdline_opts)
 
 from ..CgraRTL import CgraRTL
+from ...lib.trace_logger import init_trace_logger, close_trace_logger
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
 from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
@@ -591,6 +592,13 @@ def init_param(topology, FuList = [MemUnitRTL, AdderRTL],
                    controller2addr_map, idTo2d_map, complete_signal_sink_out,
                    num_cgra_rows, num_cgra_columns,
                    src_query_pkt)
+
+  # Initialize trace logger for visualization.
+  import os
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, f'trace_{test_name}_{x_tiles}x{y_tiles}_{topology}.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, topology, cgra_id)
+
   return th
 
 def test_homogeneous_2x2(cmdline_opts):
@@ -614,6 +622,7 @@ def test_homogeneous_2x2(cmdline_opts):
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
 
 def test_homogeneous_2x2_ctrl_count_2(cmdline_opts):
   topology = "Mesh"
@@ -636,6 +645,7 @@ def test_homogeneous_2x2_ctrl_count_2(cmdline_opts):
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
 
 def test_heterogeneous_king_mesh_2x2(cmdline_opts):
   topology = "KingMesh"
@@ -647,6 +657,7 @@ def test_heterogeneous_king_mesh_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
 
 def test_heterogeneous_with_loop_control(cmdline_opts):
   topology = "KingMesh"
@@ -680,6 +691,7 @@ def test_vector_king_mesh_2x2(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
 
 def test_vector_mesh_4x4(cmdline_opts):
   topology = "Mesh"
@@ -703,6 +715,7 @@ def test_vector_mesh_4x4(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
 
 def test_systolic_3x3(cmdline_opts):
   topology = "Mesh"
@@ -730,3 +743,4 @@ def test_systolic_3x3(cmdline_opts):
                        'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+  close_trace_logger()
