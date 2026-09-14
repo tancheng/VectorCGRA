@@ -14,8 +14,8 @@ CCU types:
   - Root CCU: No parent, drives the outermost loop
   - Regular CCU: Has a local parent CCU in the DAG
 
-State machine: IDLE → RUNNING → DISPATCHING → RUNNING (loop)
-                                             → COMPLETE (done)
+State machine: IDLE -> RUNNING -> DISPATCHING -> RUNNING (loop)
+                                             -> COMPLETE (done)
 
 When counter reaches upper_bound, the CCU goes COMPLETE without
 dispatching, to avoid generating stale completion events.
@@ -162,8 +162,8 @@ class LoopControllerRTL(Component):
         ccu_id = s.active_dispatch_ccu
         tidx = s.ccu_dispatch_idx[ccu_id]
 
-        # shadow_only → CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU)
-        # normal      → CMD_RESET_LEAF_COUNTER (leaf DCU)
+        # shadow_only -> CMD_UPDATE_COUNTER_SHADOW_VALUE (delivery DCU)
+        # normal      -> CMD_RESET_LEAF_COUNTER (leaf DCU)
         if s.ccu_target_shadow_only[ccu_id][tidx]:
           out_cmd = CMD_UPDATE_COUNTER_SHADOW_VALUE
           out_data = s.ccu_current_value[ccu_id]
@@ -311,7 +311,7 @@ class LoopControllerRTL(Component):
             next_idx = s.ccu_dispatch_idx[ccu_id] + TargetIdxType(1)
 
             if zext(next_idx, CountType) >= s.ccu_num_targets[ccu_id]:
-              # All targets dispatched → back to RUNNING.
+              # All targets dispatched -> back to RUNNING.
               s.ccu_dispatch_idx[ccu_id] <<= TargetIdxType(0)
               s.ccu_state[ccu_id] <<= StateType(CCU_STATE_RUNNING)
               s.ccu_received_complete_count[ccu_id] <<= CountType(0)

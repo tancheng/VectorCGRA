@@ -1,13 +1,15 @@
 """
 ==========================================================================
-CgraRTL_fir_test.py
+CgraRTL_histogram_test_from_yaml.py
 ==========================================================================
 Test cases for CGRA with crossbar-based data memory and ring-based control
-memory of each tile.
+memory of each tile, using histogram.yaml compiled kernel.
 
-Author : Cheng Tan
-  Date : Aug 30, 2025
+Author : Bohan Cui
+  Date : April 4, 2026
 """
+
+import os
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.passes.sim.PrepareSimPass import b1
@@ -20,6 +22,7 @@ from ...fu.flexible.FlexibleFuRTL import FlexibleFuRTL
 from ...fu.float.FpAddRTL import FpAddRTL
 from ...fu.float.FpMulRTL import FpMulRTL
 from ...fu.single.AdderRTL import AdderRTL
+from ...fu.single.DivRTL import DivRTL
 from ...fu.single.GrantRTL import GrantRTL
 from ...fu.single.CompRTL import CompRTL
 from ...fu.single.LogicRTL import LogicRTL
@@ -37,6 +40,7 @@ from ...lib.basic.val_rdy.SourceRTL import SourceRTL as TestSrcRTL
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
+from ...lib.trace_logger import init_trace_logger, close_trace_logger
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -144,6 +148,7 @@ class TestHarness(Component):
 # Common configurations/setups.
 FuList = [AdderRTL,
           MulRTL,
+          DivRTL,
           LogicRTL,
           ShifterRTL,
           PhiRTL,
@@ -163,9 +168,6 @@ num_fu_inports = 4
 num_fu_outports = 2
 num_routing_outports = num_tile_outports + num_fu_inports
 ctrl_mem_size = 6
-# data_mem_size_global = 4096
-# data_mem_size_per_bank = 32
-# num_banks_per_cgra = 24
 data_mem_size_global = 128
 data_mem_size_per_bank = 16
 num_banks_per_cgra = 2
@@ -174,7 +176,7 @@ num_cgra_rows = 1
 num_cgras = num_cgra_columns * num_cgra_rows
 num_ctrl_operations = 64
 num_registers_per_reg_bank = 8
-TileInType = mk_bits(clog2(num_tile_inports + 1))
+TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
 FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
 addr_nbits = clog2(data_mem_size_global)
@@ -192,10 +194,6 @@ PredicateType = mk_predicate(1, 1)
 ControllerIdType = mk_bits(max(1, clog2(num_cgras)))
 cgra_id = 0
 controller2addr_map = {}
-# 0: [0,    1023]
-# 1: [1024, 2047]
-# 2: [2048, 3071]
-# 3: [3072, 4095]
 for i in range(num_cgras):
   controller2addr_map[i] = [i * per_cgra_data_size,
                             (i + 1) * per_cgra_data_size - 1]
@@ -245,182 +243,64 @@ read_reg_idx_code = [RegIdxType(0) for _ in range(num_fu_inports)]
 
 fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 
+# Histogram kernel (from compiled histogram.yaml):
+#
+# Kernel semantics (constants baked into histogram.yaml):
+#   i = 0              (GRANT_ONCE #0)
+#   while (i != 20):   (ICMP_EQ #20)
+#     addr = 0 + i              (GEP, base 0)
+#     val = data[addr]           (LOAD)
+#     bin = val * 5              (MUL #5)
+#     bin = bin + (-5)           (ADD #-5)
+#     bin = bin / 18             (DIV #18)
+#     bin = sext(bin)            (SEXT -> PAS)
+#     hist_addr = 20 + bin       (GEP #20)
+#     hist[hist_addr] += 1       (LOAD, ADD #1, STORE)
+#     i += 1                    (ADD #1)
+#   RETURN_VOID                 (signals completion)
+#
+# bin = (val * 5 - 5) / 18  (integer division)
+#   val=1  -> bin=0 (addr 20)    val=5  -> bin=1 (addr 21)
+#   val=9  -> bin=2 (addr 22)    val=13 -> bin=3 (addr 23)
+#
+# Input: 5 x val=1, 5 x val=5, 5 x val=9, 5 x val=13
+# Expected: data_mem[20]=5, data_mem[21]=5, data_mem[22]=5, data_mem[23]=5
+#   RETURN_VOID sends CMD_COMPLETE with data = 0.
+
+# Preload 20 data values at addresses 0~19, spread across 4 bins.
+preload_data_values = [1, 1, 1, 1, 1,
+                       5, 5, 5, 5, 5,
+                       9, 9, 9, 9, 9,
+                       13, 13, 13, 13, 13]
 preload_data = [
     [
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(10, 1), data_addr = 0)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(11, 1), data_addr = 1)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(12, 1), data_addr = 2)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(13, 1), data_addr = 3)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(14, 1), data_addr = 4)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(15, 1), data_addr = 5)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(16, 1), data_addr = 6)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(17, 1), data_addr = 7)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(18, 1), data_addr = 8)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(19, 1), data_addr = 9)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(20, 1), data_addr = 10)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(21, 1), data_addr = 11)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(22, 1), data_addr = 12)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(23, 1), data_addr = 13)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(24, 1), data_addr = 14)),
-        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(25, 1), data_addr = 15)),
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(preload_data_values[i], 1), data_addr = i))
+        for i in range(20)
+    ] + [
+        # Initialize histogram bins (addr 20~23) to 0 with predicate=1,
+        # so that the first LOAD in the read-modify-write sees valid data.
+        IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0, 1), data_addr = i))
+        for i in range(20, 24)
     ]
 ]
 
-# FIR kernel demo.
-'''
-// data = [10, 11, 12, 13, 14, 15, 16, ...] (two banks, each has 16 32-bit elements)
-// &input = 0 (addr)
-// &coeff = 2 (addr)
-// &sum = 11(st_const)'s const = 16 (addr)
-// 0(phi_const)'const = int i = 2
-// 1(phi_const)'const = sum init value = 3
 
-int i = 2;
-int sum = 3;
-for (int i = 2; i < ?; ++i) {
-  sum += input[i] * coeff[i];
-}
-
-// case 1: when i is in range[2, 3):
-// input[0 + i] * coeff[2 + i]
-//     = input[0 + 2] * coeff[2 + 2]
-//     = 12 * 14
-//     = 168
-// expected sum = 168 + 3 = 171 (0xab)
-
-// case 2: when i is in range[2, 4):
-// input[0 + i] * coeff[2 + i]
-//     = input[0 + 2] * coeff[2 + 2] +
-//       input[0 + 3] * coeff[2 + 3]
-//     = 12 * 14 + 13 * 15
-//     = 363
-// expected sum = 363 + 3 = 366 (0x16e)
-
-// case 3: when i is in range[2, 10):
-// input[0 + i] * coeff[2 + i]
-//     = input[0 + 2] * coeff[2 + 2] +
-//       input[0 + 3] * coeff[2 + 3] +
-//       input[0 + 4] * coeff[2 + 4] +
-//       input[0 + 5] * coeff[2 + 5] +
-//       input[0 + 6] * coeff[2 + 6] +
-//       input[0 + 7] * coeff[2 + 7] +
-//       input[0 + 8] * coeff[2 + 8] +
-//       input[0 + 9] * coeff[2 + 9]
-//     = 12 * 14 +
-//       13 * 15 +
-//       14 * 16 +
-//       15 * 17 +
-//       16 * 18 +
-//       17 * 19 +
-//       18 * 20 +
-//       19 * 21
-//     = 168 +
-//       195 +
-//       224 +
-//       255 +
-//       288 +
-//       323 +
-//       360 +
-//       399
-//     = 842 +
-//       1370
-//     = 2212
-// expected sum = 2212 + 3 = 2215 (0x8a7)
-'''
-
-def sim_fir_return(cmdline_opts, mem_access_is_combinational):
+def sim_histogram(cmdline_opts, mem_access_is_combinational):
   src_ctrl_pkt = []
   complete_signal_sink_out = []
   src_query_pkt = []
 
-  # kernel specific parameters.
-  kStoreAddress = 16 # We no longer need this for storing the result, as we can directly return it to CPU.
-  kInputBaseAddress = 0
-  kCoefficientBaseAddress = 2
-  kSumInitValue = 3
-  kLoopLowerBound = 2
-  kLoopIncrement = 1
-  kLoopUpperBound = 10
-  kCtrlCountPerIter = 4
-  # Though kTotalCtrlSteps is way more than required loop iteration count,
-  # the stored result should still be correct thanks to the grant predicate.
+  # kernel specific parameters (matching histogram.yaml constants).
+  kLoopLowerBound = 0         # GRANT_ONCE #0
+  kLoopIncrement = 1          # ADD #1
+  kLoopUpperBound = 20        # ICMP_EQ #20
+  kCtrlCountPerIter = 6       # compiled_ii: 6
   kTotalCtrlSteps = kCtrlCountPerIter * \
                     (kLoopUpperBound - kLoopLowerBound) + \
                     10
-  kExpectedOutput = 2215
 
-  # Corresponding DFG:
-  #
-  #              0(phi_const) <---------┐
-  #             /      |      \         |
-  #           2(+)    4(+)    8(+)      |
-  #          /       /       /  |       |
-  #        3(ld) 5(ld)   9(cmp) |       |
-  #          \    /        | \  |       |
-  #           6(x)    12(not) 10(grant_predicate)
-  #             |          |
-  #      ┌--> 7(+)         |
-  #      |    /   \        |
-  #  1(phi_const)  11(grant_predicate)
-  #                        |
-  #                     13(ret)
-  #
-  # Corresponding mapping:
-  '''
-       ↑ Y
-  (0,5)|         🔳
-  (0,4)|        .
-  (0,3)|      .
-  (0,2)|    .
-  (0,1)| 🔳
-  (0,0)+-------------→ X
-       (1,0)(2,0)(3,0)
-
-  ===================================================
-  cycle 0:
-  [    🔳            🔳            🔳            🔳 ]
-
-  [ 0(phi_const) →   🔳            🔳            🔳 ]
-       ↓ ↺
-  [    🔳            🔳            🔳            🔳 ]
-
-  [   7(+)    ───→   🔳            🔳            🔳 ]
-        ↺
-  ---------------------------------------------------
-  cycle 1:
-  [    🔳            🔳            🔳            🔳 ]
-
-  [ 2(+ const)     8(+ const)      🔳            🔳 ]
-        ↺            ↓ ↺
-  [ 4(+ const)       🔳            🔳            🔳 ]
-        ↺
-  [ 1(phi_const)  11(grant_pred)   🔳            🔳 ]
-        ↺             ↺
-  ---------------------------------------------------
-  cycle 2:
-  [    🔳            🔳            🔳            🔳 ]
-
-  [   3(ld)          🔳            🔳            🔳 ]
-        ↓             ↑
-  [   5(ld)        9(cmp)          🔳            🔳 ]
-        ↺             ↺
-  [    🔳         13(ret)          🔳            🔳 ]
-
-  ---------------------------------------------------
-  cycle 3:
-  [    🔳            🔳            🔳            🔳 ]
-
-  [    🔳   ← 10(grant_predicate)  🔳            🔳 ]
-
-  [   6(x)        12(not)          🔳            🔳 ]
-        ↓             ↓
-  [    🔳            🔳            🔳            🔳 ]
-
-  ---------------------------------------------------
-  '''
-  
   from ...validation.script_generator import ScriptFactory
-  script_factory = ScriptFactory(path = "validation/test/fir_acceptance_test.yaml",
+  script_factory = ScriptFactory(path = "validation/test/histogram.yaml",
                                     CtrlType = CtrlType,
                                     IntraCgraPktType = IntraCgraPktType,
                                     CgraPayloadType = CgraPayloadType,
@@ -444,9 +324,9 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                                     CtrlAddrType = CtrlAddrType,
                                     DataAddrType = DataAddrType,
                                     num_registers_per_reg_bank = num_registers_per_reg_bank)
-  
+
   src_opt_pkt0_ = script_factory.makeVectorCGRAPkts()
-                                                                   
+
   # order the packets according to the x (first) and y (second) coordinates
   src_opt_pkt0 = []
   for x, y in src_opt_pkt0_:
@@ -454,22 +334,25 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
 
   src_query_pkt = \
       [
-          # IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = kStoreAddress)),
       ]
 
+  # RETURN_VOID is at core 9 (col 1, row 2), so src = 9.
+  # RETURN_VOID sends CMD_COMPLETE with data = 0.
   expected_complete_sink_out_pkg = \
       [
-          IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedOutput, 1, 0, 0))) for _ in range(1)
+          IntraCgraPktType(src = 9, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(1)
       ]
   expected_mem_sink_out_pkt = \
       [
-          # IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_LOAD_RESPONSE, data = DataType(kExpectedOutput, 1), data_addr = 16)),
       ]
 
   print("src_opt_pkt0: ", src_opt_pkt0)
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
+
+  for tile_pkts in src_opt_pkt0:
+      src_ctrl_pkt.extend(tile_pkts)
 
   complete_signal_sink_out.extend(expected_complete_sink_out_pkg)
   complete_signal_sink_out.extend(expected_mem_sink_out_pkt)
@@ -491,12 +374,18 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
                        ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                         'ALWCOMBORDER'])
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, 'trace_histogram_4x4_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+
   run_sim(th)
-  
+
+  close_trace_logger()
+
   cycles = th.sim_cycle_count()
   print("\n\n\ncycles: ", cycles)
 
 
-def test_homogeneous_4x4_fir_combinational_mem_access_return(cmdline_opts):
-  sim_fir_return(cmdline_opts, mem_access_is_combinational = True)
-
+def test_homogeneous_4x4_histogram_combinational_mem_access(cmdline_opts):
+  sim_histogram(cmdline_opts, mem_access_is_combinational = True)

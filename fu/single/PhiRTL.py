@@ -120,7 +120,7 @@ class PhiRTL(Fu):
           else:
             s.send_out[0].msg.predicate @= s.recv_in[s.in0_idx].msg.predicate & \
                                            s.reached_vector_factor
- 
+
         else:
           for j in range(num_outports):
             s.send_out[j].val @= b1(0)

@@ -135,6 +135,7 @@ class CtrlMemDynamicRTL(Component):
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+            (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER)):
         s.send_to_element.msg @= s.recv_pkt_from_controller_queue.send.msg.payload
@@ -161,6 +162,7 @@ class CtrlMemDynamicRTL(Component):
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_LOWER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_UPPER) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_LOOP_STEP) | \
+         (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG_GEP_STRIDE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_UPDATE_COUNTER_SHADOW_VALUE) | \
          (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_RESET_LEAF_COUNTER):
         s.recv_pkt_from_controller_queue.send.rdy @= 1
@@ -345,4 +347,3 @@ class CtrlMemDynamicRTL(Component):
   def line_trace(s):
     config_mem_str  = "|".join([str(data) for data in s.reg_file.regs])
     return f'reg_file.raddr[0]: {s.reg_file.raddr[0]} || sent_complete: {s.sent_complete} || times: {s.times} || total_ctrl_steps_val: {s.total_ctrl_steps_val} || start_iterate_ctrl: {s.start_iterate_ctrl}|| recv_pkt: {s.recv_pkt_from_controller.msg}.recv_rdy:{s.recv_pkt_from_controller.rdy} || control signal content: [{config_mem_str}] || ctrl_out: {s.send_ctrl.msg}, send_ctrl.val: {s.send_ctrl.val}, send_ctrl.rdy: {s.send_ctrl.rdy}, send_pkt.msg.payload.cmd: {s.send_pkt_to_controller.msg.payload.cmd}, send_pkt.val: {s.send_pkt_to_controller.val}, ctrl_count_per_iter_val: {s.ctrl_count_per_iter_val}, ctrl_count_lower_bound: {s.ctrl_count_lower_bound}'
-

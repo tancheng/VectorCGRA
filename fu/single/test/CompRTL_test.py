@@ -184,4 +184,3 @@ def test_Comp_const_predicate_depends_on_const():
       [CtrlType(OPT_GTE_CONST, pick_register)], [DataType(1, 0)],
   )
   run_sim(th)
-
