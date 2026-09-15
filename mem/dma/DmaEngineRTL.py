@@ -27,14 +27,14 @@ class DmaEngineRTL( Component ):
   - 1 word = 4 bytes = 32 bits in this system.
   - DRAM is byte-addressed which means each unique address points to a byte(8 bits).
   - SPM is word-addressed which means each unique address points to a word(32 bits).
-  - The engine uses a 128-bit interface to external memory (4 words per beat)
-    and a 32-bit interface to the dataSPM (1 word per cycle).
+  - The engine uses a configurable whole-word interface to external memory
+    and a single-word interface to the dataSPM (1 word per cycle).
   - A finite state machine (FSM) manages the command execution flow, including
     requesting memory, waiting for responses, and performing SPM accesses.
-  - MVIN logic: Requests 128-bit beats from DRAM, then unpacks them into four
-    sequential 32-bit SPM writes.
-  - MVOUT logic: Reads four 32-bit words from SPM, packs them into a 128-bit
-    beat, and issues a single write request to DRAM.
+  - MVIN logic: Requests beats from DRAM, then unpacks them into sequential
+    SPM writes.
+  - MVOUT logic: Reads SPM words, packs them into an external-memory beat,
+    and issues a single write request to DRAM.
   """
 
   def construct( s,
@@ -45,7 +45,12 @@ class DmaEngineRTL( Component ):
                  bytes_nbits = 32,     # Bitwidth for transfer size in bytes
                  tag_nbits = 8 ):      # Bitwidth for command tracking tags
 
-    assert dram_data_nbits == spm_data_nbits * 4
+    assert spm_data_nbits >= CHAR_BIT
+    assert spm_data_nbits % CHAR_BIT == 0
+    assert dram_data_nbits >= spm_data_nbits
+    assert dram_data_nbits % spm_data_nbits == 0
+
+    words_per_beat = dram_data_nbits // spm_data_nbits
 
     OpcodeType   = mk_bits( 3 )
     DramAddrType = mk_bits( dram_addr_nbits )
@@ -54,6 +59,8 @@ class DmaEngineRTL( Component ):
     TagType      = mk_bits( tag_nbits )
     SpmDataType  = mk_bits( spm_data_nbits )
     MemDataType  = mk_bits( dram_data_nbits )
+    WordIdxType  = mk_bits( max( 1, clog2( words_per_beat ) ) )
+    ShiftType    = MemDataType
     # Byte mask for SPM write
     SpmMaskType  = mk_bits( spm_data_nbits // CHAR_BIT )
     MemMaskType  = mk_bits( dram_data_nbits // CHAR_BIT )
@@ -99,8 +106,8 @@ class DmaEngineRTL( Component ):
     s.spm_addr_reg      = Wire( SpmAddrType )  # Current SPM word address
     s.words_left_reg    = Wire( BytesType )    # Number of 32-bit words remaining to transfer
     s.tag_reg           = Wire( TagType )      # Tag of the active command
-    s.beat_reg          = Wire( MemDataType )  # Buffer for 128-bit DRAM beat
-    s.word_idx_reg      = Wire( Bits2 )        # Index (0-3) of the word within a beat
+    s.beat_reg          = Wire( MemDataType )  # Buffer for one DRAM beat
+    s.word_idx_reg      = Wire( WordIdxType )  # Word index within a beat
     s.wr_mask_reg       = Wire( MemMaskType )  # Byte mask for DRAM write
 
     # Sequential logic
@@ -111,7 +118,7 @@ class DmaEngineRTL( Component ):
     s.words_left_ff     = Wire( BytesType )
     s.tag_ff            = Wire( TagType )
     s.beat_ff           = Wire( MemDataType )
-    s.word_idx_ff       = Wire( Bits2 )
+    s.word_idx_ff       = Wire( WordIdxType )
     s.wr_mask_ff        = Wire( MemMaskType )
 
     # Connections
@@ -134,6 +141,17 @@ class DmaEngineRTL( Component ):
     # needed in the current design.
     spm_word_mask = SpmMaskType( (1 << spm_word_nbytes) - 1 )
     dram_beat_nbytes = (dram_data_nbits // CHAR_BIT)
+    last_word_idx = WordIdxType( words_per_beat - 1 )
+    full_dram_mask = MemMaskType( (1 << dram_beat_nbytes) - 1 )
+
+    # RTLIR cannot translate tuple-valued lookup constants in update blocks.
+    # Materialize lane shifts and partial-beat masks as hardware wires.
+    s.word_shift_lut = [ Wire( ShiftType ) for _ in range( words_per_beat ) ]
+    s.wr_mask_lut = [ Wire( MemMaskType ) for _ in range( words_per_beat ) ]
+    for i in range( words_per_beat ):
+      s.word_shift_lut[i] //= ShiftType( i * spm_data_nbits )
+      valid_nbytes = (i + 1) * spm_word_nbytes
+      s.wr_mask_lut[i] //= MemMaskType( (1 << valid_nbytes) - 1 )
 
     @update
     def comb_outputs():
@@ -152,16 +170,8 @@ class DmaEngineRTL( Component ):
 
       s.recv_from_dram_wr_resp.rdy   @= s.state == STATE_DMA_MVOUT_WAIT
 
-      spm_wdata = SpmDataType(0)
-
-      if s.word_idx_reg == b2( 0 ): # Writes the first word of the beat to SPM
-        spm_wdata = s.beat_reg[0:spm_data_nbits]
-      elif s.word_idx_reg == b2( 1 ): # Writes the second word of the beat to SPM
-        spm_wdata = s.beat_reg[spm_data_nbits:spm_data_nbits*2]
-      elif s.word_idx_reg == b2( 2 ): # 3rd word
-        spm_wdata = s.beat_reg[spm_data_nbits*2:spm_data_nbits*3]
-      else: # 4th word
-        spm_wdata = s.beat_reg[spm_data_nbits*3:spm_data_nbits*4]
+      word_shift = s.word_shift_lut[s.word_idx_reg]
+      spm_wdata = trunc( s.beat_reg >> word_shift, SpmDataType )
 
       s.send_to_spm_wr_req.val @= s.state == STATE_DMA_MVIN_WRITE
       s.send_to_spm_wr_req.msg @= DmaSpmWriteReqType(
@@ -183,7 +193,7 @@ class DmaEngineRTL( Component ):
         s.words_left_ff <<= BytesType( 0 )
         s.tag_ff        <<= TagType( 0 )
         s.beat_ff       <<= MemDataType( 0 )
-        s.word_idx_ff   <<= b2( 0 )
+        s.word_idx_ff   <<= WordIdxType( 0 )
         s.wr_mask_ff    <<= MemMaskType( 0 )
       else:
         if s.state == STATE_DMA_IDLE:
@@ -200,7 +210,7 @@ class DmaEngineRTL( Component ):
             s.words_left_ff <<= (s.dma_cmd.msg.nbytes >> 2)
             s.tag_ff        <<= s.dma_cmd.msg.dma_tag
             s.beat_ff       <<= MemDataType( 0 )
-            s.word_idx_ff   <<= b2( 0 )
+            s.word_idx_ff   <<= WordIdxType( 0 )
             s.wr_mask_ff    <<= MemMaskType( 0 )
 
             if s.dma_cmd.msg.nbytes == BytesType( 0 ): # No more bytes to transfer.
@@ -219,7 +229,7 @@ class DmaEngineRTL( Component ):
         elif s.state == STATE_DMA_MVIN_RESP: # Receives a response from DRAM.
           if s.recv_from_dram_rd_resp.val & s.recv_from_dram_rd_resp.rdy:
             s.beat_ff       <<= s.recv_from_dram_rd_resp.msg
-            s.word_idx_ff   <<= b2( 0 )
+            s.word_idx_ff   <<= WordIdxType( 0 )
             s.state_ff      <<= STATE_DMA_MVIN_WRITE # Move to the next state: to write to SPM.
 
         elif s.state == STATE_DMA_MVIN_WRITE: # Writes to SPM.
@@ -231,11 +241,11 @@ class DmaEngineRTL( Component ):
 
             if s.words_left_reg == BytesType( 1 ):
               s.state_ff    <<= STATE_DMA_DONE
-            elif s.word_idx_reg == b2( 3 ):
-              s.word_idx_ff <<= b2( 0 )
+            elif s.word_idx_reg == last_word_idx:
+              s.word_idx_ff <<= WordIdxType( 0 )
               s.state_ff    <<= STATE_DMA_MVIN_REQ
             else:
-              s.word_idx_ff <<= s.word_idx_reg + b2( 1 )
+              s.word_idx_ff <<= s.word_idx_reg + WordIdxType( 1 )
 
         elif s.state == STATE_DMA_MVOUT_READ:
           if s.send_to_spm_rd_req.val & s.send_to_spm_rd_req.rdy:
@@ -243,44 +253,24 @@ class DmaEngineRTL( Component ):
 
         elif s.state == STATE_DMA_MVOUT_RESP:
           if s.recv_from_spm_rd_resp.val & s.recv_from_spm_rd_resp.rdy:
-            # Pack the response from SPM into a 128-bit beat by left-shifting.
-            if s.word_idx_reg == b2( 0 ): # 1st word
-              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits : spm_data_nbits<<2],
-                                    s.recv_from_spm_rd_resp.msg.data )
-            elif s.word_idx_reg == b2( 1 ):
-              s.beat_ff <<= concat( s.beat_reg[spm_data_nbits<<1 : spm_data_nbits<<2],
-                                    s.recv_from_spm_rd_resp.msg.data,
-                                    s.beat_reg[0:spm_data_nbits] )
-            elif s.word_idx_reg == b2( 2 ):
-              s.beat_ff <<= concat( s.beat_reg[(spm_data_nbits<<1)+spm_data_nbits : spm_data_nbits<<2],
-                                    s.recv_from_spm_rd_resp.msg.data,
-                                    s.beat_reg[0:spm_data_nbits<<1] )
-            else:
-              s.beat_ff <<= concat( s.recv_from_spm_rd_resp.msg.data,
-                                    s.beat_reg[0 : (spm_data_nbits<<1)+spm_data_nbits] )
+            # Each beat starts cleared, so inserting a word can update the
+            # whole vector without assigning to a bit slice in update_ff.
+            word_shift = s.word_shift_lut[s.word_idx_reg]
+            packed_word = zext( s.recv_from_spm_rd_resp.msg.data,
+                                MemDataType ) << word_shift
+            s.beat_ff <<= s.beat_reg | packed_word
 
             s.spm_addr_ff   <<= s.spm_addr_reg + SpmAddrType( 1 )
             s.words_left_ff <<= s.words_left_reg - BytesType( 1 )
 
             if s.words_left_reg == BytesType( 1 ):
-              # Compute the byte mask based on the number of valid words in the beat.
-              # If DMA moves 1 word from SPM to DRAM, the mask is 0x000f.
-              # 0x00ff for 2 words, 0x0fff for 3 words, 0xffff for 4 words.
-              if s.word_idx_reg == b2( 0 ):
-                s.wr_mask_ff <<= MemMaskType( 0x000f )  # 1 word  (bytes 0-3)
-              elif s.word_idx_reg == b2( 1 ):
-                s.wr_mask_ff <<= MemMaskType( 0x00ff )  # 2 words (bytes 0-7)
-              elif s.word_idx_reg == b2( 2 ):
-                s.wr_mask_ff <<= MemMaskType( 0x0fff )  # 3 words (bytes 0-11)
-              else:
-                s.wr_mask_ff <<= MemMaskType( 0xffff )  # 4 words (bytes 0-15)
+              s.wr_mask_ff <<= s.wr_mask_lut[s.word_idx_reg]
               s.state_ff    <<= STATE_DMA_MVOUT_WRITE
-            elif s.word_idx_reg == b2( 3 ):
-              # Full beat (4 words): all 16 bytes are valid.
-              s.wr_mask_ff  <<= MemMaskType( 0xffff )
+            elif s.word_idx_reg == last_word_idx:
+              s.wr_mask_ff  <<= full_dram_mask
               s.state_ff    <<= STATE_DMA_MVOUT_WRITE
             else:
-              s.word_idx_ff <<= s.word_idx_reg + b2( 1 )
+              s.word_idx_ff <<= s.word_idx_reg + WordIdxType( 1 )
               s.state_ff    <<= STATE_DMA_MVOUT_READ
 
         elif s.state == STATE_DMA_MVOUT_WRITE:
@@ -289,10 +279,10 @@ class DmaEngineRTL( Component ):
 
         elif s.state == STATE_DMA_MVOUT_WAIT:
           if s.recv_from_dram_wr_resp.val & s.recv_from_dram_wr_resp.rdy:
-            # Turn to the +16 address after writing 16 bytes data.
+            # Advance by one external-memory beat.
             s.dram_addr_ff  <<= s.dram_addr_reg + DramAddrType( dram_beat_nbytes )
             s.beat_ff       <<= MemDataType( 0 )
-            s.word_idx_ff   <<= b2( 0 )
+            s.word_idx_ff   <<= WordIdxType( 0 )
             s.wr_mask_ff    <<= MemMaskType( 0 )
 
             if s.words_left_reg == BytesType( 0 ):
