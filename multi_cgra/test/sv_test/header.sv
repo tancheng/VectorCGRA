@@ -1,4 +1,4 @@
-typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a96b45c418e4c9d2 IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
+typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__98918b0f81cb74a7 IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
 
 function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
 (
@@ -47,6 +47,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
   pkt.payload.ctrl.write_reg_idx       = '{default: 4'd0};
   pkt.payload.ctrl.read_reg_towards      = '{default: 2'd0};
   pkt.payload.ctrl.read_reg_idx        = '{default: 4'd0};
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
 /*
 111103b7 lui x7
@@ -160,6 +161,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
   file_handle = $fopen("hexcode.txt", "a");
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
@@ -244,6 +246,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   pkt.payload.ctrl.write_reg_idx       = write_reg_idx;
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
+  pkt.payload.ctrl.read_reg_retain     = '{default: 1'b0};
 
   pkt.payload.data.payload   = data;
   pkt.payload.data.predicate = pred;
@@ -285,7 +288,7 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   return pkt;
 endfunction
 
-function automatic logic [198-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
+function automatic logic [202-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraPayload p);
   logic_pkt = {
     // Header (MSB->LSB order)
     p.src,
@@ -315,7 +318,7 @@ function automatic logic [198-1:0] logic_pkt (IntraCgraPacket_4_2x2_16_8_2_CgraP
     p.payload.ctrl.write_reg_idx,
     p.payload.ctrl.read_reg_towards,
     p.payload.ctrl.read_reg_idx,
+    p.payload.ctrl.read_reg_retain,
     p.payload.ctrl_addr
   };
 endfunction
-

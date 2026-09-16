@@ -11,11 +11,11 @@ module cgra_test
   logic [0:0] clk;
   logic [0:0] reset;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 recv_from_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 recv_from_cpu_pkt__msg;
   logic [0:0] recv_from_cpu_pkt__rdy;
   logic [0:0] recv_from_cpu_pkt__val;
 
-  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 send_to_cpu_pkt__msg;
+  IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8 send_to_cpu_pkt__msg;
   logic [0:0] send_to_cpu_pkt__rdy;
   logic [0:0] send_to_cpu_pkt__val;
 
@@ -24,9 +24,9 @@ module cgra_test
   int  PASS         = 'd0;
   time pass_time_of = 'd0;
 
-  //   Packed dimension: the size of IntraCgraPacket_4_2x2_16_8_2_CgraPayload__87b1add8a7413834 in bits (229).
+  // Packed dimension: 234-bit IntraCgraPacket_4_2x2_16_8_2_CgraPayload__a0f3f1b43500f3b8.
   // Unpacked dimension: unbounded queue SystemVerilog construct; dynamic queue limited by only available memory. (As opposed to bounded queue, e.g., q [$:256].)
-  logic [230-1:0] pkt_queue [$];
+  logic [234-1:0] pkt_queue [$];
 
   initial
   begin
@@ -159,9 +159,10 @@ module cgra_test
   begin
     recv_from_cpu_pkt__val = 0;
 
-    // Wait for reset to be de-asserted.
-    @(negedge reset); // Starts at 0 which counts as a negedge.
-    @(negedge reset); // Actual falling edge after active-high region.
+    // Wait for the complete active-high reset pulse. Do not depend on the
+    // simulator treating the initial X-to-0 transition as a negedge.
+    @(posedge reset);
+    @(negedge reset);
     @(posedge clk);
 
     forever
@@ -385,4 +386,3 @@ typedef struct packed {
 
 
 endmodule
-
