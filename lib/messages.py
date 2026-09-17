@@ -94,7 +94,7 @@ def mk_ctrl(num_fu_inports = 4,
   # cache key and doesn't collide with the old Bits3 version.
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}"
+             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}_retain"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -145,6 +145,9 @@ def mk_ctrl(num_fu_inports = 4,
         out_str += '-'
       out_str += str(int(s.read_reg_idx[i]))
 
+    out_str += '|(read_reg_retain)' + '-'.join(
+        str(int(s.read_reg_retain[i])) for i in range(num_fu_inports))
+
     return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
@@ -174,6 +177,8 @@ def mk_ctrl(num_fu_inports = 4,
   # 3: towards both FU and routing_xbar
   field_dict[kAttrReadRegTowards] = [RegFromType for _ in range(num_fu_inports)]
   field_dict[kAttrReadRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
+  # Keep a read value live for later ctrl steps; zero consumes it as before.
+  field_dict[kAttrReadRegRetain] = [mk_bits(1) for _ in range(num_fu_inports)]
 
   return mk_bitstruct( new_name, field_dict,
     namespace = { '__str__': str_func }

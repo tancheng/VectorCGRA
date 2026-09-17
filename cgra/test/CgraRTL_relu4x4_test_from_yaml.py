@@ -18,6 +18,7 @@ Author : Shiran Guo
 """
 
 import os
+from pathlib import Path
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.passes.sim.PrepareSimPass import b1
@@ -302,7 +303,8 @@ def sim_relu_return(cmdline_opts, mem_access_is_combinational):
                     10
 
   from ...validation.script_generator import ScriptFactory
-  script_factory = ScriptFactory(path = "validation/test/relu.yaml",
+  yaml_path = Path(__file__).resolve().parents[2] / "validation" / "test" / "relu.yaml"
+  script_factory = ScriptFactory(path = yaml_path,
                                     CtrlType = CtrlType,
                                     IntraCgraPktType = IntraCgraPktType,
                                     CgraPayloadType = CgraPayloadType,
