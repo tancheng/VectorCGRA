@@ -302,7 +302,7 @@ for(int i=0; i<N; i++){
 
 
 // response should be data_mem[0:4] = [0,1,1,0,1]
-// return value should be i (i = 4 in the end)
+// return value should be the final loop index (i = 5 at exit)
 '''
 
 def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
@@ -320,12 +320,13 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational, has_ctrl_ring):
   kCtrlCountPerIter = 5
   kCmpOne = 1
   kCmpZero = 0
-  # Though kTotalCtrlSteps is way more than required loop iteration count,
-  # the stored result should still be correct thanks to the grant predicate.
+  # Leave a small drain window after the loop so the final RET and memory
+  # assertions can complete without delaying return by hundreds of cycles.
+  # With final-RET semantics, the returned value is the loop-exit index.
   kTotalCtrlSteps = kCtrlCountPerIter * \
                     (kLoopUpperBound - kLoopLowerBound) + \
-                    1000
-  kExpectedOutput = 4
+                    3
+  kExpectedOutput = 5
 
   # More details are shown in:
   # https://github.com/tancheng/VectorCGRA/tree/master/doc/figures/assert_test/DFG.png.

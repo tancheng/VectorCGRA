@@ -97,7 +97,8 @@ def test_Ret():
   src_opt = [CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
-  sink =    [CgraPayloadType(CMD_COMPLETE, data = DataType(2, 1), ctrl = CtrlType(OPT_RET, [FuInType(1), FuInType(0)]))] # , DataType(2, 1), DataType(3, 0)]
+  src_opt[1].is_last_ctrl = b1(1)
+  sink =    [CgraPayloadType(CMD_COMPLETE, data = DataType(2, 1), ctrl = src_opt[1])] # , DataType(2, 1), DataType(3, 0)]
   th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                    num_inports, num_outports, data_mem_size, ctrl_mem_size,
                    data_nbits, src_in, src_opt, sink)
@@ -129,11 +130,44 @@ def test_Ret_Void():
   src_opt = [CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]),
              CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)])]
+  src_opt[1].is_last_ctrl = b1(1)
 
   # Expected output: CMD_COMPLETE with void data (i.e., 0) after.
   sink = [CgraPayloadType(CMD_COMPLETE,
                           data = 0,
-                          ctrl = CtrlType(OPT_RET_VOID, [FuInType(1), FuInType(0)]))]
+                          ctrl = src_opt[1])]
+
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
+                   num_inports, num_outports, data_mem_size, ctrl_mem_size,
+                   data_nbits, src_in, src_opt, sink)
+  run_sim(th)
+
+def test_Ret_waits_for_final_ctrl():
+  FU = RetRTL
+  data_nbits = 16
+  DataType = mk_data(data_nbits, 1)
+  num_inports = 2
+  num_outports = 2
+  CtrlType = mk_ctrl(num_inports, num_outports)
+  ctrl_mem_size = 4
+  data_mem_size = 16
+
+  DataAddrType = mk_bits(clog2(data_mem_size))
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+  CgraPayloadType = mk_cgra_payload(DataType,
+                                    DataAddrType,
+                                    CtrlType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType = mk_bits(clog2(num_inports + 1))
+
+  src_in =  [DataType(1, 1), DataType(2, 1), DataType(3, 1)]
+  src_opt = [CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET, [FuInType(1), FuInType(0)]),
+             CtrlType(OPT_RET, [FuInType(1), FuInType(0)])]
+  src_opt[2].is_last_ctrl = b1(1)
+  sink = [CgraPayloadType(CMD_COMPLETE, data = DataType(3, 1), ctrl = src_opt[2])]
 
   th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType, CgraPayloadType,
                    num_inports, num_outports, data_mem_size, ctrl_mem_size,
