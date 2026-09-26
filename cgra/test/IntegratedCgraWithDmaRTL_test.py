@@ -3,6 +3,7 @@
 IntegratedCgraWithDmaRTL_test.py
 ==========================================================================
 """
+import pytest
 
 from pymtl3 import *
 from pymtl3.passes.backends.verilog import VerilogTranslationPass
@@ -35,10 +36,16 @@ CtrlType = mk_ctrl(4, 2, 8, 8, num_registers_per_reg_bank)
 CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
                                   CtrlAddrType)
 CtrlPktType = mk_intra_cgra_pkt(1, 1, 4, CgraPayloadType)
-WordType = mk_bits(32)
 
 
-def make_dut():
+def pack_words(words, beat_nbits):
+  packed = 0
+  for idx, word in enumerate(words):
+    packed |= word << (idx * 32)
+  return mk_bits(beat_nbits)(packed)
+
+
+def make_dut(dram_data_nbits = 128):
   # 2x2 tiles with add/mem/return functional units
   tiles_2d = [[Tile(x, y, num_registers_per_reg_bank, ["add", "mem", "return"])
                for x in range(2)] for y in range(2)]
@@ -58,7 +65,8 @@ def make_dut():
     TileList, LinkList, dataSPM,
     {0: [0, 15]},  # controller to address map
     {0: [0, 0]},   # cgra id to 2D coordinate
-    is_multi_cgra=False)
+    is_multi_cgra=False,
+    dram_data_nbits=dram_data_nbits)
 
   return dut
 
@@ -145,14 +153,15 @@ def observed_dma_done(dut, expected_tag):
   return False
 
 
-def test_cgra_dma_mvin_to_local_spm():
+@pytest.mark.parametrize("dram_data_nbits", [128, 256])
+def test_cgra_dma_mvin_to_local_spm(dram_data_nbits):
   """
   Integration test for the IntegratedCgraWithDmaRTL wrapper.
   It simulates a DMA MVIN command that moves data from external DRAM into
   the CGRA's dataSPM. It then checks the SPM contents to ensure the
   transfer was successful.
   """
-  dut = make_dut()
+  dut = make_dut(dram_data_nbits)
 
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
@@ -172,12 +181,11 @@ def test_cgra_dma_mvin_to_local_spm():
   dut.recv_from_dram_wr_resp.val @= 0
   dut.recv_from_dram_wr_resp.msg @= 0
 
-  # Read 16 bytes from DRAM address 0x1000 and write them to SPM words 0..3.
+  words = [0x11111111 * (idx + 1) for idx in range(dram_data_nbits // 32)]
   issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
-                CMD_DMA_MVIN, 0x1000, 0, 16, 0x33)
+                CMD_DMA_MVIN, 0x1000, 0, dram_data_nbits // 8, 0x33)
 
-  beat = concat(WordType(0x44444444), WordType(0x33333333),
-                WordType(0x22222222), WordType(0x11111111))
+  beat = pack_words(words, dram_data_nbits)
   pending_resp = False
 
   for _ in range(40):
@@ -198,28 +206,28 @@ def test_cgra_dma_mvin_to_local_spm():
 
   assert observed_dma_done(dut, 0x33)
   # Check the data in the dataSPM.
-  assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[0] == DataType(0x11111111, 1, 0, 0)
-  assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[1] == DataType(0x22222222, 1, 0, 0)
-  assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[2] == DataType(0x33333333, 1, 0, 0)
-  assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[3] == DataType(0x44444444, 1, 0, 0)
+  for idx, word in enumerate(words):
+    assert dut.cgra.data_mem.memory_wrapper[0].memory.regs[idx] == \
+      DataType(word, 1, 0, 0)
 
 
-def test_cgra_dma_mvout_from_local_spm():
+@pytest.mark.parametrize("dram_data_nbits", [128, 256])
+def test_cgra_dma_mvout_from_local_spm(dram_data_nbits):
   """
   Integration test for the IntegratedCgraWithDmaRTL wrapper.
   It simulates a DMA MVOUT command that moves data from the local SPM
   into external DRAM.
   """
-  dut = make_dut()
+  dut = make_dut(dram_data_nbits)
 
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
 
   # Pre-load SPM with data
-  dut.cgra.data_mem.memory_wrapper[0].memory.regs[0] <<= DataType(0x11111111, 1, 0, 0)
-  dut.cgra.data_mem.memory_wrapper[0].memory.regs[1] <<= DataType(0x22222222, 1, 0, 0)
-  dut.cgra.data_mem.memory_wrapper[0].memory.regs[2] <<= DataType(0x33333333, 1, 0, 0)
-  dut.cgra.data_mem.memory_wrapper[0].memory.regs[3] <<= DataType(0x44444444, 1, 0, 0)
+  words = [0x11111111 * (idx + 1) for idx in range(dram_data_nbits // 32)]
+  for idx, word in enumerate(words):
+    dut.cgra.data_mem.memory_wrapper[0].memory.regs[idx] <<= \
+      DataType(word, 1, 0, 0)
   dut.sim_tick()
 
   dut.cgra_id @= 0
@@ -237,13 +245,11 @@ def test_cgra_dma_mvout_from_local_spm():
   dut.recv_from_dram_wr_resp.val @= 0
   dut.recv_from_dram_wr_resp.msg @= 0
 
-  # Read SPM words 0..3 and write 16 bytes to DRAM address 0x2000.
   issue_dma_cmd(dut, CtrlPktType, CgraPayloadType, DataType, DataAddrType,
-                CMD_DMA_MVOUT, 0x2000, 0, 16, 0x44)
+                CMD_DMA_MVOUT, 0x2000, 0, dram_data_nbits // 8, 0x44)
 
-  # Expected 128-bit beat
-  expected_beat = concat(WordType(0x44444444), WordType(0x33333333),
-                         WordType(0x22222222), WordType(0x11111111))
+  expected_beat = pack_words(words, dram_data_nbits)
+  expected_mask = (1 << (dram_data_nbits // 8)) - 1
 
   done = False
   pending_wr_resp = False
@@ -258,6 +264,7 @@ def test_cgra_dma_mvout_from_local_spm():
     if dut.send_to_dram_wr_req.val & dut.send_to_dram_wr_req.rdy:
       assert dut.send_to_dram_wr_req.msg.addr == 0x2000
       assert dut.send_to_dram_wr_req.msg.data == expected_beat
+      assert dut.send_to_dram_wr_req.msg.mask == expected_mask
       pending_wr_resp = True
 
     if observed_dma_done(dut, 0x44):
@@ -268,11 +275,12 @@ def test_cgra_dma_mvout_from_local_spm():
 
   assert done
 
-def test_gen_verilog_integrated_cgra_with_dma(cmdline_opts):
+@pytest.mark.parametrize("dram_data_nbits", [128, 256])
+def test_gen_verilog_integrated_cgra_with_dma(cmdline_opts, dram_data_nbits):
   """
   Translate IntegratedCgraWithDmaRTL to Verilog.
   """
-  dut = make_dut()
+  dut = make_dut(dram_data_nbits)
 
   if cmdline_opts['test_verilog']:
     # Standard flow: config_model_with_cmdline_opts handles elaboration,
@@ -294,11 +302,12 @@ def test_gen_verilog_integrated_cgra_with_dma(cmdline_opts):
 
     dut.elaborate()
 
+    module_name = f'IntegratedCgraWithDmaRTL_{dram_data_nbits}'
     dut.set_metadata(VerilogTranslationPass.enable, True)
     dut.set_metadata(VerilogTranslationPass.explicit_module_name,
-                     'IntegratedCgraWithDmaRTL')
+                     module_name)
     dut.set_metadata(VerilogTranslationPass.explicit_file_name,
-                     'IntegratedCgraWithDmaRTL.v')
+                     f'{module_name}.v')
 
     dut.apply(VerilogTranslationPass())
 

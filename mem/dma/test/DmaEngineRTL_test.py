@@ -3,14 +3,15 @@
 DmaEngineRTL_test.py
 ==========================================================================
 """
+import pytest
 
 from pymtl3 import *
 
 from ..DmaEngineRTL import DmaEngineRTL, DMA_MVIN, DMA_MVOUT
 
 
-def make_dut():
-  dut = DmaEngineRTL()
+def make_dut(dram_data_nbits = 128):
+  dut = DmaEngineRTL(dram_data_nbits = dram_data_nbits)
   dut.apply(DefaultPassGroup())
   dut.sim_reset()
 
@@ -62,6 +63,13 @@ def issue_cmd(dut, opcode, dram_addr, spm_addr, nbytes, tag):
   assert dut.dma_cmd.rdy
   dut.sim_tick()
   dut.dma_cmd.val @= 0
+
+
+def pack_words(words, beat_nbits):
+  packed = 0
+  for idx, word in enumerate(words):
+    packed |= word << (idx * 32)
+  return mk_bits(beat_nbits)(packed)
 
 
 def test_dma_mvin_one_beat():
@@ -242,4 +250,108 @@ def test_dma_mvout_full_beat():
       int(concat(Bits32(0xffff0000), Bits32(0xddddeeee),
                 Bits32(0xbbbbcccc), Bits32(0x9999aaaa))),
      0xffff),
+  ]
+
+
+@pytest.mark.parametrize("dram_data_nbits", [96, 256])
+def test_dma_mvin_configurable_partial_second_beat(dram_data_nbits):
+  dut = make_dut(dram_data_nbits)
+  words_per_beat = dram_data_nbits // 32
+  beat_nbytes = dram_data_nbits // 8
+  words = [0x10000000 + i for i in range(words_per_beat + 1)]
+  dram = {
+    0x1000: pack_words(words[:words_per_beat], dram_data_nbits),
+    0x1000 + beat_nbytes: pack_words(words[words_per_beat:], dram_data_nbits),
+  }
+
+  issue_cmd(dut, DMA_MVIN, 0x1000, 4, len(words) * 4, 0x61)
+
+  pending_resp = None
+  dram_reads = []
+  spm_writes = []
+
+  for _ in range(80):
+    dut.recv_from_dram_rd_resp.val @= 0
+    if pending_resp is not None:
+      dut.recv_from_dram_rd_resp.val @= 1
+      dut.recv_from_dram_rd_resp.msg @= pending_resp
+
+    dut.sim_eval_combinational()
+
+    if dut.send_to_dram_rd_req.val & dut.send_to_dram_rd_req.rdy:
+      dram_addr = int(dut.send_to_dram_rd_req.msg)
+      dram_reads.append(dram_addr)
+      pending_resp = dram[dram_addr]
+    else:
+      pending_resp = None
+
+    if dut.send_to_spm_wr_req.val & dut.send_to_spm_wr_req.rdy:
+      spm_writes.append((
+        int(dut.send_to_spm_wr_req.msg.addr),
+        int(dut.send_to_spm_wr_req.msg.data),
+        int(dut.send_to_spm_wr_req.msg.mask)))
+
+    if dut.dma_done.val:
+      assert int(dut.dma_done.msg.dma_tag) == 0x61
+      break
+
+    dut.sim_tick()
+
+  assert dram_reads == [0x1000, 0x1000 + beat_nbytes]
+  assert spm_writes == [
+    (4 + idx, word, 0xf) for idx, word in enumerate(words)
+  ]
+
+
+@pytest.mark.parametrize("dram_data_nbits", [96, 256])
+def test_dma_mvout_configurable_partial_second_beat(dram_data_nbits):
+  dut = make_dut(dram_data_nbits)
+  words_per_beat = dram_data_nbits // 32
+  beat_nbytes = dram_data_nbits // 8
+  words = [0x20000000 + i for i in range(words_per_beat + 2)]
+  spm = {
+    8 + idx: word for idx, word in enumerate(words)
+  }
+
+  issue_cmd(dut, DMA_MVOUT, 0x2000, 8, len(words) * 4, 0x62)
+
+  pending_rresp = None
+  mem_writes = []
+
+  for _ in range(100):
+    dut.recv_from_spm_rd_resp.val @= 0
+    if pending_rresp is not None:
+      dut.recv_from_spm_rd_resp.val @= 1
+      dut.recv_from_spm_rd_resp.msg.data @= pending_rresp
+
+    dut.sim_eval_combinational()
+
+    if dut.send_to_spm_rd_req.val & dut.send_to_spm_rd_req.rdy:
+      pending_rresp = spm[int(dut.send_to_spm_rd_req.msg.addr)]
+    else:
+      pending_rresp = None
+
+    if dut.send_to_dram_wr_req.val & dut.send_to_dram_wr_req.rdy:
+      mem_writes.append((
+        int(dut.send_to_dram_wr_req.msg.addr),
+        int(dut.send_to_dram_wr_req.msg.data),
+        int(dut.send_to_dram_wr_req.msg.mask)))
+
+    if dut.dma_done.val:
+      assert int(dut.dma_done.msg.dma_tag) == 0x62
+      break
+
+    dut.sim_tick()
+
+  assert mem_writes == [
+    (
+      0x2000,
+      int(pack_words(words[:words_per_beat], dram_data_nbits)),
+      (1 << beat_nbytes) - 1,
+    ),
+    (
+      0x2000 + beat_nbytes,
+      int(pack_words(words[words_per_beat:], dram_data_nbits)),
+      0x00ff,
+    ),
   ]

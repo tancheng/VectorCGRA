@@ -50,11 +50,14 @@ class IntegratedCgraWithDmaRTL( Component ):
                 provided_max_per_cgra_rows = None,
                 provided_max_per_cgra_cols = None,
                 provided_max_num_rd_tiles = None,
-                provided_max_num_wr_tiles = None):
+                provided_max_num_wr_tiles = None,
+                dram_data_nbits = 128):
 
     DataType = CgraPayloadType.get_field_type(kAttrData)
     data_bitwidth = DataType.get_field_type(kAttrPayload).nbits
     assert data_bitwidth == 32
+    assert dram_data_nbits >= data_bitwidth
+    assert dram_data_nbits % data_bitwidth == 0
 
     max_per_cgra_rows = provided_max_per_cgra_rows if provided_max_per_cgra_rows is not None else per_cgra_rows
     max_per_cgra_cols = provided_max_per_cgra_cols if provided_max_per_cgra_cols is not None else per_cgra_columns
@@ -74,9 +77,11 @@ class IntegratedCgraWithDmaRTL( Component ):
                             bytes_nbits = 32,
                             tag_nbits = 8)
 
-    DmaDataType = mk_dma_data(dram_data_nbits = 128,
-                              dram_mask_nbits = 16,
-                              spm_data_nbits = 32)
+    DmaDataType = mk_dma_data(
+      dram_data_nbits = dram_data_nbits,
+      dram_mask_nbits = dram_data_nbits // 8,
+      spm_data_nbits = data_bitwidth,
+      spm_mask_nbits = data_bitwidth // 8)
 
     DmaDramAddrType = DmaCmdType.get_field_type(kAttrDramAddr)
     DmaMemDataType  = DmaDataType.get_field_type(kAttrDramData)
