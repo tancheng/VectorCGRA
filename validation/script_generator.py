@@ -254,6 +254,7 @@ class InstructionSignals:
         self.FuOutParams = [-1, -1, -1, -1, -1, -1, -1, -1]
         self.read_reg_towards_fu = [-1, -1, -1, -1]
         self.read_reg_towards_xbar = [-1, -1, -1, -1]
+        self.read_reg_retain = [0, 0, 0, 0]
         self.operand_from = [-1, -1, -1, -1]
         self.read_towards_reg_idx = [-1, -1, -1, -1]
         self.write_to_reg = [-1, -1, -1, -1]
@@ -574,6 +575,7 @@ class InstructionSignals:
                                                                                         write_reg_idx = write_reg_idx_made,
                                                                                         read_reg_towards = read_reg_towards_made,
                                                                                         read_reg_idx = read_reg_idx_made,
+                                                                                        read_reg_retain = [self.B1Type(x) for x in self.read_reg_retain],
                                                                                         )))
         return pkt
 
@@ -690,6 +692,31 @@ class TileSignals:
                                                                      ctrl = self.CtrlType(fu_xbar_outport = [self.FuOutType(0)] * 8),
                                                                      # WARN:by now, only support one result for each operation
                                                                      data = self.DataType(prologue_count, 1)))
+    @staticmethod
+    def mark_nonfinal_register_reads(instruction_signals):
+        """Retain a value when its next cyclic access reads it before writing.
+
+        A feedback step reads before it writes, so it still needs the old
+        value. Search through the II boundary as well as within one II.
+        """
+        ordered = sorted(instruction_signals, key=lambda signal: signal.ctrl_addr)
+        for position, signal in enumerate(ordered):
+            for bank, register in enumerate(signal.read_towards_reg_idx):
+                signal.read_reg_retain[bank] = 0
+                if (signal.read_reg_towards_fu[bank] != 1 and
+                        signal.read_reg_towards_xbar[bank] != 1):
+                    continue
+                for offset in range(1, len(ordered) + 1):
+                    later = ordered[(position + offset) % len(ordered)]
+                    if (later.read_towards_reg_idx[bank] == register and
+                            (later.read_reg_towards_fu[bank] == 1 or
+                             later.read_reg_towards_xbar[bank] == 1)):
+                        signal.read_reg_retain[bank] = 1
+                        break
+                    if (later.write_to_reg[bank] != -1 and
+                            later.write_to_reg_idx[bank] == register):
+                        break
+
     def makeTileSignals(self):
         consts = []
         all_signals = []
@@ -791,6 +818,8 @@ class TileSignals:
             if const is not None:
                 consts.extend(const)
         
+        self.mark_nonfinal_register_reads(all_instruction_signals)
+
         # make the const signals
         # sort the consts according to the usage order
         consts.sort(key=lambda x: x[1])

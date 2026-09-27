@@ -81,6 +81,12 @@ jobs:
         cd mflowgen
         pip install -e .
 
+    - name: Test YAML kernels
+      run: |
+        mkdir -p build && cd build
+        source ${HOME}/venv/bin/activate
+        pytest ../cgra/test/*_test_from_yaml.py -v -rs --tb=short
+
     - name: Test and translate with pytest
       run: |
         mkdir -p build && cd build

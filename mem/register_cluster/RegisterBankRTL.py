@@ -22,8 +22,10 @@ tiles consuming data from their own register cluster that nothing
 writes). For an armed register:
 - The token bit is set when a token is written.
 - A read only asserts `val` while the entry holds an unconsumed token.
-- The token is consumed (cleared) when the ctrl step that reads the
-  entry completes, signaled via `inport_ctrl_proceed` (the same
+- The token is consumed (cleared) when its last reading ctrl step
+  completes. `read_reg_retain` keeps it live for a later reading step;
+  its default zero preserves single-use token behavior. Completion is
+  signaled via `inport_ctrl_proceed` (the same
   per-step signal the const queue advances on). Within a ctrl step,
   reads are repeatable: FUs may accept the operand several times (e.g.,
   vector-factor replays) or merely snoop it without a val/rdy handshake
@@ -295,11 +297,12 @@ class RegisterBankRTL(Component):
         s.token_set_mask[r] @= \
             (s.wr_en & (s.inport_opt.write_reg_idx[reg_bank_id] == r)) | \
             (s.skid_commit & (s.skid_idx == r))
-        # The completing ctrl step consumes the token it has been reading.
+        # Release only at the last read of this register value.
         s.token_clear_mask[r] @= \
             s.inport_ctrl_proceed & \
             (s.read_towards_fu | s.read_towards_xbar) & \
             (s.inport_opt.read_reg_idx[reg_bank_id] == r) & \
+            ~s.inport_opt.read_reg_retain[reg_bank_id] & \
             s.token_valid[r]
 
     @update_ff

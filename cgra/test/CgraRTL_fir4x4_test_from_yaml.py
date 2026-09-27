@@ -10,6 +10,7 @@ Author : Cheng Tan
 """
 
 import os
+from pathlib import Path
 
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.passes.sim.PrepareSimPass import b1
@@ -318,7 +319,8 @@ def sim_fir4x4_return(cmdline_opts, mem_access_is_combinational):
   kExpectedOutput = 23536
 
   from ...validation.script_generator import ScriptFactory
-  script_factory = ScriptFactory(path = "validation/test/fir4x4.yaml",
+  yaml_path = Path(__file__).resolve().parents[2] / "validation" / "test" / "fir4x4.yaml"
+  script_factory = ScriptFactory(path = yaml_path,
                                     CtrlType = CtrlType,
                                     IntraCgraPktType = IntraCgraPktType,
                                     CgraPayloadType = CgraPayloadType,
