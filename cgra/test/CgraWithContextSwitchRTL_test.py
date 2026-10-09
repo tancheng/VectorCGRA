@@ -346,14 +346,15 @@ def sim_fir_return_two_tasks(cmdline_opts, mem_access_is_combinational):
   kLoopUpperBound_Task2 = 9
   kCtrlCountPerIter_Task1 = 4
   kCtrlCountPerIter_Task2 = 3
-  # Though kTotalCtrlSteps is way more than required loop iteration count,
-  # the stored result should still be correct thanks to the grant predicate.
+  # Leave a bounded drain window after each task so final RET observes the
+  # completed result without delaying context-switch return by hundreds of
+  # cycles.
   kTotalCtrlSteps_Task1 = kCtrlCountPerIter_Task1 * \
                           (kLoopUpperBound_Task1 - kLoopLowerBound) + \
-                          100
+                          13
   kTotalCtrlSteps_Task2 = kCtrlCountPerIter_Task2 * \
                           (kLoopUpperBound_Task2 - kLoopLowerBound) + \
-                          100
+                          13
   kExpectedOutput_Task1 = 2215
   kExpectedOutput_Task2 = 1816
   src_opt_pkt = [
