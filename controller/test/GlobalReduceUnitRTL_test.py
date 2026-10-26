@@ -174,3 +174,114 @@ def test_simple(cmdline_opts):
   th.elaborate()
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
+
+#-------------------------------------------------------------------------
+# Concurrent reductions, distinguished by payload.data_addr
+#-------------------------------------------------------------------------
+
+def mk_reduce_pkt_types():
+  num_cgra_columns = 4
+  num_cgra_rows = 1
+  num_tiles = 4
+  num_rd_tiles = 3
+  ctrl_mem_size = 16
+  data_mem_size_global = 16
+
+  DataType = mk_data(32, 1)
+  DataAddrType = mk_bits(clog2(data_mem_size_global))
+  CtrlType = mk_ctrl(2, 2, 4, 4, 16)
+  CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType,
+                                    CtrlAddrType)
+  InterCgraPktType = mk_inter_cgra_pkt(num_cgra_columns, num_cgra_rows,
+                                       num_tiles, num_rd_tiles,
+                                       CgraPayloadType)
+  return DataType, CgraPayloadType, InterCgraPktType
+
+def mk_count_pkt(InterCgraPktType, CgraPayloadType, DataType,
+                 reduce_id, count):
+  return InterCgraPktType(
+      payload = CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT,
+                                data = DataType(count, 0, 0, 0),
+                                data_addr = reduce_id))
+
+def mk_partial_pkt(InterCgraPktType, CgraPayloadType, DataType,
+                   cmd, reduce_id, src_cgra, src_tile, value):
+  #                       src       dst src_x     src_y dst_x dst_y src_tile_id dst_tile_id
+  return InterCgraPktType(src_cgra, 0,  src_cgra, 0,    0,    0,    src_tile,   0,
+                          payload = CgraPayloadType(cmd,
+                                                    data = DataType(value, 1, 0, 0),
+                                                    data_addr = reduce_id))
+
+def mk_response_pkt(InterCgraPktType, CgraPayloadType, DataType,
+                    cmd, reduce_id, src_cgra, src_tile, value):
+  ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
+  # The response goes back to the tile that sent the partial value.
+  return ControllerXbarPktType(inter_cgra_pkt = InterCgraPktType(
+      0, src_cgra, 0, 0, src_cgra, 0, 0, src_tile,
+      payload = CgraPayloadType(cmd,
+                                data = DataType(value, 1, 0, 0),
+                                data_addr = reduce_id)))
+
+def test_interleaved_reductions(cmdline_opts):
+  DataType, CgraPayloadType, InterCgraPktType = mk_reduce_pkt_types()
+  count = lambda *a: mk_count_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+  partial = lambda *a: mk_partial_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+  response = lambda *a: mk_response_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+
+  input_count = [count(0, 3), count(1, 3)]
+
+  # Partial sums of reduction 0 (sumA) and reduction 1 (sumB) arrive interleaved.
+  input_data = [
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1,  2),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1, 0, 2, 10),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 1, 1,  4),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1, 1, 2, 20),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 2, 1,  6),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1, 2, 2, 30),
+  ]
+
+  expected_output = [
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 0, 1, 12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 1, 1, 12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 2, 1, 12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 0, 2, 60),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 1, 2, 60),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 2, 2, 60),
+  ]
+
+  th = TestHarness(InterCgraPktType, input_count, input_data, expected_output)
+  th.elaborate()
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_later_reduction_completes_first(cmdline_opts):
+  DataType, CgraPayloadType, InterCgraPktType = mk_reduce_pkt_types()
+  count = lambda *a: mk_count_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+  partial = lambda *a: mk_partial_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+  response = lambda *a: mk_response_pkt(InterCgraPktType, CgraPayloadType, DataType, *a)
+
+  # Reduction 0 is an ADD over 3 CGRAs; reduction 3 is a MUL over 2 CGRAs
+  # that collects all of its inputs before reduction 0 does.
+  input_count = [count(0, 3), count(3, 2)]
+
+  input_data = [
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1, 2),
+    partial(CMD_GLOBAL_REDUCE_MUL, 3, 0, 3, 5),
+    partial(CMD_GLOBAL_REDUCE_MUL, 3, 1, 3, 7),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 1, 1, 4),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0, 2, 1, 6),
+  ]
+
+  expected_output = [
+    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3, 0, 3, 35),
+    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3, 1, 3, 35),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 0, 1, 12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 1, 1, 12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 2, 1, 12),
+  ]
+
+  th = TestHarness(InterCgraPktType, input_count, input_data, expected_output)
+  th.elaborate()
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
