@@ -10,12 +10,13 @@ Author : Shangkun Li, Jia Sun
   Date : Oct 11, 2026
 """
 
+import os
 from pathlib import Path
 
 from pymtl3 import mk_bits
 from pymtl3.passes.backends.verilog import (VerilogVerilatorImportPass)
 from pymtl3.passes.sim.PrepareSimPass import b1
-from pymtl3.stdlib.test_utils import run_sim
+from pymtl3.stdlib.test_utils import (run_sim, config_model_with_cmdline_opts)
 
 from ..CgraRTL import CgraRTL
 from ...fu.double.SeqMulAdderRTL import SeqMulAdderRTL
@@ -33,6 +34,7 @@ from ...lib.cmd_type import (
 from ...lib.messages import *
 from ...lib.opt_type import *
 from ...lib.util.common import *
+from ...lib.trace_logger import init_trace_logger, close_trace_logger
 
 #-------------------------------------------------------------------------
 # Test harness
@@ -137,7 +139,8 @@ class TestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-
+# Common configurations/setups.
+FuList = [MulRTL, MemUnitRTL, SeqMulAdderRTL]
 x_tiles = 4
 y_tiles = 4
 data_bitwidth = 32
@@ -147,7 +150,7 @@ num_tile_outports = tile_ports
 num_fu_inports = 4
 num_fu_outports = 2
 num_routing_outports = num_tile_outports + num_fu_inports
-ctrl_mem_size = 17
+ctrl_mem_size = 3
 data_mem_size_global = 256
 data_mem_size_per_bank = 32
 num_banks_per_cgra = 2
@@ -155,11 +158,12 @@ num_cgra_columns = 4
 num_cgra_rows = 1
 num_cgras = num_cgra_columns * num_cgra_rows
 num_registers_per_reg_bank = 8
-
 TileInType = mk_bits(clog2(num_tile_inports + num_fu_inports + 1))
 FuInType = mk_bits(clog2(num_fu_inports + 1))
 FuOutType = mk_bits(clog2(num_fu_outports + 1))
-DataAddrType = mk_bits(clog2(data_mem_size_global))
+addr_nbits = clog2(data_mem_size_global)
+
+DataAddrType = mk_bits(addr_nbits)
 RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
 DataType = mk_data(data_bitwidth, 1)
 cgra_id = 0
@@ -192,17 +196,33 @@ IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
 
 
 # Systolic GEMM kernel (from compiled neura_systolic_3x3.yaml).
-# The west column loads A, the center 3x3 computes A*B, and the
-# north row stores C.
-#
+# Kernel Semantics C = A * B, where A, B, C are 3x3 matrices.
+# The 4×4 CGRA uses:
+# one column of Tiles for loading;
+# one row of Tiles for storing;
+# the remaining 3×3 Tiles for MAC computation.
+# The figure:
+# Draw the 4×4 CGRA with the following layout:
+#   +---+---+---+---+
+#   |   | S | S | S |
+#   +---+---+---+---+
+#   | L | M | M | M |
+#   +---+---+---+---+
+#   | L | M | M | M |
+#   +---+---+---+---+
+#   | L | M | M | M |
+#   +---+---+---+---+
+# Where L = load, S = store, M = MAC.
+
+N = 3  # matrix dimension
+
 # Initialize matrices per PolyBench gemm_int.c init_array.
 # A[i][j] = (i * (j+1)) % 17
 # B[i][j] = (i * (j+2)) % 19
 # C[i][j] = (i * j) % 13
-N = 3  # matrix dimension
 BaseA = 0
-BaseB = 16
-BaseC = 32
+BaseB = 9
+BaseC = 18
 
 preload_data_A = [
   IntraCgraPktType(0, 0, payload = CgraPayloadType(CMD_STORE_REQUEST,
@@ -256,7 +276,7 @@ def sim_neura_systolic_3x3_gemm(cmdline_opts, mem_access_is_combinational):
   ]
   from ...validation.script_generator import ScriptFactory
   yaml_path = (Path(__file__).resolve().parents[2] / "validation" / "test" / "gemm" / "neura_systolic_3x3.yaml")
-  factory = ScriptFactory(
+  script_factory = ScriptFactory(
     path=yaml_path,
     CtrlType=CtrlType,
     IntraCgraPktType=IntraCgraPktType,
@@ -280,20 +300,20 @@ def sim_neura_systolic_3x3_gemm(cmdline_opts, mem_access_is_combinational):
     CMD_LAUNCH_input=CMD_LAUNCH,
     DataType=DataType,
     B1Type=b1,
-    B2Type=mk_bits(2),
+    B2Type=b2,
     RegIdxType=RegIdxType,
     CtrlAddrType=CtrlAddrType,
     DataAddrType=DataAddrType,
     num_registers_per_reg_bank=num_registers_per_reg_bank,
     kernel_inputs=bindings,
   )
-  tile_packets = factory.makeVectorCGRAPkts()
+  src_opt_pkt0_ = script_factory.makeVectorCGRAPkts()
 
   for activation in preload_data:
     src_ctrl_pkt.extend(activation)
 
   launch_packets = []
-  for packets in tile_packets.values():
+  for packets in src_opt_pkt0_.values():
     for packet in packets:
       if packet.payload.cmd == CMD_LAUNCH:
         launch_packets.append(packet)
@@ -310,7 +330,7 @@ def sim_neura_systolic_3x3_gemm(cmdline_opts, mem_access_is_combinational):
 
   complete_signal_sink_out.extend([
     IntraCgraPktType(payload=CgraPayloadType(CMD_COMPLETE))
-    for _ in tile_packets
+    for _ in src_opt_pkt0_
   ])
   complete_signal_sink_out.extend(
     IntraCgraPktType(
@@ -340,8 +360,17 @@ def sim_neura_systolic_3x3_gemm(cmdline_opts, mem_access_is_combinational):
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
                       ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
                        'ALWCOMBORDER'])
-  run_sim(th, cmdline_opts={**cmdline_opts, 'max_cycles': 500},
-          print_line_trace=False, duts=['dut'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  
+  trace_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'trace_output')
+  trace_file = os.path.join(trace_dir, 'trace_systolic_gemm_3x3_Mesh.jsonl')
+  init_trace_logger(trace_file, x_tiles, y_tiles, "Mesh", cgra_id)
+  
+  run_sim(th)
+  
+  close_trace_logger()
+  cycles = th.sim_cycle_count()
+  print("\n\n\ncycles: ", cycles)
 
 
 def test_neura_systolic_3x3_gemm_combinational_mem_access(cmdline_opts):

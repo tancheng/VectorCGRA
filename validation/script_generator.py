@@ -979,10 +979,13 @@ class ScriptFactory:
         self.RegIdxType = RegIdxType
         self.CtrlAddrType = CtrlAddrType
         self.DataAddrType = DataAddrType
-        self.bind_kernel_inputs(kernel_inputs)
-
+        if kernel_inputs is not None:
+            self.bind_kernel_inputs(kernel_inputs)
+    
+    # Replace the argX in the yaml with the actual values 
+    # (e.g. SRAM base addresses or tensor values) provided in kernel_inputs.
     def bind_kernel_inputs(self, kernel_inputs):
-        """Resolve element offsets using runtime SRAM bases or tensor values."""
+        assert kernel_inputs is not None, "kernel_inputs must be provided for binding"
         for core in self.yaml_struct['array_config']['cores']:
             for entry in core['entries']:
                 for instruction in entry['instructions']:
