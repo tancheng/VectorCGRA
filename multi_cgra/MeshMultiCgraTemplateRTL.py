@@ -13,7 +13,7 @@ class MeshMultiCgraTemplateRTL(Component):
 
     def construct(s, CgraPayloadType,
                 cgra_rows, cgra_columns, 
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 num_ctrl, total_steps, FunctionUnit, FuList,
@@ -67,8 +67,7 @@ class MeshMultiCgraTemplateRTL(Component):
                                   cgra_rows, cgra_columns, 
                                   # per_cgra_rows, per_cgra_columns,
                                   id2cgraSize_map[cgra_id][0], id2cgraSize_map[cgra_id][1],    
-                                  # ctrl_mem_size, 
-                                  id2ctrlMemSize_map[cgra_id],
+                                  id2ctrlMemSize_map[cgra_id], const_mem_size,
                                   data_mem_size_global,
                                   data_mem_size_per_bank, 
                                   num_banks_per_cgra,

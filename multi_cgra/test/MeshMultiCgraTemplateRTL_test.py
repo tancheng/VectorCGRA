@@ -50,7 +50,7 @@ import os
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList,
                 IntraCgraPktType,
-                cgra_rows, cgra_columns, ctrl_mem_size,
+                cgra_rows, cgra_columns, ctrl_mem_size, const_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt,
@@ -71,7 +71,7 @@ class TestHarness(Component):
 
     s.dut = DUT(CgraPayloadType,
                 cgra_rows, cgra_columns,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 ctrl_steps_per_iter, ctrl_steps_total, FunctionUnit, FuList,
@@ -173,6 +173,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 16
+  const_mem_size = 16
   num_cgras = num_cgra_rows * num_cgra_columns
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = per_cgra_columns * per_cgra_rows
@@ -360,7 +361,7 @@ def test_mesh_multi_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml"):
 
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps_per_iter, ctrl_steps_total, 
@@ -407,6 +408,7 @@ def test_mesh_multi_hetero_cgra(cmdline_opts, arch_yaml_path = "arch_multi_heter
   num_fu_inports = 4
   num_fu_outports = 2
   ctrl_mem_size = 16
+  const_mem_size = 16
   num_cgras = num_cgra_rows * num_cgra_columns
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
 
@@ -577,7 +579,7 @@ def test_mesh_multi_hetero_cgra(cmdline_opts, arch_yaml_path = "arch_multi_heter
 
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    ctrl_steps_per_iter, ctrl_steps_total, 

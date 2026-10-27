@@ -48,7 +48,7 @@ class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList,
                 CtrlPktType,
                 cgra_id, width, height,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
@@ -67,7 +67,7 @@ class TestHarness(Component):
                 # CGRA terminals on x/y. Assume in total 4, though this
                 # test is for single CGRA.
                 multi_cgra_rows, multi_cgra_columns,
-                width, height, ctrl_mem_size,
+                width, height, ctrl_mem_size, const_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 kCtrlCountPerIter, kTotalCtrlSteps,
@@ -164,6 +164,7 @@ num_fu_inports = 4
 num_fu_outports = 2
 num_routing_outports = num_tile_outports + num_fu_inports
 ctrl_mem_size = 6
+const_mem_size = 6
 # data_mem_size_global = 4096
 # data_mem_size_per_bank = 32
 # num_banks_per_cgra = 24
@@ -834,7 +835,7 @@ def sim_fir_terminate(cmdline_opts, mem_access_is_combinational):
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id, x_tiles, y_tiles,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
@@ -1387,7 +1388,7 @@ def sim_fir_return(cmdline_opts, mem_access_is_combinational):
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id, x_tiles, y_tiles,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
@@ -1970,7 +1971,7 @@ def sim_fir_vector_terminate(cmdline_opts, mem_access_is_combinational):
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id, x_tiles, y_tiles,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,
@@ -2580,7 +2581,7 @@ def sim_fir_vector_return(cmdline_opts, mem_access_is_combinational):
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id, x_tiles, y_tiles,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, kCtrlCountPerIter, kTotalCtrlSteps,

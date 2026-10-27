@@ -30,7 +30,7 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList,
                 IntraCgraPktType,
-                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
+                cgra_rows, cgra_columns, width, height, ctrl_mem_size, const_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps, mem_access_is_combinational,
@@ -45,7 +45,7 @@ class TestHarness(Component):
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
     s.dut = DUT(CgraPayloadType, cgra_rows, cgra_columns,
-                height, width, ctrl_mem_size, data_mem_size_global,
+                height, width, ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, ctrl_steps, ctrl_steps,
                 mem_access_is_combinational,
@@ -70,6 +70,7 @@ def test_homo_1x4(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 6
+  const_mem_size = 6
   data_mem_size_global = 32
   data_mem_size_per_bank = 4
   num_banks_per_cgra = 2
@@ -209,7 +210,7 @@ def test_homo_1x4(cmdline_opts):
   mem_access_is_combinational = True
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
-                   width, height, ctrl_mem_size, data_mem_size_global,
+                   width, height, ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt,
                    ctrl_mem_size, mem_access_is_combinational,

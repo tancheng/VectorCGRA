@@ -27,7 +27,7 @@ class CgraRTL(Component):
                 multi_cgra_rows,
                 multi_cgra_columns,
                 width, height,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, mem_access_is_combinational,
@@ -104,7 +104,7 @@ class CgraRTL(Component):
 
     # Components
     s.tile = [TileRTL(CtrlPktType,
-                      ctrl_mem_size,
+                      ctrl_mem_size, const_mem_size,
                       data_mem_size_global, num_ctrl,
                       total_steps, 4, 2, s.num_mesh_ports,
                       s.num_mesh_ports, num_cgras, s.num_tiles,

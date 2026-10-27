@@ -45,7 +45,7 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList,
                 IntraCgraPktType,
-                ctrl_mem_size, data_mem_size, num_fu_inports,
+                ctrl_mem_size, const_mem_size, data_mem_size, num_fu_inports,
                 num_fu_outports, num_tile_inports,
                 num_tile_outports, num_registers_per_reg_bank, src_data,
                 src_ctrl_pkt, sink_out, num_tiles, complete_signal_sink_out, num_ctrl, total_steps,
@@ -64,7 +64,7 @@ class TestHarness(Component):
                   for i in range(num_tile_outports)]
     s.complete_signal_sink_out = TestSinkRTL(IntraCgraPktType, complete_signal_sink_out)
 
-    s.dut = DUT(IntraCgraPktType, ctrl_mem_size, data_mem_size, num_ctrl, total_steps,
+    s.dut = DUT(IntraCgraPktType, ctrl_mem_size, const_mem_size, data_mem_size, num_ctrl, total_steps,
                 num_fu_inports, num_fu_outports, num_tile_inports,
                 num_tile_outports, 1, num_tiles,
                 num_registers_per_reg_bank,
@@ -113,6 +113,7 @@ def test_tile_alu(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
+  const_mem_size = 3
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -211,7 +212,7 @@ def test_tile_alu(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -231,6 +232,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
+  const_mem_size = 3
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -327,7 +329,7 @@ def test_tile_multicycle_exclusive(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -347,6 +349,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
+  const_mem_size = 3
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -441,7 +444,7 @@ def test_tile_multicycle_inclusive(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -461,6 +464,7 @@ def test_readReg_routing_priority(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 3
+  const_mem_size = 3
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -554,7 +558,7 @@ def test_readReg_routing_priority(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -574,6 +578,7 @@ def test_prologue_nah(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 8
+  const_mem_size = 8
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -722,7 +727,7 @@ def test_prologue_nah(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,
@@ -760,6 +765,7 @@ def test_tile_same_register_accumulate(cmdline_opts):
   num_fu_outports = 2
   num_routing_outports = num_fu_inports + num_tile_outports
   ctrl_mem_size = 2
+  const_mem_size = 2
   data_mem_size_global = 16
   num_cgra_rows = 1
   num_cgra_columns = 1
@@ -836,7 +842,7 @@ def test_tile_same_register_accumulate(cmdline_opts):
 
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
-                   ctrl_mem_size,
+                   ctrl_mem_size, const_mem_size,
                    data_mem_size_global, num_fu_inports, num_fu_outports,
                    num_tile_inports, num_tile_outports,
                    num_registers_per_reg_bank, src_data,

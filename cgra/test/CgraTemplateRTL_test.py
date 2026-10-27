@@ -62,7 +62,7 @@ class TestHarness(Component):
 
   def construct(s, DUT, FunctionUnit, FuList,
                 CtrlPktType,
-                cgra_id, ctrl_mem_size,
+                cgra_id, ctrl_mem_size, const_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
@@ -83,7 +83,7 @@ class TestHarness(Component):
                 # test is for single CGRA.
                 1, 4,
                 width, height,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 ctrl_steps, ctrl_steps,
@@ -127,6 +127,7 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = paramCGRA.configMemSize
+  const_mem_size = ctrl_mem_size
   width = paramCGRA.rows
   height = paramCGRA.columns
   data_mem_size_global = 512
@@ -288,7 +289,7 @@ def test_cgra_universal(cmdline_opts, arch_yaml_path = "arch.yaml", cgra_param =
   th = TestHarness(DUT, FunctionUnit, FuList,
                    IntraCgraPktType,
                    cgra_id,
-                   ctrl_mem_size, data_mem_size_global,
+                   ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank,
                    src_ctrl_pkt, ctrl_mem_size,

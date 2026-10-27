@@ -48,7 +48,7 @@ from ...lib.util.common import *
 class TestHarness(Component):
   def construct(s, DUT, FunctionUnit, FuList,
                 IntraCgraPktType,
-                cgra_rows, cgra_columns, width, height, ctrl_mem_size,
+                cgra_rows, cgra_columns, width, height, ctrl_mem_size, const_mem_size,
                 data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 src_ctrl_pkt, src_query_pkt,
@@ -70,7 +70,7 @@ class TestHarness(Component):
     s.expected_sink_out = TestSinkRTL(IntraCgraPktType, expected_sink_out_pkt, cmp_fn = cmp_func)
 
     s.dut = DUT(CgraPayloadType, cgra_rows, cgra_columns,
-                height, width, ctrl_mem_size, data_mem_size_global,
+                height, width, ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 ctrl_steps_per_iter, ctrl_steps_total,
@@ -154,6 +154,7 @@ def initialize_test_harness(cmdline_opts,
   num_fu_outports = 2
   num_routing_outports = num_tile_outports + num_fu_inports
   ctrl_mem_size = 16
+  const_mem_size = 16
   num_cgras = num_cgra_rows * num_cgra_columns
   data_mem_size_global = data_mem_size_per_bank * num_banks_per_cgra * num_cgras
   num_tiles = num_x_tiles_per_cgra * num_y_tiles_per_cgra
@@ -1724,7 +1725,7 @@ def initialize_test_harness(cmdline_opts,
 
   th = TestHarness(DUT, FunctionUnit, FuList,IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
-                   num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
+                   num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, const_mem_size, data_mem_size_global,
                    data_mem_size_per_bank, num_banks_per_cgra,
                    num_registers_per_reg_bank, src_ctrl_pkt, src_query_pkt,
                    kCtrlCountPerIter, kTotalCtrlSteps, mem_access_is_combinational,

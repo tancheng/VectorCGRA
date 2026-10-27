@@ -21,7 +21,7 @@ from ..lib.messages import *
 
 class RingMultiCgraRTL(Component):
   def construct(s, CgraPayloadType, cgra_rows, cgra_columns, tile_rows, tile_columns,
-                ctrl_mem_size, data_mem_size_global, data_mem_size_per_bank,
+                ctrl_mem_size, const_mem_size, data_mem_size_global, data_mem_size_per_bank,
                 num_banks_per_cgra, num_registers_per_reg_bank,
                 num_ctrl, total_steps,
                 mem_access_is_combinational,
@@ -67,7 +67,7 @@ class RingMultiCgraRTL(Component):
                       # Constructs the topology as 1d.
                       1, s.num_cgras,
                       tile_columns, tile_rows,
-                      ctrl_mem_size, data_mem_size_global,
+                      ctrl_mem_size, const_mem_size, data_mem_size_global,
                       data_mem_size_per_bank, num_banks_per_cgra,
                       num_registers_per_reg_bank,
                       num_ctrl, total_steps,

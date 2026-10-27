@@ -79,6 +79,7 @@ X_TILES                     = 3
 Y_TILES                     = 3
 DATA_BITWIDTH               = 32
 CTRL_MEM_SIZE               = 6
+CONST_MEM_SIZE              = 6
 DATA_MEM_SIZE_GLOBAL        = 128
 DATA_MEM_SIZE_PER_BANK      = 16
 NUM_BANKS_PER_CGRA          = 2
@@ -138,7 +139,7 @@ class TestHarness(Component):
 
   def construct(s, FuList, IntraCgraPktType, CgraPayloadType, DataType,
                 cgra_id, width, height,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank,
                 src_ctrl_pkt, ctrl_steps,
@@ -156,7 +157,7 @@ class TestHarness(Component):
     s.dut = IntegratedIm2ColWithCgraRTL(
         CgraPayloadType,
         multi_cgra_rows, multi_cgra_columns,
-        width, height, ctrl_mem_size,
+        width, height, ctrl_mem_size, const_mem_size,
         data_mem_size_global, data_mem_size_per_bank,
         num_banks_per_cgra, num_registers_per_reg_bank,
         ctrl_steps, ctrl_steps,
@@ -402,7 +403,7 @@ def _run(pe_weights, expected_outputs,
 
   th = TestHarness(FULL_FU_LIST, IntraCgraPktType, CgraPayloadType, DataType,
                    cgra_id, X_TILES, Y_TILES,
-                   CTRL_MEM_SIZE, DATA_MEM_SIZE_GLOBAL,
+                   CTRL_MEM_SIZE, CONST_MEM_SIZE, DATA_MEM_SIZE_GLOBAL,
                    DATA_MEM_SIZE_PER_BANK, NUM_BANKS_PER_CGRA,
                    NUM_REGISTERS_PER_REG_BANK,
                    src_ctrl_pkt, CTRL_STEPS,
@@ -492,7 +493,7 @@ def _make_dut():
   return IntegratedIm2ColWithCgraRTL(
       CgraPayloadType,
       NUM_CGRA_ROWS, NUM_CGRA_COLUMNS,
-      X_TILES, Y_TILES, CTRL_MEM_SIZE,
+      X_TILES, Y_TILES, CTRL_MEM_SIZE, CONST_MEM_SIZE,
       DATA_MEM_SIZE_GLOBAL, DATA_MEM_SIZE_PER_BANK,
       NUM_BANKS_PER_CGRA, NUM_REGISTERS_PER_REG_BANK,
       CTRL_STEPS, CTRL_STEPS,       # num_ctrl, total_steps

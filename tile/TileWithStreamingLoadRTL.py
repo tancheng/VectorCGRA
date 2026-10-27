@@ -31,7 +31,7 @@ from ..lib.util.data_struct_attr import *
 class TileWithStreamingLoadRTL(Component):
 
   def construct(s, IntraCgraPktType,
-                ctrl_mem_size, data_mem_size, num_ctrl,
+                ctrl_mem_size, const_mem_size, data_mem_size, num_ctrl,
                 total_steps, num_fu_inports, num_fu_outports,
                 num_tile_inports, num_tile_outports, num_cgras, num_tiles,
                 num_registers_per_reg_bank = 16,
@@ -76,7 +76,7 @@ class TileWithStreamingLoadRTL(Component):
     # Components.
     s.element = FlexibleFuRTL(CtrlPktType, num_fu_inports, num_fu_outports,
                               num_tiles, FuList)
-    s.const_mem = ConstQueueDynamicRTL(DataType, ctrl_mem_size)
+    s.const_mem = ConstQueueDynamicRTL(DataType, const_mem_size)
     s.routing_crossbar = CrossbarRTL(DataType,
                                      CtrlSignalType,
                                      num_routing_xbar_inports,

@@ -68,7 +68,7 @@ class IntegratedIm2ColWithCgraRTL(Component):
   def construct(s, CgraPayloadType,
                 multi_cgra_rows, multi_cgra_columns,
                 width, height,
-                ctrl_mem_size, data_mem_size_global,
+                ctrl_mem_size, const_mem_size, data_mem_size_global,
                 data_mem_size_per_bank, num_banks_per_cgra,
                 num_registers_per_reg_bank, num_ctrl,
                 total_steps, mem_access_is_combinational,
@@ -125,7 +125,7 @@ class IntegratedIm2ColWithCgraRTL(Component):
 
     s.cgra = CgraRTL(CgraPayloadType,
                      multi_cgra_rows, multi_cgra_columns,
-                     width, height, ctrl_mem_size,
+                     width, height, ctrl_mem_size, const_mem_size,
                      data_mem_size_global, data_mem_size_per_bank,
                      num_banks_per_cgra, num_registers_per_reg_bank,
                      num_ctrl, total_steps, mem_access_is_combinational,
