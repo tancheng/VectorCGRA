@@ -233,22 +233,23 @@ def test_interleaved_reductions(cmdline_opts):
 
   # Partial sums of reduction 0 (sumA) and reduction 1 (sumB) arrive interleaved.
   input_data = [
-    # operation, reduction id (data_addr), src CGRA, src tile, value
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1,  2),
-    partial(CMD_GLOBAL_REDUCE_ADD, 1, 0, 2, 10),
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 1, 1,  4),
-    partial(CMD_GLOBAL_REDUCE_ADD, 1, 1, 2, 20),
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 2, 1,  6),
-    partial(CMD_GLOBAL_REDUCE_ADD, 1, 2, 2, 30),
+    #       operation,             reduction id (data_addr), src CGRA, src tile, value
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        0,        1,         2),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1,                        0,        2,        10),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        1,        1,         4),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1,                        1,        2,        20),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        2,        1,         6),
+    partial(CMD_GLOBAL_REDUCE_ADD, 1,                        2,        2,        30),
   ]
 
   expected_output = [
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 0, 1, 12),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 1, 1, 12),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 2, 1, 12),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 0, 2, 60),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 1, 2, 60),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1, 2, 2, 60),
+    #        operation,                      reduction id (data_addr), src CGRA, src tile, value
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        0,        1,        12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        1,        1,        12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        2,        1,        12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1,                        0,        2,        60),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1,                        1,        2,        60),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 1,                        2,        2,        60),
   ]
 
   th = TestHarness(InterCgraPktType, input_count, input_data, expected_output)
@@ -267,20 +268,21 @@ def test_later_reduction_completes_first(cmdline_opts):
   input_count = [count(0, 3), count(3, 2)]
 
   input_data = [
-    # operation, reduction id (data_addr), src CGRA, src tile, value
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1, 2),
-    partial(CMD_GLOBAL_REDUCE_MUL, 3, 0, 3, 5),
-    partial(CMD_GLOBAL_REDUCE_MUL, 3, 1, 3, 7),
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 1, 1, 4),
-    partial(CMD_GLOBAL_REDUCE_ADD, 0, 2, 1, 6),
+    #       operation,             reduction id (data_addr), src CGRA, src tile, value
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        0,        1,        2),
+    partial(CMD_GLOBAL_REDUCE_MUL, 3,                        0,        3,        5),
+    partial(CMD_GLOBAL_REDUCE_MUL, 3,                        1,        3,        7),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        1,        1,        4),
+    partial(CMD_GLOBAL_REDUCE_ADD, 0,                        2,        1,        6),
   ]
 
   expected_output = [
-    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3, 0, 3, 35),
-    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3, 1, 3, 35),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 0, 1, 12),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 1, 1, 12),
-    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0, 2, 1, 12),
+    #        operation,                      reduction id (data_addr), src CGRA, src tile, value
+    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3,                        0,        3,        35),
+    response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3,                        1,        3,        35),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        0,        1,        12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        1,        1,        12),
+    response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,                        2,        1,        12),
   ]
 
   th = TestHarness(InterCgraPktType, input_count, input_data, expected_output)
