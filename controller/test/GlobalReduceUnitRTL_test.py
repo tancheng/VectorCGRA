@@ -233,6 +233,7 @@ def test_interleaved_reductions(cmdline_opts):
 
   # Partial sums of reduction 0 (sumA) and reduction 1 (sumB) arrive interleaved.
   input_data = [
+    # operation, reduction id (data_addr), src CGRA, src tile, value
     partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1,  2),
     partial(CMD_GLOBAL_REDUCE_ADD, 1, 0, 2, 10),
     partial(CMD_GLOBAL_REDUCE_ADD, 0, 1, 1,  4),
@@ -266,6 +267,7 @@ def test_later_reduction_completes_first(cmdline_opts):
   input_count = [count(0, 3), count(3, 2)]
 
   input_data = [
+    # operation, reduction id (data_addr), src CGRA, src tile, value
     partial(CMD_GLOBAL_REDUCE_ADD, 0, 0, 1, 2),
     partial(CMD_GLOBAL_REDUCE_MUL, 3, 0, 3, 5),
     partial(CMD_GLOBAL_REDUCE_MUL, 3, 1, 3, 7),

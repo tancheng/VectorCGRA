@@ -31,9 +31,7 @@ class GlobalReduceUnitRTL(Component):
     DataType = CgraPayloadType.get_field_type(kAttrData)
     DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
     ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
-    assert num_entries >= 2 and (num_entries & (num_entries - 1)) == 0, \
-        "num_entries must be a power of two and at least 2"
-    entry_idx_nbits = clog2(num_entries)
+    entry_idx_nbits = max(clog2(num_entries), 1)
     EntryIdxType = mk_bits(entry_idx_nbits)
     assert DataAddrType.nbits >= entry_idx_nbits, \
         "data_addr is too narrow to carry a reduction id"
