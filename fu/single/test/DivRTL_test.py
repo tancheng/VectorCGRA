@@ -105,3 +105,60 @@ def test_div0(input_a, input_b):
                    src_opt, sink_out)
   run_sim(th)
 
+@pytest.mark.parametrize(
+  'operation, input_a, input_b, expected',
+  [
+    (OPT_DIV, 7, 0, 0),
+    (OPT_REM, 7, 3, 1),
+    (OPT_REM, 7, 0, 0),
+  ]
+)
+def test_div_rem_edge_cases(operation, input_a, input_b, expected):
+  DataType = mk_data(32, 1)
+  num_inports = 4
+  num_outports = 2
+  ConfigType = mk_ctrl(num_inports, num_outports)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  ctrl = ConfigType(
+      operation, [FuInType(1), FuInType(3), FuInType(0), FuInType(0)])
+  th = TestHarness(
+      DivRTL, IntraCgraPktType, DataType, ConfigType,
+      num_inports, num_outports, 8,
+      [DataType(input_a, 1)], [DataType(input_b, 1)],
+      [DataType(0, 1)], [ctrl], [DataType(expected, 1)],
+  )
+  run_sim(th)
+
+@pytest.mark.parametrize(
+  "const_value, expected",
+  [
+    (3, 2),
+    (0, 0),
+  ]
+)
+def test_rem_const(const_value, expected):
+  DataType = mk_data(32, 1)
+  num_inports = 4
+  num_outports = 2
+  ConfigType = mk_ctrl(num_inports, num_outports)
+  FuInType = mk_bits(clog2(num_inports + 1))
+  DataAddrType = mk_bits(3)
+  CtrlAddrType = mk_bits(3)
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, ConfigType,
+                                    CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  ctrl = ConfigType(
+      OPT_REM_CONST,
+      [FuInType(1), FuInType(0), FuInType(0), FuInType(0)])
+  th = TestHarness(
+      DivRTL, IntraCgraPktType, DataType, ConfigType,
+      num_inports, num_outports, 8,
+      [DataType(8, 1)], [], [DataType(const_value, 1)],
+      [ctrl], [DataType(expected, 1)],
+  )
+  run_sim(th)
