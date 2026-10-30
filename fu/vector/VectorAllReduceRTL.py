@@ -119,7 +119,7 @@ class VectorAllReduceRTL(Component):
         s.recv_in[i].rdy @= b1(0)
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
 
       s.recv_from_ctrl_mem.rdy @= 0
 
@@ -178,7 +178,8 @@ class VectorAllReduceRTL(Component):
                                          s.recv_in[0].msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
-                                0)
+                                0,
+                                s.recv_opt.msg.reduce_id)
         if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL):
           s.send_to_ctrl_mem.msg @= \
@@ -187,7 +188,8 @@ class VectorAllReduceRTL(Component):
                                          s.recv_in[0].msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
-                                0)
+                                0,
+                                s.recv_opt.msg.reduce_id)
 
       if s.recv_opt.val & s.already_sent_to_controller:
         s.recv_from_ctrl_mem.rdy @= 1

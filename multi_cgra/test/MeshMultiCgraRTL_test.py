@@ -4155,6 +4155,160 @@ def initialize_test_harness(cmdline_opts,
                              a.dst_cgra_x == b.dst_cgra_x and \
                              a.dst_cgra_y == b.dst_cgra_y
 
+  elif test_name == 'test_concurrent_global_reduce':
+    # CGRA 0 and CGRA 1 each run a global ADD reduction (id 0) on tile 0 and a
+    # global MUL reduction (id 1) on tile 2 at the same time. All partials go
+    # to the global reduce unit on CGRA 0, so both reductions are in flight
+    # there together and must not be mixed up.
+    data_nbits = 64
+    DataType = mk_data(data_nbits, 1)
+    DataAddrType = mk_bits(clog2(data_mem_size_global))
+    DUT = MeshMultiCgraRTL
+    FunctionUnit = FlexibleFuRTL
+    FuList = [AdderRTL,
+              MulRTL,
+              LogicRTL,
+              ShifterRTL,
+              PhiRTL,
+              CompRTL,
+              GrantRTL,
+              MemUnitRTL,
+              SelRTL,
+              RetRTL,
+              SeqMulAdderRTL,
+              VectorMulComboRTL,
+              VectorAdderComboRTL,
+              VectorAllReduceRTL]
+
+    CtrlType = mk_ctrl(num_fu_inports,
+                       num_fu_outports,
+                       num_tile_inports,
+                       num_tile_outports,
+                       num_registers_per_reg_bank)
+
+    CtrlAddrType = mk_bits(clog2(ctrl_mem_size))
+
+    CgraPayloadType = mk_cgra_payload(DataType,
+                                      DataAddrType,
+                                      CtrlType,
+                                      CtrlAddrType)
+
+    IntraCgraPktType = mk_intra_cgra_pkt(num_cgra_columns,
+                                         num_cgra_rows,
+                                         num_tiles,
+                                         CgraPayloadType)
+
+    kAddReduceId = 0
+    kMulReduceId = 1
+    kNumParticipatingCgras = 2
+    kCtrlSteps = 4
+    ctrl_steps_per_iter = kCtrlSteps
+    ctrl_steps_total = kCtrlSteps
+
+    fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
+    no_routing = [TileInType(0) for _ in range(num_routing_outports)]
+
+    # FU xbar outports after the tile outports write the register banks.
+    def fu_out_to_reg_bank(bank):
+      code = [FuOutType(0) for _ in range(num_routing_outports)]
+      code[num_tile_outports + bank] = FuOutType(1)
+      return code
+
+    def write_from_fu_to_reg_bank(bank):
+      code = [b2(0) for _ in range(num_fu_inports)]
+      code[bank] = b2(PORT_FU_CROSSBAR)
+      return code
+
+    # Each tile loads its vector (bank 0, reg 0) and base (bank 1, reg 0),
+    # reduces them globally into bank 0 reg 1, and returns that to the CPU.
+    def mk_reduce_tile_pkts(cgra_id, cgra_x, cgra_y, tile_id,
+                            operation, reduce_id, vector_addr, base_addr):
+      def pkt(payload):
+        #                       src dst      src cgra dst cgra src x src y dst x   dst y
+        return IntraCgraPktType(0,  tile_id, 0,       cgra_id, 0,    0,    cgra_x, cgra_y,
+                                payload = payload)
+      return [
+          pkt(CgraPayloadType(CMD_CONFIG_COUNT_PER_ITER, data = DataType(kCtrlSteps, 1))),
+          pkt(CgraPayloadType(CMD_CONFIG_TOTAL_CTRL_COUNT, data = DataType(kCtrlSteps, 1))),
+          pkt(CgraPayloadType(CMD_CONST, data = DataType(vector_addr, 1))),
+          pkt(CgraPayloadType(CMD_CONST, data = DataType(base_addr, 1))),
+          pkt(CgraPayloadType(CMD_CONFIG, ctrl_addr = 0,
+                              ctrl = CtrlType(OPT_LD_CONST, fu_in_code, no_routing,
+                                              fu_out_to_reg_bank(0),
+                                              write_reg_from = write_from_fu_to_reg_bank(0)))),
+          pkt(CgraPayloadType(CMD_CONFIG, ctrl_addr = 1,
+                              ctrl = CtrlType(OPT_LD_CONST, fu_in_code, no_routing,
+                                              fu_out_to_reg_bank(1),
+                                              write_reg_from = write_from_fu_to_reg_bank(1)))),
+          pkt(CgraPayloadType(CMD_CONFIG, ctrl_addr = 2,
+                              ctrl = CtrlType(operation, fu_in_code, no_routing,
+                                              fu_out_to_reg_bank(0),
+                                              write_reg_from = write_from_fu_to_reg_bank(0),
+                                              write_reg_idx = [RegIdxType(1), RegIdxType(0), RegIdxType(0), RegIdxType(0)],
+                                              read_reg_towards = [b2(READ_TOWARDS_FU), b2(READ_TOWARDS_FU), b2(0), b2(0)],
+                                              reduce_id = reduce_id))),
+          pkt(CgraPayloadType(CMD_CONFIG, ctrl_addr = 3,
+                              ctrl = CtrlType(OPT_RET, fu_in_code, no_routing,
+                                              [FuOutType(0) for _ in range(num_routing_outports)],
+                                              read_reg_towards = [b2(READ_TOWARDS_FU), b2(0), b2(0), b2(0)],
+                                              read_reg_idx = [RegIdxType(1), RegIdxType(0), RegIdxType(0), RegIdxType(0)]))),
+          pkt(CgraPayloadType(CMD_LAUNCH)),
+      ]
+
+    # 4 lanes of 16 bits; lane sums are 10 and 26, lane products are 12 and 12.
+    preload_data = [
+                       # src dst                                                     data                                         address
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0004000300020001, 1), data_addr = 0)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0,                  1), data_addr = 1)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0001000200030002, 1), data_addr = 2)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1,                  1), data_addr = 3)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0008000700060005, 1), data_addr = 32)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0,                  1), data_addr = 33)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(0x0002000100020003, 1), data_addr = 34)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_STORE_REQUEST, data = DataType(1,                  1), data_addr = 35)),
+    ]
+
+    # Configures the global reduce unit on CGRA 0 before any partial arrives.
+    reduce_count_pkts = [
+                       # src dst                                                           count                                            reduction id
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT, data = DataType(kNumParticipatingCgras, 1), reduce_id = kAddReduceId)),
+        IntraCgraPktType(0,  0,  payload = CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT, data = DataType(kNumParticipatingCgras, 1), reduce_id = kMulReduceId)),
+    ]
+
+    tile_pkts = [
+        #                   cgra id, cgra x, cgra y, tile, operation,                      reduction id, vector addr, base addr
+        mk_reduce_tile_pkts(0,       0,      0,      0,    OPT_VEC_REDUCE_ADD_BASE_GLOBAL, kAddReduceId, 0,           1),
+        mk_reduce_tile_pkts(0,       0,      0,      2,    OPT_VEC_REDUCE_MUL_BASE_GLOBAL, kMulReduceId, 2,           3),
+        mk_reduce_tile_pkts(1,       1,      0,      0,    OPT_VEC_REDUCE_ADD_BASE_GLOBAL, kAddReduceId, 32,          33),
+        mk_reduce_tile_pkts(1,       1,      0,      2,    OPT_VEC_REDUCE_MUL_BASE_GLOBAL, kMulReduceId, 34,          35),
+    ]
+
+    src_ctrl_pkt = preload_data + reduce_count_pkts
+    for pkts in tile_pkts:
+      src_ctrl_pkt.extend(pkts)
+
+    kExpectedAdd = (10 + 26) + 0
+    kExpectedMul = (12 * 12) * 1
+    expected_sink_out_pkt = [
+                       # src dst        src cgra dst cgra src x src y dst x dst y
+        IntraCgraPktType(0,  num_tiles, 0,       0,       0,    0,    0,    0,    payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedAdd, 1), ctrl = CtrlType(OPT_RET))),
+        IntraCgraPktType(0,  num_tiles, 1,       0,       1,    0,    0,    0,    payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedAdd, 1), ctrl = CtrlType(OPT_RET))),
+        IntraCgraPktType(2,  num_tiles, 0,       0,       0,    0,    0,    0,    payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedMul, 1), ctrl = CtrlType(OPT_RET))),
+        IntraCgraPktType(2,  num_tiles, 1,       0,       1,    0,    0,    0,    payload = CgraPayloadType(CMD_COMPLETE, DataType(kExpectedMul, 1), ctrl = CtrlType(OPT_RET))),
+    ]
+
+    cmp_func = lambda a, b : a.payload.data == b.payload.data and \
+                             a.payload.cmd == b.payload.cmd and \
+                             a.payload.ctrl.operation == b.payload.ctrl.operation and \
+                             a.src == b.src and \
+                             a.dst == b.dst and \
+                             a.src_cgra_id == b.src_cgra_id and \
+                             a.dst_cgra_id == b.dst_cgra_id and \
+                             a.src_cgra_x == b.src_cgra_x and \
+                             a.src_cgra_y == b.src_cgra_y and \
+                             a.dst_cgra_x == b.dst_cgra_x and \
+                             a.dst_cgra_y == b.dst_cgra_y
+
   th = TestHarness(DUT, FunctionUnit, FuList, IntraCgraPktType,
                    num_cgra_rows, num_cgra_columns,
                    num_x_tiles_per_cgra, num_y_tiles_per_cgra, ctrl_mem_size, data_mem_size_global,
@@ -4369,6 +4523,24 @@ def test_multi_CGRA_fir_vector_global_reduce(cmdline_opts):
                                data_mem_size_per_bank = 16,
                                mem_access_is_combinational = True,
                                test_name = 'test_fir_vector_global_reduce')
+
+  th.elaborate()
+  th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,
+                      ['UNSIGNED', 'UNOPTFLAT', 'WIDTH', 'WIDTHCONCAT',
+                       'ALWCOMBORDER'])
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+
+def test_multi_CGRA_concurrent_global_reduce(cmdline_opts):
+  th = initialize_test_harness(cmdline_opts,
+                               num_cgra_rows = 2,
+                               num_cgra_columns = 2,
+                               num_x_tiles_per_cgra = 2,
+                               num_y_tiles_per_cgra = 2,
+                               num_banks_per_cgra = 2,
+                               data_mem_size_per_bank = 16,
+                               mem_access_is_combinational = True,
+                               test_name = 'test_concurrent_global_reduce')
 
   th.elaborate()
   th.dut.set_metadata(VerilogVerilatorImportPass.vl_Wno_list,

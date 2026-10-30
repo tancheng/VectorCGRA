@@ -82,7 +82,7 @@ class VectorAdderComboRTL(Component):
       s.recv_in[1].rdy @= s.Fu[0].recv_in[1].rdy
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
 
       s.recv_from_ctrl_mem.rdy @= 0
 

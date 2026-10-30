@@ -594,7 +594,7 @@ class ControllerRTL(Component):
                              CgraPayloadType(
                                CMD_DMA_DONE,
                               DataType(zext(s.dma_done.msg.dma_tag, DataPayloadType), 1, 0, 0),
-                               0, 0, 0))
+                               0, 0, 0, 0))
 
     @update
     def update_sending_to_noc_msg():

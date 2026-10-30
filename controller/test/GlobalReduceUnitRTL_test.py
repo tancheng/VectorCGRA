@@ -176,7 +176,7 @@ def test_simple(cmdline_opts):
   run_sim(th)
 
 #-------------------------------------------------------------------------
-# Concurrent reductions, distinguished by payload.data_addr
+# Concurrent reductions, distinguished by payload.reduce_id
 #-------------------------------------------------------------------------
 
 def mk_reduce_pkt_types():
@@ -203,7 +203,7 @@ def mk_count_pkt(InterCgraPktType, CgraPayloadType, DataType,
   return InterCgraPktType(
       payload = CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT,
                                 data = DataType(count, 0, 0, 0),
-                                data_addr = reduce_id))
+                                reduce_id = reduce_id))
 
 def mk_partial_pkt(InterCgraPktType, CgraPayloadType, DataType,
                    cmd, reduce_id, src_cgra, src_tile, value):
@@ -211,7 +211,7 @@ def mk_partial_pkt(InterCgraPktType, CgraPayloadType, DataType,
   return InterCgraPktType(src_cgra, 0,  src_cgra, 0,    0,    0,    src_tile,   0,
                           payload = CgraPayloadType(cmd,
                                                     data = DataType(value, 1, 0, 0),
-                                                    data_addr = reduce_id))
+                                                    reduce_id = reduce_id))
 
 def mk_response_pkt(InterCgraPktType, CgraPayloadType, DataType,
                     cmd, reduce_id, src_cgra, src_tile, value):
@@ -221,7 +221,7 @@ def mk_response_pkt(InterCgraPktType, CgraPayloadType, DataType,
       0, src_cgra, 0, 0, src_cgra, 0, 0, src_tile,
       payload = CgraPayloadType(cmd,
                                 data = DataType(value, 1, 0, 0),
-                                data_addr = reduce_id)))
+                                reduce_id = reduce_id)))
 
 def test_interleaved_reductions(cmdline_opts):
   DataType, CgraPayloadType, InterCgraPktType = mk_reduce_pkt_types()
@@ -233,9 +233,8 @@ def test_interleaved_reductions(cmdline_opts):
 
   # Partial sums of reduction 0 (sumA) and reduction 1 (sumB) arrive interleaved.
   input_data = [
-    # data_addr represents the reduction id in the reduction request;
-    # up to num_entries (4 by default) reductions can be in flight at the same time.
-    #       operation,             data_addr, src CGRA, src tile, value
+    # Up to num_entries (4 by default) reductions can be in flight at the same time.
+    #       operation,             reduce_id, src CGRA, src tile, value
     partial(CMD_GLOBAL_REDUCE_ADD, 0,         0,        1,         2),
     partial(CMD_GLOBAL_REDUCE_ADD, 1,         0,        2,        10),
     partial(CMD_GLOBAL_REDUCE_ADD, 0,         1,        1,         4),
@@ -245,7 +244,7 @@ def test_interleaved_reductions(cmdline_opts):
   ]
 
   expected_output = [
-    #        operation,                      data_addr, src CGRA, src tile, value
+    #        operation,                      reduce_id, src CGRA, src tile, value
     response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,         0,        1,        12),
     response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,         1,        1,        12),
     response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,         2,        1,        12),
@@ -270,7 +269,7 @@ def test_later_reduction_completes_first(cmdline_opts):
   input_count = [count(0, 3), count(3, 2)]
 
   input_data = [
-    #       operation,             data_addr, src CGRA, src tile, value
+    #       operation,             reduce_id, src CGRA, src tile, value
     partial(CMD_GLOBAL_REDUCE_ADD, 0,         0,        1,        2),
     partial(CMD_GLOBAL_REDUCE_MUL, 3,         0,        3,        5),
     partial(CMD_GLOBAL_REDUCE_MUL, 3,         1,        3,        7),
@@ -279,7 +278,7 @@ def test_later_reduction_completes_first(cmdline_opts):
   ]
 
   expected_output = [
-    #        operation,                      data_addr, src CGRA, src tile, value
+    #        operation,                      reduce_id, src CGRA, src tile, value
     response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3,         0,        3,        35),
     response(CMD_GLOBAL_REDUCE_MUL_RESPONSE, 3,         1,        3,        35),
     response(CMD_GLOBAL_REDUCE_ADD_RESPONSE, 0,         0,        1,        12),

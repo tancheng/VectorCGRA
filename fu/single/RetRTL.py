@@ -55,7 +55,7 @@ class RetRTL(Fu):
         s.send_out[j].msg @= s.DataType()
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
 
       s.recv_const.rdy @= 0
@@ -77,7 +77,7 @@ class RetRTL(Fu):
             # Only when the predicate is true, the value will be sent back to CPU.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
             # s.send_to_ctrl_mem.msg @= s.recv_in[s.in0_idx].msg
-            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0)
+            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, s.recv_in[s.in0_idx].msg, 0, s.recv_opt.msg, 0, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:
@@ -92,7 +92,7 @@ class RetRTL(Fu):
             # RET_VOID: only notifies the ctrl mem to send CMD_COMPLETE without data.
             s.send_to_ctrl_mem.val @= s.recv_all_val & s.reached_vector_factor
             # Sends 0 as data (controller is supposed to know it's RET_VOID based on the operation and data type).
-            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, 0, 0, s.recv_opt.msg, 0)
+            s.send_to_ctrl_mem.msg @= s.CgraPayloadType(CMD_COMPLETE, 0, 0, s.recv_opt.msg, 0, 0)
             s.recv_in[s.in0_idx].rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
             s.recv_opt.rdy @= s.recv_all_val & s.reached_vector_factor & s.send_to_ctrl_mem.rdy
           else:

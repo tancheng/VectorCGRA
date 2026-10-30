@@ -105,7 +105,7 @@ class SelRTL(Component):
         s.send_out[i].msg @= DataType()
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= 0
 
       if s.recv_opt.val:

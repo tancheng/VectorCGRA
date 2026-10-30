@@ -147,8 +147,9 @@ class GlobalTestHarness(Component):
   def line_trace(s):
     return s.dut.line_trace()
 
-def run_global_test(operation, hold_inputs, expected_cmd, expected_partial,
-                    response_cmd, response_value, expected_out):
+def run_global_test(operation, reduce_id, hold_inputs, expected_cmd,
+                    expected_partial, response_cmd, response_value,
+                    expected_out):
   FU            = VectorAllReduceRTL
   data_width    = 16
   DataType      = mk_data(data_width, 1)
@@ -164,15 +165,15 @@ def run_global_test(operation, hold_inputs, expected_cmd, expected_partial,
 
   FuInType      = mk_bits(clog2(num_inports + 1))
   pickRegister  = [FuInType(x + 1) for x in range(num_inports)]
-  ctrl          = CtrlType(operation, pickRegister)
+  ctrl          = CtrlType(operation, pickRegister, reduce_id = reduce_id)
 
   # Lanes of src_in0 (low to high): 4, 3, 2, 1.
   src_in0  = DataType(0x1234, 1)
   src_in1  = DataType(3, 1)
   response = CgraPayloadType(response_cmd, DataType(response_value, 1))
   response_delay = 4
-  #                                    cmd,          data,                          data addr, ctrl, ctrl addr
-  expected_partials = [CgraPayloadType(expected_cmd, DataType(expected_partial, 1), 0,         ctrl, 0)]
+  #                                    cmd,          data,                          data addr, ctrl, ctrl addr, reduce id
+  expected_partials = [CgraPayloadType(expected_cmd, DataType(expected_partial, 1), 0,         ctrl, 0,         reduce_id)]
 
   th = GlobalTestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                          CgraPayloadType, num_inports, num_outports,
@@ -197,14 +198,14 @@ def run_global_test(operation, hold_inputs, expected_cmd, expected_partial,
   assert partials == expected_partials
 
 def test_vector_all_reduce_add_base_global():
-  #               operation,                      hold inputs, partial cmd,           partial, response cmd,                   response, output
-  run_global_test(OPT_VEC_REDUCE_ADD_BASE_GLOBAL, False,       CMD_GLOBAL_REDUCE_ADD, 10,      CMD_GLOBAL_REDUCE_ADD_RESPONSE, 100,      100 + 3)
+  #               operation,                      reduce id, hold inputs, partial cmd,           partial, response cmd,                   response, output
+  run_global_test(OPT_VEC_REDUCE_ADD_BASE_GLOBAL, 1,         False,       CMD_GLOBAL_REDUCE_ADD, 10,      CMD_GLOBAL_REDUCE_ADD_RESPONSE, 100,      100 + 3)
 
 def test_vector_all_reduce_mul_base_global():
-  #               operation,                      hold inputs, partial cmd,           partial, response cmd,                   response, output
-  run_global_test(OPT_VEC_REDUCE_MUL_BASE_GLOBAL, False,       CMD_GLOBAL_REDUCE_MUL, 24,      CMD_GLOBAL_REDUCE_MUL_RESPONSE, 7,        7 * 3)
+  #               operation,                      reduce id, hold inputs, partial cmd,           partial, response cmd,                   response, output
+  run_global_test(OPT_VEC_REDUCE_MUL_BASE_GLOBAL, 3,         False,       CMD_GLOBAL_REDUCE_MUL, 24,      CMD_GLOBAL_REDUCE_MUL_RESPONSE, 7,        7 * 3)
 
 # Operands held valid while the response is pending must not be sent again.
 def test_vector_all_reduce_base_global_sends_once():
-  #               operation,                      hold inputs, partial cmd,           partial, response cmd,                   response, output
-  run_global_test(OPT_VEC_REDUCE_ADD_BASE_GLOBAL, True,        CMD_GLOBAL_REDUCE_ADD, 10,      CMD_GLOBAL_REDUCE_ADD_RESPONSE, 100,      100 + 3)
+  #               operation,                      reduce id, hold inputs, partial cmd,           partial, response cmd,                   response, output
+  run_global_test(OPT_VEC_REDUCE_ADD_BASE_GLOBAL, 0,         True,        CMD_GLOBAL_REDUCE_ADD, 10,      CMD_GLOBAL_REDUCE_ADD_RESPONSE, 100,      100 + 3)

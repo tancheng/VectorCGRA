@@ -134,9 +134,9 @@ class LoopControllerRTL(Component):
       s.recv_from_tile.rdy @= b1(0)
       s.recv_from_remote.rdy @= b1(0)
       s.send_to_tile.val @= b1(0)
-      s.send_to_tile.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0)
+      s.send_to_tile.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0, 0)
       s.send_to_remote.val @= b1(0)
-      s.send_to_remote.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0)
+      s.send_to_remote.msg @= CgraPayloadType(0, DataType(0, 0), 0, CtrlType(0), 0, 0)
       s.config_cmd_valid @= b1(0)
       s.tile_event_valid @= b1(0)
       s.remote_event_valid @= b1(0)
@@ -175,12 +175,12 @@ class LoopControllerRTL(Component):
           s.send_to_remote.val @= b1(1)
           s.send_to_remote.msg @= CgraPayloadType(
             out_cmd, out_data, 0, CtrlType(0),
-            s.ccu_target_ctrl_addrs[ccu_id][tidx])
+            s.ccu_target_ctrl_addrs[ccu_id][tidx], 0)
         else:
           s.send_to_tile.val @= b1(1)
           s.send_to_tile.msg @= CgraPayloadType(
             out_cmd, out_data, 0, CtrlType(0),
-            s.ccu_target_ctrl_addrs[ccu_id][tidx])
+            s.ccu_target_ctrl_addrs[ccu_id][tidx], 0)
 
       # ----- Configuration commands -----
       if s.recv_config.val:

@@ -330,7 +330,7 @@ class DataMemControllerRTL(Component):
                      0, # remote_src_port
                      0, # opaque
                      0, # vc_id
-                     CgraPayloadType(0, 0, 0, 0, 0))
+                     CgraPayloadType(0, 0, 0, 0, 0, 0))
 
 
       for i in range(num_wr_tiles):
@@ -348,7 +348,7 @@ class DataMemControllerRTL(Component):
                      0, # remote_src_port
                      0, # opaque
                      0, # vc_id
-                     CgraPayloadType(0, 0, 0, 0, 0))
+                     CgraPayloadType(0, 0, 0, 0, 0, 0))
 
       s.send_to_noc_store_pkt.val @= 0
 
@@ -379,7 +379,7 @@ class DataMemControllerRTL(Component):
                      0, # remote_src_port
                      0, # opaque
                      0, # vc_id
-                     CgraPayloadType(0, 0, 0, 0, 0))
+                     CgraPayloadType(0, 0, 0, 0, 0, 0))
 
       s.send_to_noc_load_request_pkt.val @= 0
 
@@ -448,7 +448,7 @@ class DataMemControllerRTL(Component):
                     CgraPayloadType(
                         CMD_LOAD_RESPONSE,
                         s.response_crossbar.send[i].msg.data,
-                        s.response_crossbar.send[i].msg.addr, 0, 0))
+                        s.response_crossbar.send[i].msg.addr, 0, 0, 0))
 
           s.send_to_noc_load_response_pkt.val @= s.response_crossbar.send[i].val
           s.response_crossbar.send[i].rdy @= s.send_to_noc_load_response_pkt.rdy
@@ -475,7 +475,7 @@ class DataMemControllerRTL(Component):
                       CgraPayloadType(
                           CMD_LOAD_REQUEST,
                           0,
-                          s.read_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0))
+                          s.read_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0, 0))
 
       s.send_to_noc_load_request_pkt.val @= s.read_crossbar.send[num_banks_per_cgra].val 
       # TODO: https://github.com/tancheng/VectorCGRA/issues/26 -- Modify this part for non-blocking access.
@@ -511,7 +511,7 @@ class DataMemControllerRTL(Component):
                       CgraPayloadType(
                           CMD_STORE_REQUEST,
                           s.write_crossbar.send[num_banks_per_cgra].msg.data,
-                          s.write_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0))
+                          s.write_crossbar.send[num_banks_per_cgra].msg.addr, 0, 0, 0))
 
       s.send_to_noc_store_pkt.val @= s.write_crossbar.send[num_banks_per_cgra].val
       s.write_crossbar.send[num_banks_per_cgra].rdy @= s.send_to_noc_store_pkt.rdy
