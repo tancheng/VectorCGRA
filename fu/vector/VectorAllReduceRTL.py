@@ -134,12 +134,13 @@ class VectorAllReduceRTL(Component):
                             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
                            s.send_to_ctrl_mem.rdy)
       s.recv_opt.rdy @= s.send_out[0].rdy
-      s.recv_in[1].rdy @= (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)) & \
-                           s.send_out[0].rdy) | \
-                          (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
-                           s.send_to_ctrl_mem.rdy)
+      # The global base is only applied once the response arrives, so it is
+      # consumed together with the output rather than when the partial is sent.
+      s.recv_in[1].rdy @= ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
+                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE) | \
+                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
+                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
+                          s.send_out[0].rdy
       s.send_out[0].val @= (s.recv_in[0].val & \
                             s.recv_opt.val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
@@ -161,13 +162,13 @@ class VectorAllReduceRTL(Component):
 
       if s.recv_opt.val & \
          ~s.already_sent_to_controller & \
-         (s.recv_in[0].val & \
-          ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
-           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL))) | \
-         (s.recv_in[0].val & \
-          s.recv_in[1].val & \
-          ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
-           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL))):
+         ((s.recv_in[0].val & \
+           ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
+            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL))) | \
+          (s.recv_in[0].val & \
+           s.recv_in[1].val & \
+           ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
+            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)))):
         s.send_to_ctrl_mem.val @= 1
         if (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL):
@@ -182,7 +183,7 @@ class VectorAllReduceRTL(Component):
            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL):
           s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,
-                                s.DataType(s.reduce_add.out,
+                                s.DataType(s.reduce_mul.out,
                                          s.recv_in[0].msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
