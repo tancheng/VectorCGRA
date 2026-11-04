@@ -10,7 +10,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
+  yaml:
 
     runs-on: ubuntu-22.04
     strategy:
@@ -23,40 +23,123 @@ jobs:
       with:
         # same as `git submodule update --init` to update submodules
         submodules: recursive
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+    - uses: ./.github/actions/setup
       with:
         python-version: ${{ matrix.python-version }}
-  
-    - name: Install Verilator
+
+    - name: Test YAML kernels
       run: |
-        wget https://github.com/tancheng/pymtl-verilator/raw/master/verilator-travis-4.036.tar.gz
-        tar -C ${HOME} -xzf verilator-travis-4.036.tar.gz
-        echo "VERILATOR_ROOT=${HOME}/verilator" >> $GITHUB_ENV
-        echo "PYMTL_VERILATOR_INCLUDE_DIR=${HOME}/verilator/share/verilator/include" >> $GITHUB_ENV
-        echo "${HOME}/verilator/bin" >> $GITHUB_PATH
-        
-    - name: Check Verilator
-      run: |
-        echo ${VERILATOR_ROOT}
-        echo ${PYMTL_VERILATOR_INCLUDE_DIR}
-        verilator --version
-        
-    - name: Install dependencies
-      run: |
-        sudo apt-get install -y graphviz
-        sudo apt-get install git libffi-dev
-        python3 -m venv ${HOME}/venv
+        mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
-        pip install py==1.11.0
-        pip install wheel
-        pip install -U git+https://github.com/tancheng/pymtl3.1@yo-struct-list-fix
-        pip install hypothesis
-        pip install pytest
-        pip install py-markdown-table
-        pip install PyYAML
-        pip list
-        
+        pytest ../cgra/test/*_test_from_yaml.py -v -rs --tb=short
+
+  sim:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9.20", "3.12.8"]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # same as `git submodule update --init` to update submodules
+        submodules: recursive
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Test with pytest
+      run: |
+        mkdir -p build && cd build
+        source ${HOME}/venv/bin/activate
+        # Simulation across all tests.
+        pytest .. -v --tb=short
+
+  translate:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9.20", "3.12.8"]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # same as `git submodule update --init` to update submodules
+        submodules: recursive
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Test and translate with pytest
+      run: |
+        mkdir -p build && cd build
+        source ${HOME}/venv/bin/activate
+        # CtrlMemDynamicRTL
+        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
+        # Tile translation.
+        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Controller
+        pytest ../controller/test/ControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
+        # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
+        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Ring network simulation.
+        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
+        # CGRAs are interconnected with ring topology. The CGRA contains
+        # separate crossbars (for tiles and FUs), crossbar-based data memory (for multi-bank), and controller.
+        pytest ../multi_cgra/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+        # Multi-cgra with mesh topology.
+        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
+        # Const Queue
+        pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
+        # Data Mem
+        pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+
+  translate-mesh-template:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9.20", "3.12.8"]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # same as `git submodule update --init` to update submodules
+        submodules: recursive
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Test and translate with pytest
+      run: |
+        mkdir -p build && cd build
+        source ${HOME}/venv/bin/activate
+        # MeshMultiCgraTemplateRTL Test
+        pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
+
+  synth-sv-tb:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9.20", "3.12.8"]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # same as `git submodule update --init` to update submodules
+        submodules: recursive
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies for sv2v
       run: stack upgrade
     - name: Build for sv2v
@@ -81,42 +164,12 @@ jobs:
         cd mflowgen
         pip install -e .
 
-    - name: Test YAML kernels
+    - name: Translate designs for synthesis and SV tb
       run: |
         mkdir -p build && cd build
         source ${HOME}/venv/bin/activate
-        pytest ../cgra/test/*_test_from_yaml.py -v -rs --tb=short
-
-    - name: Test and translate with pytest
-      run: |
-        mkdir -p build && cd build
-        source ${HOME}/venv/bin/activate
-        # Simulation across all tests.
-        pytest .. -v --tb=short
-        # CtrlMemDynamicRTL
-        pytest ../mem/ctrl/test/CtrlMemDynamicRTL_test.py -xvs
-        # Tile translation.
-        pytest ../tile/test/TileRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Controller
-        pytest ../controller/test/ControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # CGRA template translation.
         pytest ../cgra/test/CgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # TODO: Need to check vector/heterogneous modules exist in the generated Verilog.
-        # CGRA simulation/translation (including heterogeneous, kingmesh, vector).
-        pytest ../cgra/test/CgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Ring network simulation.
-        pytest ../noc/PyOCN/pymtl3_net/ringnet/test/RingNetworkRTL_test.py
-        # CGRAs are interconnected with ring topology. The CGRA contains
-        # separate crossbars (for tiles and FUs), crossbar-based data memory (for multi-bank), and controller.
-        pytest ../multi_cgra/test/RingMultiCgraRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # Multi-cgra with mesh topology.
-        pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_verilog_homo_2x2_4x4 -xvs --test-verilog --dump-vtb --dump-vcd
-        # Const Queue
-        pytest ../mem/const/test/ConstQueueDynamicRTL_test.py -xvs
-        # Data Mem
-        pytest ../mem/data/test/DataMemControllerRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
-        # MeshMultiCgraTemplateRTL Test
-        pytest ../multi_cgra/test/MeshMultiCgraTemplateRTL_test.py -xvs --test-verilog --dump-vtb --dump-vcd
         # Generate FIR scalar .v file with explicit file & module names.
         pytest ../multi_cgra/test/MeshMultiCgraRTL_test.py::test_multi_CGRA_fir_scalar_translation -xvs --test-verilog --dump-vtb --dump-vcd
         # Generate FIR vector global reduce .v file with explicit file & module names.
@@ -164,3 +217,22 @@ jobs:
         verilator --binary -j 0 -Wno-UNOPTFLAT -Wno-WIDTHEXPAND -Wno-TIMESCALEMOD -Wno-WIDTHTRUNC -Wno-SELRANGE --error-limit 1000 --trace --timing -I../multi_cgra/test/sv_test/ ./MeshMultiCgraRTL__explicit_systolic_2x2_2x2__pickled.v ../multi_cgra/test/sv_test/MeshMultiCgraRTL_systolic_2x2_2x2_tb.v --top cgra_test
         ./obj_dir/Vcgra_test
 
+  # Keeps the `build (<python-version>)` check names that branch protection requires.
+  build:
+
+    # A skipped required check counts as passing, so this must run (and fail)
+    # even when a needed job failed or was cancelled.
+    if: always()
+    needs: [yaml, sim, translate, translate-mesh-template, synth-sv-tb]
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ["3.9.20", "3.12.8"]
+
+    steps:
+    - name: Check that all test jobs passed
+      run: |
+        echo '${{ toJSON(needs) }}'
+        if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "true" ]; then
+          exit 1
+        fi
