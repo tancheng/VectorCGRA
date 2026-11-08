@@ -1,4 +1,4 @@
-typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__98918b0f81cb74a7 IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
+typedef IntraCgraPacket_4_2x2_16_8_2_CgraPayload__700567204c38b907 IntraCgraPacket_4_2x2_16_8_2_CgraPayload;
 
 function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
 (
@@ -48,6 +48,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_pkt
   pkt.payload.ctrl.read_reg_towards      = '{default: 2'd0};
   pkt.payload.ctrl.read_reg_idx        = '{default: 4'd0};
   pkt.payload.ctrl.read_reg_retain = '0;
+  pkt.payload.ctrl.reduce_id = '0;
+  pkt.payload.reduce_id = '0;
 
 /*
 111103b7 lui x7
@@ -162,6 +164,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
   pkt.payload.ctrl.read_reg_retain = '0;
+  pkt.payload.ctrl.reduce_id = '0;
+  pkt.payload.reduce_id = '0;
 
   file_handle = $fopen("hexcode.txt", "a");
   //$fdisplay( file_handle, "%h", logic_pkt(pkt)[63:0] );
@@ -247,6 +251,8 @@ function automatic IntraCgraPacket_4_2x2_16_8_2_CgraPayload make_intra_cgra_conf
   pkt.payload.ctrl.read_reg_towards       = read_reg_towards;
   pkt.payload.ctrl.read_reg_idx        = read_reg_idx;
   pkt.payload.ctrl.read_reg_retain = '0;
+  pkt.payload.ctrl.reduce_id = '0;
+  pkt.payload.reduce_id = '0;
 
   pkt.payload.data.payload   = data;
   pkt.payload.data.predicate = pred;
@@ -319,7 +325,9 @@ function automatic logic [$bits(IntraCgraPacket_4_2x2_16_8_2_CgraPayload)-1:0] l
     p.payload.ctrl.read_reg_towards,
     p.payload.ctrl.read_reg_idx,
     p.payload.ctrl.read_reg_retain,
-    p.payload.ctrl_addr
+    p.payload.ctrl.reduce_id,
+    p.payload.ctrl_addr,
+    p.payload.reduce_id
   };
 endfunction
 

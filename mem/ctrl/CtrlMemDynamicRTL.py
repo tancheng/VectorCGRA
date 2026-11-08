@@ -95,7 +95,7 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_msg():
       s.recv_pkt_from_controller_queue.send.rdy @= 0
-      s.send_to_element.msg @= CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_element.msg @= CgraPayloadType(0, 0, 0, 0, 0, 0)
       s.send_to_element.val @= 0
       s.reg_file.wen[0] @= 0
       s.reg_file.waddr[0] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl_addr
@@ -113,6 +113,7 @@ class CtrlMemDynamicRTL(Component):
         s.reg_file.wdata[0].fu_xbar_outport[i] @= 0
       s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.vector_factor_power
       s.reg_file.wdata[0].is_last_ctrl @= 0
+      s.reg_file.wdata[0].reduce_id @= 0
 
       if s.recv_pkt_from_controller_queue.send.val & (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_CONFIG):
         s.reg_file.wen[0] @= 1
@@ -131,6 +132,7 @@ class CtrlMemDynamicRTL(Component):
           s.reg_file.wdata[0].fu_xbar_outport[i] @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.fu_xbar_outport[i]
         s.reg_file.wdata[0].vector_factor_power @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.vector_factor_power
         s.reg_file.wdata[0].is_last_ctrl @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.is_last_ctrl
+        s.reg_file.wdata[0].reduce_id @= s.recv_pkt_from_controller_queue.send.msg.payload.ctrl.reduce_id
       elif s.recv_pkt_from_controller_queue.send.val & \
            ((s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD_RESPONSE) | \
             (s.recv_pkt_from_controller_queue.send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL_RESPONSE) | \
@@ -179,7 +181,7 @@ class CtrlMemDynamicRTL(Component):
     @update
     def update_send_pkt_to_controller():
       s.send_pkt_to_controller.val @= 0
-      s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+      s.send_pkt_to_controller.msg @= IntraCgraPktType(0, num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0, 0))
       s.recv_from_element_queue.send.rdy @= 0
       if s.start_iterate_ctrl == b1(1):
         if s.recv_from_element_queue.send.val & (~s.sent_complete):
@@ -193,7 +195,7 @@ class CtrlMemDynamicRTL(Component):
           # Sends COMPLETE signal to Controller when the last ctrl signal is done.
           if ~s.sent_complete & (s.total_ctrl_steps_val > 0) & (s.times == s.total_ctrl_steps_val) & s.start_iterate_ctrl:
             s.send_pkt_to_controller.msg @= \
-                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0))
+                IntraCgraPktType(zext(s.tile_id, IntraPktTileIdType), num_tiles, 0, 0, 0, 0, 0, 0, 0, 0, CgraPayloadType(CMD_COMPLETE, 0, 0, 0, 0, 0))
             s.send_pkt_to_controller.val @= 1
 
     @update
@@ -225,6 +227,7 @@ class CtrlMemDynamicRTL(Component):
         s.send_ctrl.msg.fu_xbar_outport[i]      @= s.reg_file.rdata[0].fu_xbar_outport[i]
       s.send_ctrl.msg.vector_factor_power @= s.reg_file.rdata[0].vector_factor_power
       s.send_ctrl.msg.is_last_ctrl        @= s.reg_file.rdata[0].is_last_ctrl
+      s.send_ctrl.msg.reduce_id           @= s.reg_file.rdata[0].reduce_id
       # Sets each FU's op code as NAH when prologue execution has not completed.
       # As FU is supposed to do nothing during prologue.
       if s.prologue_count_outport_fu != 0:

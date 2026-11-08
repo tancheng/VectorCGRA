@@ -86,7 +86,7 @@ class VectorMulComboRTL(Component):
       s.send_out[0].msg.payload @= 0
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
 
       s.recv_from_ctrl_mem.rdy @= 0
 

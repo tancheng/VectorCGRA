@@ -85,7 +85,7 @@ class LoopCounterRTL(Fu):
       s.recv_const.rdy @= b1(0)
       s.recv_opt.rdy @= b1(0)
       s.send_to_ctrl_mem.val @= b1(0)
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
       s.recv_from_ctrl_mem.rdy @= b1(0)
       
       # Gets current ctrl_addr for operation.
@@ -119,7 +119,7 @@ class LoopCounterRTL(Fu):
             if ~s.already_done[addr]:
               s.send_to_ctrl_mem.val @= b1(1)
               s.send_to_ctrl_mem.msg @= s.CgraPayloadType(
-                CMD_LEAF_COUNTER_COMPLETE, s.DataType(0, 0), 0, s.recv_opt.msg, addr
+                CMD_LEAF_COUNTER_COMPLETE, s.DataType(0, 0), 0, s.recv_opt.msg, addr, 0
               )
               s.send_out[0].val @= b1(1)
               s.recv_opt.rdy @= s.send_to_ctrl_mem.rdy & s.send_out[0].rdy

@@ -287,3 +287,32 @@ def test_simple(cmdline_opts):
   th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
   run_sim(th)
 
+reduce_from_noc_pkts = [
+                   # src dst src_x src_y dst_x dst_y src_tile dst_tile remote_src_port opq vc  payload
+    InterCgraPktType(0,  0,  0,    0,    0,    0,    0,       0,       0,              0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT, data = DataType(2, 1))),
+    InterCgraPktType(1,  0,  1,    0,    0,    0,    2,       4,       0,              0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(3, 1))),
+    InterCgraPktType(2,  0,  2,    0,    0,    0,    1,       4,       0,              0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,   data = DataType(5, 1))),
+]
+
+expected_reduce_to_noc_pkts = [
+                   # src dst src_x src_y dst_x dst_y src_tile dst_tile remote_src_port opq vc  payload
+    InterCgraPktType(0,  1,  0,    0,    1,    0,    4,       2,       0,              0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(15, 1))),
+    InterCgraPktType(0,  2,  0,    0,    2,    0,    4,       1,       0,              0,  0, CgraPayloadType(CMD_GLOBAL_REDUCE_MUL_RESPONSE, data = DataType(15, 1))),
+]
+
+def test_global_reduce_mul(cmdline_opts):
+  th = TestHarness(CgraPayloadType,
+                   cgra_id,
+                   [], [], [], [], [], [],
+                   reduce_from_noc_pkts,
+                   expected_reduce_to_noc_pkts,
+                   controller2addr_map,
+                   idTo2d_map,
+                   num_rd_tiles,
+                   num_cgra_columns,
+                   num_cgra_rows,
+                   num_tiles)
+  th.elaborate()
+  th = config_model_with_cmdline_opts(th, cmdline_opts, duts = ['dut'])
+  run_sim(th)
+

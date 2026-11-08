@@ -74,7 +74,7 @@ class AluGenMacRTL(Fu):
       s.recv_opt.rdy @= 0
 
       s.send_to_ctrl_mem.val @= 0
-      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0)
+      s.send_to_ctrl_mem.msg @= s.CgraPayloadType(0, 0, 0, 0, 0, 0)
 
       s.recv_from_ctrl_mem.rdy @= 0
 
