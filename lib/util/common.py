@@ -67,6 +67,10 @@ kFromIm2colIdx           = 6
 
 GLOBAL_REDUCE_MAX_COUNT = 4
 
+# Number of reductions the global reduce unit tracks at once; the ctrl
+# word's reduce_id must be able to index all of them.
+GLOBAL_REDUCE_NUM_ENTRIES = 4
+
 # Cgra Topology
 MESH = "Mesh"
 KING_MESH = "KingMesh"

@@ -520,7 +520,8 @@ class ControllerRTL(Component):
         elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_LEAF_COUNTER_COMPLETE:
           s.recv_from_inter_cgra_noc.rdy @= 1
 
-        elif s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD:
+        elif (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_ADD) | \
+             (s.recv_from_inter_cgra_noc.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL):
           s.recv_from_inter_cgra_noc.rdy @= s.global_reduce_unit.recv_data.rdy
           s.global_reduce_unit.recv_data.val @= 1
           s.global_reduce_unit.recv_data.msg @= s.recv_from_inter_cgra_noc.msg
@@ -593,7 +594,7 @@ class ControllerRTL(Component):
                              CgraPayloadType(
                                CMD_DMA_DONE,
                               DataType(zext(s.dma_done.msg.dma_tag, DataPayloadType), 1, 0, 0),
-                               0, 0, 0))
+                               0, 0, 0, 0))
 
     @update
     def update_sending_to_noc_msg():

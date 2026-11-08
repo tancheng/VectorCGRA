@@ -7,7 +7,7 @@ and received the corresponding data. The unit will send the reduced data
 back to the controller.
 
 Multiple reductions can be in flight at once. Each one is identified by
-payload.data_addr of its COUNT/ADD/MUL packets, which indexes an entry
+payload.reduce_id of its COUNT/ADD/MUL packets, which indexes an entry
 that holds its own counters, accumulators, and senders to respond to.
 
 Author : Cheng Tan
@@ -21,20 +21,21 @@ from ..lib.cmd_type import *
 
 from pymtl3 import *
 from ..lib.messages import mk_controller_noc_xbar_pkt
+from ..lib.util.common import GLOBAL_REDUCE_NUM_ENTRIES
 from ..lib.util.data_struct_attr import *
 
 class GlobalReduceUnitRTL(Component):
 
-  def construct(s, InterCgraPktType, num_entries = 4, queue_depth = 16):
+  def construct(s, InterCgraPktType,
+                num_entries = GLOBAL_REDUCE_NUM_ENTRIES, queue_depth = 16):
 
     CgraPayloadType = InterCgraPktType.get_field_type(kAttrPayload)
     DataType = CgraPayloadType.get_field_type(kAttrData)
-    DataAddrType = CgraPayloadType.get_field_type(kAttrDataAddr)
     ControllerXbarPktType = mk_controller_noc_xbar_pkt(InterCgraPktType)
     entry_idx_nbits = max(clog2(num_entries), 1)
     EntryIdxType = mk_bits(entry_idx_nbits)
-    assert DataAddrType.nbits >= entry_idx_nbits, \
-        "data_addr is too narrow to carry a reduction id"
+    assert CgraPayloadType.get_field_type(kAttrReduceId).nbits >= entry_idx_nbits, \
+        "reduce_id is too narrow to index every entry"
 
     # Interfaces.
     s.recv_count = RecvIfcRTL(InterCgraPktType)
@@ -60,8 +61,8 @@ class GlobalReduceUnitRTL(Component):
 
     # Connections.
     s.recv_count.rdy //= 1
-    s.recv_count_idx //= s.recv_count.msg.payload.data_addr[0:entry_idx_nbits]
-    s.recv_data_idx //= s.recv_data.msg.payload.data_addr[0:entry_idx_nbits]
+    s.recv_count_idx //= s.recv_count.msg.payload.reduce_id[0:entry_idx_nbits]
+    s.recv_data_idx //= s.recv_data.msg.payload.reduce_id[0:entry_idx_nbits]
 
     @update
     def set_recv_rdy():
@@ -127,7 +128,7 @@ class GlobalReduceUnitRTL(Component):
           elif s.queue[i].send.msg.payload.cmd == CMD_GLOBAL_REDUCE_MUL:
             s.send.msg.inter_cgra_pkt.payload.cmd @= CMD_GLOBAL_REDUCE_MUL_RESPONSE
             s.send.msg.inter_cgra_pkt.payload.data @= s.reduce_mul_value[i]
-          s.send.msg.inter_cgra_pkt.payload.data_addr @= s.queue[i].send.msg.payload.data_addr
+          s.send.msg.inter_cgra_pkt.payload.reduce_id @= s.queue[i].send.msg.payload.reduce_id
           s.send.msg.inter_cgra_pkt.src @= s.queue[i].send.msg.dst
           s.send.msg.inter_cgra_pkt.dst @= s.queue[i].send.msg.src
           s.send.msg.inter_cgra_pkt.src_x @= s.queue[i].send.msg.dst_x

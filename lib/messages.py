@@ -13,6 +13,7 @@ Author : Cheng Tan
 from pymtl3 import *
 from .cmd_type import *
 from .opt_type import *
+from .util.common import GLOBAL_REDUCE_NUM_ENTRIES
 from .util.data_struct_attr import *
 
 #=========================================================================
@@ -89,12 +90,14 @@ def mk_ctrl(num_fu_inports = 4,
   # 3 inports of register file bank.
   RegFromType = mk_bits(2)
   RegIdxType = mk_bits(clog2(num_registers_per_reg_bank))
+  reduce_id_nbits = max(clog2(GLOBAL_REDUCE_NUM_ENTRIES), 1)
 
   # Includes tile_in_type_nbits in the name so the wider type gets a unique
   # cache key and doesn't collide with the old Bits3 version.
   new_name = f"{prefix}_{operation_nbits}_{num_fu_inports}_" \
              f"{num_fu_outports}_{num_tile_inports}_" \
-             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}_retain"
+             f"{num_tile_outports}_{vector_factor_power_nbits}_{tile_in_type_nbits}_retain_" \
+             f"reduce{reduce_id_nbits}"
 
   def str_func(s):
     out_str = '(fu_in)'
@@ -148,6 +151,8 @@ def mk_ctrl(num_fu_inports = 4,
     out_str += '|(read_reg_retain)' + '-'.join(
         str(int(s.read_reg_retain[i])) for i in range(num_fu_inports))
 
+    out_str += '|(reduce_id)' + str(int(s.reduce_id))
+
     return f"(opt){s.operation}|{out_str}"
 
   field_dict = {}
@@ -179,6 +184,8 @@ def mk_ctrl(num_fu_inports = 4,
   field_dict[kAttrReadRegIdx] = [RegIdxType for _ in range(num_fu_inports)]
   # Keep a read value live for later ctrl steps; zero consumes it as before.
   field_dict[kAttrReadRegRetain] = [mk_bits(1) for _ in range(num_fu_inports)]
+  # Selects the global reduce unit entry of a *_GLOBAL reduce op.
+  field_dict[kAttrReduceId] = mk_bits(reduce_id_nbits)
 
   return mk_bitstruct( new_name, field_dict,
     namespace = { '__str__': str_func }
@@ -392,7 +399,7 @@ def mk_cgra_payload(DataType,
                     CtrlAddrType,
                     prefix="MultiCgraPayload"):
 
-  new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr"
+  new_name = f"{prefix}_Cmd_Data_DataAddr_Ctrl_CtrlAddr_ReduceId"
 
   field_dict = {}
   field_dict[kAttrCmd] = mk_bits(clog2(NUM_CMDS))
@@ -400,10 +407,11 @@ def mk_cgra_payload(DataType,
   field_dict[kAttrDataAddr] = DataAddrType
   field_dict[kAttrCtrl] = CtrlType
   field_dict[kAttrCtrlAddr] = CtrlAddrType
+  field_dict[kAttrReduceId] = CtrlType.get_field_type(kAttrReduceId)
 
   def str_func(s):
       return f"MultiCgraNocPayload: cmd:{s.cmd}|data:{s.data}|data_addr:{s.data_addr}|" \
-             f"ctrl:{s.ctrl}|ctrl_addr:{s.ctrl_addr}\n"
+             f"ctrl:{s.ctrl}|ctrl_addr:{s.ctrl_addr}|reduce_id:{s.reduce_id}\n"
 
   return mk_bitstruct(new_name, field_dict,
     namespace = {'__str__': str_func}

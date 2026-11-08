@@ -182,12 +182,13 @@ class Im2colEngineRTL(Component):
                 s.cfg_dst_sram_base_addr + zext(s.emit_idx, DataAddrType),
                 0,         # ctrl (zero)
                 0,         # ctrl_addr
+                0,         # reduce_id
             ),
         )
       else:
         s.send_pkt.msg @= IntraCgraPktType(
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            PayloadType(0, 0, 0, 0, 0),
+            PayloadType(0, 0, 0, 0, 0, 0),
         )
 
       if s.state == S_DONE:
