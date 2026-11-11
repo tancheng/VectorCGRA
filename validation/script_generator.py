@@ -42,6 +42,8 @@ Author : Bohan Cui
 # 2. make the packets
 # pkts = script_factory.makeVectorCGRAPkts()
 
+import functools
+import re
 import sys
 import os
 import yaml
@@ -58,6 +60,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from lib.opt_type import *
+from lib.cmd_type import CMD_GLOBAL_REDUCE_COUNT
 
 # Global configuration for register cluster size (number of registers per cluster).
 # This can be overridden by ScriptFactory initialization.
@@ -113,7 +116,11 @@ yaml_to_VectorCGRA_map = {
     
     "NE": OPT_NE,
     "MUL_ADD": OPT_MUL_ADD,
-    "DATA_MOV": OPT_PAS
+    "DATA_MOV": OPT_PAS,
+
+    "VADD": OPT_VEC_ADD,
+    "VMUL": OPT_VEC_MUL,
+    "VECTOR.REDUCE.ADD.GLOBAL": OPT_VEC_REDUCE_ADD_GLOBAL,
     
 }
 
@@ -260,6 +267,7 @@ class InstructionSignals:
         self.write_to_reg = [-1, -1, -1, -1]
         self.write_to_reg_idx = [-1, -1, -1, -1]
         self.shuffle_fu_operand_input_index = [-1, -1, -1, -1]
+        self.reduce_id = 0
 
         
     def buildCtrlPkt(self) -> list: # return the const needed to put into the const queue
@@ -277,6 +285,7 @@ class InstructionSignals:
             else:
                 print("Take_up_fu_operation: ", self.operations[take_up_fu_operation_idx])
                 take_up_fu_operation = self.operations[take_up_fu_operation_idx]
+                self.reduce_id = take_up_fu_operation.get('reduce_id', 0)
                 # only take up fu can be const
                 has_const = False
                 # if has src_operands, check if has const
@@ -576,6 +585,7 @@ class InstructionSignals:
                                                                                         read_reg_towards = read_reg_towards_made,
                                                                                         read_reg_idx = read_reg_idx_made,
                                                                                         read_reg_retain = [self.B1Type(x) for x in self.read_reg_retain],
+                                                                                        reduce_id = self.reduce_id,
                                                                                         )))
         return pkt
 
@@ -604,7 +614,8 @@ class TileSignals:
                 B2Type,
                 RegIdxType,
                 CtrlAddrType,
-                DataAddrType):
+                DataAddrType,
+                arg_values):
         self.CtrlType = CtrlType
         self.IntraCgraPktType = IntraCgraPktType
         self.CgraPayloadType = CgraPayloadType
@@ -614,6 +625,7 @@ class TileSignals:
         self.FuInType = FuInType
         self.id_ = id_
         self.instructions = instructions
+        self.arg_values = arg_values
         self.loop_times = loop_times
         self.ii = ii
         self.B1Type = B1Type
@@ -632,6 +644,16 @@ class TileSignals:
         self.CMD_CONFIG_PROLOGUE_FU_CROSSBAR_ = CMD_CONFIG_PROLOGUE_FU_CROSSBAR_input
         
         self.CMD_LAUNCH_ = CMD_LAUNCH_input
+
+    def const_value_of(self, operand):
+        impl = operand['operand']
+        if impl.startswith('#'):
+            return int(impl[1:])
+        if re.fullmatch(r'arg\d+', impl):
+            if impl not in self.arg_values:
+                raise ValueError(f"Kernel argument {impl} used by tile {self.id_} has no value in arg_values {self.arg_values}")
+            return self.arg_values[impl]
+        return int(impl)
         
     def sanitize(self, instruction):
         # check 1: take_up_fu function <= 1
@@ -828,7 +850,7 @@ class TileSignals:
         for idx, const_operand in enumerate(consts):
             const_pkt = self.IntraCgraPktType(0, self.id_, 
                                               payload = self.CgraPayloadType(self.CMD_CONST_,
-                                                                             data = self.DataType(int(const_operand[0]['operand'][1:] if const_operand[0]['operand'].startswith('#') else const_operand[0]['operand']), 1)))
+                                                                             data = self.DataType(self.const_value_of(const_operand[0]), 1)))
             all_signals.append(const_pkt)
             
         # make the pre-configuration
@@ -964,11 +986,20 @@ class ScriptFactory:
         self.CtrlAddrType = CtrlAddrType
         self.DataAddrType = DataAddrType
     
-    def makeVectorCGRAPkts(self):
-        
+    def makeVectorCGRAPkts(self, arg_values = None, cgra_id = 0, cgra_x = 0, cgra_y = 0):
+        """Makes the packets that load the kernel onto one CGRA.
+
+        arg_values binds the kernel arguments the YAML refers to by name,
+        e.g. {"arg0": 0, "arg1": 32}. For a kernel replicated across CGRAs,
+        call this once per CGRA with that CGRA's id, coordinates and
+        arg_values.
+        """
         pkts = {}
         cores = self.yaml_struct['array_config']['cores']
-        
+        IntraCgraPktType = functools.partial(self.IntraCgraPktType,
+                                             dst_cgra_id = cgra_id,
+                                             dst_cgra_x = cgra_x,
+                                             dst_cgra_y = cgra_y)
         
         for core in cores:
             x, y = core['column'], core['row']
@@ -978,7 +1009,7 @@ class ScriptFactory:
             
             tile_signals = TileSignals(
                 CtrlType = self.CtrlType,
-                IntraCgraPktType = self.IntraCgraPktType,
+                IntraCgraPktType = IntraCgraPktType,
                 CgraPayloadType = self.CgraPayloadType,
                 TileInType = self.TileInType,
                 FuOutType = self.FuOutType,
@@ -1001,11 +1032,32 @@ class ScriptFactory:
                 RegIdxType = self.RegIdxType,
                 CtrlAddrType = self.CtrlAddrType,
                 DataAddrType = self.DataAddrType,
+                arg_values = arg_values or {},
                 )
             tile_signals = tile_signals.makeTileSignals()
             pkts[(x, y)] = tile_signals
             
         return pkts
+
+    def makeGlobalReduceCountPkts(self, num_cgras):
+        """Makes one packet per global reduction in the kernel, telling the
+        global reduce unit how many CGRAs contribute a partial to it. The
+        partials are collected on CGRA 0, so that is where the packets go.
+
+        Send these before launching any tile: the reduce unit has to know the
+        count before the first partial reaches it.
+        """
+        reduce_ids = sorted({operation['reduce_id']
+                             for core in self.yaml_struct['array_config']['cores']
+                             for entry in core['entries']
+                             for instruction in entry['instructions']
+                             for operation in instruction['operations']
+                             if 'reduce_id' in operation})
+        return [self.IntraCgraPktType(0, 0,
+                                      payload = self.CgraPayloadType(CMD_GLOBAL_REDUCE_COUNT,
+                                                                     data = self.DataType(num_cgras, 1),
+                                                                     reduce_id = reduce_id))
+                for reduce_id in reduce_ids]
     
 from validation.test.dummy import *
     
