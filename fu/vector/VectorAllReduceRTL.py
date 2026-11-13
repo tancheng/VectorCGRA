@@ -204,6 +204,9 @@ class VectorAllReduceRTL(Component):
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)):
         s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & \
                                        s.recv_in[1].msg.predicate
+      elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
+            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL)):
+        s.send_out[0].msg.predicate @= s.recv_from_ctrl_mem.msg.data.predicate
       elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)):
         s.send_out[0].msg.predicate @= s.recv_from_ctrl_mem.msg.data.predicate & \
