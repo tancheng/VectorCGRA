@@ -49,6 +49,8 @@ class VectorMulComboRTL(Component):
     sub_bw_2 = 2 * data_bitwidth // num_lanes
     sub_bw_3 = 3 * data_bitwidth // num_lanes
     sub_bw_4 = 4 * data_bitwidth // num_lanes
+    FuInType = mk_bits(clog2(num_inports + 1))
+    idx_nbits = clog2(num_inports)
 
     # Interface
     s.recv_in = [RecvIfcRTL(s.DataType) for _ in range(num_inports)]
@@ -64,6 +66,16 @@ class VectorMulComboRTL(Component):
     # Components
     s.Fu = [VectorMulRTL(sub_bw, CtrlPktType, 4, 2)
             for _ in range(num_lanes)]
+    s.in0 = Wire(FuInType)
+    s.in1 = Wire(FuInType)
+    s.in0_idx = Wire(idx_nbits)
+    s.in1_idx = Wire(idx_nbits)
+    s.in0_msg = Wire(s.DataType)
+    s.in1_msg = Wire(s.DataType)
+
+    # Connections.
+    s.in0_idx //= s.in0[0:idx_nbits]
+    s.in1_idx //= s.in1[0:idx_nbits]
 
     # Redundant interface, only used by PhiRTL.
     s.clear = InPort(b1)
@@ -97,14 +109,14 @@ class VectorMulComboRTL(Component):
 
       if s.recv_opt.msg.operation == OPT_VEC_MUL:
         # Connection: split into vectorized FUs
-        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw_2:sub_bw_3]
-        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw_2:sub_bw_3]
-        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw_3:sub_bw_4]
-        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw_3:sub_bw_4]
+        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[0:sub_bw]
+        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[sub_bw:sub_bw_2]
+        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[sub_bw_2:sub_bw_3]
+        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[sub_bw_3:sub_bw_4]
+        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[sub_bw_3:sub_bw_4]
 
         for i in range(num_lanes):
           s.temp_result[i] @= TempDataType(0)
@@ -117,14 +129,14 @@ class VectorMulComboRTL(Component):
           s.temp_result[0]
 
       elif s.recv_opt.msg.operation == OPT_VEC_MUL_COMBINED: # with highest precision
-        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[0:sub_bw]
-        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[0:sub_bw]
-        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.recv_in[0].msg.payload[sub_bw:sub_bw_2]
-        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.recv_in[1].msg.payload[sub_bw:sub_bw_2]
+        s.Fu[0].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[0:sub_bw]
+        s.Fu[0].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[0:sub_bw]
+        s.Fu[1].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[sub_bw:sub_bw_2]
+        s.Fu[2].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[0:sub_bw]
+        s.Fu[3].recv_in[0].msg[0:sub_bw] @= s.in0_msg.payload[sub_bw:sub_bw_2]
+        s.Fu[3].recv_in[1].msg[0:sub_bw] @= s.in1_msg.payload[sub_bw:sub_bw_2]
 
         for i in range(num_lanes):
           s.temp_result[i] @= TempDataType(0)
@@ -141,9 +153,27 @@ class VectorMulComboRTL(Component):
           s.send_out[j].val @= b1(0)
 
     @update
+    def update_operand_idx():
+      # Picks input register.
+      s.in0 @= 0
+      s.in1 @= 0
+      if s.recv_opt.val:
+        if s.recv_opt.msg.fu_in[0] != FuInType(0):
+          s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
+        if s.recv_opt.msg.fu_in[1] != FuInType(0):
+          s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
+
+    @update
     def update_signal():
-      s.recv_in[0].rdy @= s.Fu[0].recv_in[0].rdy
-      s.recv_in[1].rdy @= s.Fu[0].recv_in[1].rdy
+      s.in0_msg @= s.recv_in[s.in0_idx].msg
+      s.in1_msg @= s.recv_in[s.in1_idx].msg
+
+      for i in range(num_inports):
+        s.recv_in[i].rdy @= b1(0)
+      if s.Fu[0].recv_in[0].rdy:
+        s.recv_in[s.in0_idx].rdy @= b1(1)
+      if s.Fu[0].recv_in[1].rdy:
+        s.recv_in[s.in1_idx].rdy @= b1(1)
 
       for i in range(num_lanes):
         s.Fu[i].recv_opt.val @= s.recv_opt.val
@@ -152,8 +182,8 @@ class VectorMulComboRTL(Component):
         # which means the computation in different basic block cannot be combined.
         # s.Fu[i].recv_opt.msg.predicate = s.recv_opt.msg.predicate
 
-        s.Fu[i].recv_in[0].val @= s.recv_in[0].val
-        s.Fu[i].recv_in[1].val @= s.recv_in[1].val
+        s.Fu[i].recv_in[0].val @= s.recv_in[s.in0_idx].val
+        s.Fu[i].recv_in[1].val @= s.recv_in[s.in1_idx].val
         s.Fu[i].recv_const.val @= s.recv_const.val
 
         for j in range(num_outports):
@@ -175,7 +205,7 @@ class VectorMulComboRTL(Component):
          (s.recv_opt.msg.operation == OPT_VEC_MUL_COMBINED):
         for i in range(num_lanes):
           s.Fu[i].recv_opt.msg.operation @= OPT_MUL
-        s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & s.recv_in[1].msg.predicate
+        s.send_out[0].msg.predicate @= s.in0_msg.predicate & s.in1_msg.predicate
 
     @update
     def update_mem():
@@ -188,5 +218,5 @@ class VectorMulComboRTL(Component):
       s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace(s):
-    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.recv_in[1].msg) + " -> " + str(s.send_out[0].msg)
+    return str(s.in0_msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + str(s.in1_msg) + " -> " + str(s.send_out[0].msg)
 
