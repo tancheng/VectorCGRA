@@ -250,9 +250,9 @@ fu_in_code = [FuInType(x + 1) for x in range(num_fu_inports)]
 #   Outer loop: i = 0..3     (GRANT_ONCE #0, ICMP_EQ #4, ADD #1)
 #     Inner loop: j = 0..3   (GRANT_ONCE #0, ICMP_EQ #4, ADD #1)
 #       A_addr = i << 2 + j   (SHL #2, GEP)        -- stride-4 row layout
-#       x_addr = 16 + j       (GEP #16)
+#       x_addr = arg1 + j     (GEP arg1 = 16)
 #       acc += A[A_addr] * x[x_addr]  (LOAD, LOAD, MUL, ADD)
-#     y_addr = 20 + i         (GEP #20)
+#     y_addr = arg2 + i       (GEP arg2 = 20)
 #     y[y_addr] = acc          (STORE)
 #   RETURN_VOID               (signals completion)
 #
@@ -325,25 +325,32 @@ def sim_gemv(cmdline_opts, mem_access_is_combinational):
                                     DataAddrType = DataAddrType,
                                     num_registers_per_reg_bank = num_registers_per_reg_bank)
 
-  src_opt_pkt0_ = script_factory.makeVectorCGRAPkts()
+  src_opt_pkt0_ = script_factory.makeVectorCGRAPkts(arg_values = {"arg0": 0, "arg1": 16, "arg2": 20})
 
   # Order the packets according to the x (first) and y (second) coordinates.
   src_opt_pkt0 = []
   for x, y in src_opt_pkt0_:
     src_opt_pkt0.append(src_opt_pkt0_[(x, y)])
 
+  # After execution, read back y to check y = A * x.
   src_query_pkt = \
       [
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = 20 + i))
+          for i in range(4)
       ]
 
-  # RETURN_VOID is at core 8 (col 0, row 2), so src = 8.
+  # RETURN_VOID is at core 10 (col 2, row 2), so src = 10.
   # RETURN_VOID sends CMD_COMPLETE with data = 0.
   expected_complete_sink_out_pkg = \
       [
-          IntraCgraPktType(src = 8, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(1)
+          IntraCgraPktType(src = 10, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(1)
       ]
   expected_mem_sink_out_pkt = \
       [
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE,
+                           data = DataType(sum(A_values[i * 4 + j] * x_values[j] for j in range(4)), 1),
+                           data_addr = 20 + i))
+          for i in range(4)
       ]
 
   print("src_opt_pkt0: ", src_opt_pkt0)
