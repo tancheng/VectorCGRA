@@ -96,6 +96,36 @@ def test_vector_all_reduce():
                    src_in0, src_in1, src_opt, sink_out)
   run_sim(th)
 
+def test_vector_all_reduce_picks_operands_by_fu_in():
+  FU            = VectorAllReduceRTL
+  data_width    = 16
+  DataType      = mk_data(data_width, 1)
+  num_inports   = 2
+  num_outports  = 1
+  CtrlType      = mk_ctrl(num_inports, num_outports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+
+  FuInType      = mk_bits(clog2(num_inports + 1))
+
+  # The vector arrives on inport 1. The first op must leave the base on
+  # inport 0 untouched for the second op.
+  src_in0  = [                     DataType(3,      1)]
+  src_in1  = [DataType(0x1234, 1), DataType(0x1234, 1)]
+  sink_out = [DataType(10,     1), DataType(10 + 3, 1)]
+  src_opt  = [CtrlType(OPT_VEC_REDUCE_ADD,      [FuInType(2), FuInType(0)]),
+              CtrlType(OPT_VEC_REDUCE_ADD_BASE, [FuInType(2), FuInType(1)])]
+
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
+                   num_inports, num_outports,
+                   data_mem_size,
+                   src_in0, src_in1, src_opt, sink_out)
+  run_sim(th)
+
 class GlobalTestHarness(Component):
 
   def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,

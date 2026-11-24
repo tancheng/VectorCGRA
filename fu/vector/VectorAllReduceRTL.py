@@ -39,6 +39,8 @@ class VectorAllReduceRTL(Component):
     assert(data_bitwidth % num_lanes == 0)
 
     CountType = mk_bits(clog2(num_entries + 1))
+    FuInType = mk_bits(clog2(num_inports + 1))
+    idx_nbits = clog2(num_inports)
     s.ctrl_addr_inport = InPort(s.CtrlAddrType)
     sub_bw = data_bitwidth // num_lanes
     s.const_zero = s.DataType(0, 0, 0, 0)
@@ -64,6 +66,16 @@ class VectorAllReduceRTL(Component):
 
     # Components.
     s.already_sent_to_controller = Wire(1)
+    s.in0 = Wire(FuInType)
+    s.in1 = Wire(FuInType)
+    s.in0_idx = Wire(idx_nbits)
+    s.in1_idx = Wire(idx_nbits)
+    s.in0_msg = Wire(s.DataType)
+    s.in1_msg = Wire(s.DataType)
+
+    # Connections.
+    s.in0_idx //= s.in0[0:idx_nbits]
+    s.in1_idx //= s.in1[0:idx_nbits]
   
     # Reduction units.
     s.reduce_add = SumUnit(TempDataType, num_lanes)
@@ -88,8 +100,24 @@ class VectorAllReduceRTL(Component):
       low  = i * sub_bw
       high = (i + 1) * sub_bw
       # s.connect() works with slice objects directly during elaboration.
-      s.temp_result[i][0:sub_bw] //= s.recv_in[0].msg.payload[low:high]
+      s.temp_result[i][0:sub_bw] //= s.in0_msg.payload[low:high]
       s.temp_result[i][sub_bw:data_bitwidth] //= 0
+
+    @update
+    def update_operand_idx():
+      # For pick input register
+      s.in0 @= 0
+      s.in1 @= 0
+      if s.recv_opt.val:
+        if s.recv_opt.msg.fu_in[0] != FuInType(0):
+          s.in0 @= s.recv_opt.msg.fu_in[0] - FuInType(1)
+        if s.recv_opt.msg.fu_in[1] != FuInType(0):
+          s.in1 @= s.recv_opt.msg.fu_in[1] - FuInType(1)
+
+    @update
+    def update_operand():
+      s.in0_msg @= s.recv_in[s.in0_idx].msg
+      s.in1_msg @= s.recv_in[s.in1_idx].msg
 
     @update
     def update_result():
@@ -99,19 +127,19 @@ class VectorAllReduceRTL(Component):
       if s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out + s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_add.out + s.in1_msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out * s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.reduce_mul.out * s.in1_msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth]
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL:
         s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth]
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] + s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] + s.in1_msg.payload
       elif s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL:
-        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] * s.recv_in[1].msg.payload
+        s.send_out[0].msg.payload[0:data_bitwidth] @= s.recv_from_ctrl_mem.msg.data.payload[0:data_bitwidth] * s.in1_msg.payload
 
     @update
     def update_signal():
@@ -123,30 +151,32 @@ class VectorAllReduceRTL(Component):
 
       s.recv_from_ctrl_mem.rdy @= 0
 
-      s.recv_in[0].rdy @= (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)) & \
-                           s.send_out[0].rdy) | \
-                          (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
-                            (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
-                           s.send_to_ctrl_mem.rdy)
+      if (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)) & \
+          s.send_out[0].rdy) | \
+         (((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
+           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
+          s.send_to_ctrl_mem.rdy):
+        s.recv_in[s.in0_idx].rdy @= b1(1)
       s.recv_opt.rdy @= s.send_out[0].rdy
       # The global base is only applied once the response arrives, so it is
       # consumed together with the output rather than when the partial is sent.
-      s.recv_in[1].rdy @= ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
-                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE) | \
-                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
-                           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
-                          s.send_out[0].rdy
-      s.send_out[0].val @= (s.recv_in[0].val & \
+      if ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
+          (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE) | \
+          (s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
+          (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)) & \
+         s.send_out[0].rdy:
+        s.recv_in[s.in1_idx].rdy @= b1(1)
+      s.send_out[0].val @= (s.recv_in[s.in0_idx].val & \
                             s.recv_opt.val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL))) | \
-                           (s.recv_in[0].val & \
-                            s.recv_in[1].val & \
+                           (s.recv_in[s.in0_idx].val & \
+                            s.recv_in[s.in1_idx].val & \
                             s.recv_opt.val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE))) | \
@@ -156,17 +186,17 @@ class VectorAllReduceRTL(Component):
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL))) | \
                            (s.recv_opt.val & \
                             s.recv_from_ctrl_mem.val & \
-                            s.recv_in[1].val & \
+                            s.recv_in[s.in1_idx].val & \
                             ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
                              (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)))
 
       if s.recv_opt.val & \
          ~s.already_sent_to_controller & \
-         ((s.recv_in[0].val & \
+         ((s.recv_in[s.in0_idx].val & \
            ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL))) | \
-          (s.recv_in[0].val & \
-           s.recv_in[1].val & \
+          (s.recv_in[s.in0_idx].val & \
+           s.recv_in[s.in1_idx].val & \
            ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)))):
         s.send_to_ctrl_mem.val @= 1
@@ -175,7 +205,7 @@ class VectorAllReduceRTL(Component):
           s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_ADD,
                                 s.DataType(s.reduce_add.out,
-                                         s.recv_in[0].msg.predicate, 0, 0),
+                                         s.in0_msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
                                 0,
@@ -185,7 +215,7 @@ class VectorAllReduceRTL(Component):
           s.send_to_ctrl_mem.msg @= \
               s.CgraPayloadType(CMD_GLOBAL_REDUCE_MUL,
                                 s.DataType(s.reduce_mul.out,
-                                         s.recv_in[0].msg.predicate, 0, 0),
+                                         s.in0_msg.predicate, 0, 0),
                                 0,
                                 s.recv_opt.msg,
                                 0,
@@ -199,18 +229,18 @@ class VectorAllReduceRTL(Component):
       s.send_out[0].msg.predicate @= 0
       if ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD) | \
           (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL)):
-        s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate
+        s.send_out[0].msg.predicate @= s.in0_msg.predicate
       elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE)):
-        s.send_out[0].msg.predicate @= s.recv_in[0].msg.predicate & \
-                                       s.recv_in[1].msg.predicate
+        s.send_out[0].msg.predicate @= s.in0_msg.predicate & \
+                                       s.in1_msg.predicate
       elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_GLOBAL)):
         s.send_out[0].msg.predicate @= s.recv_from_ctrl_mem.msg.data.predicate
       elif ((s.recv_opt.msg.operation == OPT_VEC_REDUCE_ADD_BASE_GLOBAL) | \
             (s.recv_opt.msg.operation == OPT_VEC_REDUCE_MUL_BASE_GLOBAL)):
         s.send_out[0].msg.predicate @= s.recv_from_ctrl_mem.msg.data.predicate & \
-                                       s.recv_in[1].msg.predicate
+                                       s.in1_msg.predicate
 
     @update_ff
     def update_already_sent_to_controller():
@@ -247,5 +277,5 @@ class VectorAllReduceRTL(Component):
       s.from_mem_rdata.rdy @= b1(0)
 
   def line_trace(s):
-    return str(s.recv_in[0].msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + " -> " + str(s.send_out[0].msg)
+    return str(s.in0_msg) + OPT_SYMBOL_DICT[s.recv_opt.msg.operation] + " -> " + str(s.send_out[0].msg)
 

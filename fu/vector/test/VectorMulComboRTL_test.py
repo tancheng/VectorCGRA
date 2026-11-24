@@ -23,7 +23,7 @@ class TestHarness(Component):
 
   def construct(s, FunctionUnit, IntraCgraPktType, DataType, CtrlType,
                 num_inports, num_outports, data_mem_size, src0_msgs,
-                src1_msgs, ctrl_msgs, sink_msgs0):
+                src1_msgs, ctrl_msgs, sink_msgs0, src1_inport = 1):
 
     s.src_in0   = TestSrcRTL (DataType, src0_msgs )
     s.src_in1   = TestSrcRTL (DataType, src1_msgs )
@@ -35,7 +35,7 @@ class TestHarness(Component):
                          0, 4)
 
     connect(s.src_in0.send,    s.dut.recv_in[0])
-    connect(s.src_in1.send,    s.dut.recv_in[1])
+    connect(s.src_in1.send,    s.dut.recv_in[src1_inport])
     connect(s.src_opt.send,    s.dut.recv_opt  )
     connect(s.dut.send_out[0], s.sink_out0.recv)
 
@@ -94,4 +94,32 @@ def test_vector_mul_combo():
   th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
                    num_inports, num_outports, data_mem_size,
                    src_in0, src_in1, src_opt, sink_out)
+  run_sim(th)
+
+def test_vector_mul_combo_picks_operands_by_fu_in():
+  FU            = VectorMulComboRTL
+  bw            = 64
+  DataType      = mk_data(bw, 1)
+  num_inports   = 4
+  num_outports  = 1
+  CtrlType      = mk_ctrl(num_inports)
+  data_mem_size = 8
+  ctrl_mem_size = 8
+  DataAddrType  = mk_bits(clog2(data_mem_size))
+  CtrlAddrType  = mk_bits(clog2(ctrl_mem_size))
+  CgraPayloadType = mk_cgra_payload(DataType, DataAddrType, CtrlType, CtrlAddrType)
+  IntraCgraPktType = mk_intra_cgra_pkt(1, 1, 1, CgraPayloadType)
+  FuInType      = mk_bits(clog2(num_inports + 1))
+
+  # The second source drives inport 2, and inport 1 never gets data.
+  src1_inport = 2
+  src_in0  = [DataType(0x3402,    1), DataType(0x77,   1)]
+  src_in1  = [DataType(0x32f3,    1), DataType(0x89,   1)]
+  sink_out = [DataType(0xa59c1e6, 1), DataType(0x3faf, 1)]
+  src_opt  = [CtrlType(OPT_VEC_MUL,          [FuInType(1), FuInType(3), FuInType(0), FuInType(0)]),
+              CtrlType(OPT_VEC_MUL_COMBINED, [FuInType(3), FuInType(1), FuInType(0), FuInType(0)])]
+
+  th = TestHarness(FU, IntraCgraPktType, DataType, CtrlType,
+                   num_inports, num_outports, data_mem_size,
+                   src_in0, src_in1, src_opt, sink_out, src1_inport)
   run_sim(th)
