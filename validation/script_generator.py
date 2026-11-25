@@ -60,7 +60,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from lib.opt_type import *
-from lib.cmd_type import CMD_GLOBAL_REDUCE_COUNT
+from lib.cmd_type import CMD_CONFIG_GEP_STRIDE, CMD_GLOBAL_REDUCE_COUNT
 
 # Global configuration for register cluster size (number of registers per cluster).
 # This can be overridden by ScriptFactory initialization.
@@ -862,6 +862,19 @@ class TileSignals:
                                                payload = self.CgraPayloadType(self.CMD_CONFIG_TOTAL_CTRL_COUNT_,
                                                                               data = self.DataType(self.loop_times, 1)))
         all_signals.append(loop_times_pkt)
+
+        # The GEP FU holds a single stride register, so all GEP_2D ops placed on
+        # one tile must share a stride.
+        gep_strides = {operation['stride']
+                       for instruction in self.instructions
+                       for operation in instruction['operations']
+                       if operation['opcode'] == 'GEP_2D'}
+        if len(gep_strides) > 1:
+            raise ValueError(f"tile {self.id_} has GEP_2D ops with different strides: {sorted(gep_strides)}")
+        for stride in gep_strides:
+            all_signals.append(self.IntraCgraPktType(0, self.id_,
+                                                     payload = self.CgraPayloadType(CMD_CONFIG_GEP_STRIDE,
+                                                                                    data = self.DataType(stride, 1))))
         
         
         main_signals = []

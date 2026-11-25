@@ -633,6 +633,7 @@ array_config:
                   id: 120
                   time_step: 15
                   invalid_iterations: 0
+                  stride: 4
                   src_operands:
                     - operand: "#16"
                       color: "RED"
@@ -1073,6 +1074,7 @@ array_config:
                   id: 119
                   time_step: 17
                   invalid_iterations: 1
+                  stride: 4
                   src_operands:
                     - operand: "#32"
                       color: "RED"
@@ -1411,6 +1413,7 @@ array_config:
                   id: 96
                   time_step: 14
                   invalid_iterations: 0
+                  stride: 4
                   src_operands:
                     - operand: "#0"
                       color: "RED"

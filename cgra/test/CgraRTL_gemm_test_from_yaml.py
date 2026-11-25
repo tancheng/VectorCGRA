@@ -354,35 +354,35 @@ def sim_gemm(cmdline_opts, mem_access_is_combinational):
   for x, y in src_opt_pkt0_:
     src_opt_pkt0.append(src_opt_pkt0_[(x, y)])
 
+  # After execution, read back C to check C[i][j] += A[i][k] * B[k][j].
   src_query_pkt = \
       [
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_REQUEST, data_addr = BaseC + i * N + j))
+          for i in range(N) for j in range(N)
       ]
 
   # RETURN_VOID is at core 1 (col 1, row 0), so src = 1.
   # RETURN_VOID sends CMD_COMPLETE with data = 0.
+  # Tiles 2, 7 and 8 also reach kTotalCtrlSteps and send CMD_COMPLETE. Tile 2
+  # holds the STORE, so C is read back only after these three.
   expected_complete_sink_out_pkg = \
       [
           IntraCgraPktType(src = 1, dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(1)
+      ] + [
+          IntraCgraPktType(dst = 16, payload = CgraPayloadType(CMD_COMPLETE, DataType(0, 0, 0, 0))) for _ in range(3)
       ]
   expected_mem_sink_out_pkt = \
       [
+          IntraCgraPktType(payload = CgraPayloadType(CMD_LOAD_RESPONSE,
+                           data = DataType((i * j) % 13 + sum(((i * (k + 1)) % 17) * ((k * (j + 2)) % 19) for k in range(N)), 1),
+                           data_addr = BaseC + i * N + j))
+          for i in range(N) for j in range(N)
       ]
 
   print("src_opt_pkt0: ", src_opt_pkt0)
 
   for activation in preload_data:
       src_ctrl_pkt.extend(activation)
-
-  # # Pre-configure the GEP_2D stride register for each tile that issues a
-  # # GEP_2D op in gemm.yaml. All three 2D GEPs walk a 4x4 matrix, so stride = N.
-  # #   tile 4 (col=0, row=1): GEP_2D id=120 at index_per_ii=15 (B base #16)
-  # #   tile 6 (col=2, row=1): GEP_2D id=119 at index_per_ii=0  (C base #32)
-  # #                          GEP_2D id=96  at index_per_ii=14 (A base #0)
-  # gep_stride_cfg = [
-  #     IntraCgraPktType(0, 4, payload = CgraPayloadType(CMD_CONFIG_GEP_STRIDE, data = DataType(N, 1))),
-  #     IntraCgraPktType(0, 6, payload = CgraPayloadType(CMD_CONFIG_GEP_STRIDE, data = DataType(N, 1))),
-  # ]
-  # src_ctrl_pkt.extend(gep_stride_cfg)
 
   for tile_pkts in src_opt_pkt0:
       src_ctrl_pkt.extend(tile_pkts)
